@@ -190,8 +190,15 @@ flutter build web --release
 
 ### Deploy to Firebase Hosting
 ```bash
-firebase deploy
+firebase deploy --only hosting
 ```
+
+### Live Demo
+- **Web App**: https://choice-lux-cars-8d510.web.app
+- **GitHub Repository**: https://github.com/Willie-IKBI/choice-lux-cars
+
+### Automatic Deployment
+The app is automatically deployed to Firebase Hosting when changes are pushed to the `master` branch. Pull requests also get preview deployments.
 
 ## 🤝 Contributing
 
