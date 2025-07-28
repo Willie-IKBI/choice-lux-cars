@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "522491134348",
+    "project_id": "choice-lux-cars-8d510",
+    "storage_bucket": "choice-lux-cars-8d510.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:522491134348:android:3035a4d8b64c22d4b7d6a9",
+        "android_client_info": {
+          "package_name": "com.example.choice_lux_cars"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDYZG-hSZIbfhktZmErbpIXWqNrFC_lLyY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+} 
