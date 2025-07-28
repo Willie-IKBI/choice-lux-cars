@@ -17,7 +17,7 @@ class VehicleCard extends StatelessWidget {
         elevation: 8,
         shadowColor: Colors.black.withOpacity(0.2),
         child: Container(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.all(12.0), // Reduced from 16.0 to 12.0
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -29,12 +29,12 @@ class VehicleCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(12),
                     child: Container(
                       width: double.infinity,
-                      height: 120,
+                      height: 100, // Reduced from 120 to 100
                       child: vehicle.vehicleImage != null && vehicle.vehicleImage!.isNotEmpty
                           ? Image.network(
                               vehicle.vehicleImage!,
                               width: double.infinity,
-                              height: 120,
+                              height: 100, // Reduced from 120 to 100
                               fit: BoxFit.cover,
                               errorBuilder: (context, error, stackTrace) => _buildPlaceholderImage(),
                             )
@@ -73,24 +73,24 @@ class VehicleCard extends StatelessWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: 10), // Reduced from 12 to 10
+              const SizedBox(height: 8), // Reduced from 10 to 8
               // Vehicle make and model
               Text(
                 '${vehicle.make} ${vehicle.model}',
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontSize: 16,
+                  fontSize: 15, // Reduced from 16 to 15
                 ),
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
               ),
-              const SizedBox(height: 4), // Reduced from 6 to 4
+              const SizedBox(height: 3), // Reduced from 4 to 3
               // Registration plate
               Text(
                 vehicle.regPlate,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: Colors.grey[400],
-                  fontSize: 13,
+                  fontSize: 12, // Reduced from 13 to 12
                   fontWeight: FontWeight.w400,
                 ),
                 maxLines: 1,
@@ -106,14 +106,14 @@ class VehicleCard extends StatelessWidget {
   Widget _buildPlaceholderImage() {
     return Container(
       width: double.infinity,
-      height: 120,
+      height: 100, // Reduced from 120 to 100
       decoration: BoxDecoration(
         color: const Color(0xFFF4F4F4),
         borderRadius: BorderRadius.circular(12),
       ),
       child: Icon(
         Icons.directions_car,
-        size: 48,
+        size: 40, // Reduced from 48 to 40 for better proportion
         color: Colors.grey[500],
       ),
     );

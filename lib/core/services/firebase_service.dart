@@ -107,7 +107,6 @@ class FirebaseService {
           userId: userId,
           data: {
             'fcm_token': token,
-            'updated_at': DateTime.now().toIso8601String(),
           },
         );
         print('FCM token updated in profile for user: $userId');

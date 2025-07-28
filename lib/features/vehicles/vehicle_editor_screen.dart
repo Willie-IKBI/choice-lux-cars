@@ -180,34 +180,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     }
   }
 
-  void _deleteVehicle() async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Delete Vehicle'),
-        content: const Text('Are you sure you want to delete this vehicle? This action cannot be undone.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child: const Text('Delete'),
-          ),
-        ],
-      ),
-    );
-    
-    if (confirmed == true) {
-      // TODO: Implement delete functionality
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Delete functionality coming soon'), backgroundColor: Colors.orange),
-      );
-    }
-  }
-
   Widget _buildStatusChip(String status) {
     final isActive = status == 'active';
     return Container(
@@ -422,14 +394,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               Row(
                 children: [
                   Expanded(child: _buildPageTitle()),
-                  if (isEdit) ...[
-                    const SizedBox(width: 16),
-                    IconButton(
-                      onPressed: _deleteVehicle,
-                      icon: const Icon(Icons.delete, color: Colors.red),
-                      tooltip: 'Delete Vehicle',
-                    ),
-                  ],
                 ],
               ),
               const SizedBox(height: 32),
@@ -968,12 +932,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
             ],
           ),
           actions: [
-            if (isEdit)
-              IconButton(
-                onPressed: _deleteVehicle,
-                icon: const Icon(Icons.delete, color: Colors.red),
-                tooltip: 'Delete Vehicle',
-              ),
           ],
         ),
         body: content,

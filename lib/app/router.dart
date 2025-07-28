@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/login/login_screen.dart';
 import 'package:choice_lux_cars/features/auth/signup/signup_screen.dart';
+import 'package:choice_lux_cars/features/auth/pending_approval_screen.dart';
 import 'package:choice_lux_cars/features/dashboard/dashboard_screen.dart';
 import 'package:choice_lux_cars/features/clients/clients_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_client_screen.dart';
@@ -18,6 +19,7 @@ import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
+import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
@@ -130,6 +132,16 @@ final GoRouter appRouter = GoRouter(
         final userId = state.pathParameters['id']!;
         return UserDetailScreen(userId: userId);
       },
+    ),
+    GoRoute(
+      path: '/pending-approval',
+      name: 'pending_approval',
+      builder: (context, state) => const PendingApprovalScreen(),
+    ),
+    GoRoute(
+      path: '/user-profile',
+      name: 'user_profile',
+      builder: (context, state) => const UserProfileScreen(),
     ),
   ],
   errorBuilder: (context, state) => Scaffold(

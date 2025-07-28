@@ -4,6 +4,8 @@ enum UserRole {
   manager,
   driver,
   driverManager,
+  agent,
+  unassigned,
 }
 
 // Job statuses

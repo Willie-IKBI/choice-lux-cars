@@ -33,33 +33,33 @@ class ResponsiveGrid extends StatelessWidget {
         
         if (isMobile) {
           crossAxisCount = 1;
-          childAspectRatio = 1.1;
-          crossAxisSpacing = 12;
-          mainAxisSpacing = 12;
+          childAspectRatio = 2.2; // Much taller aspect ratio for compact mobile cards
+          crossAxisSpacing = 8; // Reduced spacing for mobile
+          mainAxisSpacing = 8; // Minimal vertical spacing between cards
         } else if (isTablet) {
           crossAxisCount = 2;
-          childAspectRatio = 1.0;
+          childAspectRatio = 1.8; // Taller aspect ratio for more compact cards
           crossAxisSpacing = 16;
-          mainAxisSpacing = 16;
+          mainAxisSpacing = 12; // Reduced vertical spacing
         } else if (isMedium) {
           crossAxisCount = 3;
-          childAspectRatio = 0.9;
-          crossAxisSpacing = 16;
-          mainAxisSpacing = 16;
+          childAspectRatio = 1.6; // Taller aspect ratio for compact cards
+          crossAxisSpacing = 20; // Reduced horizontal spacing
+          mainAxisSpacing = 16; // Reduced vertical spacing
         } else if (isLarge) {
           crossAxisCount = 4;
-          childAspectRatio = 0.85;
-          crossAxisSpacing = 20;
-          mainAxisSpacing = 20;
+          childAspectRatio = 1.4; // Taller aspect ratio for compact cards
+          crossAxisSpacing = 20; // Reduced spacing
+          mainAxisSpacing = 16;
         } else {
           crossAxisCount = 5;
-          childAspectRatio = 0.8;
-          crossAxisSpacing = 24;
-          mainAxisSpacing = 24;
+          childAspectRatio = 1.3; // Taller aspect ratio for compact cards
+          crossAxisSpacing = 20;
+          mainAxisSpacing = 16;
         }
 
         return GridView.builder(
-          padding: padding ?? EdgeInsets.all(isMobile ? 12 : 16),
+          padding: padding ?? EdgeInsets.all(isMobile ? 6 : 12), // Reduced padding for compact layout
           shrinkWrap: shrinkWrap,
           physics: physics,
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

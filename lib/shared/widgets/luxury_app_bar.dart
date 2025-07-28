@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:go_router/go_router.dart';
 
 class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
@@ -181,7 +182,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   _buildMobileUserMenu(context, displayName, userProfile)
                 else
                   // Desktop: Full user chip with popup menu
-                  _buildDesktopUserChip(context, displayName, userProfile),
+                  _buildDesktopUserMenu(context, displayName, userProfile),
               ],
               
               // Custom Actions
@@ -197,6 +198,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   Widget _buildMobileUserMenu(BuildContext context, String displayName, userProfile) {
+    // Hide profile menu for unassigned users
+    if (userProfile?.role == null || userProfile!.role == 'unassigned') {
+      return Container(); // Return empty container for unassigned users
+    }
+    
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
       shape: RoundedRectangleBorder(
@@ -311,15 +317,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           icon: Icons.person_outline,
           title: 'Profile',
           onTap: () {
-            Navigator.of(context).pop();
-            print('Navigate to Profile');
+            context.go('/user-profile');
           },
         ),
         _buildPopupMenuItem(
           icon: Icons.settings_outlined,
           title: 'Settings',
           onTap: () {
-            Navigator.of(context).pop();
             print('Navigate to Settings');
           },
         ),
@@ -329,7 +333,6 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Sign Out',
           isDestructive: true,
           onTap: () async {
-            Navigator.of(context).pop();
             await _showSignOutDialog(context);
           },
         ),
@@ -337,7 +340,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildDesktopUserChip(BuildContext context, String displayName, userProfile) {
+  Widget _buildDesktopUserMenu(BuildContext context, String displayName, userProfile) {
+    // Hide profile menu for unassigned users
+    if (userProfile?.role == null || userProfile!.role == 'unassigned') {
+      return Container(); // Return empty container for unassigned users
+    }
+    
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
       shape: RoundedRectangleBorder(
@@ -469,15 +477,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           icon: Icons.person_outline,
           title: 'Profile',
           onTap: () {
-            Navigator.of(context).pop();
-            print('Navigate to Profile');
+            context.go('/user-profile');
           },
         ),
         _buildPopupMenuItem(
           icon: Icons.settings_outlined,
           title: 'Settings',
           onTap: () {
-            Navigator.of(context).pop();
             print('Navigate to Settings');
           },
         ),
@@ -487,7 +493,6 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Sign Out',
           isDestructive: true,
           onTap: () async {
-            Navigator.of(context).pop();
             await _showSignOutDialog(context);
           },
         ),

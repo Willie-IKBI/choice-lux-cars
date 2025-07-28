@@ -8,6 +8,7 @@ class DashboardCard extends StatefulWidget {
   final VoidCallback onTap;
   final Color? iconColor;
   final Color? backgroundColor;
+  final String? badge;
 
   const DashboardCard({
     super.key,
@@ -17,6 +18,7 @@ class DashboardCard extends StatefulWidget {
     required this.onTap,
     this.iconColor,
     this.backgroundColor,
+    this.badge,
   });
 
   @override
@@ -137,21 +139,47 @@ class _DashboardCardState extends State<DashboardCard>
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         // Icon Container with better touch target
-                        Container(
-                          padding: EdgeInsets.all(iconContainerPadding),
-                          decoration: BoxDecoration(
-                            color: iconColor.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                            border: Border.all(
-                              color: iconColor.withOpacity(0.2),
-                              width: 1,
+                        Stack(
+                          children: [
+                            Container(
+                              padding: EdgeInsets.all(iconContainerPadding),
+                              decoration: BoxDecoration(
+                                color: iconColor.withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                                border: Border.all(
+                                  color: iconColor.withOpacity(0.2),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Icon(
+                                widget.icon,
+                                size: iconSize,
+                                color: iconColor,
+                              ),
                             ),
-                          ),
-                          child: Icon(
-                            widget.icon,
-                            size: iconSize,
-                            color: iconColor,
-                          ),
+                            // Badge
+                            if (widget.badge != null)
+                              Positioned(
+                                top: 0,
+                                right: 0,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.red,
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white, width: 1),
+                                  ),
+                                  child: Text(
+                                    widget.badge!,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         SizedBox(height: titleSpacing),
                         

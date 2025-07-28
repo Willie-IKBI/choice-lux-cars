@@ -24,8 +24,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> with TickerProvider
   bool _obscureConfirmPassword = true;
   bool _isHoveringSignIn = false;
   bool _isHoveringLogo = false;
-  // Default role for new signups - only admins can change roles later
-  final UserRole _defaultRole = UserRole.driver;
+  // New users are unassigned by default - only admins can assign roles later
   
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonScaleAnimation;
@@ -66,7 +65,6 @@ class _SignupScreenState extends ConsumerState<SignupScreen> with TickerProvider
         email: _emailController.text.trim(),
         password: _passwordController.text,
         displayName: _displayNameController.text.trim(),
-        role: _defaultRole,
       );
     }
   }

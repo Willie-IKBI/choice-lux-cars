@@ -80,11 +80,18 @@ class _ClientCardState extends State<ClientCard>
               return Transform.scale(
                 scale: _scaleAnimation.value,
                 child: Card(
-                  margin: EdgeInsets.all(isMobile ? 6.0 : 8.0),
+                  margin: EdgeInsets.all(isMobile ? 4.0 : 6.0), // Reduced margins for compact layout
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
-                      gradient: ChoiceLuxTheme.cardGradient,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          ChoiceLuxTheme.charcoalGray.withOpacity(0.95),
+                          ChoiceLuxTheme.charcoalGray.withOpacity(0.9),
+                        ],
+                      ),
                       border: widget.isSelected
                           ? Border.all(
                               color: ChoiceLuxTheme.richGold,
@@ -95,19 +102,28 @@ class _ClientCardState extends State<ClientCard>
                                   color: ChoiceLuxTheme.richGold.withOpacity(0.5),
                                   width: 1,
                                 )
-                              : null,
+                              : Border.all(
+                                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                                  width: 1,
+                                ),
                       boxShadow: _isHovered
                           ? [
                               BoxShadow(
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                                blurRadius: 12,
+                                spreadRadius: 2,
+                                offset: const Offset(0, 4),
+                              ),
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
                                 blurRadius: 8,
-                                spreadRadius: 1,
+                                offset: const Offset(0, 2),
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.15),
-                                blurRadius: 6,
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ],
@@ -119,17 +135,24 @@ class _ClientCardState extends State<ClientCard>
                         label: 'Client card for ${widget.client.companyName}',
                         button: true,
                         child: Padding(
-                          padding: EdgeInsets.all(isMobile ? 12.0 : 16.0),
+                          padding: EdgeInsets.fromLTRB(
+                            isMobile ? 8.0 : 16.0,
+                            isMobile ? 8.0 : 16.0,
+                            isMobile ? 8.0 : 16.0,
+                            isMobile ? 6.0 : 12.0, // Reduced bottom padding to minimize gap
+                          ),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisAlignment: MainAxisAlignment.start, // Ensure content starts at top
+                            mainAxisSize: MainAxisSize.min, // Make column only take needed space
                             children: [
                               // Header with logo and company name
                               Row(
                                 children: [
                                   // Company logo or placeholder
                                   Container(
-                                    width: isMobile ? 36 : 44,
-                                    height: isMobile ? 36 : 44,
+                                    width: isMobile ? 32 : 44, // Smaller logo for mobile to save space
+                                    height: isMobile ? 32 : 44,
                                     decoration: BoxDecoration(
                                       borderRadius: BorderRadius.circular(8),
                                       color: ChoiceLuxTheme.richGold.withOpacity(0.1),
@@ -158,6 +181,7 @@ class _ClientCardState extends State<ClientCard>
                                           widget.client.companyName,
                                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                             fontWeight: FontWeight.bold,
+                                            fontSize: isMobile ? 15 : 18, // Slightly smaller font for mobile
                                             color: ChoiceLuxTheme.softWhite,
                                           ),
                                           maxLines: 1,
@@ -167,7 +191,8 @@ class _ClientCardState extends State<ClientCard>
                                         Text(
                                           'Contact: ${widget.client.contactPerson}',
                                           style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                            color: ChoiceLuxTheme.platinumSilver,
+                                            fontSize: isMobile ? 13 : 14, // Smaller font for hierarchy
+                                            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8), // Dimmed for hierarchy
                                           ),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
@@ -199,7 +224,7 @@ class _ClientCardState extends State<ClientCard>
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 12),
+                              SizedBox(height: isMobile ? 4 : 8), // Reduced spacing between header and contact info
                               
                               // Contact information with consistent spacing
                               _buildContactInfo(
@@ -207,20 +232,18 @@ class _ClientCardState extends State<ClientCard>
                                 widget.client.contactEmail,
                                 isMobile,
                               ),
-                              const SizedBox(height: 6),
+                              SizedBox(height: isMobile ? 2 : 4), // Further reduced spacing
                               _buildContactInfo(
                                 Icons.phone,
                                 widget.client.contactNumber,
                                 isMobile,
                               ),
-                              
-                                                          const Spacer(),
                             
-                            // Action buttons
+                            // Action buttons - reduced spacing
                             if (_isHovered || isMobile) ...[
                               // Visual divider
                               Container(
-                                margin: const EdgeInsets.symmetric(vertical: 8),
+                                margin: EdgeInsets.symmetric(vertical: isMobile ? 2 : 2), // Minimal margin for compact design
                                 height: 1,
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
@@ -233,9 +256,9 @@ class _ClientCardState extends State<ClientCard>
                                 ),
                               ),
                               _buildActionButtons(isMobile, isTablet, isDesktop),
+                              // No additional spacing - buttons should sit close to card edge
                             ] else ...[
-                              // Show hint for desktop
-                              const Spacer(),
+                              // Show hint for desktop - removed Spacer to eliminate wasted space
                               Center(
                                 child: Text(
                                   'Hover for actions',
@@ -245,6 +268,7 @@ class _ClientCardState extends State<ClientCard>
                                   ),
                                 ),
                               ),
+                              // No additional spacing - hint should sit close to card edge
                             ],
                             ],
                           ),
@@ -289,7 +313,7 @@ class _ClientCardState extends State<ClientCard>
         icon = Icons.schedule;
         break;
       case ClientStatus.inactive:
-        backgroundColor = Colors.grey;
+        backgroundColor = Colors.red;
         textColor = Colors.white;
         label = 'Inactive';
         icon = Icons.block;
@@ -304,24 +328,31 @@ class _ClientCardState extends State<ClientCard>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: backgroundColor,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: backgroundColor.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             icon,
-            size: 10,
+            size: 12,
             color: textColor,
           ),
-          const SizedBox(width: 2),
+          const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: 10,
+              fontSize: 11,
               fontWeight: FontWeight.w600,
               color: textColor,
             ),
@@ -342,14 +373,15 @@ class _ClientCardState extends State<ClientCard>
         Icon(
           icon,
           size: isMobile ? 14 : 16,
-          color: ChoiceLuxTheme.platinumSilver,
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7), // Dimmed icon for hierarchy
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: isMobile ? 4 : 6), // Reduced spacing for mobile
         Expanded(
           child: Text(
             displayText,
             style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: textColor,
+              fontSize: isMobile ? 13 : 14, // Smaller font for hierarchy
+              color: textColor.withOpacity(0.9), // Slightly dimmed for hierarchy
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -363,10 +395,13 @@ class _ClientCardState extends State<ClientCard>
     if (isMobile) {
       // Stack buttons vertically on mobile with better spacing
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2), // Minimal padding for compact design
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          ),
         ),
         child: Column(
           children: [
@@ -375,12 +410,12 @@ class _ClientCardState extends State<ClientCard>
               width: double.infinity,
               child: _buildPrimaryButton(
                 Icons.edit,
-                'Edit',
+                'Edit Client',
                 widget.onEdit,
                 isMobile,
               ),
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 3), // Minimal spacing for compact layout
             // Secondary actions in a row
             Row(
               children: [
@@ -392,11 +427,11 @@ class _ClientCardState extends State<ClientCard>
                     isMobile,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 8), // Reduced spacing
                 Expanded(
                   child: _buildIconButton(
                     Icons.archive,
-                    'Deactivate Client',
+                    'Deactivate',
                     widget.onDelete,
                     isMobile,
                     isDestructive: true,
@@ -410,10 +445,13 @@ class _ClientCardState extends State<ClientCard>
     } else {
       // Horizontal layout for tablet and desktop
       return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3), // Minimal padding for compact design
         decoration: BoxDecoration(
           color: Colors.grey[900],
           borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          ),
         ),
         child: Row(
           children: [
@@ -438,7 +476,7 @@ class _ClientCardState extends State<ClientCard>
             const SizedBox(width: 8),
             _buildIconButton(
               Icons.archive,
-              'Deactivate Client',
+              'Deactivate',
               widget.onDelete,
               isMobile,
               isDestructive: true,
@@ -464,19 +502,22 @@ class _ClientCardState extends State<ClientCard>
       label: Text(
         label,
         style: TextStyle(
-          fontSize: isMobile ? 12 : 14,
+          fontSize: isMobile ? 13 : 14, // Slightly larger font for mobile
           fontWeight: FontWeight.w600,
         ),
       ),
       style: ElevatedButton.styleFrom(
         backgroundColor: ChoiceLuxTheme.richGold,
         foregroundColor: Colors.black,
-        elevation: _isHovered ? 3 : 1,
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        elevation: _isHovered ? 4 : 2, // Increased elevation for better depth
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 12 : 16, 
+          vertical: isMobile ? 10 : 12,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(8),
         ),
-        minimumSize: const Size(0, 40),
+        minimumSize: Size(0, isMobile ? 32 : 44), // Even smaller buttons for mobile to save space
       ),
     );
   }
@@ -527,8 +568,8 @@ class _IconButtonWithHoverState extends State<_IconButtonWithHover> {
       onExit: (_) => setState(() => isHovered = false),
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        height: 40,
-        width: 40,
+        height: widget.isMobile ? 32 : 44, // Even smaller icon button for mobile to save space
+        width: widget.isMobile ? 32 : 44,
         decoration: BoxDecoration(
           color: isHovered
               ? (widget.isDestructive 
@@ -570,7 +611,7 @@ class _IconButtonWithHoverState extends State<_IconButtonWithHover> {
                 duration: const Duration(milliseconds: 150),
                 child: Icon(
                   widget.icon,
-                  size: widget.isMobile ? 18 : 20,
+                  size: widget.isMobile ? 16 : 22, // Even smaller icons for mobile to save space
                   color: widget.isDestructive 
                       ? ChoiceLuxTheme.errorColor
                       : ChoiceLuxTheme.richGold,

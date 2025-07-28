@@ -78,27 +78,26 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               child: Column(
                 children: [
                   // Account Section
-                  _buildMobileMenuSection(
-                    title: 'Account',
-                    items: [
-                      _buildMobileMenuItem(
-                        icon: Icons.person_outline,
-                        title: 'User Profile',
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          print('Navigate to User Profile');
-                        },
-                      ),
-                      _buildMobileMenuItem(
-                        icon: Icons.settings_outlined,
-                        title: 'Settings',
-                        onTap: () {
-                          Navigator.of(context).pop();
-                          print('Navigate to Settings');
-                        },
-                      ),
-                    ],
-                  ),
+                  if (userProfile?.role != null && userProfile!.role != 'unassigned')
+                    _buildMobileMenuSection(
+                      title: 'Account',
+                      items: [
+                        _buildMobileMenuItem(
+                          icon: Icons.person_outline,
+                          title: 'User Profile',
+                          onTap: () {
+                            context.go('/user-profile');
+                          },
+                        ),
+                        _buildMobileMenuItem(
+                          icon: Icons.settings_outlined,
+                          title: 'Settings',
+                          onTap: () {
+                            print('Navigate to Settings');
+                          },
+                        ),
+                      ],
+                    ),
                   
                   // Company Section
                   _buildMobileMenuSection(
@@ -108,7 +107,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.business_outlined,
                         title: 'About Choice Lux Cars',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Navigate to About');
                         },
                       ),
@@ -116,7 +114,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.contact_support_outlined,
                         title: 'Contact Information',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Navigate to Contact');
                         },
                       ),
@@ -133,7 +130,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.privacy_tip_outlined,
                         title: 'Privacy Policy',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Navigate to Privacy Policy');
                         },
                       ),
@@ -141,7 +137,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.description_outlined,
                         title: 'Terms of Service',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Navigate to Terms of Service');
                         },
                       ),
@@ -149,7 +144,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.help_outline,
                         title: 'Help & Support',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Navigate to Help & Support');
                         },
                       ),
@@ -165,8 +159,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.people_outline,
                           title: 'User Management',
                           onTap: () {
-                            Navigator.of(context).pop();
-                            // Navigate to User Management
                             context.go('/users');
                           },
                         ),
@@ -174,7 +166,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.admin_panel_settings_outlined,
                           title: 'System Settings',
                           onTap: () {
-                            Navigator.of(context).pop();
                             print('Navigate to System Settings');
                           },
                         ),
@@ -182,7 +173,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.analytics_outlined,
                           title: 'Reports & Analytics',
                           onTap: () {
-                            Navigator.of(context).pop();
                             print('Navigate to Reports & Analytics');
                           },
                         ),
@@ -201,7 +191,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         title: 'App Version',
                         subtitle: 'Version 1.0.0',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Show App Version Info');
                         },
                       ),
@@ -209,7 +198,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.update_outlined,
                         title: 'Check for Updates',
                         onTap: () {
-                          Navigator.of(context).pop();
                           print('Check for Updates');
                         },
                       ),
@@ -254,88 +242,82 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                 child: Column(
                   children: [
                     // User Profile Section
-                    _buildMenuSection(
-                      title: 'Account',
-                      items: [
-                        _buildMenuItem(
-                          icon: Icons.person_outline,
-                          title: 'User Profile',
-                          subtitle: 'View and edit your profile',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to User Profile');
-                          },
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.settings_outlined,
-                          title: 'Settings',
-                          subtitle: 'App preferences and notifications',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to Settings');
-                          },
-                        ),
-                      ],
-                    ),
-                    
-                    // Company Information Section
-                    _buildMenuSection(
-                      title: 'Company',
-                      items: [
-                        _buildMenuItem(
-                          icon: Icons.business_outlined,
-                          title: 'About Choice Lux Cars',
-                          subtitle: 'Learn about our company',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to About');
-                          },
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.contact_support_outlined,
-                          title: 'Contact Information',
-                          subtitle: 'Get in touch with us',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to Contact');
-                          },
-                        ),
-                      ],
-                    ),
-                    
-                    // Legal & Support Section
-                    _buildMenuSection(
-                      title: 'Legal & Support',
-                      items: [
-                        _buildMenuItem(
-                          icon: Icons.privacy_tip_outlined,
-                          title: 'Privacy Policy',
-                          subtitle: 'How we protect your data',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to Privacy Policy');
-                          },
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.description_outlined,
-                          title: 'Terms of Service',
-                          subtitle: 'Our terms and conditions',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to Terms of Service');
-                          },
-                        ),
-                        _buildMenuItem(
-                          icon: Icons.help_outline,
-                          title: 'Help & Support',
-                          subtitle: 'Get help and support',
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            print('Navigate to Help & Support');
-                          },
-                        ),
-                      ],
-                    ),
+                    if (userProfile?.role != null && userProfile!.role != 'unassigned')
+                      _buildMenuSection(
+                        title: 'Account',
+                        items: [
+                          _buildMenuItem(
+                            icon: Icons.person_outline,
+                            title: 'User Profile',
+                            subtitle: 'View and edit your profile',
+                            onTap: () {
+                              context.go('/user-profile');
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.settings_outlined,
+                            title: 'Settings',
+                            subtitle: 'App preferences and notifications',
+                            onTap: () {
+                              print('Navigate to Settings');
+                            },
+                          ),
+                        ],
+                      ),
+                      
+                      // Company Information Section
+                      _buildMenuSection(
+                        title: 'Company',
+                        items: [
+                          _buildMenuItem(
+                            icon: Icons.business_outlined,
+                            title: 'About Choice Lux Cars',
+                            subtitle: 'Learn about our company',
+                            onTap: () {
+                              print('Navigate to About');
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.contact_support_outlined,
+                            title: 'Contact Information',
+                            subtitle: 'Get in touch with us',
+                            onTap: () {
+                              print('Navigate to Contact');
+                            },
+                          ),
+                        ],
+                      ),
+                      
+                      // Legal & Support Section
+                      _buildMenuSection(
+                        title: 'Legal & Support',
+                        items: [
+                          _buildMenuItem(
+                            icon: Icons.privacy_tip_outlined,
+                            title: 'Privacy Policy',
+                            subtitle: 'How we protect your data',
+                            onTap: () {
+                              print('Navigate to Privacy Policy');
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.description_outlined,
+                            title: 'Terms of Service',
+                            subtitle: 'Our terms and conditions',
+                            onTap: () {
+                              print('Navigate to Terms of Service');
+                            },
+                          ),
+                          _buildMenuItem(
+                            icon: Icons.help_outline,
+                            title: 'Help & Support',
+                            subtitle: 'Get help and support',
+                            onTap: () {
+                              print('Navigate to Help & Support');
+                            },
+                          ),
+                        ],
+                      ),
                     
                     // Administration Section (Role-based)
                     if (userProfile?.role == 'admin') ...[
@@ -347,8 +329,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'User Management',
                             subtitle: 'Manage system users',
                             onTap: () {
-                              Navigator.of(context).pop();
-                              // Navigate to User Management
                               context.go('/users');
                             },
                           ),
@@ -357,7 +337,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'System Settings',
                             subtitle: 'Configure system options',
                             onTap: () {
-                              Navigator.of(context).pop();
                               print('Navigate to System Settings');
                             },
                           ),
@@ -366,7 +345,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Reports & Analytics',
                             subtitle: 'View business insights',
                             onTap: () {
-                              Navigator.of(context).pop();
                               print('Navigate to Reports & Analytics');
                             },
                           ),
@@ -380,19 +358,17 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       items: [
                         _buildMenuItem(
                           icon: Icons.info_outline,
-                          title: 'App Version',
+                          title: 'App Information',
                           subtitle: 'Version 1.0.0',
                           onTap: () {
-                            Navigator.of(context).pop();
                             print('Show App Version Info');
                           },
                         ),
                         _buildMenuItem(
-                          icon: Icons.update_outlined,
+                          icon: Icons.system_update_outlined,
                           title: 'Check for Updates',
                           subtitle: 'Update the application',
                           onTap: () {
-                            Navigator.of(context).pop();
                             print('Check for Updates');
                           },
                         ),
@@ -875,7 +851,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                Navigator.of(context).pop();
                 await _showSignOutDialog(context);
               },
               icon: Icon(
@@ -912,7 +887,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             width: double.infinity,
             child: TextButton.icon(
               onPressed: () {
-                Navigator.of(context).pop();
                 _showExitDialog(context);
               },
               icon: Icon(
@@ -955,7 +929,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             width: double.infinity,
             child: ElevatedButton.icon(
               onPressed: () async {
-                Navigator.of(context).pop();
                 await _showSignOutDialog(context);
               },
               icon: Icon(
@@ -992,7 +965,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             width: double.infinity,
             child: TextButton.icon(
               onPressed: () {
-                Navigator.of(context).pop();
                 _showExitDialog(context);
               },
               icon: Icon(

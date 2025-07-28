@@ -2,22 +2,29 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
-import 'package:choice_lux_cars/core/constants.dart';
 
 // User Profile Model
 class UserProfile {
   final String id;
   final String? displayName;
   final String? role;
-  final DateTime? createdAt;
-  final DateTime? updatedAt;
+  final String? address;
+  final String? number;
+  final String? kin;
+  final String? kinNumber;
+  final String? profileImage;
+  final String? status;
 
   UserProfile({
     required this.id,
     this.displayName,
     this.role,
-    this.createdAt,
-    this.updatedAt,
+    this.address,
+    this.number,
+    this.kin,
+    this.kinNumber,
+    this.profileImage,
+    this.status,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
@@ -25,12 +32,12 @@ class UserProfile {
       id: map['id'] ?? '',
       displayName: map['display_name'],
       role: map['role'],
-      createdAt: map['created_at'] != null 
-          ? DateTime.parse(map['created_at']) 
-          : null,
-      updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at']) 
-          : null,
+      address: map['address'],
+      number: map['number'],
+      kin: map['kin'],
+      kinNumber: map['kin_number'],
+      profileImage: map['profile_image'],
+      status: map['status'],
     );
   }
 
@@ -137,7 +144,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     required String email,
     required String password,
     required String displayName,
-    required UserRole role,
   }) async {
     try {
       state = const AsyncValue.loading();
@@ -146,7 +152,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         password: password,
         userData: {
           'display_name': displayName,
-          'role': role.name,
+          'role': 'unassigned', // New users are unassigned by default
         },
       );
       
@@ -157,9 +163,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           data: {
             'id': response.user!.id,
             'display_name': displayName,
-            'role': role.name,
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'role': 'unassigned', // New users are unassigned by default
+            'status': 'unassigned',
           },
         );
         
@@ -248,10 +253,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
 
       await _supabaseService.updateProfile(
         userId: currentProfile.id,
-        data: {
-          ...data,
-          'updated_at': DateTime.now().toIso8601String(),
-        },
+        data: data,
       );
 
       // Reload profile after update

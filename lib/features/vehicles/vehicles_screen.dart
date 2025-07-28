@@ -67,7 +67,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                         crossAxisCount: crossAxisCount,
                         crossAxisSpacing: 16,
                         mainAxisSpacing: 16,
-                        childAspectRatio: 0.85, // Increased from 0.75 to reduce card height
+                        childAspectRatio: 1.6, // Increased from 1.4 to 1.6 for even more compact cards
                       ),
                       itemCount: vehicles.length,
                       itemBuilder: (context, i) => VehicleCard(
@@ -87,6 +87,9 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
           ? FloatingActionButton.extended(
               icon: const Icon(Icons.add),
               label: const Text('Add Vehicle'),
+              backgroundColor: const Color(0xFFD4AF37), // ChoiceLuxTheme.richGold
+              foregroundColor: Colors.black,
+              elevation: 6,
               onPressed: () {
                 context.push('/vehicles/edit');
               },

@@ -31,22 +31,15 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         : ref.watch(clientSearchProvider(_searchQuery));
 
     return Scaffold(
-      floatingActionButton: LayoutBuilder(
-        builder: (context, constraints) {
-          final isMobile = constraints.maxWidth < 600;
-          return FloatingActionButton(
-            onPressed: () {
-              context.go('/clients/add');
-            },
-            backgroundColor: ChoiceLuxTheme.richGold,
-            foregroundColor: Colors.black,
-            elevation: 4,
-            child: Icon(
-              Icons.add,
-              size: isMobile ? 24 : 28,
-            ),
-          );
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          context.go('/clients/add');
         },
+        backgroundColor: ChoiceLuxTheme.richGold,
+        foregroundColor: Colors.black,
+        elevation: 6,
+        icon: const Icon(Icons.add),
+        label: const Text('Add Client'),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -91,58 +84,97 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 ),
               ),
 
-              // Search Bar
+              // Search Bar with Filter
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),
-                child: TextField(
-                  controller: _searchController,
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search clients...',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: ChoiceLuxTheme.platinumSilver,
-                    ),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(
-                              Icons.clear,
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        decoration: InputDecoration(
+                          hintText: 'Search clients...',
+                          prefixIcon: const Icon(
+                            Icons.search,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear,
+                                    color: ChoiceLuxTheme.platinumSilver,
+                                  ),
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() {
+                                      _searchQuery = '';
+                                    });
+                                  },
+                                )
+                              : null,
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
                               color: ChoiceLuxTheme.platinumSilver,
                             ),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          enabledBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: ChoiceLuxTheme.platinumSilver,
+                            ),
+                          ),
+                          focusedBorder: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                            borderSide: const BorderSide(
+                              color: ChoiceLuxTheme.richGold,
+                              width: 2,
+                            ),
+                          ),
+                          filled: true,
+                          fillColor: ChoiceLuxTheme.charcoalGray,
+                        ),
                       ),
                     ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver,
+                    const SizedBox(width: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: ChoiceLuxTheme.charcoalGray,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: ChoiceLuxTheme.platinumSilver,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        onPressed: () {
+                          // TODO: Implement filter functionality
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Filter functionality coming soon!'),
+                              backgroundColor: ChoiceLuxTheme.richGold,
+                            ),
+                          );
+                        },
+                        icon: const Icon(
+                          Icons.filter_list,
+                          color: ChoiceLuxTheme.platinumSilver,
+                        ),
+                        tooltip: 'Filter by Status, Industry, or Date',
                       ),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(
-                        color: ChoiceLuxTheme.richGold,
-                        width: 2,
-                      ),
-                    ),
-                    filled: true,
-                    fillColor: ChoiceLuxTheme.charcoalGray,
-                  ),
+                  ],
                 ),
               ),
 

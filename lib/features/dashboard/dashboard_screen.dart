@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
@@ -21,6 +22,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
+    final users = ref.watch(usersProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
     
     // Get display name from profile, fallback to email, then to 'User'
@@ -31,11 +33,19 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       userName = currentUser!.email!.split('@')[0];
     }
     
-    // Responsive padding - removed horizontal padding for mobile since GridView handles it
+    // Check if user is administrator
+    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+    
+    // Count unassigned users for admin notification
+    final unassignedUsersCount = isAdmin 
+        ? users.where((user) => user.role == null || user.role == 'unassigned').length 
+        : 0;
+    
+    // Responsive padding - provide minimal padding for mobile
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallMobile = screenWidth < 400;
     
-    final horizontalPadding = isSmallMobile ? 0.0 : isMobile ? 0.0 : 24.0;
+    final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 24.0;
     final verticalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
     final sectionSpacing = isSmallMobile ? 16.0 : isMobile ? 24.0 : 32.0;
 
@@ -106,55 +116,70 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final spacing = isSmallMobile ? 3.0 : isMobile ? 4.0 : 8.0;
     final sectionSpacing = isSmallMobile ? 6.0 : isMobile ? 8.0 : 16.0;
     
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Dashboard',
-          style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-            color: ChoiceLuxTheme.richGold,
-            fontWeight: FontWeight.w700,
-            letterSpacing: 0.5,
-            fontSize: titleSize,
-          ),
-        ),
-        SizedBox(height: spacing),
-        Text(
-          'Welcome back, $userName 👋',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            color: ChoiceLuxTheme.platinumSilver,
-            fontWeight: FontWeight.w500,
-            fontSize: subtitleSize,
-          ),
-        ),
-        SizedBox(height: sectionSpacing),
-        Container(
-          height: 2,
-          width: isSmallMobile ? 30 : isMobile ? 40 : 60,
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                ChoiceLuxTheme.richGold,
-                ChoiceLuxTheme.richGold.withOpacity(0.5),
-              ],
+    // Add horizontal padding for mobile (accounting for main container padding)
+    final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 8.0 : 0.0;
+    
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Dashboard',
+            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+              color: ChoiceLuxTheme.richGold,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 0.5,
+              fontSize: titleSize,
             ),
-            borderRadius: BorderRadius.circular(1),
           ),
-        ),
-      ],
+          SizedBox(height: spacing),
+          Text(
+            'Welcome back, $userName 👋',
+            style: Theme.of(context).textTheme.titleMedium?.copyWith(
+              color: ChoiceLuxTheme.platinumSilver,
+              fontWeight: FontWeight.w500,
+              fontSize: subtitleSize,
+            ),
+          ),
+          SizedBox(height: sectionSpacing),
+          Container(
+            height: 2,
+            width: isSmallMobile ? 30 : isMobile ? 40 : 60,
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  ChoiceLuxTheme.richGold,
+                  ChoiceLuxTheme.richGold.withOpacity(0.5),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(1),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   Widget _buildDashboardCards(BuildContext context) {
     final userProfile = ref.watch(currentUserProfileProvider);
+    final users = ref.watch(usersProvider);
+    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+    final unassignedUsersCount = isAdmin 
+        ? users.where((user) => user.role == null || user.role == 'unassigned').length 
+        : 0;
+    
     final dashboardItems = [
       if (userProfile != null && (userProfile.role?.toLowerCase() == 'administrator' || userProfile.role?.toLowerCase() == 'manager'))
         DashboardItem(
           title: 'Manage Users',
-          subtitle: 'User & driver management',
+          subtitle: unassignedUsersCount > 0 
+              ? '$unassignedUsersCount user${unassignedUsersCount == 1 ? '' : 's'} pending approval'
+              : 'User & driver management',
           icon: Icons.people,
           route: '/users',
           color: ChoiceLuxTheme.richGold,
+          badge: unassignedUsersCount > 0 ? unassignedUsersCount.toString() : null,
         ),
       DashboardItem(
         title: 'Clients',
@@ -256,6 +281,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           title: item.title,
           subtitle: item.subtitle,
           iconColor: item.color,
+          badge: item.badge,
           onTap: () => context.go(item.route),
         )).toList(),
       ),
@@ -270,6 +296,7 @@ class DashboardItem {
   final IconData icon;
   final String route;
   final Color color;
+  final String? badge;
 
   DashboardItem({
     required this.title,
@@ -277,6 +304,7 @@ class DashboardItem {
     required this.icon,
     required this.route,
     required this.color,
+    this.badge,
   });
 }
 
