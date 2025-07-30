@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import '../../../shared/widgets/simple_app_bar.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
@@ -58,6 +59,12 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     final isEditMode = widget.client != null;
     
     return Scaffold(
+      appBar: SimpleAppBar(
+        title: isEditMode ? 'Edit Client' : 'Add Client',
+        subtitle: isEditMode ? 'Update client details' : 'Create new client',
+        showBackButton: true,
+        onBackPressed: () => context.pop(),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: ChoiceLuxTheme.backgroundGradient,
@@ -69,9 +76,6 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               
               return Column(
                 children: [
-                  // App Bar
-                  _buildAppBar(isEditMode, isMobile),
-                  
                   // Form Content
                   Expanded(
                     child: SingleChildScrollView(
@@ -93,54 +97,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     );
   }
 
-  Widget _buildAppBar(bool isEditMode, bool isMobile) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: ChoiceLuxTheme.softWhite,
-            ),
-            onPressed: () => context.go('/clients'),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              isEditMode ? 'Edit Client' : 'Add New Client',
-              style: TextStyle(
-                fontSize: isMobile ? 20 : 24,
-                fontWeight: FontWeight.bold,
-                color: ChoiceLuxTheme.softWhite,
-              ),
-            ),
-          ),
-          if (!isMobile) ...[
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _saveClient,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
-                  : const Icon(Icons.save),
-              label: Text(_isLoading ? 'Saving...' : 'Save'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildForm(bool isMobile) {
     return Form(

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
+import '../../../shared/widgets/simple_app_bar.dart';
 
 class AddEditAgentScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -52,6 +53,12 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
     final isEditMode = widget.agent != null;
     
     return Scaffold(
+      appBar: SimpleAppBar(
+        title: isEditMode ? 'Edit Agent' : 'Add Agent',
+        subtitle: isEditMode ? 'Update agent details' : 'Create new agent',
+        showBackButton: true,
+        onBackPressed: () => context.pop(),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: ChoiceLuxTheme.backgroundGradient,
@@ -63,9 +70,6 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
               
               return Column(
                 children: [
-                  // App Bar
-                  _buildAppBar(isEditMode, isMobile),
-                  
                   // Form Content
                   Expanded(
                     child: SingleChildScrollView(
@@ -87,54 +91,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
     );
   }
 
-  Widget _buildAppBar(bool isEditMode, bool isMobile) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: ChoiceLuxTheme.softWhite,
-            ),
-            onPressed: () => context.go('/clients/${widget.clientId}'),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              isEditMode ? 'Edit Agent' : 'Add New Agent',
-              style: TextStyle(
-                fontSize: isMobile ? 20 : 24,
-                fontWeight: FontWeight.bold,
-                color: ChoiceLuxTheme.softWhite,
-              ),
-            ),
-          ),
-          if (!isMobile) ...[
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _saveAgent,
-              icon: _isLoading
-                  ? const SizedBox(
-                      width: 16,
-                      height: 16,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Colors.black,
-                      ),
-                    )
-                  : const Icon(Icons.save),
-              label: Text(_isLoading ? 'Saving...' : 'Save'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildForm(bool isMobile) {
     return Form(
@@ -374,36 +331,25 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
         contactEmail: _contactEmailController.text.trim(),
         contactNumber: _contactNumberController.text.trim(),
         clientKey: int.parse(widget.clientId),
+        isDeleted: false, // New agents are not deleted
       );
 
       if (widget.agent == null) {
         // Add new agent
         await ref.read(agentsNotifierProvider(widget.clientId).notifier)
             .addAgent(agent);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Agent added successfully!'),
-              backgroundColor: ChoiceLuxTheme.successColor,
-            ),
-          );
-        }
       } else {
         // Update existing agent
         await ref.read(agentsNotifierProvider(widget.clientId).notifier)
             .updateAgent(agent);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Agent updated successfully!'),
-              backgroundColor: ChoiceLuxTheme.successColor,
-            ),
-          );
-        }
       }
 
+      // Force a refresh to ensure the UI updates with the latest data
+      await ref.read(agentsNotifierProvider(widget.clientId).notifier).refresh();
+
+      // Navigate back immediately after successful operation
       if (mounted) {
-        context.go('/clients/${widget.clientId}');
+        Navigator.pop(context);
       }
     } catch (error) {
       if (mounted) {

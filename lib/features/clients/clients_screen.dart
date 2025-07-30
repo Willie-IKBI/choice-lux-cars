@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import '../../shared/widgets/simple_app_bar.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -31,6 +32,36 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         : ref.watch(clientSearchProvider(_searchQuery));
 
     return Scaffold(
+      appBar: SimpleAppBar(
+        title: 'Clients',
+        subtitle: 'Manage your clients',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        actions: [
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.archive_rounded,
+                color: ChoiceLuxTheme.richGold,
+                size: 20,
+              ),
+            ),
+            onPressed: () {
+              context.go('/clients/inactive');
+            },
+            tooltip: 'View Inactive Clients',
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           context.go('/clients/add');
@@ -48,41 +79,6 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // App Bar
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                      onPressed: () => context.go('/'),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Clients',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.archive,
-                        color: ChoiceLuxTheme.platinumSilver,
-                      ),
-                      onPressed: () {
-                        context.go('/clients/inactive');
-                      },
-                      tooltip: 'View Inactive Clients',
-                    ),
-                  ],
-                ),
-              ),
 
               // Search Bar with Filter
               Padding(

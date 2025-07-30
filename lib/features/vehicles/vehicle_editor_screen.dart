@@ -4,6 +4,7 @@ import 'models/vehicle.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
+import '../../shared/widgets/simple_app_bar.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -41,7 +42,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     model = v?.model ?? '';
     regPlate = v?.regPlate ?? '';
     fuelType = v?.fuelType ?? 'Petrol';
-    status = v?.status ?? 'active';
+            status = v?.status ?? 'Active';
     regDate = v?.regDate ?? DateTime.now();
     licenseExpiryDate = v?.licenseExpiryDate ?? DateTime.now();
     vehicleImage = v?.vehicleImage;
@@ -181,7 +182,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   }
 
   Widget _buildStatusChip(String status) {
-    final isActive = status == 'active';
+    final isActive = status == 'Active';
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
@@ -484,12 +485,12 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               ),
               const SizedBox(height: fieldSpacing),
               DropdownButtonFormField<String>(
-                value: ['active', 'deactive'].contains(status) ? status : 'active',
+                value: ['Active', 'Deactivated'].contains(status) ? status : 'Active',
                 items: const [
-                  DropdownMenuItem(value: 'active', child: Text('Active')),
-                  DropdownMenuItem(value: 'deactive', child: Text('Deactivated')),
+                  DropdownMenuItem(value: 'Active', child: Text('Active')),
+                  DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
                 ],
-                onChanged: (v) => setState(() => status = v ?? 'active'),
+                onChanged: (v) => setState(() => status = v ?? 'Active'),
                 decoration: const InputDecoration(
                   labelText: 'Status',
                   hintText: 'Select status',
@@ -517,12 +518,12 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['active', 'deactive'].contains(status) ? status : 'active',
+                      value: ['Active', 'Deactivated'].contains(status) ? status : 'Active',
                       items: const [
-                        DropdownMenuItem(value: 'active', child: Text('Active')),
-                        DropdownMenuItem(value: 'deactive', child: Text('Deactivated')),
+                        DropdownMenuItem(value: 'Active', child: Text('Active')),
+                        DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
                       ],
-                      onChanged: (v) => setState(() => status = v ?? 'active'),
+                      onChanged: (v) => setState(() => status = v ?? 'Active'),
                       decoration: const InputDecoration(
                         labelText: 'Status',
                         hintText: 'Select status',
@@ -921,17 +922,16 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     } else {
       // Mobile: Full screen
       return Scaffold(
-        appBar: AppBar(
-          title: Row(
-            children: [
-              Expanded(child: _buildPageTitle()),
-              if (isEdit) ...[
-                const SizedBox(width: 8),
-                _buildStatusChip(status),
-              ],
-            ],
-          ),
+        appBar: SimpleAppBar(
+          title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
+          subtitle: isEdit ? 'Update vehicle details' : 'Create new vehicle',
+          showBackButton: true,
+          onBackPressed: () => Navigator.of(context).pop(),
           actions: [
+            if (isEdit) ...[
+              _buildStatusChip(status),
+              const SizedBox(width: 8),
+            ],
           ],
         ),
         body: content,

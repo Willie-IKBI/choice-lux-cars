@@ -23,6 +23,7 @@ import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
+import '../shared/widgets/simple_app_bar.dart';
 
 class ChoiceLuxCarsApp extends ConsumerWidget {
   const ChoiceLuxCarsApp({super.key});
@@ -207,8 +208,11 @@ class ChoiceLuxCarsApp extends ConsumerWidget {
         ),
       ],
       errorBuilder: (context, state) => Scaffold(
-        appBar: AppBar(
-          title: const Text('Page Not Found'),
+        appBar: SimpleAppBar(
+          title: 'Page Not Found',
+          subtitle: 'The requested page could not be found',
+          showBackButton: true,
+          onBackPressed: () => context.go('/'),
         ),
         body: Center(
           child: Column(

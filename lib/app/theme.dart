@@ -55,9 +55,14 @@ class ChoiceLuxTheme {
         elevation: 0,
         centerTitle: false,
         titleTextStyle: TextStyle(
-          fontSize: 20,
+          fontSize: 22,
           fontWeight: FontWeight.w600,
           color: softWhite,
+          letterSpacing: 0.3,
+        ),
+        iconTheme: IconThemeData(
+          color: richGold,
+          size: 24,
         ),
       ),
       cardTheme: const CardThemeData(

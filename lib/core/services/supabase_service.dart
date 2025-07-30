@@ -193,40 +193,58 @@ class SupabaseService {
         .from('agents')
         .select()
         .eq('client_key', clientId)
+        .eq('is_deleted', false) // Only get non-deleted agents
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
 
   Future<Map<String, dynamic>?> getAgent(String agentId) async {
+    try {
+      final response = await supabase
+          .from('agents')
+          .select()
+          .eq('id', int.parse(agentId))
+          .eq('is_deleted', false) // Only get non-deleted agents
+          .single();
+      return response;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>> createAgent(Map<String, dynamic> agentData) async {
+    try {
+      final response = await supabase
+          .from('agents')
+          .insert(agentData)
+          .select()
+          .single();
+      return response;
+    } catch (e) {
+      print('createAgent error: $e');
+      rethrow;
+    }
+  }
+
+  Future<Map<String, dynamic>> updateAgent({
+    required String agentId,
+    required Map<String, dynamic> data,
+  }) async {
     final response = await supabase
         .from('agents')
+        .update(data)
+        .eq('id', int.parse(agentId))
         .select()
-        .eq('id', agentId)
         .single();
     return response;
   }
 
-  Future<void> createAgent(Map<String, dynamic> agentData) async {
-    await supabase
-        .from('agents')
-        .insert(agentData);
-  }
-
-  Future<void> updateAgent({
-    required String agentId,
-    required Map<String, dynamic> data,
-  }) async {
-    await supabase
-        .from('agents')
-        .update(data)
-        .eq('id', agentId);
-  }
-
   Future<void> deleteAgent(String agentId) async {
+    // Soft delete: mark as deleted instead of actually deleting
     await supabase
         .from('agents')
-        .delete()
-        .eq('id', agentId);
+        .update({'is_deleted': true})
+        .eq('id', int.parse(agentId));
   }
 
   // Enhanced client methods
@@ -338,7 +356,9 @@ class SupabaseService {
           .select()
           .order('created_at', ascending: false);
       
-      return (response as List).map((json) => Vehicle.fromJson(json)).toList();
+      final vehicles = (response as List).map((json) => Vehicle.fromJson(json)).toList();
+      
+      return vehicles;
     } catch (e) {
       throw Exception('Failed to fetch vehicles: $e');
     }

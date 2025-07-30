@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/simple_app_bar.dart';
 
 class InvoicesScreen extends StatelessWidget {
   const InvoicesScreen({super.key});
@@ -7,12 +8,11 @@ class InvoicesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Invoices'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+      appBar: SimpleAppBar(
+        title: 'Invoices',
+        subtitle: 'Manage billing',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
       ),
       body: const Center(
         child: Column(

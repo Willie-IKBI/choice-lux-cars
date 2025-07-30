@@ -6,6 +6,7 @@ class Agent {
   final String contactEmail;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final bool isDeleted;
 
   Agent({
     this.id,
@@ -15,6 +16,7 @@ class Agent {
     required this.contactEmail,
     this.createdAt,
     this.updatedAt,
+    this.isDeleted = false,
   });
 
   // Create from JSON
@@ -31,6 +33,7 @@ class Agent {
       updatedAt: json['updated_at'] != null 
           ? DateTime.parse(json['updated_at'] as String)
           : null,
+      isDeleted: json['is_deleted'] as bool? ?? false,
     );
   }
 
@@ -44,6 +47,7 @@ class Agent {
       'contact_email': contactEmail,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
+      'is_deleted': isDeleted,
     };
   }
 
@@ -56,6 +60,7 @@ class Agent {
     String? contactEmail,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? isDeleted,
   }) {
     return Agent(
       id: id ?? this.id,
@@ -65,6 +70,7 @@ class Agent {
       contactEmail: contactEmail ?? this.contactEmail,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      isDeleted: isDeleted ?? this.isDeleted,
     );
   }
 

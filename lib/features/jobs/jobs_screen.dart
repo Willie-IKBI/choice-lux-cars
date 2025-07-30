@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/simple_app_bar.dart';
 
 class JobsScreen extends StatelessWidget {
   const JobsScreen({super.key});
@@ -7,12 +8,11 @@ class JobsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Jobs'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+      appBar: SimpleAppBar(
+        title: 'Jobs',
+        subtitle: 'Manage transport jobs',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
       ),
       body: const Center(
         child: Column(

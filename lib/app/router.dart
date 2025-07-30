@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/login/login_screen.dart';
 import 'package:choice_lux_cars/features/auth/signup/signup_screen.dart';
@@ -9,6 +10,8 @@ import 'package:choice_lux_cars/features/clients/screens/add_edit_client_screen.
 import 'package:choice_lux_cars/features/clients/screens/edit_client_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/client_detail_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
+import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
+import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/inactive_clients_screen.dart';
 import 'package:choice_lux_cars/features/quotes/quotes_screen.dart';
 import 'package:choice_lux_cars/features/jobs/jobs_screen.dart';
@@ -20,6 +23,7 @@ import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
+import '../shared/widgets/simple_app_bar.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/login',
@@ -66,14 +70,6 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/clients/:id',
-      name: 'client_detail',
-      builder: (context, state) {
-        final clientId = state.pathParameters['id']!;
-        return ClientDetailScreen(clientId: clientId);
-      },
-    ),
-    GoRoute(
       path: '/clients/:clientId/agents/add',
       name: 'add_agent',
       builder: (context, state) {
@@ -82,12 +78,11 @@ final GoRouter appRouter = GoRouter(
       },
     ),
     GoRoute(
-      path: '/clients/:clientId/agents/edit/:agentId',
-      name: 'edit_agent',
+      path: '/clients/:id',
+      name: 'client_detail',
       builder: (context, state) {
-        final clientId = state.pathParameters['clientId']!;
-        // TODO: Get agent data and pass to screen
-        return AddEditAgentScreen(clientId: clientId);
+        final clientId = state.pathParameters['id']!;
+        return ClientDetailScreen(clientId: clientId);
       },
     ),
     GoRoute(
@@ -145,8 +140,11 @@ final GoRouter appRouter = GoRouter(
     ),
   ],
   errorBuilder: (context, state) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Page Not Found'),
+    appBar: SimpleAppBar(
+      title: 'Page Not Found',
+      subtitle: 'The requested page could not be found',
+      showBackButton: true,
+      onBackPressed: () => context.go('/'),
     ),
     body: Center(
       child: Column(

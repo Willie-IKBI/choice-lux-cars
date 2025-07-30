@@ -7,6 +7,8 @@ import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
+import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
+import '../../../shared/widgets/simple_app_bar.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -49,9 +51,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   @override
   Widget build(BuildContext context) {
     final clientAsync = ref.watch(clientProvider(widget.clientId));
-    final agentsAsync = ref.watch(agentsByClientProvider(widget.clientId));
+    final agentsAsync = ref.watch(agentsNotifierProvider(widget.clientId));
 
     return Scaffold(
+      appBar: SimpleAppBar(
+        title: 'Client Details',
+        subtitle: 'View and manage client information',
+        showBackButton: true,
+        onBackPressed: () => context.go('/clients'),
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: ChoiceLuxTheme.backgroundGradient,
@@ -63,9 +71,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               
               return Column(
                 children: [
-                  // App Bar
-                  _buildAppBar(isMobile),
-                  
                   // Client Info Header
                   clientAsync.when(
                     data: (client) => client != null 
@@ -98,34 +103,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     );
   }
 
-  Widget _buildAppBar(bool isMobile) {
-    return Container(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
-      child: Row(
-        children: [
-          IconButton(
-            icon: const Icon(
-              Icons.arrow_back,
-              color: ChoiceLuxTheme.softWhite,
-            ),
-            onPressed: () => context.go('/clients'),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Text(
-              'Client Details',
-              style: TextStyle(
-                fontSize: isMobile ? 22 : 26,
-                fontWeight: FontWeight.w800,
-                color: ChoiceLuxTheme.softWhite,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   Widget _buildClientHeader(Client client, bool isMobile) {
     return Container(
@@ -683,7 +661,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               ),
               ElevatedButton.icon(
                 onPressed: () {
-                  context.go('/clients/${widget.clientId}/agents/add');
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => AddEditAgentScreen(
+                        clientId: widget.clientId,
+                        agent: null, // null for new agent
+                      ),
+                    ),
+                  );
                 },
                 icon: const Icon(Icons.add),
                 label: const Text('Add Agent'),
@@ -779,7 +765,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           const SizedBox(height: 16),
           ElevatedButton.icon(
             onPressed: () {
-              context.go('/clients/${widget.clientId}/agents/add');
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddEditAgentScreen(
+                    clientId: widget.clientId,
+                    agent: null, // null for new agent
+                  ),
+                ),
+              );
             },
             icon: const Icon(Icons.add),
             label: const Text('Add Agent'),
@@ -813,7 +807,24 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             );
           },
           onEdit: () {
-            context.go('/clients/${widget.clientId}/agents/edit/${agent.id}');
+            if (agent.id == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('Error: Agent ID is null. Cannot edit this agent.'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+              return;
+            }
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AddEditAgentScreen(
+                  clientId: widget.clientId,
+                  agent: agent,
+                ),
+              ),
+            );
           },
           onDelete: () => _showDeleteAgentDialog(agent),
         );
@@ -921,16 +932,35 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             ),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
+              final scaffoldMessenger = ScaffoldMessenger.of(context);
               Navigator.of(context).pop();
-              ref.read(agentsNotifierProvider(widget.clientId).notifier)
-                  .deleteAgent(agent.id.toString());
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('${agent.agentName} deleted'),
-                  backgroundColor: ChoiceLuxTheme.successColor,
-                ),
-              );
+              try {
+                // Delete the agent and wait for the operation to complete
+                await ref.read(agentsNotifierProvider(widget.clientId).notifier)
+                    .deleteAgent(agent.id.toString());
+                
+                // Force a rebuild by refreshing the agents list
+                await ref.read(agentsNotifierProvider(widget.clientId).notifier).refresh();
+                
+                if (mounted) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('${agent.agentName} deleted successfully'),
+                      backgroundColor: ChoiceLuxTheme.successColor,
+                    ),
+                  );
+                }
+              } catch (error) {
+                if (mounted) {
+                  scaffoldMessenger.showSnackBar(
+                    SnackBar(
+                      content: Text('Failed to delete ${agent.agentName}: ${error.toString()}'),
+                      backgroundColor: ChoiceLuxTheme.errorColor,
+                    ),
+                  );
+                }
+              }
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: ChoiceLuxTheme.errorColor,

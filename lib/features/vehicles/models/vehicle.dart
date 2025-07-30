@@ -34,7 +34,7 @@ class Vehicle {
         regDate: json['reg_date'] != null ? DateTime.parse(json['reg_date']) : DateTime(2000, 1, 1),
         fuelType: json['fuel_type'] as String? ?? '',
         vehicleImage: json['vehicle_image'] as String?,
-        status: json['status'] as String? ?? 'active',
+        status: json['status'] as String? ?? 'Active',
         licenseExpiryDate: json['license_expiry_date'] != null ? DateTime.parse(json['license_expiry_date']) : DateTime(2000, 1, 1),
         createdAt: json['created_at'] != null ? DateTime.parse(json['created_at']) : null,
         updatedAt: json['updated_at'] != null ? DateTime.parse(json['updated_at']) : null,

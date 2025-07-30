@@ -50,7 +50,8 @@ class VehicleCard extends StatelessWidget {
                       children: [
                         // License expiry badge
                         LicenseStatusBadge(expiryDate: vehicle.licenseExpiryDate),
-                        if (vehicle.status == 'deactive') ...[
+
+                        if (_isVehicleInactive(vehicle.status)) ...[
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -117,5 +118,19 @@ class VehicleCard extends StatelessWidget {
         color: Colors.grey[500],
       ),
     );
+  }
+
+  bool _isVehicleInactive(String status) {
+    final lowerStatus = status.toLowerCase();
+    // Check for deactivated status values
+    return lowerStatus == 'deactivated' || 
+           lowerStatus == 'deactive' || 
+           lowerStatus == 'inactive';
+  }
+
+  bool _isVehicleActive(String status) {
+    final lowerStatus = status.toLowerCase();
+    // Check for active status values
+    return lowerStatus == 'active';
   }
 } 

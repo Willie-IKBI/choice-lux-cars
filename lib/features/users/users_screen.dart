@@ -6,6 +6,7 @@ import 'models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import '../../shared/widgets/simple_app_bar.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -53,16 +54,29 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
     return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-          tooltip: 'Back to Dashboard',
-        ),
-        title: const Text('Manage Users'),
+      appBar: SimpleAppBar(
+        title: 'Manage Users',
+        subtitle: 'User administration',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh),
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.refresh_rounded,
+                color: ChoiceLuxTheme.richGold,
+                size: 20,
+              ),
+            ),
             onPressed: () => usersNotifier.fetchUsers(),
             tooltip: 'Refresh',
           ),

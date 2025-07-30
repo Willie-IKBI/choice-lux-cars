@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/simple_app_bar.dart';
+import '../../app/theme.dart';
 
 class QuotesScreen extends StatelessWidget {
   const QuotesScreen({super.key});
@@ -7,12 +9,11 @@ class QuotesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Quotes'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+      appBar: SimpleAppBar(
+        title: 'Quotes',
+        subtitle: 'Manage quotations',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
       ),
       body: const Center(
         child: Column(

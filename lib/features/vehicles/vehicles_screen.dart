@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../vehicles/providers/vehicles_provider.dart';
 import '../vehicles/widgets/vehicle_card.dart';
 import 'package:go_router/go_router.dart';
+import '../../shared/widgets/simple_app_bar.dart';
+import '../../app/theme.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({Key? key}) : super(key: key);
@@ -25,12 +27,33 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     final state = ref.watch(vehiclesProvider);
     final vehicles = state.vehicles.where((v) => v.make.toLowerCase().contains(_search.toLowerCase())).toList();
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Vehicles'),
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
-          onPressed: () => context.go('/'),
-        ),
+      appBar: SimpleAppBar(
+        title: 'Vehicles',
+        subtitle: 'Manage your fleet',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        actions: [
+          IconButton(
+            icon: Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  width: 1,
+                ),
+              ),
+              child: Icon(
+                Icons.refresh_rounded,
+                color: ChoiceLuxTheme.richGold,
+                size: 20,
+              ),
+            ),
+            onPressed: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
+            tooltip: 'Refresh',
+          ),
+        ],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),

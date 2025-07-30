@@ -6,24 +6,30 @@ import 'package:go_router/go_router.dart';
 
 class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   final String title;
+  final String? subtitle;
   final List<Widget>? actions;
   final bool showLogo;
   final bool showProfile;
+  final bool showBackButton;
   final VoidCallback? onProfileTap;
   final VoidCallback? onNotificationTap;
   final VoidCallback? onMenuTap;
   final VoidCallback? onSignOut;
+  final VoidCallback? onBackPressed;
 
   const LuxuryAppBar({
     super.key,
     required this.title,
+    this.subtitle,
     this.actions,
     this.showLogo = true,
     this.showProfile = true,
+    this.showBackButton = false,
     this.onProfileTap,
     this.onNotificationTap,
     this.onMenuTap,
     this.onSignOut,
+    this.onBackPressed,
   });
 
   @override
@@ -41,153 +47,95 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     }
     
     return Container(
-      height: isMobile ? 56 : 64,
+      height: isMobile ? 64 : 72,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.jetBlack.withOpacity(0.98),
-            ChoiceLuxTheme.jetBlack.withOpacity(0.92),
+            ChoiceLuxTheme.jetBlack.withOpacity(0.95),
+            ChoiceLuxTheme.jetBlack.withOpacity(0.90),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+            color: Colors.black.withOpacity(0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+            spreadRadius: 0,
           ),
         ],
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
           child: Row(
             children: [
-              // Menu Button
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(
-                    Icons.menu,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 20,
-                  ),
+              // Back Button or Menu Button
+              if (showBackButton)
+                _buildBackButton(context)
+              else
+                _buildMenuButton(context),
+              
+              const SizedBox(width: 16),
+              
+              // Brand Icon with Enhanced Glow
+              if (showLogo) ...[
+                _buildBrandIcon(),
+                const SizedBox(width: 16),
+              ],
+              
+              // Title Section with Subtitle
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        color: ChoiceLuxTheme.softWhite,
+                        letterSpacing: 0.3,
+                        fontSize: isMobile ? 18 : 22,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (subtitle != null) ...[
+                      const SizedBox(height: 2),
+                      Text(
+                        subtitle!,
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                          fontSize: isMobile ? 12 : 14,
+                          fontWeight: FontWeight.w400,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ],
                 ),
-                onPressed: onMenuTap ?? () {
-                  Scaffold.of(context).openDrawer();
-                },
               ),
               
               const SizedBox(width: 12),
               
-              // Brand Icon with Glow
-              if (showLogo) ...[
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.8),
-                      ],
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                        blurRadius: 8,
-                        spreadRadius: 1,
-                      ),
-                    ],
-                  ),
-                  child: CircleAvatar(
-                    radius: 16,
-                    backgroundColor: ChoiceLuxTheme.jetBlack,
-                    child: Icon(
-                      Icons.directions_car,
-                      color: ChoiceLuxTheme.richGold,
-                      size: 20,
-                    ),
-                  ),
-                ),
+              // Notification Icon with Enhanced Badge
+              if (onNotificationTap != null) ...[
+                _buildNotificationButton(),
                 const SizedBox(width: 12),
               ],
-              
-              // App Title
-              Expanded(
-                child: Text(
-                  title,
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: ChoiceLuxTheme.richGold,
-                    letterSpacing: 0.5,
-                    fontSize: isMobile ? 16 : 20,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              
-              const SizedBox(width: 8),
-              
-              // Notification Icon with Badge
-              if (onNotificationTap != null)
-                Stack(
-                  children: [
-                    IconButton(
-                      icon: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: ChoiceLuxTheme.richGold,
-                          size: 20,
-                        ),
-                      ),
-                      onPressed: onNotificationTap,
-                    ),
-                    // Notification Badge
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.errorColor,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: ChoiceLuxTheme.jetBlack,
-                            width: 1,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              
-              const SizedBox(width: 8),
               
               // User Profile Section
               if (showProfile && currentUser != null) ...[
                 if (isMobile)
-                  // Mobile: Icon-only with popup menu
                   _buildMobileUserMenu(context, displayName, userProfile)
                 else
-                  // Desktop: Full user chip with popup menu
                   _buildDesktopUserMenu(context, displayName, userProfile),
+                const SizedBox(width: 8),
               ],
               
               // Custom Actions
               if (actions != null) ...[
-                const SizedBox(width: 8),
                 ...actions!,
               ],
             ],
@@ -197,48 +145,193 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
+  Widget _buildBackButton(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.arrow_back_ios_new_rounded,
+          color: ChoiceLuxTheme.richGold,
+          size: 20,
+        ),
+        onPressed: onBackPressed ?? () => context.pop(),
+        style: IconButton.styleFrom(
+          padding: const EdgeInsets.all(8),
+          minimumSize: const Size(40, 40),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMenuButton(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: IconButton(
+        icon: Icon(
+          Icons.menu_rounded,
+          color: ChoiceLuxTheme.richGold,
+          size: 20,
+        ),
+        onPressed: onMenuTap ?? () {
+          Scaffold.of(context).openDrawer();
+        },
+        style: IconButton.styleFrom(
+          padding: const EdgeInsets.all(8),
+          minimumSize: const Size(40, 40),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBrandIcon() {
+    return Container(
+      padding: const EdgeInsets.all(3),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            ChoiceLuxTheme.richGold,
+            ChoiceLuxTheme.richGold.withOpacity(0.8),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.25),
+            blurRadius: 12,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+      child: CircleAvatar(
+        radius: 18,
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        child: Icon(
+          Icons.directions_car_rounded,
+          color: ChoiceLuxTheme.richGold,
+          size: 22,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNotificationButton() {
+    return Stack(
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: IconButton(
+            icon: Icon(
+              Icons.notifications_outlined,
+              color: ChoiceLuxTheme.richGold,
+              size: 20,
+            ),
+            onPressed: onNotificationTap,
+            style: IconButton.styleFrom(
+              padding: const EdgeInsets.all(8),
+              minimumSize: const Size(40, 40),
+            ),
+          ),
+        ),
+        // Enhanced Notification Badge
+        Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.errorColor,
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: ChoiceLuxTheme.jetBlack,
+                width: 1.5,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: ChoiceLuxTheme.errorColor.withOpacity(0.5),
+                  blurRadius: 4,
+                  spreadRadius: 1,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildMobileUserMenu(BuildContext context, String displayName, userProfile) {
     // Hide profile menu for unassigned users
     if (userProfile?.role == null || userProfile!.role == 'unassigned') {
-      return Container(); // Return empty container for unassigned users
+      return Container();
     }
     
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       color: ChoiceLuxTheme.charcoalGray,
+      elevation: 8,
       child: Container(
-        padding: const EdgeInsets.all(6),
+        padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            width: 1,
+          ),
         ),
         child: Stack(
           children: [
             Icon(
-              Icons.person,
+              Icons.person_rounded,
               color: ChoiceLuxTheme.richGold,
-              size: 18,
+              size: 20,
             ),
-            // Show first letter of name as overlay
+            // Enhanced user indicator
             Positioned(
               right: 0,
               bottom: 0,
               child: Container(
-                width: 8,
-                height: 8,
+                width: 10,
+                height: 10,
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.richGold,
                   shape: BoxShape.circle,
+                  border: Border.all(
+                    color: ChoiceLuxTheme.jetBlack,
+                    width: 1.5,
+                  ),
                 ),
                 child: Center(
                   child: Text(
                     displayName.substring(0, 1).toUpperCase(),
                     style: TextStyle(
                       color: ChoiceLuxTheme.jetBlack,
-                      fontSize: 6,
+                      fontSize: 7,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -249,11 +342,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         ),
       ),
       itemBuilder: (context) => [
-        // User Info Header
+        // Enhanced User Info Header
         PopupMenuItem<String>(
           enabled: false,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
                 // Enhanced Avatar with Gold Ring
@@ -269,19 +362,19 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                   child: CircleAvatar(
-                    radius: 16,
+                    radius: 18,
                     backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
                     child: Text(
                       displayName.substring(0, 1).toUpperCase(),
                       style: TextStyle(
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.w700,
-                        fontSize: 14,
+                        fontSize: 16,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -291,19 +384,21 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         style: TextStyle(
                           color: ChoiceLuxTheme.softWhite,
                           fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          fontSize: 16,
                         ),
                       ),
-                      if (userProfile?.role != null)
+                      if (userProfile?.role != null) ...[
+                        const SizedBox(height: 2),
                         Text(
                           userProfile!.role!.toUpperCase(),
                           style: TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
-                            fontSize: 10,
-                            letterSpacing: 0.5,
+                            fontSize: 11,
+                            letterSpacing: 0.8,
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -311,10 +406,10 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
           ),
         ),
-        const PopupMenuDivider(),
-        // Menu Items
+        const PopupMenuDivider(height: 1),
+        // Enhanced Menu Items
         _buildPopupMenuItem(
-          icon: Icons.person_outline,
+          icon: Icons.person_outline_rounded,
           title: 'Profile',
           onTap: () {
             context.go('/user-profile');
@@ -327,9 +422,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             print('Navigate to Settings');
           },
         ),
-        const PopupMenuDivider(),
+        const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
-          icon: Icons.logout,
+          icon: Icons.logout_rounded,
           title: 'Sign Out',
           isDestructive: true,
           onTap: () async {
@@ -343,20 +438,21 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _buildDesktopUserMenu(BuildContext context, String displayName, userProfile) {
     // Hide profile menu for unassigned users
     if (userProfile?.role == null || userProfile!.role == 'unassigned') {
-      return Container(); // Return empty container for unassigned users
+      return Container();
     }
     
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(16),
       ),
       color: ChoiceLuxTheme.charcoalGray,
+      elevation: 8,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
           color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(20),
+          borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: ChoiceLuxTheme.richGold.withOpacity(0.3),
             width: 1,
@@ -378,42 +474,42 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ),
               child: CircleAvatar(
-                radius: 14,
+                radius: 16,
                 backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
                 child: Text(
                   displayName.substring(0, 1).toUpperCase(),
                   style: TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w700,
-                    fontSize: 12,
+                    fontSize: 14,
                   ),
                 ),
               ),
             ),
-            const SizedBox(width: 8),
+            const SizedBox(width: 12),
             Text(
               displayName,
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
                 fontWeight: FontWeight.w500,
-                fontSize: 14,
+                fontSize: 15,
               ),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 8),
             Icon(
-              Icons.keyboard_arrow_down,
+              Icons.keyboard_arrow_down_rounded,
               color: ChoiceLuxTheme.richGold,
-              size: 16,
+              size: 18,
             ),
           ],
         ),
       ),
       itemBuilder: (context) => [
-        // User Info Header
+        // Enhanced User Info Header
         PopupMenuItem<String>(
           enabled: false,
           child: Container(
-            padding: const EdgeInsets.symmetric(vertical: 8),
+            padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
                 // Enhanced Avatar with Gold Ring
@@ -429,19 +525,19 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     ),
                   ),
                   child: CircleAvatar(
-                    radius: 20,
+                    radius: 22,
                     backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
                     child: Text(
                       displayName.substring(0, 1).toUpperCase(),
                       style: TextStyle(
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.w700,
-                        fontSize: 16,
+                        fontSize: 18,
                       ),
                     ),
                   ),
                 ),
-                const SizedBox(width: 12),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -451,19 +547,21 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         style: TextStyle(
                           color: ChoiceLuxTheme.softWhite,
                           fontWeight: FontWeight.w600,
-                          fontSize: 16,
+                          fontSize: 18,
                         ),
                       ),
-                      if (userProfile?.role != null)
+                      if (userProfile?.role != null) ...[
+                        const SizedBox(height: 2),
                         Text(
                           userProfile!.role!.toUpperCase(),
                           style: TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
-                            fontSize: 12,
-                            letterSpacing: 0.5,
+                            fontSize: 13,
+                            letterSpacing: 0.8,
                           ),
                         ),
+                      ],
                     ],
                   ),
                 ),
@@ -471,10 +569,10 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ),
           ),
         ),
-        const PopupMenuDivider(),
-        // Menu Items
+        const PopupMenuDivider(height: 1),
+        // Enhanced Menu Items
         _buildPopupMenuItem(
-          icon: Icons.person_outline,
+          icon: Icons.person_outline_rounded,
           title: 'Profile',
           onTap: () {
             context.go('/user-profile');
@@ -487,9 +585,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             print('Navigate to Settings');
           },
         ),
-        const PopupMenuDivider(),
+        const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
-          icon: Icons.logout,
+          icon: Icons.logout_rounded,
           title: 'Sign Out',
           isDestructive: true,
           onTap: () async {
@@ -509,27 +607,30 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     return PopupMenuItem<String>(
       value: title,
       onTap: onTap,
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            color: isDestructive 
-                ? ChoiceLuxTheme.errorColor 
-                : ChoiceLuxTheme.richGold,
-            size: 20,
-          ),
-          const SizedBox(width: 12),
-          Text(
-            title,
-            style: TextStyle(
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          children: [
+            Icon(
+              icon,
               color: isDestructive 
                   ? ChoiceLuxTheme.errorColor 
-                  : ChoiceLuxTheme.softWhite,
-              fontWeight: FontWeight.w500,
-              fontSize: 14,
+                  : ChoiceLuxTheme.richGold,
+              size: 22,
             ),
-          ),
-        ],
+            const SizedBox(width: 16),
+            Text(
+              title,
+              style: TextStyle(
+                color: isDestructive 
+                    ? ChoiceLuxTheme.errorColor 
+                    : ChoiceLuxTheme.softWhite,
+                fontWeight: FontWeight.w500,
+                fontSize: 15,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -541,21 +642,29 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         return AlertDialog(
           backgroundColor: ChoiceLuxTheme.charcoalGray,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(20),
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.logout,
-                color: ChoiceLuxTheme.errorColor,
-                size: 24,
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.logout_rounded,
+                  color: ChoiceLuxTheme.errorColor,
+                  size: 24,
+                ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 16),
               Text(
                 'Sign Out',
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
                   fontWeight: FontWeight.w600,
+                  fontSize: 20,
                 ),
               ),
             ],
@@ -575,6 +684,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 style: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,
                   fontWeight: FontWeight.w500,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -583,14 +693,17 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               style: ElevatedButton.styleFrom(
                 backgroundColor: ChoiceLuxTheme.errorColor,
                 foregroundColor: Colors.white,
+                elevation: 2,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+                  borderRadius: BorderRadius.circular(12),
                 ),
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
               ),
               child: const Text(
                 'Sign Out',
                 style: TextStyle(
                   fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
             ),
@@ -605,5 +718,5 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   @override
-  Size get preferredSize => const Size.fromHeight(64);
+  Size get preferredSize => const Size.fromHeight(72);
 } 
