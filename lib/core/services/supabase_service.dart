@@ -311,7 +311,25 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getJobs() async {
     final response = await supabase
         .from('jobs')
-        .select('*, quotes(*), clients(*), vehicles(*)')
+        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getJobsByDriver(String driverId) async {
+    final response = await supabase
+        .from('jobs')
+        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .eq('driver_id', driverId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<List<Map<String, dynamic>>> getJobsByDriverManager(String driverManagerId) async {
+    final response = await supabase
+        .from('jobs')
+        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .or('created_by.eq.$driverManagerId,driver_id.eq.$driverManagerId')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
@@ -319,7 +337,7 @@ class SupabaseService {
   Future<Map<String, dynamic>?> getJob(String jobId) async {
     final response = await supabase
         .from('jobs')
-        .select('*, quotes(*), clients(*), vehicles(*)')
+        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
         .eq('id', jobId)
         .single();
     return response;
@@ -346,6 +364,48 @@ class SupabaseService {
         .from('jobs')
         .delete()
         .eq('id', jobId);
+  }
+
+  // Trip methods
+  Future<List<Map<String, dynamic>>> getTripsByJob(String jobId) async {
+    final response = await supabase
+        .from('trips')
+        .select('*')
+        .eq('job_id', jobId)
+        .order('trip_date_time', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<Map<String, dynamic>?> getTrip(String tripId) async {
+    final response = await supabase
+        .from('trips')
+        .select('*')
+        .eq('id', tripId)
+        .single();
+    return response;
+  }
+
+  Future<void> createTrip(Map<String, dynamic> tripData) async {
+    await supabase
+        .from('trips')
+        .insert(tripData);
+  }
+
+  Future<void> updateTrip({
+    required String tripId,
+    required Map<String, dynamic> data,
+  }) async {
+    await supabase
+        .from('trips')
+        .update(data)
+        .eq('id', tripId);
+  }
+
+  Future<void> deleteTrip(String tripId) async {
+    await supabase
+        .from('trips')
+        .delete()
+        .eq('id', tripId);
   }
 
   // Vehicle CRUD operations
