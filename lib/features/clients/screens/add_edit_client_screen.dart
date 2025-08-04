@@ -63,7 +63,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         title: isEditMode ? 'Edit Client' : 'Add Client',
         subtitle: isEditMode ? 'Update client details' : 'Create new client',
         showBackButton: true,
-        onBackPressed: () => context.pop(),
+        onBackPressed: () => context.go('/clients'),
       ),
       body: Container(
         decoration: const BoxDecoration(
@@ -215,6 +215,37 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               ),
             ),
           ],
+          
+          // Save Button (Desktop)
+          if (!isMobile) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: _isLoading ? null : _saveClient,
+                  icon: _isLoading
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            color: Colors.black,
+                          ),
+                        )
+                      : const Icon(Icons.save),
+                  label: Text(_isLoading ? 'Saving...' : 'Save Client'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ],
       ),
     );
@@ -224,71 +255,77 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     return Center(
       child: Column(
         children: [
-                     // Logo Display/Upload
-           GestureDetector(
-             onTap: _isLogoUploading ? null : _uploadLogo,
-             child: Container(
-               width: isMobile ? 100 : 120,
-               height: isMobile ? 100 : 120,
-               decoration: BoxDecoration(
-                 borderRadius: BorderRadius.circular(16),
-                 color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                 border: Border.all(
-                   color: _isLogoUploading 
-                       ? ChoiceLuxTheme.richGold.withOpacity(0.6)
-                       : ChoiceLuxTheme.richGold.withOpacity(0.3),
-                   width: _isLogoUploading ? 3 : 2,
-                 ),
-               ),
-               child: _isLogoUploading
-                   ? Center(
-                       child: Column(
-                         mainAxisAlignment: MainAxisAlignment.center,
-                         children: [
-                           const CircularProgressIndicator(
-                             color: ChoiceLuxTheme.richGold,
-                             strokeWidth: 2,
-                           ),
-                           const SizedBox(height: 8),
-                           Text(
-                             'Uploading...',
-                             style: TextStyle(
-                               color: ChoiceLuxTheme.richGold,
-                               fontSize: isMobile ? 10 : 12,
-                               fontWeight: FontWeight.w500,
-                             ),
-                           ),
-                         ],
-                       ),
-                     )
-                   : _companyLogoUrl != null
-                       ? ClipRRect(
-                           borderRadius: BorderRadius.circular(14),
-                           child: Image.network(
-                             _companyLogoUrl!,
-                             fit: BoxFit.cover,
-                             errorBuilder: (context, error, stackTrace) =>
-                                 _buildLogoPlaceholder(),
-                           ),
-                         )
-                       : _buildLogoPlaceholder(),
-             ),
-           ),
+          // Logo Display/Upload
+          GestureDetector(
+            onTap: _isLogoUploading ? null : _uploadLogo,
+            child: Container(
+              width: isMobile ? 120 : 150,
+              height: isMobile ? 120 : 150,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                border: Border.all(
+                  color: _isLogoUploading 
+                      ? ChoiceLuxTheme.richGold.withOpacity(0.6)
+                      : ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  width: _isLogoUploading ? 3 : 2,
+                ),
+              ),
+              child: _isLogoUploading
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const CircularProgressIndicator(
+                            color: ChoiceLuxTheme.richGold,
+                            strokeWidth: 2,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            'Uploading...',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.richGold,
+                              fontSize: isMobile ? 10 : 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    )
+                  : _companyLogoUrl != null
+                      ? ClipRRect(
+                          borderRadius: BorderRadius.circular(14),
+                          child: Container(
+                            width: double.infinity,
+                            height: double.infinity,
+                            child: Image.network(
+                              _companyLogoUrl!,
+                              fit: BoxFit.contain,
+                              width: double.infinity,
+                              height: double.infinity,
+                              errorBuilder: (context, error, stackTrace) =>
+                                  _buildLogoPlaceholder(),
+                            ),
+                          ),
+                        )
+                      : _buildLogoPlaceholder(),
+            ),
+          ),
           const SizedBox(height: 12),
-                     Text(
-             _isLogoUploading 
-                 ? 'Uploading logo...'
-                 : _companyLogoUrl != null 
-                     ? 'Tap to change logo'
-                     : 'Tap to upload company logo',
-             style: TextStyle(
-               color: _isLogoUploading 
-                   ? ChoiceLuxTheme.richGold
-                   : ChoiceLuxTheme.platinumSilver,
-               fontSize: isMobile ? 12 : 14,
-               fontWeight: _isLogoUploading ? FontWeight.w500 : FontWeight.normal,
-             ),
-           ),
+          Text(
+            _isLogoUploading 
+                ? 'Uploading logo...'
+                : _companyLogoUrl != null 
+                    ? 'Tap to change logo'
+                    : 'Tap to upload company logo',
+            style: TextStyle(
+              color: _isLogoUploading 
+                  ? ChoiceLuxTheme.richGold
+                  : ChoiceLuxTheme.platinumSilver,
+              fontSize: isMobile ? 12 : 14,
+              fontWeight: _isLogoUploading ? FontWeight.w500 : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
