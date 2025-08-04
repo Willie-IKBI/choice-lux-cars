@@ -13,15 +13,27 @@ class JobCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return DashboardCard(
-      title: _buildTitle(),
-      subtitle: _buildSubtitle(),
-      icon: Icons.work,
-      color: _getStatusColor(),
-      badge: _buildBadge(),
-      onTap: () {
-        // Navigation will be handled by parent
-      },
+    return Card(
+      margin: const EdgeInsets.all(8),
+      elevation: 4,
+      child: InkWell(
+        onTap: () {
+          // Navigation will be handled by parent
+        },
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _buildTitle(),
+              const SizedBox(height: 8),
+              _buildSubtitle(),
+              const SizedBox(height: 8),
+              _buildStatusRow(),
+            ],
+          ),
+        ),
+      ),
     );
   }
 
@@ -172,25 +184,43 @@ class JobCard extends StatelessWidget {
     );
   }
 
-  Widget? _buildBadge() {
-    if (!job.hasCompletePassengerDetails) {
-      return Container(
-        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-        decoration: BoxDecoration(
-          color: ChoiceLuxTheme.errorColor,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: const Text(
-          '!',
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 10,
-            fontWeight: FontWeight.bold,
+  Widget _buildStatusRow() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+          decoration: BoxDecoration(
+            color: _getStatusColor().withOpacity(0.2),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            _getStatusText(),
+            style: TextStyle(
+              color: _getStatusColor(),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ),
-      );
-    }
-    return null;
+        const Spacer(),
+        if (!job.hasCompletePassengerDetails)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.errorColor,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Text(
+              '!',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+      ],
+    );
   }
 
   Color _getStatusColor() {

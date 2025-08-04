@@ -179,11 +179,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
                     ),
                   )
                 : ResponsiveGrid(
-                    items: paginatedJobs.map((job) => JobCard(job: job)).toList(),
-                    onItemTap: (index) {
-                      final job = paginatedJobs[index];
-                      context.go('/jobs/${job.id}');
-                    },
+                    children: paginatedJobs.map((job) => JobCard(job: job)).toList(),
                   ),
           ),
 
@@ -192,6 +188,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
             PaginationWidget(
               currentPage: _currentPage,
               totalPages: totalPages,
+              totalItems: filteredJobs.length,
+              itemsPerPage: _itemsPerPage,
               onPageChanged: (page) {
                 setState(() {
                   _currentPage = page;
