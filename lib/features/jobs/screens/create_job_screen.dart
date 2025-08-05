@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
+import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
@@ -28,13 +29,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   final _luggageCountController = TextEditingController();
   final _notesController = TextEditingController();
   final _paymentAmountController = TextEditingController();
+  final _clientSearchController = TextEditingController();
   
   // Form values
   String? _selectedClientId;
   String? _selectedAgentId;
-  String? _selectedBranch;
   String? _selectedVehicleId;
   String? _selectedDriverId;
+  String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
   DateTime? _selectedJobStartDate;
   bool _collectPayment = false;
   
@@ -42,15 +44,31 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   bool _isLoading = false;
   bool _isSubmitting = false;
   
-  // Filtered lists
-  List<dynamic> _filteredClients = [];
-  List<dynamic> _filteredAgents = [];
-  List<dynamic> _filteredVehicles = [];
-  List<dynamic> _filteredDrivers = [];
+  // Search states
+  String _clientSearchQuery = '';
+  bool _showClientDropdown = false;
+
+  // Calculate completion percentage
+  double get _completionPercentage {
+    int completedFields = 0;
+    int totalRequiredFields = 7; // client, vehicle, driver, location, date, passenger count, luggage count
+    
+    // Required fields
+    if (_selectedClientId != null) completedFields++;
+    if (_selectedVehicleId != null) completedFields++;
+    if (_selectedDriverId != null) completedFields++;
+    if (_selectedLocation != null) completedFields++;
+    if (_selectedJobStartDate != null) completedFields++;
+    if (_pasCountController.text.isNotEmpty) completedFields++;
+    if (_luggageCountController.text.isNotEmpty) completedFields++;
+    
+    return (completedFields / totalRequiredFields) * 100;
+  }
   
   @override
   void initState() {
     super.initState();
+    print('CreateJobScreen initialized');
     _loadData();
   }
   
@@ -62,6 +80,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     _luggageCountController.dispose();
     _notesController.dispose();
     _paymentAmountController.dispose();
+    _clientSearchController.dispose();
     super.dispose();
   }
   
@@ -69,18 +88,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Load all data
-      await Future.wait([
-        ref.read(clientsProvider.notifier).fetchClients(),
-        ref.read(vehiclesProvider.notifier).fetchVehicles(),
-        ref.read(usersProvider.notifier).fetchUsers(),
-      ]);
-      
-      _filteredClients = ref.read(clientsProvider);
-      _filteredVehicles = ref.read(vehiclesProvider);
-      _filteredDrivers = ref.read(usersProvider)
-          .where((user) => user.role?.toLowerCase() == 'driver')
-          .toList();
+      await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading data: $e')),
@@ -93,23 +101,30 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   void _onClientChanged(String? clientId) {
     setState(() {
       _selectedClientId = clientId;
-      _selectedAgentId = null; // Reset agent when client changes
-      
-      if (clientId != null) {
-        final client = ref.read(clientsProvider).firstWhere((c) => c.id == clientId);
-        _filteredAgents = client.agents ?? [];
-      } else {
-        _filteredAgents = [];
-      }
+      _selectedAgentId = null;
+      _showClientDropdown = false;
     });
   }
   
   Future<void> _selectJobStartDate() async {
     final picked = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
+      initialDate: _selectedJobStartDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: ChoiceLuxTheme.richGold,
+              onPrimary: Colors.black,
+              surface: ChoiceLuxTheme.charcoalGray,
+              onSurface: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     
     if (picked != null) {
@@ -129,10 +144,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       if (currentUser == null) throw Exception('User not authenticated');
       
       final job = Job(
-        id: const Uuid().v4(),
+        id: '', // Let database auto-generate the ID
         clientId: _selectedClientId!,
         agentId: _selectedAgentId,
-        branch: _selectedBranch!,
         vehicleId: _selectedVehicleId!,
         driverId: _selectedDriverId!,
         jobStartDate: _selectedJobStartDate!,
@@ -143,32 +157,38 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         passengerContact: _passengerContactController.text.trim().isEmpty 
             ? null 
             : _passengerContactController.text.trim(),
-        pasCount: int.parse(_pasCountController.text),
-        luggageCount: int.parse(_luggageCountController.text),
+        pasCount: double.parse(_pasCountController.text),
+        luggageCount: _luggageCountController.text,
         notes: _notesController.text.trim().isEmpty 
             ? null 
             : _notesController.text.trim(),
         collectPayment: _collectPayment,
-        paymentAmount: _collectPayment && _paymentAmountController.text.isNotEmpty
-            ? double.parse(_paymentAmountController.text)
-            : null,
+        paymentAmount: null, // Amount will be completed later in transport details
         status: 'open',
+        location: _selectedLocation,
         createdBy: currentUser.id,
         createdAt: DateTime.now(),
       );
       
-      await ref.read(jobsProvider.notifier).createJob(job);
+      final createdJob = await ref.read(jobsProvider.notifier).createJob(job);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Job created successfully!')),
+          const SnackBar(
+            content: Text('Job created successfully! Moving to transport details...'),
+            backgroundColor: ChoiceLuxTheme.successColor,
+          ),
         );
-        context.go('/jobs'); // Navigate to jobs list
+        // Navigate to trip management screen for Step 2
+        context.go('/jobs/${createdJob['id']}/trip-management');
       }
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error creating job: $e')),
+          SnackBar(
+            content: Text('Error creating job: $e'),
+            backgroundColor: ChoiceLuxTheme.errorColor,
+          ),
         );
       }
     } finally {
@@ -179,6 +199,16 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calculate responsive max width based on screen size
+    double getMaxWidth() {
+      if (screenWidth < 768) return screenWidth - 32; // Mobile: full width minus padding
+      if (screenWidth < 1024) return 800; // Tablet: 800px max
+      if (screenWidth < 1440) return 1000; // Medium desktop: 1000px max
+      if (screenWidth < 1920) return 1200; // Large desktop: 1200px max
+      return 1400; // Extra large: 1400px max
+    }
     
     return Scaffold(
       appBar: SimpleAppBar(
@@ -187,226 +217,682 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         showBackButton: true,
         onBackPressed: () => context.go('/jobs'),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Form(
-              key: _formKey,
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.all(24),
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildSection('Client & Agent Selection', [
-                        _buildClientDropdown(),
-                        const SizedBox(height: 16),
-                        _buildAgentDropdown(),
-                      ]),
-                      
-                      const SizedBox(height: 32),
-                      
-                      _buildSection('Job Details', [
-                        _buildBranchDropdown(),
-                        const SizedBox(height: 16),
-                        _buildVehicleDropdown(),
-                        const SizedBox(height: 16),
-                        _buildDriverDropdown(),
-                        const SizedBox(height: 16),
-                        _buildJobStartDatePicker(),
-                      ]),
-                      
-                      const SizedBox(height: 32),
-                      
-                      _buildSection('Passenger Details', [
-                        _buildTextField(
-                          controller: _passengerNameController,
-                          label: 'Passenger Name',
-                          hint: 'Enter passenger name (optional)',
-                          icon: Icons.person,
-                        ),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _passengerContactController,
-                          label: 'Contact Number',
-                          hint: 'Enter contact number (optional)',
-                          icon: Icons.phone,
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _pasCountController,
-                                label: 'Number of Passengers',
-                                hint: 'Enter passenger count',
-                                icon: Icons.people,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter passenger count';
-                                  }
-                                  if (int.tryParse(value) == null || int.parse(value) <= 0) {
-                                    return 'Please enter a valid number';
-                                  }
-                                  return null;
-                                },
+      body: Consumer(
+        builder: (context, ref, child) {
+          final clientsAsync = ref.watch(clientsProvider);
+          final vehiclesState = ref.watch(vehiclesProvider);
+          final users = ref.watch(usersProvider);
+          
+          if (vehiclesState.isLoading || users.isEmpty) {
+            return const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+              ),
+            );
+          }
+          
+          if (vehiclesState.error != null) {
+            return Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
+                  const SizedBox(height: 16),
+                  Text('Error loading vehicles: ${vehiclesState.error}'),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            );
+          }
+          
+          return clientsAsync.when(
+            data: (clients) {
+              final vehicles = vehiclesState.vehicles;
+              final allUsers = users.toList(); // Show all users regardless of role
+              
+              return Form(
+                key: _formKey,
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.all(isMobile ? 16 : 24),
+                  child: Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: getMaxWidth()),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Progress indicator
+                          _buildProgressIndicator(),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Client & Agent Selection
+                          _buildFormSection(
+                            title: 'Client & Agent Selection',
+                            icon: Icons.business,
+                            children: [
+                              _buildSearchableClientDropdown(clients),
+                              const SizedBox(height: 20),
+                              _buildAgentDropdown(),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Job Details
+                          _buildFormSection(
+                            title: 'Job Details',
+                            icon: Icons.work,
+                            children: [
+                              _buildVehicleDropdown(vehicles),
+                              const SizedBox(height: 20),
+                              _buildDriverDropdown(allUsers),
+                              const SizedBox(height: 20),
+                              _buildLocationDropdown(),
+                              const SizedBox(height: 20),
+                              _buildJobStartDatePicker(),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Passenger Details
+                          _buildFormSection(
+                            title: 'Passenger Details',
+                            icon: Icons.people,
+                            children: [
+                              _buildTextField(
+                                controller: _passengerNameController,
+                                label: 'Passenger Name',
+                                hint: 'Enter passenger name (optional)',
+                                icon: Icons.person,
+                                isRequired: false,
                               ),
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildTextField(
-                                controller: _luggageCountController,
-                                label: 'Number of Bags',
-                                hint: 'Enter luggage count',
-                                icon: Icons.work,
-                                keyboardType: TextInputType.number,
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter luggage count';
-                                  }
-                                  if (int.tryParse(value) == null || int.parse(value) < 0) {
-                                    return 'Please enter a valid number';
-                                  }
-                                  return null;
-                                },
+                              const SizedBox(height: 20),
+                              _buildTextField(
+                                controller: _passengerContactController,
+                                label: 'Contact Number',
+                                hint: 'Enter contact number (optional)',
+                                icon: Icons.phone,
+                                isRequired: false,
+                                keyboardType: TextInputType.phone,
                               ),
-                            ),
-                          ],
-                        ),
-                      ]),
-                      
-                      const SizedBox(height: 32),
-                      
-                      _buildSection('Payment & Notes', [
-                        _buildPaymentSection(),
-                        const SizedBox(height: 16),
-                        _buildTextField(
-                          controller: _notesController,
-                          label: 'Notes',
-                          hint: 'Enter flight details and other relevant information',
-                          icon: Icons.note,
-                          maxLines: 3,
-                        ),
-                      ]),
-                      
-                      const SizedBox(height: 32),
-                      
-                      _buildActionButtons(isMobile),
-                    ],
+                              const SizedBox(height: 20),
+                              isMobile
+                                  ? Column(
+                                      children: [
+                                        _buildTextField(
+                                          controller: _pasCountController,
+                                          label: 'Number of Passengers',
+                                          hint: 'e.g. 2',
+                                          icon: Icons.people,
+                                          keyboardType: TextInputType.number,
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter passenger count';
+                                            }
+                                            if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                                              return 'Please enter a valid number';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                        const SizedBox(height: 20),
+                                        _buildTextField(
+                                          controller: _luggageCountController,
+                                          label: 'Number of Bags',
+                                          hint: 'e.g. 3',
+                                          icon: Icons.work,
+                                          keyboardType: TextInputType.number,
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter luggage count';
+                                            }
+                                            return null;
+                                          },
+                                        ),
+                                      ],
+                                    )
+                                  : Row(
+                                      children: [
+                                        Expanded(
+                                          child: _buildTextField(
+                                            controller: _pasCountController,
+                                            label: 'Number of Passengers',
+                                            hint: 'e.g. 2',
+                                            icon: Icons.people,
+                                            keyboardType: TextInputType.number,
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return 'Please enter passenger count';
+                                              }
+                                              if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                                                return 'Please enter a valid number';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                        const SizedBox(width: 20),
+                                        Expanded(
+                                          child: _buildTextField(
+                                            controller: _luggageCountController,
+                                            label: 'Number of Bags',
+                                            hint: 'e.g. 3',
+                                            icon: Icons.work,
+                                            keyboardType: TextInputType.number,
+                                            validator: (value) {
+                                              if (value == null || value.isEmpty) {
+                                                return 'Please enter luggage count';
+                                              }
+                                              return null;
+                                            },
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          // Payment & Notes
+                          _buildFormSection(
+                            title: 'Payment & Notes',
+                            icon: Icons.payment,
+                            children: [
+                              _buildPaymentSection(),
+                              const SizedBox(height: 20),
+                              _buildTextField(
+                                controller: _notesController,
+                                label: 'Notes',
+                                hint: 'Enter pickup location, flight details, or other relevant information',
+                                icon: Icons.note,
+                                maxLines: 4,
+                                isRequired: false,
+                              ),
+                            ],
+                          ),
+                          
+                          const SizedBox(height: 32),
+                          
+                          _buildActionButtons(isMobile),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            },
+            loading: () => const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+              ),
+            ),
+            error: (error, stack) => Center(
+              child: Text('Error loading clients: $error'),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator() {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.assignment,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Step 1 of 1: Job Details',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                        color: ChoiceLuxTheme.softWhite,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Fill in the job information below',
+                      style: TextStyle(
+                        fontSize: 14,
+                        color: ChoiceLuxTheme.platinumSilver,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Text(
+                  '${_completionPercentage.toInt()}%',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 12,
                   ),
                 ),
               ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Progress bar
+          Container(
+            height: 8,
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(4),
             ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: _completionPercentage / 100,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold,
+                  borderRadius: BorderRadius.circular(4),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          // Completion status text
+          Text(
+            _getCompletionStatusText(),
+            style: TextStyle(
+              fontSize: 12,
+              color: _completionPercentage == 100 
+                  ? ChoiceLuxTheme.successColor 
+                  : ChoiceLuxTheme.platinumSilver,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
-  
-  Widget _buildSection(String title, List<Widget> children) {
+
+  String _getCompletionStatusText() {
+    if (_completionPercentage == 0) {
+      return 'Start by selecting a client';
+    } else if (_completionPercentage < 50) {
+      return 'Keep going! Fill in the required fields';
+    } else if (_completionPercentage < 100) {
+      return 'Almost there! Complete the remaining fields';
+    } else {
+      return 'All required fields completed! Ready to create job';
+    }
+  }
+
+  Widget _buildFormSection({
+    required String title,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w600,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSearchableClientDropdown(List<dynamic> clients) {
+    final filteredClients = clients.where((client) {
+      if (_clientSearchQuery.isEmpty) return true;
+      return client.companyName.toLowerCase().contains(_clientSearchQuery.toLowerCase());
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-            color: ChoiceLuxTheme.richGold,
+          'Client *',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 16),
-        ...children,
+        const SizedBox(height: 8),
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              // Search input
+              TextFormField(
+                controller: _clientSearchController,
+                onChanged: (value) {
+                  setState(() {
+                    _clientSearchQuery = value;
+                    _showClientDropdown = true;
+                  });
+                },
+                onTap: () {
+                  setState(() {
+                    _showClientDropdown = true;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search for a client...',
+                  hintStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  suffixIcon: _selectedClientId != null
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            setState(() {
+                              _selectedClientId = null;
+                              _clientSearchController.clear();
+                              _clientSearchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+                validator: (value) {
+                  if (_selectedClientId == null) {
+                    return 'Please select a client';
+                  }
+                  return null;
+                },
+              ),
+              
+              // Selected client display
+              if (_selectedClientId != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    border: Border(
+                      top: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.business,
+                        color: ChoiceLuxTheme.richGold,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          clients.firstWhere((c) => c.id.toString() == _selectedClientId).companyName,
+                          style: const TextStyle(
+                            color: ChoiceLuxTheme.richGold,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              // Dropdown list
+              if (_showClientDropdown && filteredClients.isNotEmpty)
+                Container(
+                  constraints: const BoxConstraints(maxHeight: 200),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.charcoalGray,
+                    border: Border(
+                      top: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredClients.length,
+                    itemBuilder: (context, index) {
+                      final client = filteredClients[index];
+                      return ListTile(
+                        leading: const Icon(
+                          Icons.business,
+                          color: ChoiceLuxTheme.platinumSilver,
+                        ),
+                        title: Text(
+                          client.companyName,
+                          style: const TextStyle(
+                            color: ChoiceLuxTheme.softWhite,
+                          ),
+                        ),
+                        onTap: () {
+                          _onClientChanged(client.id.toString());
+                          _clientSearchController.text = client.companyName;
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     );
   }
-  
-  Widget _buildClientDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedClientId,
-      decoration: const InputDecoration(
-        labelText: 'Client',
-        hintText: 'Select a client',
-        prefixIcon: Icon(Icons.business),
-        border: OutlineInputBorder(),
-      ),
-      items: _filteredClients.map((client) {
-        return DropdownMenuItem(
-          value: client.id,
-          child: Text(client.companyName ?? 'Unknown Client'),
-        );
-      }).toList(),
-      onChanged: _onClientChanged,
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please select a client';
-        }
-        return null;
-      },
-    );
-  }
-  
+
   Widget _buildAgentDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedAgentId,
-      decoration: const InputDecoration(
-        labelText: 'Agent',
-        hintText: 'Select an agent',
-        prefixIcon: Icon(Icons.person),
-        border: OutlineInputBorder(),
-      ),
-      items: _filteredAgents.map((agent) {
-        return DropdownMenuItem(
-          value: agent.id,
-          child: Text('${agent.firstName} ${agent.lastName}'),
+    if (_selectedClientId == null) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Please select a client first to choose an agent',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 14,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return Consumer(
+      builder: (context, ref, child) {
+        final agentsAsync = ref.watch(agentsByClientProvider(_selectedClientId!));
+        
+        return agentsAsync.when(
+          data: (agents) => _buildDropdownField(
+            label: 'Agent',
+            hint: 'Select an agent (optional)',
+            icon: Icons.person,
+            value: _selectedAgentId,
+            items: agents.map((agent) => DropdownMenuItem(
+              value: agent.id.toString(),
+              child: Text(agent.agentName),
+            )).toList(),
+            onChanged: (value) => setState(() => _selectedAgentId = value),
+            isRequired: false,
+          ),
+          loading: () => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: const Row(
+              children: [
+                SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                  ),
+                ),
+                SizedBox(width: 12),
+                Text('Loading agents...'),
+              ],
+            ),
+          ),
+          error: (error, stack) => Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: ChoiceLuxTheme.errorColor,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Text(
+                  'Error loading agents',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.errorColor,
+                    fontSize: 14,
+                  ),
+                ),
+              ],
+            ),
+          ),
         );
-      }).toList(),
-      onChanged: (value) => setState(() => _selectedAgentId = value),
-    );
-  }
-  
-  Widget _buildBranchDropdown() {
-    return DropdownButtonFormField<String>(
-      value: _selectedBranch,
-      decoration: const InputDecoration(
-        labelText: 'Branch',
-        hintText: 'Select a branch',
-        prefixIcon: Icon(Icons.location_on),
-        border: OutlineInputBorder(),
-      ),
-      items: const [
-        DropdownMenuItem(value: 'Jhb', child: Text('Johannesburg (Jhb)')),
-        DropdownMenuItem(value: 'Cpt', child: Text('Cape Town (Cpt)')),
-        DropdownMenuItem(value: 'Dbn', child: Text('Durban (Dbn)')),
-      ],
-      onChanged: (value) => setState(() => _selectedBranch = value),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please select a branch';
-        }
-        return null;
       },
     );
   }
-  
-  Widget _buildVehicleDropdown() {
-    return DropdownButtonFormField<String>(
+
+  Widget _buildVehicleDropdown(List<dynamic> vehicles) {
+    // Sort vehicles by make alphabetically
+    final sortedVehicles = List.from(vehicles)
+      ..sort((a, b) => (a.make ?? '').compareTo(b.make ?? ''));
+    
+    return _buildDropdownField(
+      label: 'Vehicle *',
+      hint: 'Select a vehicle',
+      icon: Icons.directions_car,
       value: _selectedVehicleId,
-      decoration: const InputDecoration(
-        labelText: 'Vehicle',
-        hintText: 'Select a vehicle',
-        prefixIcon: Icon(Icons.directions_car),
-        border: OutlineInputBorder(),
-      ),
-      items: _filteredVehicles.map((vehicle) {
-        final hasValidLicense = vehicle.licenseDiskExpiryDate != null &&
-            vehicle.licenseDiskExpiryDate!.isAfter(DateTime.now());
+      items: sortedVehicles.map((vehicle) {
+        final hasValidLicense = vehicle.licenseExpiryDate != null &&
+            vehicle.licenseExpiryDate!.isAfter(DateTime.now());
         
         return DropdownMenuItem(
-          value: vehicle.id,
+          value: vehicle.id.toString(),
           child: Row(
             children: [
               Expanded(
                 child: Text(
-                  '${vehicle.make} ${vehicle.model} - ${vehicle.registrationNumber}',
+                  '${vehicle.make} ${vehicle.model} - ${vehicle.regPlate}',
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
               if (!hasValidLicense)
@@ -420,7 +906,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     'EXP',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 8,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -438,28 +924,28 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       },
     );
   }
-  
-  Widget _buildDriverDropdown() {
-    return DropdownButtonFormField<String>(
+
+  Widget _buildDriverDropdown(List<dynamic> allUsers) {
+    return _buildDropdownField(
+      label: 'Driver *',
+      hint: 'Select a driver',
+      icon: Icons.person,
       value: _selectedDriverId,
-      decoration: const InputDecoration(
-        labelText: 'Driver',
-        hintText: 'Select a driver',
-        prefixIcon: Icon(Icons.person),
-        border: OutlineInputBorder(),
-      ),
-      items: _filteredDrivers.map((driver) {
-        final hasValidLicense = driver.driversLicenseExpiryDate != null &&
-            driver.driversLicenseExpiryDate!.isAfter(DateTime.now());
-        final hasValidPdp = driver.pdpExpiryDate != null &&
-            driver.pdpExpiryDate!.isAfter(DateTime.now());
+      items: allUsers.map((user) {
+        final hasValidLicense = user.driverLicExp != null &&
+            user.driverLicExp!.isAfter(DateTime.now());
+        final hasValidPdp = user.pdpExp != null &&
+            user.pdpExp!.isAfter(DateTime.now());
         
         return DropdownMenuItem(
-          value: driver.id,
+          value: user.id.toString(),
           child: Row(
             children: [
               Expanded(
-                child: Text('${driver.firstName} ${driver.lastName}'),
+                child: Text(
+                  '${user.displayName} (${user.role ?? 'No Role'})',
+                  overflow: TextOverflow.ellipsis,
+                ),
               ),
               if (!hasValidLicense || !hasValidPdp)
                 Container(
@@ -472,7 +958,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     'EXP',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 10,
+                      fontSize: 8,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -490,69 +976,107 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       },
     );
   }
-  
-  Widget _buildJobStartDatePicker() {
-    return InkWell(
-      onTap: _selectJobStartDate,
-      child: InputDecorator(
-        decoration: const InputDecoration(
-          labelText: 'Job Start Date',
-          hintText: 'Select job start date',
-          prefixIcon: Icon(Icons.calendar_today),
-          border: OutlineInputBorder(),
+
+  Widget _buildLocationDropdown() {
+    return _buildDropdownField(
+      label: 'Branch (Location) *',
+      hint: 'Select branch location',
+      icon: Icons.location_on,
+      value: _selectedLocation,
+      items: const [
+        DropdownMenuItem(
+          value: 'Jhb',
+          child: Text('Johannesburg (Jhb)'),
         ),
-        child: Text(
-          _selectedJobStartDate != null
-              ? '${_selectedJobStartDate!.day}/${_selectedJobStartDate!.month}/${_selectedJobStartDate!.year}'
-              : 'Select date',
-          style: TextStyle(
-            color: _selectedJobStartDate != null
-                ? Colors.black
-                : Colors.grey,
-          ),
+        DropdownMenuItem(
+          value: 'Cpt',
+          child: Text('Cape Town (Cpt)'),
         ),
-      ),
+        DropdownMenuItem(
+          value: 'Dbn',
+          child: Text('Durban (Dbn)'),
+        ),
+      ],
+      onChanged: (value) => setState(() => _selectedLocation = value),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please select a branch location';
+        }
+        return null;
+      },
     );
   }
-  
-  Widget _buildPaymentSection() {
+
+  Widget _buildJobStartDatePicker() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          children: [
-            Checkbox(
-              value: _collectPayment,
-              onChanged: (value) => setState(() => _collectPayment = value ?? false),
-            ),
-            const Text('Driver needs to collect payment'),
-          ],
-        ),
-        if (_collectPayment) ...[
-          const SizedBox(height: 16),
-          _buildTextField(
-            controller: _paymentAmountController,
-            label: 'Payment Amount',
-            hint: 'Enter amount to collect',
-            icon: Icons.payment,
-            keyboardType: TextInputType.number,
-            validator: (value) {
-              if (_collectPayment && (value == null || value.isEmpty)) {
-                return 'Please enter payment amount';
-              }
-              if (_collectPayment && value != null && value.isNotEmpty) {
-                if (double.tryParse(value) == null || double.parse(value) <= 0) {
-                  return 'Please enter a valid amount';
-                }
-              }
-              return null;
-            },
+        Text(
+          'Job Start Date *',
+          style: TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            color: ChoiceLuxTheme.softWhite,
           ),
-        ],
+        ),
+        const SizedBox(height: 8),
+        InkWell(
+          onTap: _selectJobStartDate,
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF121212),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.calendar_today,
+                  color: ChoiceLuxTheme.platinumSilver,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedJobStartDate != null
+                        ? '${_selectedJobStartDate!.day}/${_selectedJobStartDate!.month}/${_selectedJobStartDate!.year}'
+                        : 'Select job start date',
+                    style: TextStyle(
+                      color: _selectedJobStartDate != null
+                          ? ChoiceLuxTheme.softWhite
+                          : ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                const Icon(
+                  Icons.arrow_drop_down,
+                  color: ChoiceLuxTheme.platinumSilver,
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_selectedJobStartDate == null)
+          Padding(
+            padding: const EdgeInsets.only(top: 8, left: 12),
+            child: Text(
+              'Please select a job start date',
+              style: TextStyle(
+                color: ChoiceLuxTheme.errorColor,
+                fontSize: 12,
+              ),
+            ),
+          ),
       ],
     );
   }
-  
+
   Widget _buildTextField({
     required TextEditingController controller,
     required String label,
@@ -561,54 +1085,354 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
     int maxLines = 1,
+    bool isRequired = true,
   }) {
-    return TextFormField(
-      controller: controller,
-      keyboardType: keyboardType,
-      maxLines: maxLines,
-      decoration: InputDecoration(
-        labelText: label,
-        hintText: hint,
-        prefixIcon: Icon(icon),
-        border: const OutlineInputBorder(),
-      ),
-      validator: validator,
-    );
-  }
-  
-  Widget _buildActionButtons(bool isMobile) {
-    return Row(
-      mainAxisAlignment: isMobile ? MainAxisAlignment.center : MainAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        ElevatedButton(
-          onPressed: _isSubmitting ? null : () => context.go('/jobs'),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.grey,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
-          ),
-          child: const Text('Cancel'),
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ChoiceLuxTheme.softWhite,
+              ),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
         ),
-        const SizedBox(width: 16),
-        ElevatedButton(
-          onPressed: _isSubmitting ? null : _createJob,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: ChoiceLuxTheme.richGold,
-            foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+        const SizedBox(height: 8),
+        TextFormField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLines: maxLines,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: 20,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF121212),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.richGold,
+                width: 2,
+              ),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.errorColor,
+                width: 1,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           ),
-          child: _isSubmitting
-              ? const SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                  ),
-                )
-              : const Text('Create Job'),
+          validator: validator,
         ),
       ],
+    );
+  }
+
+  Widget _buildDropdownField({
+    required String label,
+    required String hint,
+    required IconData icon,
+    required String? value,
+    required List<DropdownMenuItem<String>> items,
+    required Function(String?) onChanged,
+    String? Function(String?)? validator,
+    bool isRequired = true,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ChoiceLuxTheme.softWhite,
+              ),
+            ),
+            if (isRequired) ...[
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ],
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: value,
+          isExpanded: true,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            ),
+            prefixIcon: Icon(
+              icon,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: 20,
+            ),
+            filled: true,
+            fillColor: const Color(0xFF121212),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.richGold,
+                width: 2,
+              ),
+            ),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          ),
+          items: items,
+          onChanged: onChanged,
+          validator: validator,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildPaymentSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.payment,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Payment Collection',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ChoiceLuxTheme.softWhite,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF121212),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Switch(
+                    value: _collectPayment,
+                    onChanged: (value) => setState(() => _collectPayment = value),
+                    activeColor: ChoiceLuxTheme.richGold,
+                    activeTrackColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Text(
+                      'Driver needs to collect payment',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildActionButtons(bool isMobile) {
+    return Container(
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: isMobile
+          ? Column(
+              children: [
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _createJob,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ChoiceLuxTheme.richGold,
+                      foregroundColor: Colors.black,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isSubmitting
+                        ? const SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                            ),
+                          )
+                        : const Text(
+                            'Create Job',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _isSubmitting ? null : () => context.go('/jobs'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: ChoiceLuxTheme.platinumSilver,
+                      side: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      'Cancel',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            )
+          : Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                OutlinedButton(
+                  onPressed: _isSubmitting ? null : () => context.go('/jobs'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: ChoiceLuxTheme.platinumSilver,
+                    side: BorderSide(
+                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: const Text(
+                    'Cancel',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                ElevatedButton(
+                  onPressed: _isSubmitting ? null : _createJob,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          ),
+                        )
+                      : const Text(
+                          'Create Job',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                ),
+              ],
+            ),
     );
   }
 } 

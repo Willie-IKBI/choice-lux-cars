@@ -45,28 +45,30 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       final jobs = ref.read(jobsProvider);
       _job = jobs.firstWhere((job) => job.id == widget.jobId);
       
-      await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
-      _trips = ref.read(tripsProvider);
-      
-      // Load related data
-      await Future.wait([
-        ref.read(clientsProvider.notifier).fetchClients(),
-        ref.read(vehiclesProvider.notifier).fetchVehicles(),
-        ref.read(usersProvider.notifier).fetchUsers(),
-      ]);
+      // Try to load trips, but don't fail if trips table doesn't exist
+      try {
+        await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
+        _trips = ref.read(tripsProvider);
+      } catch (e) {
+        // If trips table doesn't exist, just continue with empty trips list
+        print('Warning: Could not load trips: $e');
+        _trips = [];
+      }
       
       // Get related entities
-      final clients = ref.read(clientsProvider);
-      final vehicles = ref.read(vehiclesProvider);
+      final vehiclesState = ref.read(vehiclesProvider);
       final users = ref.read(usersProvider);
       
-      _client = clients.firstWhere((c) => c.id == _job!.clientId);
-      _vehicle = vehicles.firstWhere((v) => v.id == _job!.vehicleId);
+      // Get clients using the FutureProvider
+      final clients = await ref.read(clientsProvider.future);
+      final vehicles = vehiclesState.vehicles;
+      
+      _client = clients.firstWhere((c) => c.id.toString() == _job!.clientId);
+      _vehicle = vehicles.firstWhere((v) => v.id.toString() == _job!.vehicleId);
       _driver = users.firstWhere((u) => u.id == _job!.driverId);
       
-      if (_job!.agentId != null) {
-        _agent = _client.agents?.firstWhere((a) => a.id == _job!.agentId);
-      }
+      // Note: Agent lookup would need to be implemented separately
+      // For now, we'll leave _agent as null
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -104,7 +106,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     return Scaffold(
       appBar: SimpleAppBar(
         title: 'Job Summary',
-        subtitle: 'Job #${_job!.id.substring(0, 8)}',
+        subtitle: 'Job #${_job!.id}',
         showBackButton: true,
         onBackPressed: () => context.go('/jobs'),
       ),
@@ -119,9 +121,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             
             // Job Details
             _buildSection('Job Details', [
-              _buildDetailRow('Job ID', _job!.id.substring(0, 8)),
+              _buildDetailRow('Job ID', _job!.id),
               _buildDetailRow('Status', _getStatusText(_job!.status)),
-              _buildDetailRow('Branch', _job!.branch),
               _buildDetailRow('Job Start Date', _formatDate(_job!.jobStartDate)),
               _buildDetailRow('Order Date', _formatDate(_job!.orderDate)),
               _buildDetailRow('Days Until Start', _job!.daysUntilStartText),
@@ -133,7 +134,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             _buildSection('Client & Agent', [
               _buildDetailRow('Client', _client?.companyName ?? 'Unknown'),
               if (_agent != null)
-                _buildDetailRow('Agent', '${_agent.firstName} ${_agent.lastName}'),
+                _buildDetailRow('Agent', _agent.agentName),
               _buildDetailRow('Passenger Name', _job!.passengerName ?? 'Not provided'),
               _buildDetailRow('Contact Number', _job!.passengerContact ?? 'Not provided'),
               if (!_job!.hasCompletePassengerDetails)
@@ -165,10 +166,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             // Vehicle & Driver Information
             _buildSection('Vehicle & Driver', [
               _buildDetailRow('Vehicle', '${_vehicle?.make} ${_vehicle?.model}'),
-              _buildDetailRow('Registration', _vehicle?.registrationNumber ?? 'Unknown'),
-              _buildDetailRow('Driver', '${_driver?.firstName} ${_driver?.lastName}'),
+              _buildDetailRow('Registration', _vehicle?.regPlate ?? 'Unknown'),
+              _buildDetailRow('Driver', _driver?.displayName ?? 'Unknown'),
               _buildDetailRow('Passengers', '${_job!.pasCount} pax'),
-              _buildDetailRow('Luggage', '${_job!.luggageCount} bags'),
+              _buildDetailRow('Luggage', '${_job!.luggageCount} bag${_job!.luggageCount == '1' ? '' : 's'}'),
             ]),
             
             const SizedBox(height: 24),
@@ -256,8 +257,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         ),
                         const SizedBox(height: 12),
                         _buildDetailRow('Date & Time', trip.formattedDateTime),
-                        _buildDetailRow('Pick-up', trip.pickUpAddress),
-                        _buildDetailRow('Drop-off', trip.dropOffAddress),
+                        _buildDetailRow('Pick-up', trip.pickupLocation),
+                        _buildDetailRow('Drop-off', trip.dropoffLocation),
                         if (trip.notes != null && trip.notes!.isNotEmpty)
                           _buildDetailRow('Notes', trip.notes!),
                       ],
@@ -334,13 +335,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     color: _getStatusColor(),
                   ),
                 ),
-                Text(
-                  'Job #${_job!.id.substring(0, 8)}',
-                  style: const TextStyle(
-                    fontSize: 14,
-                    color: Colors.grey,
-                  ),
-                ),
+                                 Text(
+                   'Job #${_job!.id}',
+                   style: const TextStyle(
+                     fontSize: 14,
+                     color: Colors.grey,
+                   ),
+                 ),
               ],
             ),
           ),

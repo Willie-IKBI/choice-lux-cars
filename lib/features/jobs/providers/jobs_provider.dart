@@ -49,7 +49,7 @@ class JobsNotifier extends StateNotifier<List<Job>> {
         return;
       }
 
-      state = jobMaps.map((map) => Job.fromMap(map)).toList();
+              state = jobMaps.map((map) => Job.fromMap(map)).toList();
     } catch (error) {
       print('Error fetching jobs: $error');
       state = [];
@@ -66,10 +66,11 @@ class JobsNotifier extends StateNotifier<List<Job>> {
   List<Job> get inProgressJobs => state.where((job) => job.isInProgress).toList();
 
   // Create new job
-  Future<void> createJob(Job job) async {
+  Future<Map<String, dynamic>> createJob(Job job) async {
     try {
-      await SupabaseService.instance.createJob(job.toMap());
+      final createdJob = await SupabaseService.instance.createJob(job.toMap());
       await fetchJobs();
+      return createdJob;
     } catch (error) {
       print('Error creating job: $error');
       rethrow;
@@ -104,6 +105,23 @@ class JobsNotifier extends StateNotifier<List<Job>> {
     }
   }
 
+  // Update job payment amount
+  Future<void> updateJobPaymentAmount(String jobId, double amount) async {
+    try {
+      await SupabaseService.instance.updateJob(
+        jobId: jobId, 
+        data: {
+          'amount': amount,
+          'updated_at': DateTime.now().toIso8601String(),
+        }
+      );
+      await fetchJobs();
+    } catch (error) {
+      print('Error updating job payment amount: $error');
+      rethrow;
+    }
+  }
+
   // Delete job
   Future<void> deleteJob(String jobId) async {
     try {
@@ -119,6 +137,7 @@ class JobsNotifier extends StateNotifier<List<Job>> {
   bool get canCreateJobs {
     if (currentUser == null) return false;
     final userRole = currentUser.role?.toLowerCase();
+
     return userRole == 'administrator' || 
            userRole == 'manager' || 
            userRole == 'driver_manager';

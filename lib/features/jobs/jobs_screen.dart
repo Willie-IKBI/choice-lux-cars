@@ -29,6 +29,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
   Widget build(BuildContext context) {
     final jobs = ref.watch(jobsProvider);
     final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
+    final currentUser = ref.watch(currentUserProfileProvider);
     final isMobile = MediaQuery.of(context).size.width < 768;
 
     // Filter jobs based on current filter
@@ -42,7 +43,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
         final searchLower = _searchQuery.toLowerCase();
         return passengerName.contains(searchLower) || 
                clientName.contains(searchLower) ||
-               job.branch.toLowerCase().contains(searchLower);
+               job.id.toLowerCase().contains(searchLower);
       }).toList();
     }
 
@@ -64,7 +65,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
         actions: [
           if (canCreateJobs)
             ElevatedButton.icon(
-              onPressed: () => context.go('/jobs/create'),
+              onPressed: () {
+                print('Create Job button clicked - navigating to /jobs/create');
+                context.go('/jobs/create');
+              },
               icon: const Icon(Icons.add),
               label: const Text('Create Job'),
               style: ElevatedButton.styleFrom(
@@ -77,102 +81,177 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
       drawer: const LuxuryDrawer(),
       body: Column(
         children: [
-          // Filters and Search
+          // Sticky Header with Filters and Search
           Container(
-            padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              border: Border(
-                bottom: BorderSide(color: Colors.grey.withOpacity(0.3)),
-              ),
+              color: ChoiceLuxTheme.charcoalGray,
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: Column(
               children: [
-                // Filter buttons
-                Row(
-                  children: [
-                    _buildFilterButton('open', 'Open Jobs'),
-                    const SizedBox(width: 8),
-                    _buildFilterButton('in_progress', 'In Progress'),
-                    const SizedBox(width: 8),
-                    _buildFilterButton('closed', 'Closed Jobs'),
-                    const SizedBox(width: 8),
-                    _buildFilterButton('all', 'All Jobs'),
-                  ],
-                ),
-                const SizedBox(height: 16),
-                
-                // Search bar
-                TextField(
-                  onChanged: (value) {
-                    setState(() {
-                      _searchQuery = value;
-                      _currentPage = 1; // Reset to first page when searching
-                    });
-                  },
-                  decoration: InputDecoration(
-                    hintText: 'Search jobs by passenger name, client, or branch...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
+                // Filter tabs with icons
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    child: Row(
+                      children: [
+                        _buildFilterButton('open', 'Open Jobs', Icons.folder_open),
+                        const SizedBox(width: 12),
+                        _buildFilterButton('in_progress', 'In Progress', Icons.sync),
+                        const SizedBox(width: 12),
+                        _buildFilterButton('completed', 'Completed', Icons.check_circle),
+                        const SizedBox(width: 12),
+                        _buildFilterButton('all', 'All Jobs', Icons.list),
+                      ],
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  ),
+                ),
+                
+                // Search bar with improved styling
+                Container(
+                  padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                  child: TextField(
+                    onChanged: (value) {
+                      setState(() {
+                        _searchQuery = value;
+                        _currentPage = 1; // Reset to first page when searching
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Search jobs by passenger name, client, or job ID...',
+                      hintStyle: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                        fontSize: 14,
+                      ),
+                      prefixIcon: Icon(
+                        Icons.search,
+                        color: ChoiceLuxTheme.platinumSilver,
+                      ),
+                      filled: true,
+                      fillColor: const Color(0xFF1F1F1F),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                          width: 1,
+                        ),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(
+                          color: ChoiceLuxTheme.richGold,
+                          width: 2,
+                        ),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    ),
                   ),
                 ),
               ],
             ),
           ),
 
-          // Jobs count
+          // Jobs count with improved styling
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             child: Row(
               children: [
+                Icon(
+                  Icons.info_outline,
+                  size: 16,
+                  color: ChoiceLuxTheme.platinumSilver,
+                ),
+                const SizedBox(width: 8),
                 Text(
                   '${filteredJobs.length} job${filteredJobs.length != 1 ? 's' : ''} found',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontWeight: FontWeight.w500,
-                    color: Colors.grey,
+                    color: ChoiceLuxTheme.platinumSilver,
+                    fontSize: 14,
                   ),
                 ),
                 const Spacer(),
                 if (_currentFilter != 'all')
-                  Text(
-                    'Showing $_currentFilter jobs',
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w500,
-                      color: Colors.grey,
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      'Filtered: $_currentFilter',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w500,
+                        color: ChoiceLuxTheme.richGold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
               ],
             ),
           ),
 
-          // Jobs grid
+          // Jobs grid with improved empty state
           Expanded(
             child: paginatedJobs.isEmpty
-                ? const Center(
+                ? Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(
-                          Icons.work_outline,
-                          size: 64,
-                          color: Colors.grey,
-                        ),
-                        SizedBox(height: 16),
-                        Text(
-                          'No jobs found',
-                          style: TextStyle(
-                            fontSize: 18,
-                            color: Colors.grey,
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            color: ChoiceLuxTheme.charcoalGray,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                              width: 1,
+                            ),
                           ),
-                        ),
-                        SizedBox(height: 8),
-                        Text(
-                          'Try adjusting your filters or create a new job',
-                          style: TextStyle(
-                            color: Colors.grey,
+                          child: Column(
+                            children: [
+                              Icon(
+                                Icons.work_outline,
+                                size: 48,
+                                color: ChoiceLuxTheme.platinumSilver,
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No jobs found',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Try adjusting your filters or create a new job',
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                  fontSize: 14,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -183,39 +262,91 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
                   ),
           ),
 
-          // Pagination
+          // Pagination with improved styling
           if (totalPages > 1)
-            PaginationWidget(
-              currentPage: _currentPage,
-              totalPages: totalPages,
-              totalItems: filteredJobs.length,
-              itemsPerPage: _itemsPerPage,
-              onPageChanged: (page) {
-                setState(() {
-                  _currentPage = page;
-                });
-              },
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.charcoalGray,
+                border: Border(
+                  top: BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+              ),
+              child: PaginationWidget(
+                currentPage: _currentPage,
+                totalPages: totalPages,
+                totalItems: filteredJobs.length,
+                itemsPerPage: _itemsPerPage,
+                onPageChanged: (page) {
+                  setState(() {
+                    _currentPage = page;
+                  });
+                },
+              ),
             ),
         ],
       ),
     );
   }
 
-  Widget _buildFilterButton(String filter, String label) {
+  Widget _buildFilterButton(String filter, String label, IconData icon) {
     final isActive = _currentFilter == filter;
-    return ElevatedButton(
-      onPressed: () {
-        setState(() {
-          _currentFilter = filter;
-          _currentPage = 1; // Reset to first page when changing filter
-        });
-      },
-      style: ElevatedButton.styleFrom(
-        backgroundColor: isActive ? ChoiceLuxTheme.richGold : Colors.grey.withOpacity(0.1),
-        foregroundColor: isActive ? Colors.white : Colors.black87,
-        elevation: isActive ? 2 : 0,
+    final isMobile = MediaQuery.of(context).size.width < 768;
+    
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: isActive ? [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ] : null,
       ),
-      child: Text(label),
+      child: ElevatedButton.icon(
+        onPressed: () {
+          setState(() {
+            _currentFilter = filter;
+            _currentPage = 1; // Reset to first page when changing filter
+          });
+        },
+        icon: Icon(
+          icon,
+          size: isMobile ? 16 : 18,
+        ),
+        label: Text(
+          label,
+          style: TextStyle(
+            fontSize: isMobile ? 12 : 14,
+            fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isActive 
+              ? ChoiceLuxTheme.richGold 
+              : ChoiceLuxTheme.charcoalGray,
+          foregroundColor: isActive 
+              ? Colors.black 
+              : ChoiceLuxTheme.platinumSilver,
+          elevation: isActive ? 2 : 0,
+          padding: isMobile 
+            ? const EdgeInsets.symmetric(horizontal: 12, vertical: 8)
+            : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: isActive 
+                ? BorderSide.none
+                : BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                    width: 1,
+                  ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -225,8 +356,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
         return jobs.where((job) => job.isOpen).toList();
       case 'in_progress':
         return jobs.where((job) => job.isInProgress).toList();
-      case 'closed':
-        return jobs.where((job) => job.isClosed).toList();
+      case 'completed':
+        return jobs.where((job) => job.isClosed).toList(); // This will include both 'closed' and 'completed' statuses
       case 'all':
       default:
         return jobs;

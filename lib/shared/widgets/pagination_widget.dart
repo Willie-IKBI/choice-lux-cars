@@ -23,20 +23,22 @@ class PaginationWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     if (totalPages <= 1) return const SizedBox.shrink();
 
+    final isMobile = MediaQuery.of(context).size.width < 768;
+
     return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray,
-        borderRadius: BorderRadius.circular(8),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Items info
-          Text(
-            'Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${(currentPage * itemsPerPage).clamp(0, totalItems)} of $totalItems items',
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: ChoiceLuxTheme.platinumSilver,
+          Expanded(
+            child: Text(
+              'Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${(currentPage * itemsPerPage).clamp(0, totalItems)} of $totalItems items',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           
@@ -44,24 +46,101 @@ class PaginationWidget extends StatelessWidget {
           Row(
             children: [
               // Previous button
-              IconButton(
+              _buildNavigationButton(
+                icon: Icons.chevron_left,
+                isEnabled: currentPage > 1,
                 onPressed: currentPage > 1 ? () => onPageChanged(currentPage - 1) : null,
-                icon: const Icon(Icons.chevron_left),
-                color: currentPage > 1 ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                isMobile: isMobile,
               ),
               
-              // Page numbers
-              ..._buildPageNumbers(),
+              const SizedBox(width: 8),
+              
+              // Page numbers (hidden on mobile)
+              if (!isMobile) ...[
+                ..._buildPageNumbers(),
+                const SizedBox(width: 8),
+              ] else ...[
+                // Mobile: show current page indicator
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '$currentPage / $totalPages',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.richGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+              ],
               
               // Next button
-              IconButton(
+              _buildNavigationButton(
+                icon: Icons.chevron_right,
+                isEnabled: currentPage < totalPages,
                 onPressed: currentPage < totalPages ? () => onPageChanged(currentPage + 1) : null,
-                icon: const Icon(Icons.chevron_right),
-                color: currentPage < totalPages ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                isMobile: isMobile,
               ),
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildNavigationButton({
+    required IconData icon,
+    required bool isEnabled,
+    required VoidCallback? onPressed,
+    required bool isMobile,
+  }) {
+    return Container(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: isEnabled ? [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
+          ),
+        ] : null,
+      ),
+      child: ElevatedButton(
+        onPressed: onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isEnabled 
+              ? ChoiceLuxTheme.richGold 
+              : ChoiceLuxTheme.charcoalGray,
+          foregroundColor: isEnabled 
+              ? Colors.black 
+              : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+          elevation: isEnabled ? 1 : 0,
+          padding: isMobile
+              ? const EdgeInsets.all(8)
+              : const EdgeInsets.all(12),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: isEnabled 
+                ? BorderSide.none
+                : BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    width: 1,
+                  ),
+          ),
+        ),
+        child: Icon(
+          icon,
+          size: isMobile ? 16 : 20,
+        ),
       ),
     );
   }
@@ -74,6 +153,9 @@ class PaginationWidget extends StatelessWidget {
       // Show all pages if total is small
       for (int i = 1; i <= totalPages; i++) {
         pageNumbers.add(_buildPageButton(i));
+        if (i < totalPages) {
+          pageNumbers.add(const SizedBox(width: 4));
+        }
       }
     } else {
       // Show smart pagination with ellipsis
@@ -81,24 +163,35 @@ class PaginationWidget extends StatelessWidget {
         // Show first 3 pages + ellipsis + last page
         for (int i = 1; i <= 3; i++) {
           pageNumbers.add(_buildPageButton(i));
+          pageNumbers.add(const SizedBox(width: 4));
         }
         pageNumbers.add(_buildEllipsis());
+        pageNumbers.add(const SizedBox(width: 4));
         pageNumbers.add(_buildPageButton(totalPages));
       } else if (currentPage >= totalPages - 2) {
         // Show first page + ellipsis + last 3 pages
         pageNumbers.add(_buildPageButton(1));
+        pageNumbers.add(const SizedBox(width: 4));
         pageNumbers.add(_buildEllipsis());
+        pageNumbers.add(const SizedBox(width: 4));
         for (int i = totalPages - 2; i <= totalPages; i++) {
           pageNumbers.add(_buildPageButton(i));
+          if (i < totalPages) {
+            pageNumbers.add(const SizedBox(width: 4));
+          }
         }
       } else {
         // Show first page + ellipsis + current-1, current, current+1 + ellipsis + last page
         pageNumbers.add(_buildPageButton(1));
+        pageNumbers.add(const SizedBox(width: 4));
         pageNumbers.add(_buildEllipsis());
+        pageNumbers.add(const SizedBox(width: 4));
         for (int i = currentPage - 1; i <= currentPage + 1; i++) {
           pageNumbers.add(_buildPageButton(i));
+          pageNumbers.add(const SizedBox(width: 4));
         }
         pageNumbers.add(_buildEllipsis());
+        pageNumbers.add(const SizedBox(width: 4));
         pageNumbers.add(_buildPageButton(totalPages));
       }
     }
@@ -110,26 +203,42 @@ class PaginationWidget extends StatelessWidget {
     final isCurrentPage = page == currentPage;
     
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 2),
-      child: InkWell(
-        onTap: () => onPageChanged(page),
-        borderRadius: BorderRadius.circular(4),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-          decoration: BoxDecoration(
-            color: isCurrentPage ? ChoiceLuxTheme.richGold : Colors.transparent,
-            borderRadius: BorderRadius.circular(4),
-            border: isCurrentPage ? null : Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
-            ),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        boxShadow: isCurrentPage ? [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            blurRadius: 4,
+            offset: const Offset(0, 1),
           ),
-          child: Text(
-            page.toString(),
-            style: TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              color: isCurrentPage ? Colors.black : ChoiceLuxTheme.softWhite,
-            ),
+        ] : null,
+      ),
+      child: ElevatedButton(
+        onPressed: () => onPageChanged(page),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: isCurrentPage 
+              ? ChoiceLuxTheme.richGold 
+              : ChoiceLuxTheme.charcoalGray,
+          foregroundColor: isCurrentPage 
+              ? Colors.black 
+              : ChoiceLuxTheme.platinumSilver,
+          elevation: isCurrentPage ? 1 : 0,
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+            side: isCurrentPage 
+                ? BorderSide.none
+                : BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                    width: 1,
+                  ),
+          ),
+        ),
+        child: Text(
+          page.toString(),
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: isCurrentPage ? FontWeight.w600 : FontWeight.w500,
           ),
         ),
       ),
@@ -138,12 +247,13 @@ class PaginationWidget extends StatelessWidget {
 
   Widget _buildEllipsis() {
     return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       child: Text(
         '...',
         style: TextStyle(
           fontSize: 12,
           color: ChoiceLuxTheme.platinumSilver,
+          fontWeight: FontWeight.w500,
         ),
       ),
     );

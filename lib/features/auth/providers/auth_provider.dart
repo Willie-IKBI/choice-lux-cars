@@ -119,6 +119,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }) async {
     try {
       state = const AsyncValue.loading();
+      
+      // Validate inputs first
+      if (email.isEmpty || password.isEmpty) {
+        state = AsyncValue.error(
+          'Please enter both email and password.',
+          StackTrace.current,
+        );
+        return;
+      }
+      
       final response = await _supabaseService.signIn(
         email: email,
         password: password,
@@ -136,7 +146,35 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
     } catch (error) {
       print('Sign in error: $error');
-      state = AsyncValue.error(error, StackTrace.current);
+      print('Error type: ${error.runtimeType}');
+      print('Error string: ${error.toString()}');
+      
+      // Provide user-friendly error messages
+      String errorMessage = 'An error occurred during login. Please try again.';
+      
+      final errorString = error.toString().toLowerCase();
+      
+      if (errorString.contains('invalid login credentials') || 
+          errorString.contains('invalid email or password')) {
+        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
+      } else if (errorString.contains('email not confirmed')) {
+        errorMessage = 'Please check your email and confirm your account before signing in.';
+      } else if (errorString.contains('too many requests') || 
+                 errorString.contains('rate limit')) {
+        errorMessage = 'Too many login attempts. Please wait a moment before trying again.';
+      } else if (errorString.contains('user not found')) {
+        errorMessage = 'No account found with this email address. Please check your email or sign up.';
+      } else if (errorString.contains('network') || 
+                 errorString.contains('connection') ||
+                 errorString.contains('timeout')) {
+        errorMessage = 'Network error. Please check your internet connection and try again.';
+      } else if (errorString.contains('server error') ||
+                 errorString.contains('internal server error')) {
+        errorMessage = 'Server error. Please try again later.';
+      }
+      
+      print('Setting error state with message: $errorMessage');
+      state = AsyncValue.error(errorMessage, StackTrace.current);
     }
   }
 
@@ -189,6 +227,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     } catch (error) {
       state = AsyncValue.error(error, StackTrace.current);
     }
+  }
+
+  void clearError() {
+    // If there's an error, reset to the current user state
+    final currentUser = _supabaseService.currentUser;
+    state = AsyncValue.data(currentUser);
   }
 
   User? get currentUser => state.value;

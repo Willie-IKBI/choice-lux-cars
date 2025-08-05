@@ -104,19 +104,19 @@ final GoRouter appRouter = GoRouter(
       builder: (context, state) => const CreateJobScreen(),
     ),
     GoRoute(
-      path: '/jobs/:id/trip-management',
-      name: 'trip_management',
-      builder: (context, state) {
-        final jobId = state.pathParameters['id']!;
-        return TripManagementScreen(jobId: jobId);
-      },
-    ),
-    GoRoute(
       path: '/jobs/:id/summary',
       name: 'job_summary',
       builder: (context, state) {
         final jobId = state.pathParameters['id']!;
         return JobSummaryScreen(jobId: jobId);
+      },
+    ),
+    GoRoute(
+      path: '/jobs/:id/trip-management',
+      name: 'trip_management',
+      builder: (context, state) {
+        final jobId = state.pathParameters['id']!;
+        return TripManagementScreen(jobId: jobId);
       },
     ),
     GoRoute(

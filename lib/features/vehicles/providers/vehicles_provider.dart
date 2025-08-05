@@ -27,7 +27,9 @@ class VehiclesState {
 }
 
 class VehiclesNotifier extends StateNotifier<VehiclesState> {
-  VehiclesNotifier() : super(VehiclesState());
+  VehiclesNotifier() : super(VehiclesState()) {
+    fetchVehicles(); // Auto-fetch vehicles on initialization
+  }
 
   Future<void> fetchVehicles() async {
     state = state.copyWith(isLoading: true, error: null);
@@ -35,6 +37,7 @@ class VehiclesNotifier extends StateNotifier<VehiclesState> {
       final vehicles = await SupabaseService.getVehicles();
       state = state.copyWith(vehicles: vehicles, isLoading: false);
     } catch (e) {
+
       state = state.copyWith(error: e.toString(), isLoading: false);
     }
   }

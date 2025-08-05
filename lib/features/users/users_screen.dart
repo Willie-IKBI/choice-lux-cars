@@ -121,7 +121,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                             DropdownMenuItem<String>(value: null, child: Text('All Roles')),
                             ...roles.map((r) => DropdownMenuItem<String>(
                               value: r.value,
-                              child: Row(children: [Icon(r.icon, size: 18), const SizedBox(width: 8), Text(r.label)]),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(r.icon, size: 18), 
+                                  const SizedBox(width: 8), 
+                                  Flexible(child: Text(r.label, overflow: TextOverflow.ellipsis))
+                                ]
+                              ),
                             )),
                           ],
                           onChanged: (val) => setState(() => _roleFilter = val),
@@ -142,7 +149,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                             DropdownMenuItem<String>(value: null, child: Text('All Statuses')),
                             ...statuses.map((s) => DropdownMenuItem<String>(
                               value: s.value,
-                              child: Row(children: [Icon(s.icon, size: 18), const SizedBox(width: 8), Text(s.label)]),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(s.icon, size: 18), 
+                                  const SizedBox(width: 8), 
+                                  Flexible(child: Text(s.label, overflow: TextOverflow.ellipsis))
+                                ]
+                              ),
                             )),
                           ],
                           onChanged: (val) => setState(() => _statusFilter = val),

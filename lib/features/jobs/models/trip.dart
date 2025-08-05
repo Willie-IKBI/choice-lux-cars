@@ -1,90 +1,104 @@
 class Trip {
   final String id;
   final String jobId;
-  final DateTime tripDateTime;
-  final String pickUpAddress;
-  final String dropOffAddress;
+  final DateTime pickupDate;
+  final String pickupLocation;
+  final String dropoffLocation;
+  final DateTime? clientPickupTime;
+  final DateTime? clientDropoffTime;
   final String? notes;
   final double amount;
-  final DateTime createdAt;
-  final DateTime? updatedAt;
+  final String? status;
 
   Trip({
     required this.id,
     required this.jobId,
-    required this.tripDateTime,
-    required this.pickUpAddress,
-    required this.dropOffAddress,
+    required this.pickupDate,
+    required this.pickupLocation,
+    required this.dropoffLocation,
+    this.clientPickupTime,
+    this.clientDropoffTime,
     this.notes,
     required this.amount,
-    required this.createdAt,
-    this.updatedAt,
+    this.status,
   });
 
   factory Trip.fromMap(Map<String, dynamic> map) {
     return Trip(
-      id: map['id'] as String,
-      jobId: map['job_id'] as String,
-      tripDateTime: DateTime.parse(map['trip_date_time'] as String),
-      pickUpAddress: map['pick_up_address'] as String,
-      dropOffAddress: map['drop_off_address'] as String,
-      notes: map['notes'] as String?,
-      amount: (map['amount'] as num).toDouble(),
-      createdAt: DateTime.parse(map['created_at'] as String),
-      updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at'] as String) 
+      id: map['id']?.toString() ?? '',
+      jobId: map['job_id']?.toString() ?? '',
+      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? DateTime.now().toIso8601String()),
+      pickupLocation: map['pickup_location']?.toString() ?? '',
+      dropoffLocation: map['dropoff_location']?.toString() ?? '',
+      clientPickupTime: map['client_pickup_time'] != null 
+          ? DateTime.parse(map['client_pickup_time']?.toString() ?? DateTime.now().toIso8601String())
           : null,
+      clientDropoffTime: map['client_dropoff_time'] != null 
+          ? DateTime.parse(map['client_dropoff_time']?.toString() ?? DateTime.now().toIso8601String())
+          : null,
+      notes: map['notes']?.toString(),
+      amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
+      status: map['status']?.toString(),
     );
   }
 
   Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'job_id': jobId,
-      'trip_date_time': tripDateTime.toIso8601String(),
-      'pick_up_address': pickUpAddress,
-      'drop_off_address': dropOffAddress,
+    final map = <String, dynamic>{
+      'job_id': int.tryParse(jobId) ?? jobId,
+      'pickup_date': pickupDate.toIso8601String(),
+      'pickup_location': pickupLocation,
+      'dropoff_location': dropoffLocation,
+      'client_pickup_time': clientPickupTime?.toIso8601String(),
+      'client_dropoff_time': clientDropoffTime?.toIso8601String(),
       'notes': notes,
       'amount': amount,
-      'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'status': status,
     };
+    
+    // Only include ID if it's not empty (for updates)
+    if (id.isNotEmpty) {
+      map['id'] = int.tryParse(id) ?? id;
+    }
+    
+    return map;
   }
 
   Trip copyWith({
     String? id,
     String? jobId,
-    DateTime? tripDateTime,
-    String? pickUpAddress,
-    String? dropOffAddress,
+    DateTime? pickupDate,
+    String? pickupLocation,
+    String? dropoffLocation,
+    DateTime? clientPickupTime,
+    DateTime? clientDropoffTime,
     String? notes,
     double? amount,
-    DateTime? createdAt,
-    DateTime? updatedAt,
+    String? status,
   }) {
     return Trip(
       id: id ?? this.id,
       jobId: jobId ?? this.jobId,
-      tripDateTime: tripDateTime ?? this.tripDateTime,
-      pickUpAddress: pickUpAddress ?? this.pickUpAddress,
-      dropOffAddress: dropOffAddress ?? this.dropOffAddress,
+      pickupDate: pickupDate ?? this.pickupDate,
+      pickupLocation: pickupLocation ?? this.pickupLocation,
+      dropoffLocation: dropoffLocation ?? this.dropoffLocation,
+      clientPickupTime: clientPickupTime ?? this.clientPickupTime,
+      clientDropoffTime: clientDropoffTime ?? this.clientDropoffTime,
       notes: notes ?? this.notes,
       amount: amount ?? this.amount,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
+      status: status ?? this.status,
     );
   }
 
   // Helper methods
   String get shortSummary {
-    final date = '${tripDateTime.day}/${tripDateTime.month}/${tripDateTime.year}';
-    final time = '${tripDateTime.hour.toString().padLeft(2, '0')}:${tripDateTime.minute.toString().padLeft(2, '0')}';
-    return '$date at $time - ${pickUpAddress.split(',').first} to ${dropOffAddress.split(',').first}';
+    final date = '${pickupDate.day}/${pickupDate.month}/${pickupDate.year}';
+    final time = '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
+    return '$date at $time - ${pickupLocation.split(',').first} to ${dropoffLocation.split(',').first}';
   }
 
   String get formattedDateTime {
-    final date = '${tripDateTime.day}/${tripDateTime.month}/${tripDateTime.year}';
-    final time = '${tripDateTime.hour.toString().padLeft(2, '0')}:${tripDateTime.minute.toString().padLeft(2, '0')}';
+    final date = '${pickupDate.day}/${pickupDate.month}/${pickupDate.year}';
+    final time = '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
     return '$date at $time';
   }
 } 

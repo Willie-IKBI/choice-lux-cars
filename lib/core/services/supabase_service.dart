@@ -31,21 +31,33 @@ class SupabaseService {
     required String password,
     Map<String, dynamic>? userData,
   }) async {
-    return await supabase.auth.signUp(
-      email: email,
-      password: password,
-      data: userData,
-    );
+    try {
+      return await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: userData,
+      );
+    } catch (error) {
+      print('Supabase signUp error: $error');
+      // Re-throw the error so it can be handled by the auth provider
+      rethrow;
+    }
   }
 
   Future<AuthResponse> signIn({
     required String email,
     required String password,
   }) async {
-    return await supabase.auth.signInWithPassword(
-      email: email,
-      password: password,
-    );
+    try {
+      return await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+    } catch (error) {
+      print('Supabase signIn error: $error');
+      // Re-throw the error so it can be handled by the auth provider
+      rethrow;
+    }
   }
 
   Future<void> signOut() async {
@@ -311,7 +323,7 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getJobs() async {
     final response = await supabase
         .from('jobs')
-        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .select('*')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
   }
@@ -319,7 +331,7 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getJobsByDriver(String driverId) async {
     final response = await supabase
         .from('jobs')
-        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .select('*')
         .eq('driver_id', driverId)
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
@@ -328,7 +340,7 @@ class SupabaseService {
   Future<List<Map<String, dynamic>>> getJobsByDriverManager(String driverManagerId) async {
     final response = await supabase
         .from('jobs')
-        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .select('*')
         .or('created_by.eq.$driverManagerId,driver_id.eq.$driverManagerId')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
@@ -337,16 +349,19 @@ class SupabaseService {
   Future<Map<String, dynamic>?> getJob(String jobId) async {
     final response = await supabase
         .from('jobs')
-        .select('*, clients(*), agents(*), vehicles(*), profiles!jobs_driver_id_fkey(*)')
+        .select('*')
         .eq('id', jobId)
         .single();
     return response;
   }
 
-  Future<void> createJob(Map<String, dynamic> jobData) async {
-    await supabase
+  Future<Map<String, dynamic>> createJob(Map<String, dynamic> jobData) async {
+    final response = await supabase
         .from('jobs')
-        .insert(jobData);
+        .insert(jobData)
+        .select()
+        .single();
+    return response;
   }
 
   Future<void> updateJob({
@@ -366,19 +381,19 @@ class SupabaseService {
         .eq('id', jobId);
   }
 
-  // Trip methods
+  // Trip methods (using transport table)
   Future<List<Map<String, dynamic>>> getTripsByJob(String jobId) async {
     final response = await supabase
-        .from('trips')
+        .from('transport')
         .select('*')
         .eq('job_id', jobId)
-        .order('trip_date_time', ascending: true);
+        .order('pickup_date', ascending: true);
     return List<Map<String, dynamic>>.from(response);
   }
 
   Future<Map<String, dynamic>?> getTrip(String tripId) async {
     final response = await supabase
-        .from('trips')
+        .from('transport')
         .select('*')
         .eq('id', tripId)
         .single();
@@ -387,7 +402,7 @@ class SupabaseService {
 
   Future<void> createTrip(Map<String, dynamic> tripData) async {
     await supabase
-        .from('trips')
+        .from('transport')
         .insert(tripData);
   }
 
@@ -396,14 +411,14 @@ class SupabaseService {
     required Map<String, dynamic> data,
   }) async {
     await supabase
-        .from('trips')
+        .from('transport')
         .update(data)
         .eq('id', tripId);
   }
 
   Future<void> deleteTrip(String tripId) async {
     await supabase
-        .from('trips')
+        .from('transport')
         .delete()
         .eq('id', tripId);
   }

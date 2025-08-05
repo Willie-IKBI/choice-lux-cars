@@ -2,19 +2,22 @@ class Job {
   final String id;
   final String clientId;
   final String? agentId;
-  final String branch; // Jhb, Cpt, Dbn
   final String vehicleId;
   final String driverId;
   final DateTime jobStartDate;
   final DateTime orderDate;
   final String? passengerName;
   final String? passengerContact;
-  final int pasCount; // Number of customers
-  final int luggageCount; // Number of bags
+  final double pasCount; // Number of customers (pax)
+  final String luggageCount; // Number of bags (number_bags as text)
   final String? notes;
   final bool collectPayment;
   final double? paymentAmount;
   final String status; // open, closed, in_progress
+  final String? quoteNo;
+  final String? voucherPdf;
+  final String? cancelReason;
+  final String? location; // Branch location (Jhb, Cpt, Dbn)
   final String createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -23,7 +26,6 @@ class Job {
     required this.id,
     required this.clientId,
     this.agentId,
-    required this.branch,
     required this.vehicleId,
     required this.driverId,
     required this.jobStartDate,
@@ -36,6 +38,10 @@ class Job {
     required this.collectPayment,
     this.paymentAmount,
     required this.status,
+    this.quoteNo,
+    this.voucherPdf,
+    this.cancelReason,
+    this.location,
     required this.createdBy,
     required this.createdAt,
     this.updatedAt,
@@ -43,51 +49,58 @@ class Job {
 
   factory Job.fromMap(Map<String, dynamic> map) {
     return Job(
-      id: map['id'] as String,
-      clientId: map['client_id'] as String,
-      agentId: map['agent_id'] as String?,
-      branch: map['branch'] as String,
-      vehicleId: map['vehicle_id'] as String,
-      driverId: map['driver_id'] as String,
-      jobStartDate: DateTime.parse(map['job_start_date'] as String),
-      orderDate: DateTime.parse(map['order_date'] as String),
-      passengerName: map['passenger_name'] as String?,
-      passengerContact: map['passenger_contact'] as String?,
-      pasCount: map['pas_count'] as int,
-      luggageCount: map['luggage_count'] as int,
-      notes: map['notes'] as String?,
-      collectPayment: map['collect_payment'] as bool,
-      paymentAmount: map['payment_amount'] as double?,
-      status: map['status'] as String,
-      createdBy: map['created_by'] as String,
-      createdAt: DateTime.parse(map['created_at'] as String),
+      id: map['id']?.toString() ?? '',
+      clientId: map['client_id']?.toString() ?? '',
+      agentId: map['agent_id']?.toString(),
+      vehicleId: map['vehicle_id']?.toString() ?? '',
+      driverId: map['driver_id']?.toString() ?? '',
+      jobStartDate: DateTime.parse(map['job_start_date']?.toString() ?? DateTime.now().toIso8601String()),
+      orderDate: DateTime.parse(map['order_date']?.toString() ?? DateTime.now().toIso8601String()),
+      passengerName: map['passenger_name']?.toString(),
+      passengerContact: map['passenger_contact']?.toString(),
+      pasCount: (map['pax'] is num) ? (map['pax'] as num).toDouble() : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
+      luggageCount: map['number_bags']?.toString() ?? '',
+      notes: map['notes']?.toString(),
+      collectPayment: map['amount_collect'] == true,
+      paymentAmount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? ''),
+      status: map['job_status']?.toString() ?? 'open',
+      quoteNo: map['quote_no']?.toString(),
+      voucherPdf: map['voucher_pdf']?.toString(),
+      cancelReason: map['cancel_reason']?.toString(),
+      location: map['location']?.toString(),
+      createdBy: map['created_by']?.toString() ?? '',
+      createdAt: DateTime.parse(map['created_at']?.toString() ?? DateTime.now().toIso8601String()),
       updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at'] as String) 
+          ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
     );
   }
 
   Map<String, dynamic> toMap() {
     return {
-      'id': id,
-      'client_id': clientId,
-      'agent_id': agentId,
-      'branch': branch,
-      'vehicle_id': vehicleId,
-      'driver_id': driverId,
+      // Don't include id if it's empty (let database auto-generate)
+      if (id.isNotEmpty) 'id': int.tryParse(id) ?? id,
+      'client_id': int.tryParse(clientId) ?? clientId,
+      if (agentId != null) 'agent_id': int.tryParse(agentId!) ?? agentId,
+      'vehicle_id': int.tryParse(vehicleId) ?? vehicleId,
+      'driver_id': driverId, // Keep as UUID string
       'job_start_date': jobStartDate.toIso8601String(),
       'order_date': orderDate.toIso8601String(),
       'passenger_name': passengerName,
       'passenger_contact': passengerContact,
-      'pas_count': pasCount,
-      'luggage_count': luggageCount,
+      'pax': pasCount,
+      'number_bags': luggageCount,
       'notes': notes,
-      'collect_payment': collectPayment,
-      'payment_amount': paymentAmount,
-      'status': status,
+      'amount_collect': collectPayment,
+      'amount': paymentAmount,
+      'job_status': status,
+      'quote_no': quoteNo,
+      'voucher_pdf': voucherPdf,
+      'cancel_reason': cancelReason,
+      'location': location,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
     };
   }
 
@@ -95,19 +108,22 @@ class Job {
     String? id,
     String? clientId,
     String? agentId,
-    String? branch,
     String? vehicleId,
     String? driverId,
     DateTime? jobStartDate,
     DateTime? orderDate,
     String? passengerName,
     String? passengerContact,
-    int? pasCount,
-    int? luggageCount,
+    double? pasCount,
+    String? luggageCount,
     String? notes,
     bool? collectPayment,
     double? paymentAmount,
     String? status,
+    String? quoteNo,
+    String? voucherPdf,
+    String? cancelReason,
+    String? location,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -116,7 +132,6 @@ class Job {
       id: id ?? this.id,
       clientId: clientId ?? this.clientId,
       agentId: agentId ?? this.agentId,
-      branch: branch ?? this.branch,
       vehicleId: vehicleId ?? this.vehicleId,
       driverId: driverId ?? this.driverId,
       jobStartDate: jobStartDate ?? this.jobStartDate,
@@ -129,6 +144,10 @@ class Job {
       collectPayment: collectPayment ?? this.collectPayment,
       paymentAmount: paymentAmount ?? this.paymentAmount,
       status: status ?? this.status,
+      quoteNo: quoteNo ?? this.quoteNo,
+      voucherPdf: voucherPdf ?? this.voucherPdf,
+      cancelReason: cancelReason ?? this.cancelReason,
+      location: location ?? this.location,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -137,7 +156,7 @@ class Job {
 
   // Helper methods
   bool get isOpen => status == 'open';
-  bool get isClosed => status == 'closed';
+  bool get isClosed => status == 'closed' || status == 'completed';
   bool get isInProgress => status == 'in_progress';
   
   bool get hasCompletePassengerDetails => 

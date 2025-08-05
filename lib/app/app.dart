@@ -15,6 +15,9 @@ import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.d
 import 'package:choice_lux_cars/features/clients/inactive_clients_screen.dart';
 import 'package:choice_lux_cars/features/quotes/quotes_screen.dart';
 import 'package:choice_lux_cars/features/jobs/jobs_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/create_job_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/trip_management_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/job_summary_screen.dart';
 import 'package:choice_lux_cars/features/invoices/invoices_screen.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles_screen.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicle_editor_screen.dart';
@@ -172,6 +175,27 @@ class ChoiceLuxCarsApp extends ConsumerWidget {
           path: '/jobs',
           name: 'jobs',
           builder: (context, state) => const JobsScreen(),
+        ),
+        GoRoute(
+          path: '/jobs/create',
+          name: 'create_job',
+          builder: (context, state) => const CreateJobScreen(),
+        ),
+        GoRoute(
+          path: '/jobs/:id/summary',
+          name: 'job_summary',
+          builder: (context, state) {
+            final jobId = state.pathParameters['id']!;
+            return JobSummaryScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
+          path: '/jobs/:id/trip-management',
+          name: 'trip_management',
+          builder: (context, state) {
+            final jobId = state.pathParameters['id']!;
+            return TripManagementScreen(jobId: jobId);
+          },
         ),
         GoRoute(
           path: '/invoices',
