@@ -21,6 +21,7 @@ class Job {
   final String createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
+  final bool? driverConfirmation; // Whether driver confirmed receiving the job
 
   Job({
     required this.id,
@@ -45,6 +46,7 @@ class Job {
     required this.createdBy,
     required this.createdAt,
     this.updatedAt,
+    this.driverConfirmation,
   });
 
   factory Job.fromMap(Map<String, dynamic> map) {
@@ -73,6 +75,7 @@ class Job {
       updatedAt: map['updated_at'] != null 
           ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
+      driverConfirmation: map['driver_confirmation_ind'] == true,
     );
   }
 
@@ -101,6 +104,7 @@ class Job {
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'driver_confirmation_ind': driverConfirmation,
     };
   }
 
@@ -127,6 +131,7 @@ class Job {
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
+    bool? driverConfirmation,
   }) {
     return Job(
       id: id ?? this.id,
@@ -151,6 +156,7 @@ class Job {
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
+      driverConfirmation: driverConfirmation ?? this.driverConfirmation,
     );
   }
 

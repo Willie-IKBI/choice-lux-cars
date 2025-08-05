@@ -5,6 +5,12 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
+import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
+import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/clients/models/client.dart';
+import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
@@ -31,6 +37,11 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
     final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
     final currentUser = ref.watch(currentUserProfileProvider);
     final isMobile = MediaQuery.of(context).size.width < 768;
+    
+    // Load related data
+    final vehiclesState = ref.watch(vehiclesProvider);
+    final users = ref.watch(usersProvider);
+    final clientsAsync = ref.watch(clientsProvider);
 
     // Filter jobs based on current filter
     List<Job> filteredJobs = _filterJobs(jobs);
@@ -257,8 +268,50 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
                       ],
                     ),
                   )
-                : ResponsiveGrid(
-                    children: paginatedJobs.map((job) => JobCard(job: job)).toList(),
+                : clientsAsync.when(
+                    data: (clients) => ResponsiveGrid(
+                      children: paginatedJobs.map((job) {
+                        // Find related data
+                        Client? client;
+                        Vehicle? vehicle;
+                        User? driver;
+                        
+                        try {
+                          client = clients.firstWhere(
+                            (c) => c.id.toString() == job.clientId,
+                          );
+                        } catch (e) {
+                          client = null;
+                        }
+                        
+                        try {
+                          vehicle = vehiclesState.vehicles.firstWhere(
+                            (v) => v.id.toString() == job.vehicleId,
+                          );
+                        } catch (e) {
+                          vehicle = null;
+                        }
+                        
+                        try {
+                          driver = users.firstWhere(
+                            (u) => u.id == job.driverId,
+                          );
+                        } catch (e) {
+                          driver = null;
+                        }
+                        
+                        return JobCard(
+                          job: job,
+                          client: client,
+                          vehicle: vehicle,
+                          driver: driver,
+                        );
+                      }).toList(),
+                    ),
+                    loading: () => const Center(child: CircularProgressIndicator()),
+                    error: (error, stack) => Center(
+                      child: Text('Error loading clients: $error'),
+                    ),
                   ),
           ),
 

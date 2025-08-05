@@ -21,10 +21,14 @@ class ResponsiveGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = maxWidth ?? constraints.maxWidth;
-        final isMobile = availableWidth < 600;
+        final isMobile = availableWidth < 768; // Increased mobile breakpoint
         final isTablet = availableWidth < 900;
         final isMedium = availableWidth < 1200;
         final isLarge = availableWidth < 1600;
+        
+        // Debug logging
+        print('ResponsiveGrid - Available width: $availableWidth');
+        print('ResponsiveGrid - isMobile: $isMobile, isTablet: $isTablet');
         
         int crossAxisCount;
         double childAspectRatio;
@@ -33,9 +37,9 @@ class ResponsiveGrid extends StatelessWidget {
         
         if (isMobile) {
           crossAxisCount = 1;
-          childAspectRatio = 2.2; // Much taller aspect ratio for compact mobile cards
-          crossAxisSpacing = 8; // Reduced spacing for mobile
-          mainAxisSpacing = 8; // Minimal vertical spacing between cards
+          childAspectRatio = 1.2; // Very compact aspect ratio for mobile cards
+          crossAxisSpacing = 4; // Minimal spacing for mobile
+          mainAxisSpacing = 4; // Minimal vertical spacing between cards
         } else if (isTablet) {
           crossAxisCount = 2;
           childAspectRatio = 1.8; // Taller aspect ratio for more compact cards
@@ -58,15 +62,17 @@ class ResponsiveGrid extends StatelessWidget {
           mainAxisSpacing = 16;
         }
 
+        // Use GridView for all screen sizes, but with different configurations
+        print('ResponsiveGrid - Using GridView layout for all screen sizes');
         return GridView.builder(
-          padding: padding ?? EdgeInsets.all(isMobile ? 6 : 12), // Reduced padding for compact layout
+          padding: padding ?? EdgeInsets.all(isMobile ? 6 : 12),
           shrinkWrap: shrinkWrap,
           physics: physics,
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            childAspectRatio: childAspectRatio,
+          gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+            maxCrossAxisExtent: availableWidth / crossAxisCount,
             crossAxisSpacing: crossAxisSpacing,
             mainAxisSpacing: mainAxisSpacing,
+            // Remove childAspectRatio to let cards determine their own height
           ),
           itemCount: children.length,
           itemBuilder: (context, index) => children[index],
