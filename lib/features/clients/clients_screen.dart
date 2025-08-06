@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -32,7 +32,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         : ref.watch(clientSearchProvider(_searchQuery));
 
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Clients',
         subtitle: 'Manage your clients',
         showBackButton: true,

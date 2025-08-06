@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../../../shared/widgets/simple_app_bar.dart';
+import '../../../shared/widgets/luxury_app_bar.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
@@ -59,7 +59,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     final isEditMode = widget.client != null;
     
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: isEditMode ? 'Edit Client' : 'Add Client',
         subtitle: isEditMode ? 'Update client details' : 'Create new client',
         showBackButton: true,

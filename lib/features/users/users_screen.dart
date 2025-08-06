@@ -6,7 +6,7 @@ import 'models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -54,7 +54,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Manage Users',
         subtitle: 'User administration',
         showBackButton: true,

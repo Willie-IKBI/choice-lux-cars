@@ -8,7 +8,8 @@ import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
-import 'package:choice_lux_cars/shared/widgets/simple_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -150,7 +151,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     
     if (_job == null) {
       return Scaffold(
-        appBar: SimpleAppBar(
+        appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
           onBackPressed: () => context.go('/jobs'),
@@ -165,7 +166,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final isDesktop = MediaQuery.of(context).size.width > 768;
     
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Job Summary',
         subtitle: 'Job #${_job!.id}',
         showBackButton: true,
@@ -733,6 +734,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   ),
                 ),
+                const SizedBox(width: 8),
+                IconButton(
+                  icon: const Icon(Icons.edit, size: 18),
+                  onPressed: () => _showTripEditModal(trip),
+                  tooltip: 'Edit Trip',
+                  style: IconButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    foregroundColor: ChoiceLuxTheme.richGold,
+                    padding: const EdgeInsets.all(8),
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 12),
@@ -886,6 +898,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     // TODO: Implement share functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Share functionality coming soon')),
+    );
+  }
+
+  void _showTripEditModal(Trip trip) {
+    showDialog(
+      context: context,
+      builder: (context) => TripEditModal(
+        trip: trip,
+        onTripUpdated: (updatedTrip) {
+          // Refresh the trips list
+          _loadJobData();
+        },
+      ),
     );
   }
 } 

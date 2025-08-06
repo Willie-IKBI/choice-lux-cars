@@ -9,11 +9,16 @@ import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart'
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/shared/widgets/simple_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
-  const CreateJobScreen({super.key});
+  final String? jobId; // null for create, non-null for edit
+  
+  const CreateJobScreen({
+    super.key,
+    this.jobId,
+  });
 
   @override
   ConsumerState<CreateJobScreen> createState() => _CreateJobScreenState();
@@ -70,6 +75,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     super.initState();
     print('CreateJobScreen initialized');
     _loadData();
+    
+    // If editing, load the job data
+    if (widget.jobId != null) {
+      _loadJobForEditing();
+    }
   }
   
   @override
@@ -93,6 +103,45 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Error loading data: $e')),
       );
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+  
+  Future<void> _loadJobForEditing() async {
+    if (widget.jobId == null) return;
+    
+    setState(() => _isLoading = true);
+    
+    try {
+      // Load the job data
+      final jobs = ref.read(jobsProvider);
+      final job = jobs.firstWhere((j) => j.id == widget.jobId);
+      
+      // Populate form fields
+      _selectedClientId = job.clientId;
+      _selectedAgentId = job.agentId;
+      _selectedVehicleId = job.vehicleId;
+      _selectedDriverId = job.driverId;
+      _selectedLocation = job.location;
+      _selectedJobStartDate = job.jobStartDate;
+      _collectPayment = job.collectPayment;
+      
+      _passengerNameController.text = job.passengerName ?? '';
+      _passengerContactController.text = job.passengerContact ?? '';
+      _pasCountController.text = job.pasCount.toString();
+      _luggageCountController.text = job.luggageCount.toString();
+      _notesController.text = job.notes ?? '';
+      if (job.paymentAmount != null) {
+        _paymentAmountController.text = job.paymentAmount!.toString();
+      }
+      
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading job data: $e')),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -143,44 +192,97 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       final currentUser = ref.read(currentUserProfileProvider);
       if (currentUser == null) throw Exception('User not authenticated');
       
-      final job = Job(
-        id: '', // Let database auto-generate the ID
-        clientId: _selectedClientId!,
-        agentId: _selectedAgentId,
-        vehicleId: _selectedVehicleId!,
-        driverId: _selectedDriverId!,
-        jobStartDate: _selectedJobStartDate!,
-        orderDate: DateTime.now(),
-        passengerName: _passengerNameController.text.trim().isEmpty 
-            ? null 
-            : _passengerNameController.text.trim(),
-        passengerContact: _passengerContactController.text.trim().isEmpty 
-            ? null 
-            : _passengerContactController.text.trim(),
-        pasCount: double.parse(_pasCountController.text),
-        luggageCount: _luggageCountController.text,
-        notes: _notesController.text.trim().isEmpty 
-            ? null 
-            : _notesController.text.trim(),
-        collectPayment: _collectPayment,
-        paymentAmount: null, // Amount will be completed later in transport details
-        status: 'open',
-        location: _selectedLocation,
-        createdBy: currentUser.id,
-        createdAt: DateTime.now(),
-      );
+      final isEditing = widget.jobId != null;
       
-      final createdJob = await ref.read(jobsProvider.notifier).createJob(job);
-      
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Job created successfully! Moving to transport details...'),
-            backgroundColor: ChoiceLuxTheme.successColor,
-          ),
+      if (isEditing) {
+        // Update existing job
+        final jobs = ref.read(jobsProvider);
+        final existingJob = jobs.firstWhere((j) => j.id == widget.jobId);
+        
+        final updatedJob = Job(
+          id: existingJob.id,
+          clientId: _selectedClientId!,
+          agentId: _selectedAgentId,
+          vehicleId: _selectedVehicleId!,
+          driverId: _selectedDriverId!,
+          jobStartDate: _selectedJobStartDate!,
+          orderDate: existingJob.orderDate,
+          passengerName: _passengerNameController.text.trim().isEmpty 
+              ? null 
+              : _passengerNameController.text.trim(),
+          passengerContact: _passengerContactController.text.trim().isEmpty 
+              ? null 
+              : _passengerContactController.text.trim(),
+          pasCount: double.parse(_pasCountController.text),
+          luggageCount: _luggageCountController.text,
+          notes: _notesController.text.trim().isEmpty 
+              ? null 
+              : _notesController.text.trim(),
+          collectPayment: _collectPayment,
+          paymentAmount: _paymentAmountController.text.isNotEmpty 
+              ? double.tryParse(_paymentAmountController.text) 
+              : existingJob.paymentAmount,
+          status: existingJob.status,
+          location: _selectedLocation,
+          createdBy: existingJob.createdBy,
+          createdAt: existingJob.createdAt,
+          driverConfirmation: existingJob.driverConfirmation, // Preserve existing value when updating
         );
-        // Navigate to trip management screen for Step 2
-        context.go('/jobs/${createdJob['id']}/trip-management');
+        
+        await ref.read(jobsProvider.notifier).updateJob(updatedJob);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job updated successfully!'),
+              backgroundColor: ChoiceLuxTheme.successColor,
+            ),
+          );
+          // Navigate back to job summary
+          context.go('/jobs/${widget.jobId}/summary');
+        }
+      } else {
+        // Create new job
+        final job = Job(
+          id: '', // Let database auto-generate the ID
+          clientId: _selectedClientId!,
+          agentId: _selectedAgentId,
+          vehicleId: _selectedVehicleId!,
+          driverId: _selectedDriverId!,
+          jobStartDate: _selectedJobStartDate!,
+          orderDate: DateTime.now(),
+          passengerName: _passengerNameController.text.trim().isEmpty 
+              ? null 
+              : _passengerNameController.text.trim(),
+          passengerContact: _passengerContactController.text.trim().isEmpty 
+              ? null 
+              : _passengerContactController.text.trim(),
+          pasCount: double.parse(_pasCountController.text),
+          luggageCount: _luggageCountController.text,
+          notes: _notesController.text.trim().isEmpty 
+              ? null 
+              : _notesController.text.trim(),
+          collectPayment: _collectPayment,
+          paymentAmount: null, // Amount will be completed later in transport details
+          status: 'open',
+          location: _selectedLocation,
+          createdBy: currentUser.id,
+          createdAt: DateTime.now(),
+          driverConfirmation: false, // Set to false when creating new job
+        );
+        
+        final createdJob = await ref.read(jobsProvider.notifier).createJob(job);
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Job created successfully! Moving to transport details...'),
+              backgroundColor: ChoiceLuxTheme.successColor,
+            ),
+          );
+          // Navigate to trip management screen for Step 2
+          context.go('/jobs/${createdJob['id']}/trip-management');
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -211,11 +313,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     }
     
     return Scaffold(
-      appBar: SimpleAppBar(
-        title: 'Create New Job',
-        subtitle: 'Step 1: Job Details',
+      appBar: LuxuryAppBar(
+        title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
+        subtitle: widget.jobId != null ? 'Update Job Details' : 'Step 1: Job Details',
         showBackButton: true,
-        onBackPressed: () => context.go('/jobs'),
+        onBackPressed: () => widget.jobId != null 
+            ? context.go('/jobs/${widget.jobId}/summary')
+            : context.go('/jobs'),
       ),
       body: Consumer(
         builder: (context, ref, child) {
@@ -558,7 +662,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     } else if (_completionPercentage < 100) {
       return 'Almost there! Complete the remaining fields';
     } else {
-      return 'All required fields completed! Ready to create job';
+      return widget.jobId != null 
+        ? 'All required fields completed! Ready to update job'
+        : 'All required fields completed! Ready to create job';
     }
   }
 
@@ -1345,9 +1451,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                             ),
                           )
-                        : const Text(
-                            'Create Job',
-                            style: TextStyle(
+                        : Text(
+                            widget.jobId != null ? 'Update Job' : 'Create Job',
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w600,
                             ),
@@ -1358,7 +1464,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: _isSubmitting ? null : () => context.go('/jobs'),
+                    onPressed: _isSubmitting ? null : () => widget.jobId != null 
+                        ? context.go('/jobs/${widget.jobId}/summary')
+                        : context.go('/jobs'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ChoiceLuxTheme.platinumSilver,
                       side: BorderSide(
@@ -1384,7 +1492,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 OutlinedButton(
-                  onPressed: _isSubmitting ? null : () => context.go('/jobs'),
+                  onPressed: _isSubmitting ? null : () => widget.jobId != null 
+                      ? context.go('/jobs/${widget.jobId}/summary')
+                      : context.go('/jobs'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: ChoiceLuxTheme.platinumSilver,
                     side: BorderSide(
@@ -1423,9 +1533,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                             valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                           ),
                         )
-                      : const Text(
-                          'Create Job',
-                          style: TextStyle(
+                      : Text(
+                          widget.jobId != null ? 'Update Job' : 'Create Job',
+                          style: const TextStyle(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                           ),

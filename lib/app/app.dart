@@ -26,7 +26,7 @@ import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
-import '../shared/widgets/simple_app_bar.dart';
+import '../shared/widgets/luxury_app_bar.dart';
 
 class ChoiceLuxCarsApp extends ConsumerWidget {
   const ChoiceLuxCarsApp({super.key});
@@ -198,6 +198,14 @@ class ChoiceLuxCarsApp extends ConsumerWidget {
           },
         ),
         GoRoute(
+          path: '/jobs/:id/edit',
+          name: 'edit_job',
+          builder: (context, state) {
+            final jobId = state.pathParameters['id']!;
+            return CreateJobScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
           path: '/invoices',
           name: 'invoices',
           builder: (context, state) => const InvoicesScreen(),
@@ -232,7 +240,7 @@ class ChoiceLuxCarsApp extends ConsumerWidget {
         ),
       ],
       errorBuilder: (context, state) => Scaffold(
-        appBar: SimpleAppBar(
+        appBar: LuxuryAppBar(
           title: 'Page Not Found',
           subtitle: 'The requested page could not be found',
           showBackButton: true,

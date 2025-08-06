@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
-import '../../../shared/widgets/simple_app_bar.dart';
+import '../../../shared/widgets/luxury_app_bar.dart';
 
 class AddEditAgentScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -53,7 +53,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
     final isEditMode = widget.agent != null;
     
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: isEditMode ? 'Edit Agent' : 'Add Agent',
         subtitle: isEditMode ? 'Update agent details' : 'Create new agent',
         showBackButton: true,

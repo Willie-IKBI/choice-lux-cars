@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 
 class VouchersScreen extends StatelessWidget {
   const VouchersScreen({super.key});
@@ -8,7 +8,7 @@ class VouchersScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Vouchers',
         subtitle: 'Manage vouchers',
         showBackButton: true,

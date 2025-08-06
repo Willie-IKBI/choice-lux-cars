@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/features/users/widgets/user_form.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 
 class UserDetailScreen extends ConsumerWidget {
   final String userId;
@@ -28,7 +28,7 @@ class UserDetailScreen extends ConsumerWidget {
     }
     if (user == null) {
       return Scaffold(
-        appBar: SimpleAppBar(
+        appBar: LuxuryAppBar(
           title: 'User Not Found',
           showBackButton: true,
           onBackPressed: () => context.go('/users'),
@@ -38,7 +38,7 @@ class UserDetailScreen extends ConsumerWidget {
     }
     final canDeactivate = user.status == 'active';
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Edit User',
         subtitle: user.displayName,
         showBackButton: true,

@@ -8,7 +8,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
-import '../../../shared/widgets/simple_app_bar.dart';
+import '../../../shared/widgets/luxury_app_bar.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -54,7 +54,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     final agentsAsync = ref.watch(agentsNotifierProvider(widget.clientId));
 
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Client Details',
         subtitle: 'View and manage client information',
         showBackButton: true,

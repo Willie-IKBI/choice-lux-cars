@@ -4,7 +4,7 @@ import 'models/vehicle.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -922,7 +922,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     } else {
       // Mobile: Full screen
       return Scaffold(
-        appBar: SimpleAppBar(
+        appBar: LuxuryAppBar(
           title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
           subtitle: isEdit ? 'Update vehicle details' : 'Create new vehicle',
           showBackButton: true,

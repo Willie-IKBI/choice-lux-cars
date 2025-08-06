@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
-import 'package:choice_lux_cars/shared/widgets/simple_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 
 class TripManagementScreen extends ConsumerStatefulWidget {
@@ -478,7 +478,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
         : 'All trips added successfully!';
     
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Trip Management',
         subtitle: 'Step 2: Transport Details',
         showBackButton: true,

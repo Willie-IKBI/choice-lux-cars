@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../vehicles/providers/vehicles_provider.dart';
 import '../vehicles/widgets/vehicle_card.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/simple_app_bar.dart';
+import '../../shared/widgets/luxury_app_bar.dart';
 import '../../app/theme.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
@@ -27,7 +27,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     final state = ref.watch(vehiclesProvider);
     final vehicles = state.vehicles.where((v) => v.make.toLowerCase().contains(_search.toLowerCase())).toList();
     return Scaffold(
-      appBar: SimpleAppBar(
+      appBar: LuxuryAppBar(
         title: 'Vehicles',
         subtitle: 'Manage your fleet',
         showBackButton: true,

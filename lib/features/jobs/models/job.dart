@@ -75,7 +75,7 @@ class Job {
       updatedAt: map['updated_at'] != null 
           ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
-      driverConfirmation: map['driver_confirmation_ind'] == true,
+      driverConfirmation: map['driver_confirm_ind'] == true,
     );
   }
 
@@ -104,7 +104,7 @@ class Job {
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
-      'driver_confirmation_ind': driverConfirmation,
+      'driver_confirm_ind': driverConfirmation,
     };
   }
 
