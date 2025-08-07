@@ -36,11 +36,18 @@ class _UserFormState extends State<UserForm> {
   String? profileImage;
   bool _uploading = false;
 
-  final List<String> roles = [
-    'administrator', 'manager', 'driver_manager', 'driver', 'agent', 'unassigned'
+  final List<_RoleOption> roles = const [
+    _RoleOption('administrator', 'Administrator', Icons.admin_panel_settings_outlined),
+    _RoleOption('manager', 'Manager', Icons.business_center_outlined),
+    _RoleOption('driver_manager', 'Driver Manager', Icons.settings_suggest_outlined),
+    _RoleOption('driver', 'Driver', Icons.directions_car_outlined),
+    _RoleOption('agent', 'Agent', Icons.person_outline),
+    _RoleOption('unassigned', 'Unassigned', Icons.help_outline),
   ];
-  final List<String> statuses = [
-    'active', 'deactivated', 'unassigned'
+  final List<_StatusOption> statuses = const [
+    _StatusOption('active', 'Active', Icons.check_circle_outline),
+    _StatusOption('deactivated', 'Deactivated', Icons.block),
+    _StatusOption('unassigned', 'Unassigned', Icons.help_outline),
   ];
 
   @override
@@ -321,12 +328,22 @@ class _UserFormState extends State<UserForm> {
                 ? DropdownButtonFormField<String>(
                     value: role,
                     decoration: _modernInputDecoration('Role'),
-                    items: roles.map((r) => DropdownMenuItem(value: r, child: Text(_titleCase(r)))).toList(),
+                    items: roles.map((r) => DropdownMenuItem<String>(
+                      value: r.value,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(r.icon, size: 18),
+                          const SizedBox(width: 8),
+                          Text(r.label),
+                        ],
+                      ),
+                    )).toList(),
                     onChanged: (val) => setState(() => role = val),
                     onSaved: (val) => role = val,
                   )
                 : TextFormField(
-                    initialValue: _titleCase(role ?? ''),
+                    initialValue: roles.firstWhere((r) => r.value == role, orElse: () => roles.last).label,
                     decoration: _modernInputDecoration('Role'),
                     style: const TextStyle(fontSize: 15),
                     readOnly: true,
@@ -335,7 +352,17 @@ class _UserFormState extends State<UserForm> {
             DropdownButtonFormField<String>(
               value: status,
               decoration: _modernInputDecoration('Status'),
-              items: statuses.map((s) => DropdownMenuItem(value: s, child: Text(_titleCase(s)))).toList(),
+              items: statuses.map((s) => DropdownMenuItem<String>(
+                value: s.value,
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(s.icon, size: 18),
+                    const SizedBox(width: 8),
+                    Text(s.label),
+                  ],
+                ),
+              )).toList(),
               onChanged: (val) => setState(() => status = val),
               onSaved: (val) => status = val,
             ),
@@ -556,6 +583,20 @@ class _UserFormState extends State<UserForm> {
   }
 
   String _titleCase(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
+}
+
+class _RoleOption {
+  final String value;
+  final String label;
+  final IconData icon;
+  const _RoleOption(this.value, this.label, this.icon);
+}
+
+class _StatusOption {
+  final String value;
+  final String label;
+  final IconData icon;
+  const _StatusOption(this.value, this.label, this.icon);
 }
 
 class _DatePickerFormField extends FormField<DateTime> {

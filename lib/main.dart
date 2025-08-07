@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:choice_lux_cars/app/app.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
+import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {

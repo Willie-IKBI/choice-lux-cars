@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
@@ -23,6 +25,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
+    
+    // Initialize notification provider once when dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.read(notificationProvider.notifier).initialize();
+    });
     final isMobile = MediaQuery.of(context).size.width < 600;
     
     // Get display name from profile, fallback to email, then to 'User'
@@ -287,6 +294,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       ),
     );
   }
+
+  // Notification handler
+  void _handleNotifications() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => const NotificationListScreen(),
+      ),
+    );
+  }
 }
 
 // Dashboard Item Model
@@ -308,8 +324,4 @@ class DashboardItem {
   });
 }
 
-// Notification handler
-void _handleNotifications() {
-  // TODO: Implement notifications screen
-  print('Notifications tapped');
-} 
+ 

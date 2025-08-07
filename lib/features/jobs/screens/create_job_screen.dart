@@ -199,6 +199,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         final jobs = ref.read(jobsProvider);
         final existingJob = jobs.firstWhere((j) => j.id == widget.jobId);
         
+        // Check if driver is being changed
+        final isDriverChanged = _selectedDriverId != existingJob.driverId;
+        
         final updatedJob = Job(
           id: existingJob.id,
           clientId: _selectedClientId!,
@@ -226,19 +229,30 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           location: _selectedLocation,
           createdBy: existingJob.createdBy,
           createdAt: existingJob.createdAt,
-          driverConfirmation: existingJob.driverConfirmation, // Preserve existing value when updating
+          driverConfirmation: isDriverChanged ? false : existingJob.driverConfirmation, // Reset if driver changed
         );
         
         await ref.read(jobsProvider.notifier).updateJob(updatedJob);
         
+        // Show appropriate message based on driver change
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Job updated successfully!'),
-              backgroundColor: ChoiceLuxTheme.successColor,
-            ),
-          );
-          // Navigate back to job summary
+          if (isDriverChanged) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Job updated and reassigned to new driver. Driver will be notified.'),
+                backgroundColor: ChoiceLuxTheme.successColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          } else {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Job updated successfully!'),
+                backgroundColor: ChoiceLuxTheme.successColor,
+                behavior: SnackBarBehavior.floating,
+              ),
+            );
+          }
           context.go('/jobs/${widget.jobId}/summary');
         }
       } else {

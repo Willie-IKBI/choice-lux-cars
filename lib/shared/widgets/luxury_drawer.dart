@@ -879,33 +879,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
             ),
           ),
-          
-          const SizedBox(height: 12),
-          
-          // Exit Application Button
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () {
-                _showExitDialog(context);
-              },
-              icon: Icon(
-                Icons.exit_to_app,
-                color: ChoiceLuxTheme.platinumSilver,
-                size: 20,
-              ),
-              label: Text(
-                'Exit Application',
-                style: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
-              ),
-            ),
-          ),
         ],
       ),
     );
@@ -954,33 +927,6 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   ),
                 ),
                 padding: const EdgeInsets.symmetric(vertical: 16),
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 12),
-          
-          // Exit Application Button
-          SizedBox(
-            width: double.infinity,
-            child: TextButton.icon(
-              onPressed: () {
-                _showExitDialog(context);
-              },
-              icon: Icon(
-                Icons.exit_to_app,
-                color: ChoiceLuxTheme.platinumSilver,
-                size: 20,
-              ),
-              label: Text(
-                'Exit Application',
-                style: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              style: TextButton.styleFrom(
-                padding: const EdgeInsets.symmetric(vertical: 12),
               ),
             ),
           ),
@@ -1059,72 +1005,5 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     }
   }
 
-  void _showExitDialog(BuildContext context) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          backgroundColor: ChoiceLuxTheme.charcoalGray,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
-          ),
-          title: Row(
-            children: [
-              Icon(
-                Icons.exit_to_app,
-                color: ChoiceLuxTheme.richGold,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Exit Application',
-                style: TextStyle(
-                  color: ChoiceLuxTheme.softWhite,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          content: Text(
-            'Are you sure you want to exit the application?',
-            style: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver,
-              fontSize: 16,
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: Text(
-                'Cancel',
-                style: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                SystemNavigator.pop();
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-              child: const Text(
-                'Exit',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+
 } 

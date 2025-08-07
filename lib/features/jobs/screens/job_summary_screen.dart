@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
 
@@ -25,6 +26,7 @@ class JobSummaryScreen extends ConsumerStatefulWidget {
 
 class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   bool _isLoading = true;
+  String? _errorMessage;
   Job? _job;
   List<Trip> _trips = [];
   dynamic _client;
@@ -51,9 +53,28 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     setState(() => _isLoading = true);
     
     try {
-      // Load job and trips
+      // Try to find job in local state first
       final jobs = ref.read(jobsProvider);
-      _job = jobs.firstWhere((job) => job.id == widget.jobId);
+      Job? job;
+      
+      try {
+        job = jobs.firstWhere((job) => job.id == widget.jobId);
+        print('Found job ${widget.jobId} in local state');
+      } catch (e) {
+        print('Job ${widget.jobId} not found in local state, fetching from database...');
+        // If not found locally, fetch from database
+        job = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId);
+        if (job != null) {
+          print('Successfully fetched job ${widget.jobId} from database');
+        } else {
+          print('Job ${widget.jobId} not found in database');
+          _errorMessage = 'Job not found';
+          setState(() => _isLoading = false);
+          return;
+        }
+      }
+      
+      _job = job;
       
       // Try to load trips, but don't fail if trips table doesn't exist
       try {
@@ -115,11 +136,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       // Note: Agent lookup would need to be implemented separately
       // For now, we'll leave _agent as null
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading job data: $e')),
-        );
-      }
+      print('Error loading job data: $e');
+      // Store error to show in build method
+      _errorMessage = 'Error loading job data: $e';
     } finally {
       setState(() => _isLoading = false);
     }
@@ -149,12 +168,47 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       );
     }
     
+    if (_errorMessage != null) {
+      return Scaffold(
+        appBar: LuxuryAppBar(
+          title: 'Job Summary',
+          showBackButton: true,
+          onBackPressed: () => _showBackOptions(),
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(Icons.error_outline, size: 64, color: Colors.red),
+              const SizedBox(height: 16),
+              Text(
+                _errorMessage!,
+                style: Theme.of(context).textTheme.bodyLarge,
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: () {
+                  setState(() {
+                    _isLoading = true;
+                    _errorMessage = null;
+                  });
+                  _loadJobData();
+                },
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+    
     if (_job == null) {
       return Scaffold(
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => context.go('/jobs'),
+          onBackPressed: () => _showBackOptions(),
         ),
         body: const Center(
           child: Text('Job not found'),
@@ -170,7 +224,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         title: 'Job Summary',
         subtitle: 'Job #${_job!.id}',
         showBackButton: true,
-        onBackPressed: () => context.go('/jobs'),
+        onBackPressed: () => _showBackOptions(),
         actions: [
           IconButton(
             icon: const Icon(Icons.print),
@@ -184,14 +238,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ],
       ),
-      body: isDesktop ? _buildDesktopLayout(totalAmount) : _buildMobileLayout(totalAmount),
-      floatingActionButton: isDesktop ? null : FloatingActionButton.extended(
-        onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
-        icon: const Icon(Icons.edit),
-        label: const Text('Edit Job'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.white,
-      ),
+             body: isDesktop ? _buildDesktopLayout(totalAmount) : _buildMobileLayout(totalAmount),
     );
   }
   
@@ -288,13 +335,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ],
           const SizedBox(height: 16),
-          _buildAccordionSection(
-            'Trips Summary',
-            'trips',
-            _buildTripsContent(totalAmount),
-            Icons.route,
-          ),
-          const SizedBox(height: 80), // Space for FAB
+                     _buildAccordionSection(
+             'Trips Summary',
+             'trips',
+             _buildTripsContent(totalAmount),
+             Icons.route,
+           ),
+           const SizedBox(height: 24),
+           _buildMobileActionButtons(),
+           const SizedBox(height: 24),
         ],
       ),
     );
@@ -759,39 +808,271 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
   
-  Widget _buildActionButtons() {
-    return Row(
-      children: [
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => context.go('/jobs'),
-            icon: const Icon(Icons.list),
-            label: const Text('Back to Jobs'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.grey,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
+     Widget _buildActionButtons() {
+     final currentUser = ref.read(currentUserProfileProvider);
+     final isAssignedDriver = _job?.driverId == currentUser?.id;
+     final needsConfirmation = isAssignedDriver && _job?.isConfirmed != true;
+     final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
+                    currentUser?.role?.toLowerCase() == 'manager';
+     
+     return Row(
+       children: [
+         Expanded(
+           child: ElevatedButton.icon(
+             onPressed: () => context.go('/jobs'),
+             icon: const Icon(Icons.list),
+             label: const Text('Back to Jobs'),
+             style: ElevatedButton.styleFrom(
+               backgroundColor: Colors.grey,
+               foregroundColor: Colors.white,
+               padding: const EdgeInsets.symmetric(vertical: 16),
+               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+             ),
+           ),
+         ),
+         if (needsConfirmation) ...[
+           const SizedBox(width: 16),
+           Expanded(
+             child: ElevatedButton.icon(
+               onPressed: _confirmJob,
+               icon: const Icon(Icons.check_circle),
+               label: const Text('Confirm Job'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: Colors.green,
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+               ),
+             ),
+           ),
+         ] else if (canEdit) ...[
+           const SizedBox(width: 16),
+           Expanded(
+             child: ElevatedButton.icon(
+               onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
+               icon: const Icon(Icons.edit),
+               label: const Text('Edit Job'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: ChoiceLuxTheme.richGold,
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+               ),
+             ),
+           ),
+         ],
+       ],
+     );
+   }
+
+   Widget _buildMobileActionButtons() {
+     final currentUser = ref.read(currentUserProfileProvider);
+     final isAssignedDriver = _job?.driverId == currentUser?.id;
+     final needsConfirmation = isAssignedDriver && _job?.isConfirmed != true;
+     final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
+                    currentUser?.role?.toLowerCase() == 'manager';
+     
+     return Column(
+       children: [
+         SizedBox(
+           width: double.infinity,
+           child: ElevatedButton.icon(
+             onPressed: () => context.go('/jobs'),
+             icon: const Icon(Icons.list),
+             label: const Text('Back to Jobs'),
+             style: ElevatedButton.styleFrom(
+               backgroundColor: Colors.grey,
+               foregroundColor: Colors.white,
+               padding: const EdgeInsets.symmetric(vertical: 16),
+               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+             ),
+           ),
+         ),
+         if (needsConfirmation) ...[
+           const SizedBox(height: 12),
+           SizedBox(
+             width: double.infinity,
+             child: ElevatedButton.icon(
+               onPressed: _confirmJob,
+               icon: const Icon(Icons.check_circle),
+               label: const Text('Confirm Job'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: Colors.green,
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+               ),
+             ),
+           ),
+         ] else if (canEdit) ...[
+           const SizedBox(height: 12),
+           SizedBox(
+             width: double.infinity,
+             child: ElevatedButton.icon(
+               onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
+               icon: const Icon(Icons.edit),
+               label: const Text('Edit Job'),
+               style: ElevatedButton.styleFrom(
+                 backgroundColor: ChoiceLuxTheme.richGold,
+                 foregroundColor: Colors.white,
+                 padding: const EdgeInsets.symmetric(vertical: 16),
+                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+               ),
+             ),
+           ),
+         ],
+       ],
+     );
+   }
+
+  Future<void> _confirmJob() async {
+    try {
+      await ref.read(jobsProvider.notifier).confirmJob(_job!.id, ref: ref);
+      
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Job confirmed successfully!'),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: ElevatedButton.icon(
-            onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
-            icon: const Icon(Icons.edit),
-            label: const Text('Edit Job'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.richGold,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
+        );
+        
+        // Navigate back to jobs management after confirmation
+        context.go('/jobs');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('❌ Failed to confirm job: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
           ),
-        ),
-      ],
-    );
+        );
+      }
+    }
   }
+
+     void _showBackOptions() {
+     showModalBottomSheet(
+       context: context,
+       backgroundColor: Colors.transparent,
+       builder: (context) => Container(
+         decoration: BoxDecoration(
+           color: Theme.of(context).brightness == Brightness.dark 
+             ? const Color(0xFF1E1E1E) 
+             : Colors.white,
+           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
+           boxShadow: [
+             BoxShadow(
+               color: Colors.black.withOpacity(0.2),
+               blurRadius: 10,
+               offset: const Offset(0, -2),
+             ),
+           ],
+         ),
+         child: SafeArea(
+           child: Column(
+             mainAxisSize: MainAxisSize.min,
+             children: [
+               Container(
+                 width: 40,
+                 height: 4,
+                 margin: const EdgeInsets.symmetric(vertical: 12),
+                 decoration: BoxDecoration(
+                   color: Colors.grey[400],
+                   borderRadius: BorderRadius.circular(2),
+                 ),
+               ),
+               Padding(
+                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                 child: Text(
+                   'Choose Destination',
+                   style: TextStyle(
+                     fontSize: 18,
+                     fontWeight: FontWeight.bold,
+                     color: Theme.of(context).brightness == Brightness.dark 
+                       ? Colors.white 
+                       : Colors.black87,
+                   ),
+                 ),
+               ),
+               ListTile(
+                 leading: Icon(
+                   Icons.work,
+                   color: ChoiceLuxTheme.richGold,
+                   size: 24,
+                 ),
+                 title: Text(
+                   'Jobs Management',
+                   style: TextStyle(
+                     fontSize: 16,
+                     fontWeight: FontWeight.w600,
+                     color: Theme.of(context).brightness == Brightness.dark 
+                       ? Colors.white 
+                       : Colors.black87,
+                   ),
+                 ),
+                 subtitle: Text(
+                   'Return to jobs list',
+                   style: TextStyle(
+                     fontSize: 14,
+                     color: Theme.of(context).brightness == Brightness.dark 
+                       ? Colors.grey[300] 
+                       : Colors.grey[600],
+                   ),
+                 ),
+                 onTap: () {
+                   Navigator.pop(context);
+                   context.go('/jobs');
+                 },
+                 tileColor: Colors.transparent,
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(12),
+                 ),
+               ),
+               ListTile(
+                 leading: Icon(
+                   Icons.notifications,
+                   color: ChoiceLuxTheme.richGold,
+                   size: 24,
+                 ),
+                 title: Text(
+                   'Notifications',
+                   style: TextStyle(
+                     fontSize: 16,
+                     fontWeight: FontWeight.w600,
+                     color: Theme.of(context).brightness == Brightness.dark 
+                       ? Colors.white 
+                       : Colors.black87,
+                   ),
+                 ),
+                 subtitle: Text(
+                   'Return to notifications',
+                   style: TextStyle(
+                     fontSize: 14,
+                     color: Theme.of(context).brightness == Brightness.dark 
+                       ? Colors.grey[300] 
+                       : Colors.grey[600],
+                   ),
+                 ),
+                 onTap: () {
+                   Navigator.pop(context);
+                   context.go('/notifications');
+                 },
+                 tileColor: Colors.transparent,
+                 shape: RoundedRectangleBorder(
+                   borderRadius: BorderRadius.circular(12),
+                 ),
+               ),
+               const SizedBox(height: 20),
+             ],
+           ),
+         ),
+       ),
+     );
+   }
   
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(

@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/shared/widgets/notification_bell.dart';
 import 'package:go_router/go_router.dart';
 
 class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
@@ -119,11 +121,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               
               const SizedBox(width: 12),
               
-              // Notification Icon with Enhanced Badge
-              if (onNotificationTap != null) ...[
-                _buildNotificationButton(),
-                const SizedBox(width: 12),
-              ],
+                             // Notification Icon with Enhanced Badge
+               if (onNotificationTap != null) ...[
+                 _buildNotificationButton(),
+                 const SizedBox(width: 16),
+               ],
               
               // User Profile Section
               if (showProfile && currentUser != null) ...[
@@ -229,55 +231,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   Widget _buildNotificationButton() {
-    return Stack(
-      children: [
-        Container(
-          decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-              width: 1,
-            ),
-          ),
-          child: IconButton(
-            icon: Icon(
-              Icons.notifications_outlined,
-              color: ChoiceLuxTheme.richGold,
-              size: 20,
-            ),
-            onPressed: onNotificationTap,
-            style: IconButton.styleFrom(
-              padding: const EdgeInsets.all(8),
-              minimumSize: const Size(40, 40),
-            ),
-          ),
-        ),
-        // Enhanced Notification Badge
-        Positioned(
-          top: 8,
-          right: 8,
-          child: Container(
-            width: 10,
-            height: 10,
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.errorColor,
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ChoiceLuxTheme.jetBlack,
-                width: 1.5,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: ChoiceLuxTheme.errorColor.withOpacity(0.5),
-                  blurRadius: 4,
-                  spreadRadius: 1,
-                ),
-              ],
-            ),
-          ),
-        ),
-      ],
+    return Consumer(
+      builder: (context, ref, child) {
+        final isMobile = MediaQuery.of(context).size.width < 600;
+        return NotificationBell(
+          iconColor: ChoiceLuxTheme.richGold,
+          size: isMobile ? 18 : 20,
+          showCount: true, // You can set this to false for just a dot
+          onTap: onNotificationTap,
+        );
+      },
     );
   }
 

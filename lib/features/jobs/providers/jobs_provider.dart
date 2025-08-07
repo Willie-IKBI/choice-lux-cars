@@ -3,6 +3,7 @@ import '../models/job.dart';
 import '../models/trip.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:uuid/uuid.dart';
 
 final jobsProvider = StateNotifierProvider<JobsNotifier, List<Job>>((ref) {
@@ -141,6 +142,68 @@ class JobsNotifier extends StateNotifier<List<Job>> {
     return userRole == 'administrator' || 
            userRole == 'manager' || 
            userRole == 'driver_manager';
+  }
+
+  // Confirm job assignment
+  Future<void> confirmJob(String jobId, {required WidgetRef ref}) async {
+    try {
+      await SupabaseService.instance.updateJob(
+        jobId: jobId,
+        data: {
+          'is_confirmed': true,
+          'confirmed_at': DateTime.now().toIso8601String(),
+          'confirmed_by': currentUser?.id,
+          'updated_at': DateTime.now().toIso8601String(),
+        }
+      );
+      
+      // Hide all notifications for this job (soft delete)
+      try {
+        await ref.read(notificationProvider.notifier).hideJobNotifications(jobId);
+      } catch (e) {
+        print('Warning: Could not hide notifications: $e');
+      }
+      
+      // Refresh jobs list
+      await fetchJobs();
+    } catch (error) {
+      print('Error confirming job: $error');
+      rethrow;
+    }
+  }
+
+  // Get jobs that need confirmation (for current driver)
+  List<Job> get jobsNeedingConfirmation {
+    if (currentUser == null) return [];
+    
+    return state.where((job) => 
+      job.driverId == currentUser!.id && 
+      job.driverConfirmation != true
+    ).toList();
+  }
+
+  // Get confirmation status for a specific job
+  bool isJobConfirmed(String jobId) {
+    try {
+      final job = state.firstWhere((j) => j.id == jobId);
+      return job.driverConfirmation == true;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Fetch a single job by ID
+  Future<Job?> fetchJobById(String jobId) async {
+    try {
+      final jobMap = await SupabaseService.instance.getJob(jobId);
+      if (jobMap != null) {
+        return Job.fromMap(jobMap);
+      }
+      return null;
+    } catch (error) {
+      print('Error fetching job by ID: $error');
+      return null;
+    }
   }
 }
 

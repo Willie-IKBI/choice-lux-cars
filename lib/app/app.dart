@@ -26,13 +26,28 @@ import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import '../shared/widgets/luxury_app_bar.dart';
+import '../core/services/fcm_service.dart';
 
-class ChoiceLuxCarsApp extends ConsumerWidget {
+class ChoiceLuxCarsApp extends ConsumerStatefulWidget {
   const ChoiceLuxCarsApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<ChoiceLuxCarsApp> createState() => _ChoiceLuxCarsAppState();
+}
+
+class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
+  @override
+  void initState() {
+    super.initState();
+    // Initialize FCM service
+    FCMService.initialize(ref);
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
 
@@ -237,6 +252,11 @@ class ChoiceLuxCarsApp extends ConsumerWidget {
             final userId = state.pathParameters['id']!;
             return UserDetailScreen(userId: userId);
           },
+        ),
+        GoRoute(
+          path: '/notifications',
+          name: 'notifications',
+          builder: (context, state) => const NotificationListScreen(),
         ),
       ],
       errorBuilder: (context, state) => Scaffold(

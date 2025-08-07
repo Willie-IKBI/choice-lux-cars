@@ -21,7 +21,10 @@ class Job {
   final String createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final bool? driverConfirmation; // Whether driver confirmed receiving the job
+  final bool? driverConfirmation; // Whether driver confirmed receiving the job (legacy field)
+  final bool? isConfirmed; // New confirmation field
+  final DateTime? confirmedAt; // When the job was confirmed
+  final String? confirmedBy; // Who confirmed the job
 
   Job({
     required this.id,
@@ -47,6 +50,9 @@ class Job {
     required this.createdAt,
     this.updatedAt,
     this.driverConfirmation,
+    this.isConfirmed,
+    this.confirmedAt,
+    this.confirmedBy,
   });
 
   factory Job.fromMap(Map<String, dynamic> map) {
@@ -76,6 +82,11 @@ class Job {
           ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
       driverConfirmation: map['driver_confirm_ind'] == true,
+      isConfirmed: map['is_confirmed'] == true,
+      confirmedAt: map['confirmed_at'] != null 
+          ? DateTime.parse(map['confirmed_at']?.toString() ?? DateTime.now().toIso8601String()) 
+          : null,
+      confirmedBy: map['confirmed_by']?.toString(),
     );
   }
 
@@ -105,6 +116,9 @@ class Job {
       'created_at': createdAt.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
       'driver_confirm_ind': driverConfirmation,
+      'is_confirmed': isConfirmed,
+      if (confirmedAt != null) 'confirmed_at': confirmedAt!.toIso8601String(),
+      'confirmed_by': confirmedBy,
     };
   }
 
@@ -132,6 +146,9 @@ class Job {
     DateTime? createdAt,
     DateTime? updatedAt,
     bool? driverConfirmation,
+    bool? isConfirmed,
+    DateTime? confirmedAt,
+    String? confirmedBy,
   }) {
     return Job(
       id: id ?? this.id,
@@ -157,6 +174,9 @@ class Job {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       driverConfirmation: driverConfirmation ?? this.driverConfirmation,
+      isConfirmed: isConfirmed ?? this.isConfirmed,
+      confirmedAt: confirmedAt ?? this.confirmedAt,
+      confirmedBy: confirmedBy ?? this.confirmedBy,
     );
   }
 
