@@ -25,6 +25,7 @@ class Job {
   final bool? isConfirmed; // New confirmation field
   final DateTime? confirmedAt; // When the job was confirmed
   final String? confirmedBy; // Who confirmed the job
+  final String? jobNumber; // Job number for display purposes
 
   Job({
     required this.id,
@@ -53,6 +54,7 @@ class Job {
     this.isConfirmed,
     this.confirmedAt,
     this.confirmedBy,
+    this.jobNumber,
   });
 
   factory Job.fromMap(Map<String, dynamic> map) {
@@ -87,6 +89,7 @@ class Job {
           ? DateTime.parse(map['confirmed_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
       confirmedBy: map['confirmed_by']?.toString(),
+      jobNumber: map['job_number']?.toString(),
     );
   }
 
@@ -119,6 +122,7 @@ class Job {
       'is_confirmed': isConfirmed,
       if (confirmedAt != null) 'confirmed_at': confirmedAt!.toIso8601String(),
       'confirmed_by': confirmedBy,
+      'job_number': jobNumber,
     };
   }
 
@@ -149,6 +153,7 @@ class Job {
     bool? isConfirmed,
     DateTime? confirmedAt,
     String? confirmedBy,
+    String? jobNumber,
   }) {
     return Job(
       id: id ?? this.id,
@@ -177,6 +182,7 @@ class Job {
       isConfirmed: isConfirmed ?? this.isConfirmed,
       confirmedAt: confirmedAt ?? this.confirmedAt,
       confirmedBy: confirmedBy ?? this.confirmedBy,
+      jobNumber: jobNumber ?? this.jobNumber,
     );
   }
 

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -25,6 +27,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
+    final jobs = ref.watch(jobsProvider);
     
     // Initialize notification provider once when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -40,8 +43,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       userName = currentUser!.email!.split('@')[0];
     }
     
-    // Check if user is administrator
-    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+    // Check user role
+    final userRole = userProfile?.role?.toLowerCase();
+    final isDriver = userRole == 'driver';
+    final isAdmin = userRole == 'administrator';
+    final isManager = userRole == 'manager';
+    final isDriverManager = userRole == 'driver_manager';
+    
+    // Count today's jobs based on role
+    final todayJobsCount = _getTodayJobsCount(jobs, userProfile, isDriver);
     
     // Count unassigned users for admin notification
     final unassignedUsersCount = isAdmin 
@@ -93,7 +103,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 SizedBox(height: sectionSpacing),
                 
                 // Dashboard Cards
-                _buildDashboardCards(context),
+                _buildDashboardCards(context, todayJobsCount, unassignedUsersCount),
                 SizedBox(height: sectionSpacing),
               ],
             ),
@@ -101,6 +111,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ),
     );
+  }
+
+  // Get today's jobs count based on user role
+  int _getTodayJobsCount(List<Job> jobs, dynamic userProfile, bool isDriver) {
+    if (jobs.isEmpty) return 0;
+    
+    final today = DateTime.now();
+    final todayDate = DateTime(today.year, today.month, today.day);
+    
+    // Filter jobs for today
+    final todayJobs = jobs.where((job) {
+      final jobDate = DateTime(
+        job.jobStartDate.year, 
+        job.jobStartDate.month, 
+        job.jobStartDate.day
+      );
+      return jobDate.isAtSameMomentAs(todayDate);
+    }).toList();
+    
+    if (isDriver) {
+      // For drivers, only count their assigned jobs
+      return todayJobs.where((job) => job.driverId == userProfile?.id).length;
+    } else {
+      // For admin/manager/driver_manager, count all jobs
+      return todayJobs.length;
+    }
   }
 
   void _showMobileDrawer(BuildContext context) {
@@ -168,69 +204,93 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDashboardCards(BuildContext context) {
+  Widget _buildDashboardCards(BuildContext context, int todayJobsCount, int unassignedUsersCount) {
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
-    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
-    final unassignedUsersCount = isAdmin 
-        ? users.where((user) => user.role == null || user.role == 'unassigned').length 
-        : 0;
+    final userRole = userProfile?.role?.toLowerCase();
+    final isDriver = userRole == 'driver';
+    final isAdmin = userRole == 'administrator';
+    final isManager = userRole == 'manager';
+    final isDriverManager = userRole == 'driver_manager';
     
-    final dashboardItems = [
-      if (userProfile != null && (userProfile.role?.toLowerCase() == 'administrator' || userProfile.role?.toLowerCase() == 'manager'))
+    // Build dashboard items based on role
+    List<DashboardItem> dashboardItems = [];
+    
+    if (isDriver) {
+      // Drivers only see Jobs card
+      dashboardItems = [
         DashboardItem(
-          title: 'Manage Users',
-          subtitle: unassignedUsersCount > 0 
-              ? '$unassignedUsersCount user${unassignedUsersCount == 1 ? '' : 's'} pending approval'
-              : 'User & driver management',
-          icon: Icons.people,
-          route: '/users',
+          title: 'Jobs',
+          subtitle: todayJobsCount > 0 
+              ? '$todayJobsCount job${todayJobsCount == 1 ? '' : 's'} today'
+              : 'No jobs today',
+          icon: Icons.work_outline,
+          route: '/jobs',
           color: ChoiceLuxTheme.richGold,
-          badge: unassignedUsersCount > 0 ? unassignedUsersCount.toString() : null,
+          badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
         ),
-      DashboardItem(
-        title: 'Clients',
-        subtitle: 'Manage client relationships',
-        icon: Icons.people_outline,
-        route: '/clients',
-        color: ChoiceLuxTheme.richGold,
-      ),
-      DashboardItem(
-        title: 'Vehicles',
-        subtitle: 'Manage fleet vehicles',
-        icon: Icons.directions_car_outlined,
-        route: '/vehicles',
-        color: ChoiceLuxTheme.richGold,
-      ),
-      DashboardItem(
-        title: 'Quotes',
-        subtitle: 'Create and manage quotes',
-        icon: Icons.description_outlined,
-        route: '/quotes',
-        color: ChoiceLuxTheme.richGold,
-      ),
-      DashboardItem(
-        title: 'Jobs',
-        subtitle: 'Track job progress',
-        icon: Icons.work_outline,
-        route: '/jobs',
-        color: ChoiceLuxTheme.richGold,
-      ),
-      DashboardItem(
-        title: 'Invoices',
-        subtitle: 'Generate and manage invoices',
-        icon: Icons.receipt_long_outlined,
-        route: '/invoices',
-        color: ChoiceLuxTheme.richGold,
-      ),
-      DashboardItem(
-        title: 'Vouchers',
-        subtitle: 'Create and track vouchers',
-        icon: Icons.card_giftcard_outlined,
-        route: '/vouchers',
-        color: ChoiceLuxTheme.richGold,
-      ),
-    ];
+      ];
+    } else {
+      // Admin, Manager, Driver Manager see all cards
+      dashboardItems = [
+        if (isAdmin || isManager)
+          DashboardItem(
+            title: 'Manage Users',
+            subtitle: unassignedUsersCount > 0 
+                ? '$unassignedUsersCount user${unassignedUsersCount == 1 ? '' : 's'} pending approval'
+                : 'User & driver management',
+            icon: Icons.people,
+            route: '/users',
+            color: ChoiceLuxTheme.richGold,
+            badge: unassignedUsersCount > 0 ? unassignedUsersCount.toString() : null,
+          ),
+        DashboardItem(
+          title: 'Clients',
+          subtitle: 'Manage client relationships',
+          icon: Icons.people_outline,
+          route: '/clients',
+          color: ChoiceLuxTheme.richGold,
+        ),
+        DashboardItem(
+          title: 'Vehicles',
+          subtitle: 'Manage fleet vehicles',
+          icon: Icons.directions_car_outlined,
+          route: '/vehicles',
+          color: ChoiceLuxTheme.richGold,
+        ),
+        DashboardItem(
+          title: 'Quotes',
+          subtitle: 'Create and manage quotes',
+          icon: Icons.description_outlined,
+          route: '/quotes',
+          color: ChoiceLuxTheme.richGold,
+        ),
+        DashboardItem(
+          title: 'Jobs',
+          subtitle: todayJobsCount > 0 
+              ? '$todayJobsCount job${todayJobsCount == 1 ? '' : 's'} today'
+              : 'Track job progress',
+          icon: Icons.work_outline,
+          route: '/jobs',
+          color: ChoiceLuxTheme.richGold,
+          badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
+        ),
+        DashboardItem(
+          title: 'Invoices',
+          subtitle: 'Generate and manage invoices',
+          icon: Icons.receipt_long_outlined,
+          route: '/invoices',
+          color: ChoiceLuxTheme.richGold,
+        ),
+        DashboardItem(
+          title: 'Vouchers',
+          subtitle: 'Create and track vouchers',
+          icon: Icons.card_giftcard_outlined,
+          route: '/vouchers',
+          color: ChoiceLuxTheme.richGold,
+        ),
+      ];
+    }
 
     // Responsive grid configuration based on screen size
     final screenWidth = MediaQuery.of(context).size.width;

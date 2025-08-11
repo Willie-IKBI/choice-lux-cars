@@ -37,7 +37,8 @@ enum InvoiceStatus {
 // App constants
 class AppConstants {
   // API endpoints
-  // TODO: Replace with your actual Supabase project URL and anon key
+  // Production Supabase instance
+  // For local development, use: http://127.0.0.1:54321 and local anon key
   static const String supabaseUrl = 'https://hgqrbekphumdlsifuamq.supabase.co';
   static const String supabaseAnonKey = 'sb_publishable_bGWh1bK234YwSEU8YLWu5g_gfqxDQAH';
   

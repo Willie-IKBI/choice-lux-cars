@@ -1,17 +1,33 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
-import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
+import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
+import 'package:choice_lux_cars/features/vouchers/providers/voucher_controller.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 
-class JobCard extends StatelessWidget {
+class JobCard extends ConsumerWidget {
   final Job job;
   final Client? client;
   final Vehicle? vehicle;
   final User? driver;
+
+  // Design tokens for consistent sizing
+  static const double cardWidth = 380.0; // Target width
+  static const double cardMinHeight = 280.0; // Minimum height
+  static const double cardMaxHeight = 320.0; // Maximum height
+  static const double cardPadding = 16.0; // Consistent padding
+  static const double railSpacing = 12.0; // Vertical rhythm
+  static const double cornerRadius = 12.0; // Modern feel
+  static const double buttonHeight = 44.0; // Touch target
+  static const double chipHeight = 28.0; // Status chips
+  static const double iconSize = 18.0; // Fixed icon size
 
   const JobCard({
     super.key,
@@ -22,738 +38,558 @@ class JobCard extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 768;
-    
-    return Card(
-      margin: const EdgeInsets.all(8),
-      elevation: 2,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      child: InkWell(
-        onTap: () {
-          // Navigation will be handled by parent
-        },
-        borderRadius: BorderRadius.circular(16),
-                 child: Container(
-           decoration: BoxDecoration(
-             borderRadius: BorderRadius.circular(16),
-             gradient: const LinearGradient(
-               begin: Alignment.topLeft,
-               end: Alignment.bottomRight,
-               colors: [
-                 Color(0xFF1E1E1E),
-                 Color(0xFF2A2A2A),
-               ],
-             ),
-             border: Border.all(
-               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-               width: 1,
-             ),
-           ),
-                       child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: isMobile ? _buildMobileLayout(context) : _buildDesktopLayout(context),
+  Widget build(BuildContext context, WidgetRef ref) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isCompact = constraints.maxWidth < 600;
+        
+        return Card(
+          margin: const EdgeInsets.all(8),
+          elevation: 2,
+          shadowColor: Colors.black.withOpacity(0.1),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(cornerRadius),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(cornerRadius),
+              gradient: const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF1E1E1E),
+                  Color(0xFF2A2A2A),
+                ],
+              ),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                width: 1,
+              ),
             ),
-         ),
+            child: Padding(
+              padding: const EdgeInsets.all(cardPadding),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Status row: chips + date badge
+                  _buildStatusRow(isCompact),
+                  
+                  SizedBox(height: railSpacing),
+                  
+                  // Title row: passenger/job title
+                  _buildTitleRow(),
+                  
+                  SizedBox(height: railSpacing),
+                  
+                  // Details block: key fields
+                  _buildDetailsBlock(isCompact),
+                  
+                  SizedBox(height: railSpacing),
+                  
+                  // Metrics row: stat tiles
+                  _buildMetricsRow(isCompact),
+                  
+                  SizedBox(height: railSpacing),
+                  
+                  // Action row: buttons
+                  _buildActionRow(context, ref),
+                  
+                  SizedBox(height: railSpacing),
+                  
+                  // Footer row: voucher state
+                  _buildVoucherFooter(ref),
+                ],
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // Status row: chips + date badge
+  Widget _buildStatusRow(bool isCompact) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // First line: status chips
+        Row(
+          children: [
+            Expanded(
+              child: Wrap(
+                spacing: 6,
+                runSpacing: 4,
+                children: [
+                  _buildStatusChip(),
+                  if (!isCompact) _buildDriverConfirmationChip(),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            _buildTimeChip(),
+          ],
+        ),
+        // Second line: additional chips for compact mode
+        if (isCompact) ...[
+          const SizedBox(height: 4),
+          _buildDriverConfirmationChip(),
+        ],
+      ],
+    );
+  }
+
+  // Title row: passenger/job title (1 line, ellipsis)
+  Widget _buildTitleRow() {
+    return Text(
+      job.passengerName ?? 'Unnamed Job',
+      style: const TextStyle(
+        fontWeight: FontWeight.bold,
+        fontSize: 16, // Primary action readable
+        color: ChoiceLuxTheme.softWhite,
+        height: 1.2,
+      ),
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
+    );
+  }
+
+  // Details block: 3-4 key fields (each 1 line, ellipsis)
+  Widget _buildDetailsBlock(bool isCompact) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Job Details',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+          ),
+          const SizedBox(height: 8),
+          _buildDetailRow(Icons.business, 'Client', client?.companyName ?? 'Unknown Client'),
+          const SizedBox(height: 6),
+          _buildDetailRow(Icons.person, 'Driver', driver?.displayName ?? 'Unassigned'),
+          const SizedBox(height: 6),
+          _buildDetailRow(Icons.directions_car, 'Vehicle', 
+            vehicle != null ? '${vehicle!.make} ${vehicle!.model}' : 'Vehicle not assigned'),
+          if (!isCompact) ...[
+            const SizedBox(height: 6),
+            _buildDetailRow(Icons.tag, 'Job Number', 'Job #${job.id}'),
+          ],
+        ],
       ),
     );
   }
 
-                 Widget _buildDesktopLayout(BuildContext context) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  // Metrics row: two small stat tiles (Passengers/Bags)
+  Widget _buildMetricsRow(bool isCompact) {
+    if (isCompact) {
+      // Compact: collapse into small pills
+      return Row(
         children: [
-          // TOP ZONE: Header + Metadata
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Passenger Name + Status Badges in one line
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  // Passenger Name (Left)
-                  Expanded(
-                    child: Text(
-                      job.passengerName ?? 'Unnamed Job',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  // Status Badges (Right) - Horizontal layout
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth < 350) {
-                        // Stack vertically on very small screens
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _buildStatusBadge(),
-                            const SizedBox(height: 4),
-                            _buildDriverConfirmationBadge(),
-                          ],
-                        );
-                      } else {
-                        // Side by side on larger screens
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildStatusBadge(),
-                            const SizedBox(width: 6),
-                            _buildDriverConfirmationBadge(),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                ],
-              ),
-              
-                             const SizedBox(height: 8),
-               
-               // Metadata Section: All details in compact vertical layout
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                                     _buildDetailChip(
-                     Icons.business,
-                     client?.companyName ?? 'Unknown Client',
-                   ),
-                   const SizedBox(height: 3),
-                   _buildDetailChip(
-                     Icons.person,
-                     driver?.displayName ?? 'Unassigned',
-                   ),
-                   const SizedBox(height: 3),
-                   _buildDetailChip(
-                     Icons.directions_car,
-                     vehicle != null 
-                         ? '${vehicle!.make} ${vehicle!.model}'
-                         : 'Vehicle not assigned',
-                   ),
-                   const SizedBox(height: 3),
-                  _buildDetailChip(
-                    Icons.tag,
-                    'Job #${job.id}',
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 6),
-              
-              // Info Badges: Time + Pax/Bags in horizontal row
-              Row(
-                children: [
-                  Expanded(child: _buildTimeStatusBadge()),
-                  const SizedBox(width: 8),
-                  Expanded(child: _buildPaxBagsInfo()),
-                ],
-              ),
-            ],
+          _buildCompactMetricPill(Icons.people, '${job.pasCount} pax'),
+          const SizedBox(width: 8),
+          _buildCompactMetricPill(Icons.work, '${job.luggageCount} bags'),
+        ],
+      );
+    } else {
+      // Regular: separate metric tiles
+      return Row(
+        children: [
+          Expanded(
+            child: _buildMetricTile(
+              Icons.people,
+              'Passengers',
+              '${job.pasCount}',
+              Colors.blue,
+            ),
           ),
-          
-          // EXPANDER ZONE: Push content up, ensure bottom buttons are visible
-          const Spacer(),
-          
-          // BOTTOM ZONE: Warning + Action Buttons
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Warning indicator if incomplete details
-              if (!job.hasCompletePassengerDetails) ...[
-                _buildWarningIndicator(),
-                const SizedBox(height: 8),
-              ],
-              
-                             // Action Buttons - Always stack vertically to prevent overflow
-               Column(
-                 children: [
-                   if (job.collectPayment && job.paymentAmount != null) ...[
-                     _buildPaymentCTA(),
-                     const SizedBox(height: 6),
-                   ],
-                   SizedBox(
-                     width: double.infinity,
-                     child: _buildViewButton(context),
-                   ),
-                 ],
-               ),
-            ],
+          const SizedBox(width: 8),
+          Expanded(
+            child: _buildMetricTile(
+              Icons.work,
+              'Bags',
+              '${job.luggageCount}',
+              Colors.blue,
+            ),
           ),
         ],
       );
     }
+  }
 
-                 Widget _buildMobileLayout(BuildContext context) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // TOP ZONE: Header + Metadata
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Header: Passenger Name + Status Badges in one line
-              Row(
-                crossAxisAlignment: CrossAxisAlignment.center,
-                children: [
-                  Expanded(
-                    child: Text(
-                      job.passengerName ?? 'Unnamed Job',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                      overflow: TextOverflow.ellipsis,
-                      maxLines: 1,
+  // Action row: Primary (Start Job), secondary (View)
+  Widget _buildActionRow(BuildContext context, WidgetRef ref) {
+    final isAssignedDriver = _isAssignedDriver(ref);
+    final needsConfirmation = isAssignedDriver && job.driverConfirmation != true;
+    
+    // Debug logging
+    print('Action row debug:');
+    print('  Is assigned driver: $isAssignedDriver');
+    print('  Needs confirmation: $needsConfirmation');
+    print('  Driver confirmation: ${job.driverConfirmation}');
+    print('  Is confirmed: ${job.isConfirmed}');
+    print('  Job ID: ${job.id}');
+    print('  Job driver ID: ${job.driverId}');
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Confirm Button - Show only for assigned driver who hasn't confirmed
+        if (needsConfirmation) ...[
+          ElevatedButton.icon(
+            onPressed: () => _handleDriverConfirmation(context, ref),
+            icon: Icon(Icons.check_circle, size: iconSize),
+            label: Text('Confirm Job'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orange.withOpacity(0.15),
+              foregroundColor: Colors.orange,
+              padding: const EdgeInsets.symmetric(vertical: 8),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
+              ),
+            ),
+          ),
+          SizedBox(height: railSpacing),
+        ],
+        
+        // Action buttons row
+        Row(
+          children: [
+            // Driver Flow Button - Show only for assigned driver
+            if (isAssignedDriver) ...[
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () {
+                    context.go('/jobs/${job.id}/progress');
+                  },
+                  icon: Icon(
+                    job.status == 'in_progress' || job.status == 'started' 
+                      ? Icons.sync 
+                      : Icons.play_arrow,
+                    size: iconSize,
+                  ),
+                  label: Text(
+                    job.status == 'in_progress' || job.status == 'started' 
+                      ? 'Resume Job' 
+                      : 'Start Job'
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green.withOpacity(0.15),
+                    foregroundColor: Colors.green,
+                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(6),
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  // Status Badges - Horizontal layout
-                  LayoutBuilder(
-                    builder: (context, constraints) {
-                      if (constraints.maxWidth < 350) {
-                        // Stack vertically on very small screens
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            _buildStatusBadge(),
-                            const SizedBox(height: 4),
-                            _buildDriverConfirmationBadge(),
-                          ],
-                        );
-                      } else {
-                        // Side by side on larger screens
-                        return Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            _buildStatusBadge(),
-                            const SizedBox(width: 6),
-                            _buildDriverConfirmationBadge(),
-                          ],
-                        );
-                      }
-                    },
-                  ),
-                ],
+                ),
               ),
-              
-                             const SizedBox(height: 8),
-               
-               // Metadata Section - Allow wrapping on small screens
-              Wrap(
-                spacing: 4,
-                runSpacing: 4,
-                children: [
-                  _buildDetailChip(
-                    Icons.business,
-                    client?.companyName ?? 'Unknown Client',
-                  ),
-                  _buildDetailChip(
-                    Icons.person,
-                    driver?.displayName ?? 'Unassigned',
-                  ),
-                  _buildDetailChip(
-                    Icons.directions_car,
-                    vehicle != null 
-                        ? '${vehicle!.make} ${vehicle!.model}'
-                        : 'Vehicle not assigned',
-                  ),
-                  _buildDetailChip(
-                    Icons.tag,
-                    'Job #${job.id}',
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 6),
-              
-              // Info Badges Row - Stack vertically on very small screens
-              LayoutBuilder(
-                builder: (context, constraints) {
-                  if (constraints.maxWidth < 300) {
-                    // Stack vertically on very small screens
-                    return Column(
-                      children: [
-                        _buildTimeStatusBadge(),
-                        const SizedBox(height: 4),
-                        _buildPaxBagsInfo(),
-                      ],
-                    );
-                  } else {
-                    // Side by side on larger mobile screens
-                    return Row(
-                      children: [
-                        Expanded(child: _buildTimeStatusBadge()),
-                        const SizedBox(width: 8),
-                        Expanded(child: _buildPaxBagsInfo()),
-                      ],
-                    );
-                  }
+              const SizedBox(width: 8),
+            ],
+            
+            // View Button
+            Expanded(
+              child: TextButton.icon(
+                onPressed: () {
+                  context.go('/jobs/${job.id}/summary');
                 },
+                icon: Icon(Icons.arrow_forward, size: iconSize),
+                label: Text(_getActionText()),
+                style: TextButton.styleFrom(
+                  foregroundColor: _getStatusColor(),
+                  padding: const EdgeInsets.symmetric(vertical: 8),
+                ),
               ),
-            ],
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  // Footer row: Voucher state chip
+  Widget _buildVoucherFooter(WidgetRef ref) {
+    final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
+    
+    return Row(
+      children: [
+        Icon(
+          hasVoucher ? Icons.check_circle : Icons.receipt_long,
+          size: 16,
+          color: hasVoucher ? Colors.green : Colors.grey,
+        ),
+        const SizedBox(width: 6),
+        Text(
+          hasVoucher ? 'Voucher Created' : 'No Voucher',
+          style: TextStyle(
+            color: hasVoucher ? Colors.green : Colors.grey,
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
           ),
-          
-          // EXPANDER ZONE: Push content up, ensure bottom buttons are visible
-          const Spacer(),
-          
-          // BOTTOM ZONE: Warning + Action Buttons
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Warning indicator if incomplete details
-              if (!job.hasCompletePassengerDetails) ...[
-                _buildWarningIndicator(),
-                const SizedBox(height: 8),
-              ],
-              
-              // Action Buttons - Stack vertically on mobile
-              if (job.collectPayment && job.paymentAmount != null) ...[
-                _buildPaymentCTA(),
-                const SizedBox(height: 8),
-              ],
-              
-              SizedBox(
-                width: double.infinity,
-                child: _buildViewButton(context),
-              ),
-            ],
+        ),
+      ],
+    );
+  }
+
+  // Helper methods
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(
+          icon,
+          size: 16,
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          '$label: ',
+          style: TextStyle(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            fontSize: 12,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            style: const TextStyle(
+              color: ChoiceLuxTheme.softWhite,
+              fontSize: 12,
+              fontWeight: FontWeight.w600,
+            ),
+            overflow: TextOverflow.ellipsis,
+            maxLines: 1,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildCompactMetricPill(IconData icon, String text) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: Colors.blue.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Colors.blue.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: Colors.blue),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: Colors.blue,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ],
-      );
+      ),
+    );
+  }
+
+  Widget _buildMetricTile(IconData icon, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: color.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: color),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          Text(
+            label,
+            style: TextStyle(
+              color: color.withOpacity(0.8),
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatusChip() {
+    return Container(
+      height: chipHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: _getStatusColor().withOpacity(0.15),
+        borderRadius: BorderRadius.circular(chipHeight / 2),
+        border: Border.all(
+          color: _getStatusColor().withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: _getStatusColor(),
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            _getStatusText(),
+            style: TextStyle(
+              color: _getStatusColor(),
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDriverConfirmationChip() {
+    Color color;
+    String text;
+    
+    if (job.driverConfirmation == null) {
+      color = Colors.grey;
+      text = 'Pending';
+    } else if (job.driverConfirmation == true) {
+      color = Colors.green;
+      text = 'Confirmed';
+    } else {
+      color = Colors.red;
+      text = 'Not Confirmed';
     }
+    
+    return Container(
+      height: chipHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(chipHeight / 2),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 6,
+            height: 6,
+            decoration: BoxDecoration(
+              color: color,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-     Widget _buildDetailChip(IconData icon, String text) {
-     return Container(
-       constraints: const BoxConstraints(maxWidth: 200),
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-       decoration: BoxDecoration(
-         color: Colors.grey.withOpacity(0.08),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: Colors.grey.withOpacity(0.15),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Icon(
-             icon,
-             size: 10,
-             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
-           ),
-           const SizedBox(width: 4),
-           Flexible(
-             child: Text(
-               text,
-               style: TextStyle(
-                 color: ChoiceLuxTheme.platinumSilver.withOpacity(0.9),
-                 fontSize: 10,
-                 fontWeight: FontWeight.w500,
-               ),
-               overflow: TextOverflow.ellipsis,
-               maxLines: 1,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-
-     Widget _buildPaxBagsInfo() {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-       decoration: BoxDecoration(
-         color: Colors.grey.withOpacity(0.08),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: Colors.grey.withOpacity(0.15),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Icon(
-             Icons.people,
-             size: 10,
-             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
-           ),
-           const SizedBox(width: 3),
-           Text(
-             '${job.pasCount}',
-             style: TextStyle(
-               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.9),
-               fontSize: 9,
-               fontWeight: FontWeight.w500,
-             ),
-           ),
-           const SizedBox(width: 6),
-           Icon(
-             Icons.work,
-             size: 10,
-             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
-           ),
-           const SizedBox(width: 3),
-           Text(
-             '${job.luggageCount}',
-             style: TextStyle(
-               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.9),
-               fontSize: 9,
-               fontWeight: FontWeight.w500,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-
-     Widget _buildPaymentCTA() {
-     return LayoutBuilder(
-       builder: (context, constraints) {
-         final isNarrow = constraints.maxWidth < 200;
-         return Container(
-           width: double.infinity,
-           padding: EdgeInsets.symmetric(
-             horizontal: isNarrow ? 6 : 8,
-             vertical: isNarrow ? 4 : 5,
-           ),
-           decoration: BoxDecoration(
-             color: ChoiceLuxTheme.richGold.withOpacity(0.12),
-             borderRadius: BorderRadius.circular(6),
-             border: Border.all(
-               color: ChoiceLuxTheme.richGold.withOpacity(0.25),
-               width: 1,
-             ),
-           ),
-           child: Row(
-             mainAxisAlignment: MainAxisAlignment.center,
-             children: [
-               Icon(
-                 Icons.payment,
-                 size: isNarrow ? 10 : 12,
-                 color: ChoiceLuxTheme.richGold,
-               ),
-               SizedBox(width: isNarrow ? 3 : 4),
-               Flexible(
-                 child: Text(
-                   'Collect R${job.paymentAmount!.toStringAsFixed(2)}',
-                   style: TextStyle(
-                     color: ChoiceLuxTheme.richGold,
-                     fontSize: isNarrow ? 10 : 11,
-                     fontWeight: FontWeight.bold,
-                   ),
-                   overflow: TextOverflow.ellipsis,
-                 ),
-               ),
-             ],
-           ),
-         );
-       },
-     );
-   }
-
-     Widget _buildViewButton(BuildContext context) {
-     return LayoutBuilder(
-       builder: (context, constraints) {
-         final isNarrow = constraints.maxWidth < 150;
-         return InkWell(
-           onTap: () {
-             // Navigate to job details/summary screen
-             context.go('/jobs/${job.id}/summary');
-           },
-           borderRadius: BorderRadius.circular(6),
-           child: Container(
-             padding: EdgeInsets.symmetric(
-               horizontal: isNarrow ? 6 : 8,
-               vertical: isNarrow ? 4 : 5,
-             ),
-             decoration: BoxDecoration(
-               color: _getStatusColor().withOpacity(0.12),
-               borderRadius: BorderRadius.circular(6),
-               border: Border.all(
-                 color: _getStatusColor().withOpacity(0.25),
-                 width: 1,
-               ),
-             ),
-             child: Row(
-               mainAxisSize: MainAxisSize.min,
-               children: [
-                 Text(
-                   _getActionText(),
-                   style: TextStyle(
-                     color: _getStatusColor(),
-                     fontSize: isNarrow ? 9 : 10,
-                     fontWeight: FontWeight.w600,
-                   ),
-                 ),
-                 SizedBox(width: isNarrow ? 1 : 2),
-                 Icon(
-                   Icons.arrow_forward,
-                   size: isNarrow ? 9 : 10,
-                   color: _getStatusColor(),
-                 ),
-               ],
-             ),
-           ),
-         );
-       },
-     );
-   }
-
-     Widget _buildWarningIndicator() {
-     return Container(
-       width: double.infinity,
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-       decoration: BoxDecoration(
-         color: ChoiceLuxTheme.errorColor.withOpacity(0.12),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: ChoiceLuxTheme.errorColor.withOpacity(0.25),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisAlignment: MainAxisAlignment.center,
-         children: [
-           Icon(
-             Icons.warning,
-             size: 12,
-             color: ChoiceLuxTheme.errorColor,
-           ),
-           const SizedBox(width: 4),
-           Flexible(
-             child: Text(
-               'Passenger details incomplete',
-               style: TextStyle(
-                 color: ChoiceLuxTheme.errorColor,
-                 fontSize: 10,
-                 fontWeight: FontWeight.w600,
-               ),
-               overflow: TextOverflow.ellipsis,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-
-     Widget _buildStatusBadge() {
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-       decoration: BoxDecoration(
-         color: _getStatusColor().withOpacity(0.12),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: _getStatusColor().withOpacity(0.25),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Container(
-             width: 5,
-             height: 5,
-             decoration: BoxDecoration(
-               color: _getStatusColor(),
-               shape: BoxShape.circle,
-             ),
-           ),
-           const SizedBox(width: 3),
-           Flexible(
-             child: Text(
-               _getStatusText(),
-               style: TextStyle(
-                 color: _getStatusColor(),
-                 fontSize: 9,
-                 fontWeight: FontWeight.w600,
-               ),
-               overflow: TextOverflow.ellipsis,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-
-     Widget _buildDriverConfirmationBadge() {
-     if (job.driverConfirmation == null) {
-       return Container(
-         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-         decoration: BoxDecoration(
-           color: Colors.grey.withOpacity(0.12),
-           borderRadius: BorderRadius.circular(6),
-           border: Border.all(
-             color: Colors.grey.withOpacity(0.25),
-             width: 1,
-           ),
-         ),
-         child: Row(
-           mainAxisSize: MainAxisSize.min,
-           children: [
-             Container(
-               width: 5,
-               height: 5,
-               decoration: BoxDecoration(
-                 color: Colors.grey,
-                 shape: BoxShape.circle,
-               ),
-             ),
-             const SizedBox(width: 3),
-             Text(
-               'Pending',
-               style: TextStyle(
-                 color: Colors.grey,
-                 fontSize: 9,
-                 fontWeight: FontWeight.w600,
-               ),
-             ),
-           ],
-         ),
-       );
-     }
-     
-     if (job.driverConfirmation == true) {
-       return Container(
-         padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-         decoration: BoxDecoration(
-           color: Colors.green.withOpacity(0.12),
-           borderRadius: BorderRadius.circular(6),
-           border: Border.all(
-             color: Colors.green.withOpacity(0.25),
-             width: 1,
-           ),
-         ),
-         child: Row(
-           mainAxisSize: MainAxisSize.min,
-           children: [
-             Container(
-               width: 5,
-               height: 5,
-               decoration: BoxDecoration(
-                 color: Colors.green,
-                 shape: BoxShape.circle,
-               ),
-             ),
-             const SizedBox(width: 3),
-             Text(
-               'Confirmed',
-               style: TextStyle(
-                 color: Colors.green,
-                 fontSize: 9,
-                 fontWeight: FontWeight.w600,
-               ),
-             ),
-           ],
-         ),
-       );
-     }
-     
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-       decoration: BoxDecoration(
-         color: Colors.red.withOpacity(0.12),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: Colors.red.withOpacity(0.25),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Container(
-             width: 5,
-             height: 5,
-             decoration: BoxDecoration(
-               color: Colors.red,
-               shape: BoxShape.circle,
-             ),
-           ),
-           const SizedBox(width: 3),
-           Text(
-             'Not Confirmed',
-             style: TextStyle(
-               color: Colors.red,
-               fontSize: 9,
-               fontWeight: FontWeight.w600,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-
-     Widget _buildTimeStatusBadge() {
-     final daysUntilStart = job.daysUntilStart;
-     final isStarted = daysUntilStart < 0;
-     final isToday = daysUntilStart == 0;
-     final isSoon = daysUntilStart <= 3 && daysUntilStart > 0;
-     
-     String text;
-     Color color;
-     
-     if (isStarted) {
-       text = 'Started ${daysUntilStart.abs()}d ago';
-       color = ChoiceLuxTheme.platinumSilver;
-     } else if (isToday) {
-       text = 'Today';
-       color = Colors.orange;
-     } else if (isSoon) {
-       text = 'In ${daysUntilStart}d';
-       color = Colors.red;
-     } else {
-       text = 'In ${daysUntilStart}d';
-       color = Colors.green;
-     }
-     
-     return Container(
-       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
-       decoration: BoxDecoration(
-         color: color.withOpacity(0.12),
-         borderRadius: BorderRadius.circular(6),
-         border: Border.all(
-           color: color.withOpacity(0.25),
-           width: 1,
-         ),
-       ),
-       child: Row(
-         mainAxisSize: MainAxisSize.min,
-         children: [
-           Container(
-             width: 5,
-             height: 5,
-             decoration: BoxDecoration(
-               color: color,
-               shape: BoxShape.circle,
-             ),
-           ),
-           const SizedBox(width: 3),
-           Flexible(
-             child: Text(
-               text,
-               style: TextStyle(
-                 color: color,
-                 fontSize: 9,
-                 fontWeight: FontWeight.w500,
-               ),
-               overflow: TextOverflow.ellipsis,
-             ),
-           ),
-         ],
-       ),
-     );
-   }
+  Widget _buildTimeChip() {
+    final daysUntilStart = job.daysUntilStart;
+    final isStarted = daysUntilStart < 0;
+    final isToday = daysUntilStart == 0;
+    final isSoon = daysUntilStart <= 3 && daysUntilStart > 0;
+    
+    String text;
+    Color color;
+    IconData icon;
+    
+    if (isStarted) {
+      text = 'Started ${daysUntilStart.abs()}d ago';
+      color = Colors.grey;
+      icon = Icons.schedule;
+    } else if (isToday) {
+      text = 'TODAY';
+      color = Colors.orange;
+      icon = Icons.today;
+    } else if (isSoon) {
+      text = 'URGENT ${daysUntilStart}d';
+      color = Colors.red;
+      icon = Icons.warning;
+    } else {
+      text = 'In ${daysUntilStart}d';
+      color = Colors.green;
+      icon = Icons.calendar_today;
+    }
+    
+    return Container(
+      height: chipHeight,
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(chipHeight / 2),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 4),
+          Text(
+            text,
+            style: TextStyle(
+              color: color,
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
   Color _getStatusColor() {
     switch (job.status) {
@@ -766,20 +602,6 @@ class JobCard extends StatelessWidget {
         return ChoiceLuxTheme.successColor;
       default:
         return ChoiceLuxTheme.platinumSilver;
-    }
-  }
-
-  IconData _getStatusIcon() {
-    switch (job.status) {
-      case 'open':
-        return Icons.folder_open;
-      case 'in_progress':
-        return Icons.sync;
-      case 'closed':
-      case 'completed':
-        return Icons.check_circle;
-      default:
-        return Icons.help;
     }
   }
 
@@ -809,6 +631,61 @@ class JobCard extends StatelessWidget {
         return 'DETAILS';
       default:
         return 'VIEW';
+    }
+  }
+
+  // Check if current user is the assigned driver
+  bool _isAssignedDriver(WidgetRef ref) {
+    final currentUser = ref.read(currentUserProfileProvider);
+    final isAssigned = currentUser?.id == job.driverId;
+    
+    // Debug logging
+    print('Driver assignment check:');
+    print('  Current user ID: ${currentUser?.id}');
+    print('  Job driver ID: ${job.driverId}');
+    print('  Is assigned: $isAssigned');
+    print('  Driver confirmation: ${job.driverConfirmation}');
+    print('  Is confirmed: ${job.isConfirmed}');
+    
+    return isAssigned;
+  }
+
+  // Handle driver confirmation
+  Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref) async {
+    try {
+      final success = await DriverFlowApiService.confirmDriverAwareness(int.parse(job.id));
+      
+      if (success) {
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Job confirmed successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+        
+        // Refresh the jobs list to update the UI
+        ref.invalidate(jobsProvider);
+      } else {
+        // Show error message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to confirm job. Please try again.'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
+          ),
+        );
+      }
+    } catch (e) {
+      print('Error handling driver confirmation: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('An error occurred. Please try again.'),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 3),
+        ),
+      );
     }
   }
 }

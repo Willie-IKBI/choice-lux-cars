@@ -6,7 +6,9 @@ list(APPEND FLUTTER_PLUGIN_LIST
   app_links
   file_selector_windows
   firebase_core
+  geolocator_windows
   printing
+  share_plus
   url_launcher_windows
 )
 

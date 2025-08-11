@@ -18,6 +18,8 @@ import 'package:choice_lux_cars/features/jobs/jobs_screen.dart';
 import 'package:choice_lux_cars/features/jobs/screens/create_job_screen.dart';
 import 'package:choice_lux_cars/features/jobs/screens/trip_management_screen.dart';
 import 'package:choice_lux_cars/features/jobs/screens/job_summary_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/job_progress_screen.dart';
+import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/invoices/invoices_screen.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles_screen.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicle_editor_screen.dart';
@@ -202,6 +204,43 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
             return JobSummaryScreen(jobId: jobId);
+          },
+        ),
+        GoRoute(
+          path: '/jobs/:id/progress',
+          name: 'job_progress',
+          builder: (context, state) {
+            final jobId = state.pathParameters['id']!;
+            // Create a placeholder job - the screen will load the actual job data
+            final placeholderJob = Job(
+              id: jobId,
+              jobNumber: 'JOB-$jobId',
+              clientId: '',
+              vehicleId: '',
+              driverId: '',
+              passengerName: 'Loading...',
+              passengerContact: '',
+              pasCount: 1.0,
+              luggageCount: '',
+              jobStartDate: DateTime.now(),
+              notes: '',
+              quoteNo: null,
+              voucherPdf: null,
+              cancelReason: null,
+              location: '',
+              createdBy: '',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+              driverConfirmation: false,
+              isConfirmed: false,
+              confirmedAt: null,
+              confirmedBy: null,
+              status: 'open',
+              orderDate: DateTime.now(),
+              paymentAmount: null,
+              collectPayment: false,
+            );
+            return JobProgressScreen(jobId: int.parse(jobId), job: placeholderJob);
           },
         ),
         GoRoute(

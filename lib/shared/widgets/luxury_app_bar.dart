@@ -163,7 +163,22 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           color: ChoiceLuxTheme.richGold,
           size: 20,
         ),
-        onPressed: onBackPressed ?? () => context.pop(),
+        onPressed: onBackPressed ?? () {
+          print('Back button pressed - attempting to pop context');
+          try {
+            if (Navigator.of(context).canPop()) {
+              context.pop();
+              print('Context pop successful');
+            } else {
+              print('Cannot pop - navigating to dashboard');
+              context.go('/dashboard');
+            }
+          } catch (e) {
+            print('Error popping context: $e');
+            // Fallback to go to dashboard
+            context.go('/dashboard');
+          }
+        },
         style: IconButton.styleFrom(
           padding: const EdgeInsets.all(8),
           minimumSize: const Size(40, 40),
