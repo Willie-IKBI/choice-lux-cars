@@ -326,23 +326,10 @@ class JobCard extends ConsumerWidget {
   Widget _buildVoucherFooter(WidgetRef ref) {
     final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
     
-    return Row(
-      children: [
-        Icon(
-          hasVoucher ? Icons.check_circle : Icons.receipt_long,
-          size: 16,
-          color: hasVoucher ? Colors.green : Colors.grey,
-        ),
-        const SizedBox(width: 6),
-        Text(
-          hasVoucher ? 'Voucher Created' : 'No Voucher',
-          style: TextStyle(
-            color: hasVoucher ? Colors.green : Colors.grey,
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-      ],
+    return VoucherActionButtons(
+      jobId: job.id,
+      voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
+      canCreateVoucher: ref.watch(canCreateVoucherProvider).value ?? false,
     );
   }
 
