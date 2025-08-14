@@ -12,6 +12,7 @@ class DriverFlowApiService {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
+    Function()? onJobStarted, // Callback to refresh jobs list
   }) async {
     try {
       await _supabase.rpc('start_job', params: {
@@ -22,6 +23,11 @@ class DriverFlowApiService {
         'gps_lng': gpsLng,
         'gps_accuracy': gpsAccuracy,
       });
+      
+      // Call the callback to refresh jobs list if provided
+      if (onJobStarted != null) {
+        onJobStarted();
+      }
     } catch (e) {
       throw Exception('Failed to start job: $e');
     }
@@ -66,18 +72,13 @@ class DriverFlowApiService {
     double? gpsAccuracy,
   }) async {
     try {
-      await _supabase
-          .from('trip_progress')
-          .update({
-            'pickup_arrived_at': DateTime.now().toIso8601String(),
-            'pickup_gps_lat': gpsLat,
-            'pickup_gps_lng': gpsLng,
-            'pickup_gps_accuracy': gpsAccuracy,
-            'status': 'pickup_arrived',
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('job_id', jobId)
-          .eq('trip_index', tripIndex);
+      await _supabase.rpc('arrive_at_pickup', params: {
+        'job_id': jobId,
+        'trip_index': tripIndex,
+        'gps_lat': gpsLat,
+        'gps_lng': gpsLng,
+        'gps_accuracy': gpsAccuracy,
+      });
     } catch (e) {
       throw Exception('Failed to record pickup arrival: $e');
     }
@@ -180,13 +181,40 @@ class DriverFlowApiService {
   /// Get current job progress
   static Future<Map<String, dynamic>> getJobProgress(int jobId) async {
     try {
+      // Read directly from driver_flow table to avoid view caching issues
       final response = await _supabase
-          .from('job_progress_summary')
+          .from('driver_flow')
           .select('*')
           .eq('job_id', jobId)
           .single();
       
-      return response;
+      // Add job status from jobs table
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('job_status')
+          .eq('id', jobId)
+          .single();
+      
+      // Combine the data
+      final combinedData = {
+        'job_id': jobId,
+        'job_status': jobResponse['job_status'],
+        'driver_id': response['driver_user'],
+        'current_step': response['current_step'],
+        'current_trip_index': response['current_trip_index'] ?? 1,
+        'progress_percentage': response['progress_percentage'] ?? 0,
+        'last_activity_at': response['last_activity_at'],
+        'job_started_at': response['job_started_at'],
+        'vehicle_collected': response['vehicle_collected'],
+        'vehicle_collected_at': response['vehicle_collected_at'],
+        'transport_completed_ind': response['transport_completed_ind'] ?? false,
+        'job_closed_time': response['job_closed_time'],
+        'total_trips': 0, // We'll add this later if needed
+        'completed_trips': 0, // We'll add this later if needed
+        'calculated_status': response['vehicle_collected'] == true ? 'in_progress' : 'started',
+      };
+      
+      return combinedData;
     } catch (e) {
       throw Exception('Failed to get job progress: $e');
     }

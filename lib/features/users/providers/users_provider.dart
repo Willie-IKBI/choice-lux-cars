@@ -36,10 +36,10 @@ class UsersNotifier extends StateNotifier<List<User>> {
   Future<String?> uploadProfileImage(XFile imageFile, String userId) async {
     // Upload to Supabase Storage under /profiles/{userId}/profile.jpg
     final bytes = await imageFile.readAsBytes();
-    final url = await UploadService.uploadImage(
-      fileBytes: bytes,
-      folder: 'profiles/$userId',
-      fileName: 'profile.jpg',
+    final url = await UploadService.uploadImageBytes(
+      bytes,
+      'clc_images',
+      'profiles/$userId/profile.jpg',
     );
     // Update user profileImage field
     await SupabaseService.instance.updateUser(userId: userId, data: {'profile_image': url});
@@ -49,10 +49,10 @@ class UsersNotifier extends StateNotifier<List<User>> {
 
   Future<String?> uploadDriverLicenseImage(XFile xfile, String userId) async {
     final bytes = await xfile.readAsBytes();
-    final url = await UploadService.uploadImage(
-      fileBytes: bytes,
-      folder: 'driver_lic/$userId',
-      fileName: 'license.jpg',
+    final url = await UploadService.uploadImageBytes(
+      bytes,
+      'clc_images',
+      'driver_lic/$userId/license.jpg',
     );
     await SupabaseService.instance.updateUser(userId: userId, data: {'driver_licence': url});
     await fetchUsers();
@@ -61,10 +61,10 @@ class UsersNotifier extends StateNotifier<List<User>> {
 
   Future<String?> uploadPdpImage(XFile xfile, String userId) async {
     final bytes = await xfile.readAsBytes();
-    final url = await UploadService.uploadImage(
-      fileBytes: bytes,
-      folder: 'pdp_lic/$userId',
-      fileName: 'pdp.jpg',
+    final url = await UploadService.uploadImageBytes(
+      bytes,
+      'clc_images',
+      'pdp_lic/$userId/pdp.jpg',
     );
     await SupabaseService.instance.updateUser(userId: userId, data: {'pdp': url});
     await fetchUsers();

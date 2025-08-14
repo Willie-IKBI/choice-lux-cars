@@ -25,11 +25,32 @@ class JobsScreen extends ConsumerStatefulWidget {
   ConsumerState<JobsScreen> createState() => _JobsScreenState();
 }
 
-class _JobsScreenState extends ConsumerState<JobsScreen> {
+class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObserver {
   String _currentFilter = 'open'; // open, closed, in_progress, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Refresh jobs when app is resumed
+      ref.read(jobsProvider.notifier).fetchJobs();
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -220,55 +241,63 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
             ),
           ),
 
-          // Jobs grid with improved empty state
+          // Jobs grid with improved empty state and pull-to-refresh
           Expanded(
-            child: paginatedJobs.isEmpty
-                ? Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(24),
-                          decoration: BoxDecoration(
-                            color: ChoiceLuxTheme.charcoalGray,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-                              width: 1,
+            child: RefreshIndicator(
+              onRefresh: () async {
+                if (mounted) {
+                  await ref.read(jobsProvider.notifier).fetchJobs();
+                }
+              },
+              color: ChoiceLuxTheme.richGold,
+              backgroundColor: ChoiceLuxTheme.charcoalGray,
+              child: paginatedJobs.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(24),
+                            decoration: BoxDecoration(
+                              color: ChoiceLuxTheme.charcoalGray,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(
+                                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              children: [
+                                Icon(
+                                  Icons.work_outline,
+                                  size: 48,
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'No jobs found',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w600,
+                                    color: ChoiceLuxTheme.softWhite,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Try adjusting your filters or create a new job',
+                                  style: TextStyle(
+                                    color: ChoiceLuxTheme.platinumSilver,
+                                    fontSize: 14,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
                             ),
                           ),
-                          child: Column(
-                            children: [
-                              Icon(
-                                Icons.work_outline,
-                                size: 48,
-                                color: ChoiceLuxTheme.platinumSilver,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'No jobs found',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Try adjusting your filters or create a new job',
-                                style: TextStyle(
-                                  color: ChoiceLuxTheme.platinumSilver,
-                                  fontSize: 14,
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  )
-                : clientsAsync.when(
+                        ],
+                      ),
+                    )
+                  : clientsAsync.when(
                     data: (clients) => ResponsiveGrid(
                       children: paginatedJobs.map((job) {
                         // Find related data
@@ -313,6 +342,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
                       child: Text('Error loading clients: $error'),
                     ),
                   ),
+                ),
           ),
 
           // Pagination with improved styling
@@ -406,7 +436,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> {
   List<Job> _filterJobs(List<Job> jobs) {
     switch (_currentFilter) {
       case 'open':
-        return jobs.where((job) => job.isOpen).toList();
+        return jobs.where((job) => job.status == 'open').toList();
       case 'in_progress':
         return jobs.where((job) => job.isInProgress).toList();
       case 'completed':

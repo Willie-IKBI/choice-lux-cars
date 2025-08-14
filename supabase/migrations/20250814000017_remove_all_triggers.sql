@@ -69,7 +69,9 @@ BEGIN
         odo_start_reading = start_job.odo_start_reading,
         pdp_start_image = start_job.pdp_start_image,
         pickup_loc = format('POINT(%s %s)', start_job.gps_lng, start_job.gps_lat),
-        current_step = 'vehicle_collection',
+        vehicle_collected = true,
+        vehicle_time = NOW(),
+        current_step = 'pickup_arrival',
         last_activity_at = NOW(),
         updated_at = NOW(),
         driver_user = driver_id_val

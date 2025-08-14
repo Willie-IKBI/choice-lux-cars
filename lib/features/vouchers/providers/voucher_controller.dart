@@ -128,7 +128,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
       );
 
       // Refresh jobs list to update the UI
-      if (_ref != null) {
+      if (_ref != null && mounted) {
         final jobsNotifier = _ref!.read(jobsProvider.notifier);
         await jobsNotifier.fetchJobs();
       }
@@ -152,7 +152,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
       await createVoucher(jobId: jobId);
 
       // Refresh jobs list to update the UI
-      if (_ref != null) {
+      if (_ref != null && mounted) {
         final jobsNotifier = _ref!.read(jobsProvider.notifier);
         await jobsNotifier.fetchJobs();
       }

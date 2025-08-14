@@ -86,10 +86,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
         final bytes = await picked.readAsBytes();
         final userProfile = ref.read(currentUserProfileProvider);
         if (userProfile != null) {
-          final url = await UploadService.uploadImage(
-            fileBytes: bytes,
-            folder: 'profiles/${userProfile.id}',
-            fileName: 'profile.jpg',
+          final url = await UploadService.uploadImageBytes(
+            bytes,
+            'clc_images',
+            'profiles/${userProfile.id}/profile.jpg',
           );
           
           // Update profile image in database

@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/job.dart';
 import '../models/trip.dart';
+import '../services/driver_flow_api_service.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
@@ -46,13 +47,16 @@ class JobsNotifier extends StateNotifier<List<Job>> {
         jobMaps = await SupabaseService.instance.getJobsByDriver(userId);
       } else {
         // Other roles see no jobs
+        if (!mounted) return;
         state = [];
         return;
       }
 
-              state = jobMaps.map((map) => Job.fromMap(map)).toList();
+      if (!mounted) return;
+      state = jobMaps.map((map) => Job.fromMap(map)).toList();
     } catch (error) {
       print('Error fetching jobs: $error');
+      if (!mounted) return;
       state = [];
     }
   }
@@ -70,7 +74,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
   Future<Map<String, dynamic>> createJob(Job job) async {
     try {
       final createdJob = await SupabaseService.instance.createJob(job.toMap());
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
       return createdJob;
     } catch (error) {
       print('Error creating job: $error');
@@ -82,7 +88,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
   Future<void> updateJob(Job job) async {
     try {
       await SupabaseService.instance.updateJob(jobId: job.id, data: job.toMap());
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
     } catch (error) {
       print('Error updating job: $error');
       rethrow;
@@ -99,7 +107,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
           'updated_at': DateTime.now().toIso8601String(),
         }
       );
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
     } catch (error) {
       print('Error updating job status: $error');
       rethrow;
@@ -116,7 +126,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
           'updated_at': DateTime.now().toIso8601String(),
         }
       );
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
     } catch (error) {
       print('Error updating job payment amount: $error');
       rethrow;
@@ -127,7 +139,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
   Future<void> deleteJob(String jobId) async {
     try {
       await SupabaseService.instance.deleteJob(jobId);
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
     } catch (error) {
       print('Error deleting job: $error');
       rethrow;
@@ -165,7 +179,9 @@ class JobsNotifier extends StateNotifier<List<Job>> {
       }
       
       // Refresh jobs list
-      await fetchJobs();
+      if (mounted) {
+        await fetchJobs();
+      }
     } catch (error) {
       print('Error confirming job: $error');
       rethrow;
@@ -205,6 +221,43 @@ class JobsNotifier extends StateNotifier<List<Job>> {
       return null;
     }
   }
+
+  // Public method to refresh jobs list (useful for external components)
+  Future<void> refreshJobs() async {
+    if (mounted) {
+      await fetchJobs();
+    }
+  }
+
+  // Handle job starting - updates job status and refreshes list
+  Future<void> startJob(String jobId, {
+    required double odoStartReading,
+    required String pdpStartImage,
+    required double gpsLat,
+    required double gpsLng,
+    double? gpsAccuracy,
+  }) async {
+    try {
+      // Call the driver flow API to start the job
+      await DriverFlowApiService.startJob(
+        int.parse(jobId),
+        odoStartReading: odoStartReading,
+        pdpStartImage: pdpStartImage,
+        gpsLat: gpsLat,
+        gpsLng: gpsLng,
+        gpsAccuracy: gpsAccuracy,
+        onJobStarted: () {
+          // Refresh jobs list after job is started
+          if (mounted) {
+            fetchJobs();
+          }
+        },
+      );
+    } catch (error) {
+      print('Error starting job: $error');
+      rethrow;
+    }
+  }
 }
 
 class TripsNotifier extends StateNotifier<List<Trip>> {
@@ -214,9 +267,11 @@ class TripsNotifier extends StateNotifier<List<Trip>> {
   Future<void> fetchTripsForJob(String jobId) async {
     try {
       final tripMaps = await SupabaseService.instance.getTripsByJob(jobId);
+      if (!mounted) return;
       state = tripMaps.map((map) => Trip.fromMap(map)).toList();
     } catch (error) {
       print('Error fetching trips: $error');
+      if (!mounted) return;
       state = [];
     }
   }
