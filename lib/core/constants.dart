@@ -12,7 +12,9 @@ enum UserRole {
 enum JobStatus {
   pending,
   assigned,
-  inProgress,
+  started,
+  inProgress, // Maps to 'in_progress' in database
+  readyToClose, // Maps to 'ready_to_close' in database
   completed,
   cancelled,
 }
