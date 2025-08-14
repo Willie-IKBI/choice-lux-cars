@@ -1,0 +1,85 @@
+-- Fix Driver User Column Issue
+-- Applied: 2025-08-14
+-- Description: Fixes the driver_user column reference in start_job function
+
+-- First, let's check what columns actually exist in driver_flow table
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'driver_flow' 
+AND column_name LIKE '%driver%' OR column_name LIKE '%user%'
+ORDER BY column_name;
+
+-- Drop and recreate the start_job function with correct column reference
+DROP FUNCTION IF EXISTS start_job(bigint, numeric, text, numeric, numeric, numeric);
+
+CREATE OR REPLACE FUNCTION start_job(
+    job_id bigint,
+    odo_start_reading numeric,
+    pdp_start_image text,
+    gps_lat numeric,
+    gps_lng numeric,
+    gps_accuracy numeric DEFAULT NULL
+)
+RETURNS void AS $$
+BEGIN
+    -- First, ensure driver_flow record exists for this job
+    -- Use the correct column name based on the actual schema
+    INSERT INTO driver_flow (job_id, driver_user, current_step, last_activity_at)
+    SELECT 
+        start_job.job_id,
+        j.driver_id,
+        'vehicle_collection',
+        NOW()
+    FROM jobs j
+    WHERE j.id = start_job.job_id
+    AND NOT EXISTS (
+        SELECT 1 FROM driver_flow df WHERE df.job_id = start_job.job_id
+    );
+
+    -- Update driver_flow table
+    UPDATE driver_flow df
+    SET 
+        job_started_at = NOW(),
+        odo_start_reading = start_job.odo_start_reading,
+        pdp_start_image = start_job.pdp_start_image,
+        pickup_loc = format('POINT(%s %s)', start_job.gps_lng, start_job.gps_lat),
+        current_step = 'vehicle_collection',
+        last_activity_at = NOW(),
+        updated_at = NOW()
+    WHERE df.job_id = start_job.job_id;
+
+    -- Update job status to 'started'
+    UPDATE jobs j
+    SET 
+        job_status = 'started',
+        updated_at = NOW()
+    WHERE j.id = start_job.job_id;
+
+    -- Log the action
+    RAISE NOTICE 'Job % started successfully', job_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Grant execute permission to authenticated users
+GRANT EXECUTE ON FUNCTION start_job(bigint, numeric, text, numeric, numeric, numeric) TO authenticated;
+
+-- Add comment for documentation
+COMMENT ON FUNCTION start_job(bigint, numeric, text, numeric, numeric, numeric) IS 'Starts a job by updating driver_flow and job status';
+
+-- Verify the function exists
+SELECT 
+    routine_name, 
+    routine_type 
+FROM information_schema.routines 
+WHERE routine_schema = 'public' 
+AND routine_name = 'start_job';
+
+-- Show the actual driver_flow table structure
+SELECT 
+    column_name, 
+    data_type, 
+    is_nullable, 
+    column_default
+FROM information_schema.columns 
+WHERE table_name = 'driver_flow'
+ORDER BY ordinal_position;
