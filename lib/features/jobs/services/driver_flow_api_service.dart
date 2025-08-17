@@ -199,7 +199,7 @@ class DriverFlowApiService {
       final combinedData = {
         'job_id': jobId,
         'job_status': jobResponse['job_status'],
-        'driver_id': response['driver_user'],
+        'driver_id': response['driver_user'], // Matches driver_flow.driver_user column
         'current_step': response['current_step'],
         'current_trip_index': response['current_trip_index'] ?? 1,
         'progress_percentage': response['progress_percentage'] ?? 0,

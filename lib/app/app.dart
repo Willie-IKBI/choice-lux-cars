@@ -240,7 +240,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
               paymentAmount: null,
               collectPayment: false,
             );
-            return JobProgressScreen(jobId: int.parse(jobId), job: placeholderJob);
+            return JobProgressScreen(jobId: jobId, job: placeholderJob);
           },
         ),
         GoRoute(
