@@ -246,13 +246,12 @@ class JobsNotifier extends StateNotifier<List<Job>> {
         gpsLat: gpsLat,
         gpsLng: gpsLng,
         gpsAccuracy: gpsAccuracy,
-        onJobStarted: () {
-          // Refresh jobs list after job is started
-          if (mounted) {
-            fetchJobs();
-          }
-        },
       );
+      
+      // Refresh jobs list after job is started
+      if (mounted) {
+        fetchJobs();
+      }
     } catch (error) {
       print('Error starting job: $error');
       rethrow;

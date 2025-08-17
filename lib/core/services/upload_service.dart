@@ -9,17 +9,21 @@ class UploadService {
   /// Upload an image file to Supabase Storage
   /// 
   /// [file] - The image file to upload
-  /// [bucket] - The storage bucket name (e.g., 'odometer-readings')
+  /// [bucket] - The storage bucket name (e.g., 'clc_images')
+  /// [folder] - The folder path within the bucket (e.g., 'odometer')
   /// [fileName] - The filename to use in storage
   /// 
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadImage(File file, String bucket, String fileName) async {
+  static Future<String> uploadImage(File file, String bucket, String folder, String fileName) async {
     try {
+      // Create the full path including folder
+      final fullPath = '$folder/$fileName';
+      
       // Upload to Supabase Storage
       await _supabase.storage
           .from(bucket)
           .upload(
-            fileName,
+            fullPath,
             file,
             fileOptions: const FileOptions(
               cacheControl: '3600',
@@ -30,7 +34,7 @@ class UploadService {
       // Get the public URL
       final publicUrl = _supabase.storage
           .from(bucket)
-          .getPublicUrl(fileName);
+          .getPublicUrl(fullPath);
 
       return publicUrl;
     } catch (e) {
@@ -41,17 +45,21 @@ class UploadService {
   /// Upload image bytes to Supabase Storage
   /// 
   /// [bytes] - The image bytes to upload
-  /// [bucket] - The storage bucket name
+  /// [bucket] - The storage bucket name (e.g., 'clc_images')
+  /// [folder] - The folder path within the bucket (e.g., 'odometer')
   /// [fileName] - The filename to use in storage
   /// 
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadImageBytes(Uint8List bytes, String bucket, String fileName) async {
+  static Future<String> uploadImageBytes(Uint8List bytes, String bucket, String folder, String fileName) async {
     try {
+      // Create the full path including folder
+      final fullPath = '$folder/$fileName';
+      
       // Upload to Supabase Storage
       await _supabase.storage
           .from(bucket)
           .uploadBinary(
-            fileName,
+            fullPath,
             bytes,
             fileOptions: const FileOptions(
               cacheControl: '3600',
@@ -62,7 +70,7 @@ class UploadService {
       // Get the public URL
       final publicUrl = _supabase.storage
           .from(bucket)
-          .getPublicUrl(fileName);
+          .getPublicUrl(fullPath);
 
       return publicUrl;
     } catch (e) {
@@ -70,29 +78,61 @@ class UploadService {
     }
   }
 
+  /// Upload odometer image (convenience method)
+  /// 
+  /// [bytes] - The image bytes to upload
+  /// [fileName] - The filename to use in storage
+  /// 
+  /// Returns the public URL of the uploaded image
+  static Future<String> uploadOdometerImage(Uint8List bytes, String fileName) async {
+    return uploadImageBytes(bytes, 'clc_images', 'odometer', fileName);
+  }
+
+  /// Upload vehicle image (convenience method)
+  /// 
+  /// [bytes] - The image bytes to upload
+  /// [fileName] - The filename to use in storage
+  /// 
+  /// Returns the public URL of the uploaded image
+  static Future<String> uploadVehicleImage(Uint8List bytes, String fileName) async {
+    return uploadImageBytes(bytes, 'clc_images', 'vehicles', fileName);
+  }
+
+  /// Upload profile image (convenience method)
+  /// 
+  /// [bytes] - The image bytes to upload
+  /// [fileName] - The filename to use in storage
+  /// 
+  /// Returns the public URL of the uploaded image
+  static Future<String> uploadProfileImage(Uint8List bytes, String fileName) async {
+    return uploadImageBytes(bytes, 'clc_images', 'profile_images', fileName);
+  }
+
   /// Delete an image from Supabase Storage
   /// 
   /// [bucket] - The storage bucket name
+  /// [folder] - The folder path within the bucket
   /// [fileName] - The filename to delete
-  static Future<void> deleteImage(String bucket, String fileName) async {
+  static Future<void> deleteImage(String bucket, String folder, String fileName) async {
     try {
+      final fullPath = '$folder/$fileName';
       await _supabase.storage
           .from(bucket)
-          .remove([fileName]);
+          .remove([fullPath]);
     } catch (e) {
       throw Exception('Failed to delete image: $e');
     }
   }
 
-  /// Get a list of files in a bucket
+  /// Get a list of files in a bucket folder
   /// 
   /// [bucket] - The storage bucket name
-  /// [folder] - Optional folder path within the bucket
-  static Future<List<FileObject>> listFiles(String bucket, {String? folder}) async {
+  /// [folder] - The folder path within the bucket
+  static Future<List<FileObject>> listFiles(String bucket, String folder) async {
     try {
       final response = await _supabase.storage
           .from(bucket)
-          .list(path: folder ?? '');
+          .list(path: folder);
 
       return response;
     } catch (e) {
@@ -100,34 +140,17 @@ class UploadService {
     }
   }
 
-  /// Download an image from Supabase Storage
-  /// 
-  /// [bucket] - The storage bucket name
-  /// [fileName] - The filename to download
-  /// 
-  /// Returns the image bytes
-  static Future<Uint8List> downloadImage(String bucket, String fileName) async {
-    try {
-      final response = await _supabase.storage
-          .from(bucket)
-          .download(fileName);
-
-      return response;
-    } catch (e) {
-      throw Exception('Failed to download image: $e');
-    }
-  }
-
   /// Generate a unique filename with timestamp
   /// 
   /// [prefix] - Optional prefix for the filename
-  /// [extension] - File extension (e.g., 'jpg', 'png')
-  static String generateUniqueFileName({String? prefix, required String extension}) {
+  /// [extension] - File extension (e.g., '.jpg')
+  /// 
+  /// Returns a unique filename
+  static String generateUniqueFileName({String? prefix, String extension = '.jpg'}) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
-    final random = DateTime.now().microsecond;
-    final prefixStr = prefix != null ? '${prefix}_' : '';
-    
-    return '${prefixStr}${timestamp}_$random.$extension';
+    final random = (timestamp % 10000).toString().padLeft(4, '0');
+    final prefixPart = prefix != null ? '${prefix}_' : '';
+    return '${prefixPart}${timestamp}_$random$extension';
   }
 
   /// Extract filename from a public URL
@@ -187,24 +210,26 @@ class UploadService {
       return await uploadImage(
         logoFile,
         'clc_images',
-        'logos/$fileName',
+        'logos',
+        fileName,
       );
     } catch (e) {
       throw Exception('Failed to upload company logo: $e');
     }
   }
 
-  /// Upload vehicle image (legacy method)
-  static Future<String> uploadVehicleImage(Uint8List bytes, int? vehicleId) async {
+  /// Upload vehicle image with ID (legacy method)
+  static Future<String> uploadVehicleImageWithId(Uint8List bytes, int? vehicleId) async {
     try {
       final fileName = 'vehicle.jpg';
       final path = vehicleId != null 
-          ? 'vehicles/$vehicleId/$fileName'
-          : 'vehicles/temp/${DateTime.now().millisecondsSinceEpoch}_$fileName';
+          ? '$vehicleId/$fileName'
+          : 'temp/${DateTime.now().millisecondsSinceEpoch}_$fileName';
       
       return await uploadImageBytes(
         bytes,
         'clc_images',
+        'vehicles',
         path,
       );
     } catch (e) {

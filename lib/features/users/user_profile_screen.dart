@@ -89,7 +89,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           final url = await UploadService.uploadImageBytes(
             bytes,
             'clc_images',
-            'profiles/${userProfile.id}/profile.jpg',
+            'profiles',
+            '${userProfile.id}/profile.jpg',
           );
           
           // Update profile image in database

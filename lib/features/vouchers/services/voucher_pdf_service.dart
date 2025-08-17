@@ -63,8 +63,8 @@ class VoucherPdfService {
                           _buildInfoRow('Name', data.agentName),
                           _buildInfoRow('Contact', data.agentContact),
                         ],
-                        color: PdfColors.blue50,
-                        borderColor: PdfColors.blue200,
+                        color: PdfColors.grey50,
+                        borderColor: PdfColors.grey300,
                       ),
                       pw.SizedBox(height: 16),
                       _buildInfoCard(
@@ -76,8 +76,8 @@ class VoucherPdfService {
                           _buildInfoRow('Passengers', data.numberPassengers.toString()),
                           _buildInfoRow('Luggage', data.luggage),
                         ],
-                        color: PdfColors.green50,
-                        borderColor: PdfColors.green200,
+                        color: PdfColors.grey50,
+                        borderColor: PdfColors.grey300,
                       ),
                     ],
                   ),
@@ -96,8 +96,8 @@ class VoucherPdfService {
                           _buildInfoRow('Contact', data.driverContact),
                           _buildInfoRow('Vehicle', data.vehicleType),
                         ],
-                        color: PdfColors.orange50,
-                        borderColor: PdfColors.orange200,
+                        color: PdfColors.grey50,
+                        borderColor: PdfColors.grey300,
                       ),
                     ],
                   ),
@@ -135,12 +135,12 @@ class VoucherPdfService {
       padding: const pw.EdgeInsets.all(20),
       decoration: pw.BoxDecoration(
         gradient: pw.LinearGradient(
-          colors: [PdfColors.blue100, PdfColors.blue50],
+          colors: [PdfColors.grey100, PdfColors.grey50],
           begin: pw.Alignment.topLeft,
           end: pw.Alignment.bottomRight,
         ),
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
-        border: pw.Border.all(color: PdfColors.blue300, width: 1),
+        border: pw.Border.all(color: PdfColors.grey300, width: 1),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
@@ -223,11 +223,7 @@ class VoucherPdfService {
               ],
             ),
           ),
-          pw.Container(
-            width: 1,
-            height: 40,
-            color: PdfColors.grey300,
-          ),
+
           pw.Expanded(
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -242,7 +238,7 @@ class VoucherPdfService {
                 ),
                 pw.SizedBox(height: 4),
                 pw.Text(
-                  'Job #${data.jobId}',
+                  'VN#${data.jobId}',
                   style: pw.TextStyle(
                     fontSize: 12,
                     fontWeight: pw.FontWeight.normal,
@@ -350,9 +346,9 @@ class VoucherPdfService {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
-        color: PdfColors.purple50,
+        color: PdfColors.grey50,
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.purple200, width: 1.5),
+        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -363,7 +359,7 @@ class VoucherPdfService {
                 width: 20,
                 height: 20,
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.purple600,
+                  color: PdfColors.grey600,
                   borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
                 ),
                 child: pw.Center(
@@ -397,14 +393,14 @@ class VoucherPdfService {
                 border: pw.Border.all(color: PdfColors.purple100, width: 1),
               ),
               child: pw.TableHelper.fromTextArray(
-                border: pw.TableBorder.all(color: PdfColors.purple200, width: 0.5),
+                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
                 headerStyle: pw.TextStyle(
                   fontWeight: pw.FontWeight.bold,
                   fontSize: 9,
                   color: PdfColors.white,
                 ),
                 headerDecoration: pw.BoxDecoration(
-                  color: PdfColors.purple600,
+                  color: PdfColors.grey600,
                   borderRadius: const pw.BorderRadius.only(
                     topLeft: pw.Radius.circular(6),
                     topRight: pw.Radius.circular(6),
@@ -436,7 +432,7 @@ class VoucherPdfService {
               decoration: pw.BoxDecoration(
                 color: PdfColors.white,
                 borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                border: pw.Border.all(color: PdfColors.purple100, width: 1),
+                border: pw.Border.all(color: PdfColors.grey200, width: 1),
               ),
               child: pw.Text(
                 'No trip details available.',
@@ -456,9 +452,9 @@ class VoucherPdfService {
     return pw.Container(
       padding: const pw.EdgeInsets.all(16),
       decoration: pw.BoxDecoration(
-        color: PdfColors.yellow50,
+        color: PdfColors.grey50,
         borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.yellow200, width: 1.5),
+        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
       ),
       child: pw.Column(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -469,7 +465,7 @@ class VoucherPdfService {
                 width: 20,
                 height: 20,
                 decoration: pw.BoxDecoration(
-                  color: PdfColors.orange600,
+                  color: PdfColors.grey600,
                   borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
                 ),
                 child: pw.Center(
@@ -500,7 +496,7 @@ class VoucherPdfService {
             decoration: pw.BoxDecoration(
               color: PdfColors.white,
               borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-              border: pw.Border.all(color: PdfColors.yellow100, width: 1),
+              border: pw.Border.all(color: PdfColors.grey200, width: 1),
             ),
             child: pw.Text(
               data.notes,

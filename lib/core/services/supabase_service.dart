@@ -39,8 +39,8 @@ class SupabaseService {
       );
     } catch (error) {
       print('Supabase signUp error: $error');
-      // Re-throw the error so it can be handled by the auth provider
-      rethrow;
+      // Return the error as a string instead of re-throwing
+      throw error.toString();
     }
   }
 
@@ -55,13 +55,18 @@ class SupabaseService {
       );
     } catch (error) {
       print('Supabase signIn error: $error');
-      // Re-throw the error so it can be handled by the auth provider
-      rethrow;
+      // Return the error as a string instead of re-throwing
+      throw error.toString();
     }
   }
 
   Future<void> signOut() async {
-    await supabase.auth.signOut();
+    try {
+      await supabase.auth.signOut();
+    } catch (error) {
+      print('Supabase signOut error: $error');
+      throw error.toString();
+    }
   }
 
   User? get currentUser => supabase.auth.currentUser;
@@ -73,19 +78,29 @@ class SupabaseService {
     required String userId,
     required Map<String, dynamic> data,
   }) async {
-    await supabase
-        .from('profiles')
-        .update(data)
-        .eq('id', userId);
+    try {
+      await supabase
+          .from('profiles')
+          .update(data)
+          .eq('id', userId);
+    } catch (error) {
+      print('Supabase updateProfile error: $error');
+      throw error.toString();
+    }
   }
 
   Future<Map<String, dynamic>?> getProfile(String userId) async {
-    final response = await supabase
-        .from('profiles')
-        .select()
-        .eq('id', userId)
-        .single();
-    return response;
+    try {
+      final response = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      return response;
+    } catch (error) {
+      print('Supabase getProfile error: $error');
+      throw error.toString();
+    }
   }
 
   Future<void> updateUser({

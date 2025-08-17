@@ -5,15 +5,20 @@ import '../widgets/driver_activity_card.dart';
 import '../widgets/active_jobs_summary.dart';
 import '../models/job.dart';
 import 'job_progress_screen.dart';
+import '../../../shared/widgets/luxury_app_bar.dart';
+import '../../../app/theme.dart';
+import 'package:go_router/go_router.dart';
+import '../../../features/auth/providers/auth_provider.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class AdminMonitoringScreen extends StatefulWidget {
+class AdminMonitoringScreen extends ConsumerStatefulWidget {
   const AdminMonitoringScreen({Key? key}) : super(key: key);
 
   @override
-  State<AdminMonitoringScreen> createState() => _AdminMonitoringScreenState();
+  ConsumerState<AdminMonitoringScreen> createState() => _AdminMonitoringScreenState();
 }
 
-class _AdminMonitoringScreenState extends State<AdminMonitoringScreen>
+class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
     with TickerProviderStateMixin {
   bool _isLoading = true;
   bool _isRefreshing = false;
@@ -127,10 +132,14 @@ class _AdminMonitoringScreenState extends State<AdminMonitoringScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Job Monitoring'),
-        backgroundColor: Colors.blue[800],
-        foregroundColor: Colors.white,
+      appBar: LuxuryAppBar(
+        title: 'Job Monitoring',
+        subtitle: 'Real-time job and driver tracking',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
         actions: [
           IconButton(
             icon: _isRefreshing
@@ -139,38 +148,68 @@ class _AdminMonitoringScreenState extends State<AdminMonitoringScreen>
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
                     ),
                   )
-                : const Icon(Icons.refresh),
+                : const Icon(Icons.refresh_rounded),
             onPressed: _isRefreshing ? null : _refreshData,
           ),
         ],
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          tabs: const [
-            Tab(text: 'Summary', icon: Icon(Icons.dashboard)),
-            Tab(text: 'Active Jobs', icon: Icon(Icons.work)),
-            Tab(text: 'Drivers', icon: Icon(Icons.people)),
-          ],
-        ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : RefreshIndicator(
-              onRefresh: _refreshData,
-              child: TabBarView(
-                controller: _tabController,
-                children: [
-                  _buildSummaryTab(),
-                  _buildActiveJobsTab(),
-                  _buildDriversTab(),
+      body: Column(
+        children: [
+          // Custom TabBar with luxury styling
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  ChoiceLuxTheme.jetBlack.withOpacity(0.95),
+                  ChoiceLuxTheme.jetBlack.withOpacity(0.90),
                 ],
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
+            child: TabBar(
+              controller: _tabController,
+              indicatorColor: ChoiceLuxTheme.richGold,
+              labelColor: ChoiceLuxTheme.richGold,
+              unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
+              indicatorWeight: 3,
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+              tabs: const [
+                Tab(text: 'Summary', icon: Icon(Icons.dashboard_rounded)),
+                Tab(text: 'Active Jobs', icon: Icon(Icons.work_rounded)),
+                Tab(text: 'Drivers', icon: Icon(Icons.people_rounded)),
+              ],
+            ),
+          ),
+          // TabBarView content
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : RefreshIndicator(
+                    onRefresh: _refreshData,
+                    child: TabBarView(
+                      controller: _tabController,
+                      children: [
+                        _buildSummaryTab(),
+                        _buildActiveJobsTab(),
+                        _buildDriversTab(),
+                      ],
+                    ),
+                  ),
+          ),
+        ],
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
+import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 
 // User Profile Model
 class UserProfile {
@@ -113,68 +114,47 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  Future<void> signIn({
-    required String email,
-    required String password,
-  }) async {
+  Future<void> signIn({required String email, required String password}) async {
+    // Validate inputs
+    if (email.isEmpty || password.isEmpty) {
+      _setErrorState('Please enter both email and password.');
+      return;
+    }
+
+    state = const AsyncValue.loading();
+
     try {
-      state = const AsyncValue.loading();
-      
-      // Validate inputs first
-      if (email.isEmpty || password.isEmpty) {
-        state = AsyncValue.error(
-          'Please enter both email and password.',
-          StackTrace.current,
-        );
-        return;
-      }
-      
-      final response = await _supabaseService.signIn(
-        email: email,
-        password: password,
-      );
+      final response = await _supabaseService.signIn(email: email, password: password);
       
       if (response.user != null) {
         state = AsyncValue.data(response.user);
         // Handle FCM token update after successful sign in
         _handleFCMTokenUpdate(response.user!.id);
       } else {
-        state = AsyncValue.error(
-          'Login failed. Please check your credentials.',
-          StackTrace.current,
-        );
+        _setErrorState('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      print('Sign in error: $error');
+      print('Supabase signIn error: $error');
       print('Error type: ${error.runtimeType}');
       print('Error string: ${error.toString()}');
       
-      // Provide user-friendly error messages
-      String errorMessage = 'An error occurred during login. Please try again.';
-      
-      final errorString = error.toString().toLowerCase();
-      
-      if (errorString.contains('invalid login credentials') || 
-          errorString.contains('invalid email or password')) {
-        errorMessage = 'Invalid email or password. Please check your credentials and try again.';
-      } else if (errorString.contains('email not confirmed')) {
-        errorMessage = 'Please check your email and confirm your account before signing in.';
-      } else if (errorString.contains('too many requests') || 
-                 errorString.contains('rate limit')) {
-        errorMessage = 'Too many login attempts. Please wait a moment before trying again.';
-      } else if (errorString.contains('user not found')) {
-        errorMessage = 'No account found with this email address. Please check your email or sign up.';
-      } else if (errorString.contains('network') || 
-                 errorString.contains('connection') ||
-                 errorString.contains('timeout')) {
-        errorMessage = 'Network error. Please check your internet connection and try again.';
-      } else if (errorString.contains('server error') ||
-                 errorString.contains('internal server error')) {
-        errorMessage = 'Server error. Please try again later.';
-      }
-      
-      print('Setting error state with message: $errorMessage');
-      state = AsyncValue.error(errorMessage, StackTrace.current);
+      // Use centralized error handling utility to convert to safe AuthError
+      final authError = AuthErrorUtils.toAuthError(error);
+      print('Setting error state with message: ${authError.message}');
+      _setErrorState(authError.message);
+    }
+  }
+
+  // Helper method to set error state safely
+  void _setErrorState(String errorMessage) {
+    try {
+      // Create a safe error object
+      final error = Exception(errorMessage);
+      state = AsyncValue.error(error, StackTrace.empty);
+    } catch (e) {
+      print('Error setting error state: $e');
+      // Fallback to data state with null user
+      state = const AsyncValue.data(null);
     }
   }
 
@@ -210,13 +190,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         // Handle FCM token update after successful sign up
         _handleFCMTokenUpdate(response.user!.id);
       } else {
-        state = AsyncValue.error(
-          'Registration failed. Please try again.',
-          StackTrace.current,
-        );
+        _setErrorState('Registration failed. Please try again.');
       }
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
+      // Use centralized error handling utility to convert to safe AuthError
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
     }
   }
 
@@ -225,7 +204,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       await _supabaseService.signOut();
       state = const AsyncValue.data(null);
     } catch (error) {
-      state = AsyncValue.error(error, StackTrace.current);
+      // Use centralized error handling utility to convert to safe AuthError
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
     }
   }
 
@@ -304,12 +285,27 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
       await _loadProfile(currentProfile.id);
     } catch (error) {
       print('Error updating profile: $error');
-      state = AsyncValue.error(error, StackTrace.current);
+      // Use centralized error handling utility to convert to safe AuthError
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
     }
   }
 
   UserProfile? get currentProfile => state.value;
   bool get isLoading => state.isLoading;
+
+  // Helper method to set error state safely
+  void _setErrorState(String errorMessage) {
+    try {
+      // Create a safe error object
+      final error = Exception(errorMessage);
+      state = AsyncValue.error(error, StackTrace.empty);
+    } catch (e) {
+      print('Error setting error state: $e');
+      // Fallback to data state with null profile
+      state = const AsyncValue.data(null);
+    }
+  }
 }
 
 // Auth provider
@@ -324,16 +320,31 @@ final userProfileProvider = StateNotifierProvider<UserProfileNotifier, AsyncValu
 
 // Convenience providers
 final isAuthenticatedProvider = Provider<bool>((ref) {
-  final authState = ref.watch(authProvider);
-  return authState.value != null;
+  try {
+    final authState = ref.watch(authProvider);
+    return authState.value != null;
+  } catch (e) {
+    print('Error in isAuthenticatedProvider: $e');
+    return false;
+  }
 });
 
 final currentUserProvider = Provider<User?>((ref) {
-  final authState = ref.watch(authProvider);
-  return authState.value;
+  try {
+    final authState = ref.watch(authProvider);
+    return authState.value;
+  } catch (e) {
+    print('Error in currentUserProvider: $e');
+    return null;
+  }
 });
 
 final currentUserProfileProvider = Provider<UserProfile?>((ref) {
-  final profileState = ref.watch(userProfileProvider);
-  return profileState.value;
+  try {
+    final profileState = ref.watch(userProfileProvider);
+    return profileState.value;
+  } catch (e) {
+    print('Error in currentUserProfileProvider: $e');
+    return null;
+  }
 }); 

@@ -72,7 +72,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           throw Exception('Invalid image format. Please select a valid image file (JPEG, PNG, etc.)');
         }
         
-        final url = await UploadService.uploadVehicleImage(bytes, widget.vehicle?.id);
+        final url = await UploadService.uploadVehicleImageWithId(bytes, widget.vehicle?.id);
         setState(() => vehicleImage = url);
         
         ScaffoldMessenger.of(context).showSnackBar(

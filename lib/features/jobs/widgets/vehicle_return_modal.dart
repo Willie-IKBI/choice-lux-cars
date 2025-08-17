@@ -6,10 +6,10 @@ import 'dart:io';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 
-class VehicleCollectionModal extends StatefulWidget {
+class VehicleReturnModal extends StatefulWidget {
   final Function({
-    required double odometerReading,
-    required String odometerImageUrl,
+    required double odoEndReading,
+    required String pdpEndImage,
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
@@ -17,17 +17,17 @@ class VehicleCollectionModal extends StatefulWidget {
 
   final VoidCallback onCancel;
 
-  const VehicleCollectionModal({
+  const VehicleReturnModal({
     Key? key,
     required this.onConfirm,
     required this.onCancel,
   }) : super(key: key);
 
   @override
-  State<VehicleCollectionModal> createState() => _VehicleCollectionModalState();
+  State<VehicleReturnModal> createState() => _VehicleReturnModalState();
 }
 
-class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
+class _VehicleReturnModalState extends State<VehicleReturnModal> {
   final TextEditingController _odometerController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
   
@@ -96,29 +96,27 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     try {
       final XFile? image = await _picker.pickImage(
         source: ImageSource.camera,
-        imageQuality: 80, // Optimize image quality
-        maxWidth: 1920, // Reasonable max width
-        maxHeight: 1080, // Reasonable max height
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1080,
       );
 
       if (image != null) {
-        if (kIsWeb) {
-          // For web platform, read as bytes
-          final bytes = await image.readAsBytes();
-          setState(() {
-            _selectedImageBytes = bytes;
-            _selectedImage = null;
-          });
-        } else {
-          // For mobile platform, use File
-          setState(() {
-            _selectedImage = File(image.path);
-            _selectedImageBytes = null;
-          });
-        }
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImage = File(image.path);
+          _selectedImageBytes = bytes;
+        });
       }
     } catch (e) {
-      _showErrorSnackBar('Failed to capture image: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to capture image: $e'),
+            backgroundColor: ChoiceLuxTheme.errorColor,
+          ),
+        );
+      }
     }
   }
 
@@ -130,26 +128,19 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     await _pickImage();
   }
 
-  Future<void> _confirmVehicleCollection() async {
-    // Validate inputs
-    if (_selectedImage == null && _selectedImageBytes == null) {
-      _showErrorSnackBar('Please capture an odometer image');
-      return;
-    }
-
+  Future<void> _confirmReturn() async {
     if (_odometerController.text.isEmpty) {
       _showErrorSnackBar('Please enter the odometer reading');
       return;
     }
 
-    final odometerReading = double.tryParse(_odometerController.text);
-    if (odometerReading == null) {
-      _showErrorSnackBar('Please enter a valid odometer reading');
+    if (_selectedImageBytes == null) {
+      _showErrorSnackBar('Please capture an odometer image');
       return;
     }
 
     if (_currentPosition == null) {
-      _showErrorSnackBar('GPS location is required. Please try again.');
+      _showErrorSnackBar('Please wait for location capture to complete');
       return;
     }
 
@@ -158,42 +149,27 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     });
 
     try {
-      // Upload image to Supabase Storage
-      String imageUrl;
-      if (kIsWeb && _selectedImageBytes != null) {
-        // For web platform, upload bytes
-        imageUrl = await UploadService.uploadOdometerImage(
-          _selectedImageBytes!,
-          'odometer_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        );
-      } else if (_selectedImage != null) {
-        // For mobile platform, upload file
-        imageUrl = await UploadService.uploadImage(
-          _selectedImage!,
-          'clc_images',
-          'odometer',
-          'odometer_${DateTime.now().millisecondsSinceEpoch}.jpg',
-        );
-      } else {
-        throw Exception('No image data available');
-      }
+      // Upload image using the convenience method
+      final imageUrl = await UploadService.uploadOdometerImage(
+        _selectedImageBytes!,
+        'odometer_${DateTime.now().millisecondsSinceEpoch}.jpg',
+      );
 
-      // Call the confirmation callback
+      // Call the confirm callback
       widget.onConfirm(
-        odometerReading: odometerReading,
-        odometerImageUrl: imageUrl,
+        odoEndReading: double.parse(_odometerController.text),
+        pdpEndImage: imageUrl,
         gpsLat: _currentPosition!.latitude,
         gpsLng: _currentPosition!.longitude,
         gpsAccuracy: _currentPosition!.accuracy,
       );
-
-      Navigator.of(context).pop();
     } catch (e) {
-      _showErrorSnackBar('Failed to upload image: $e');
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        _showErrorSnackBar('Failed to return vehicle: $e');
+      }
     }
   }
 
@@ -218,142 +194,142 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
-        decoration: BoxDecoration(
-          gradient: ChoiceLuxTheme.cardGradient,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+          decoration: BoxDecoration(
+            gradient: ChoiceLuxTheme.cardGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              width: 1,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    ChoiceLuxTheme.richGold.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          ChoiceLuxTheme.richGold,
-                          ChoiceLuxTheme.richGold.withOpacity(0.8),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      ChoiceLuxTheme.richGold.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            ChoiceLuxTheme.richGold,
+                            ChoiceLuxTheme.richGold.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.home_rounded,
+                        color: Colors.black,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Return Vehicle',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.softWhite,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Capture final odometer reading and location',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      color: Colors.black,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Vehicle Collection',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.softWhite,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Capture odometer reading and location',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Odometer Image Section
-                  _buildImageSection(),
-                  const SizedBox(height: 24),
-
-                  // Odometer Reading Section
-                  _buildOdometerInputSection(),
-                  const SizedBox(height: 24),
-
-                  // GPS Status Section
-                  _buildGpsStatusSection(),
-                ],
-              ),
-            ),
-
-            // Action Buttons
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildLuxuryButton(
-                      onPressed: widget.onCancel,
-                      label: 'Cancel',
-                      isPrimary: false,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildLuxuryButton(
-                      onPressed: _isLoading ? null : _confirmVehicleCollection,
-                      label: _isLoading ? 'Processing...' : 'Start Job',
-                      isPrimary: true,
-                    ),
-                  ),
-                ],
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    // Odometer Image Section
+                    _buildImageSection(),
+                    const SizedBox(height: 24),
+
+                    // Odometer Reading Section
+                    _buildOdometerInputSection(),
+                    const SizedBox(height: 24),
+
+                    // GPS Status Section
+                    _buildGpsStatusSection(),
+                  ],
+                ),
               ),
-            ),
-                     ],
-         ),
-       ),
-       ),
-     );
+
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildLuxuryButton(
+                        onPressed: widget.onCancel,
+                        label: 'Cancel',
+                        isPrimary: false,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildLuxuryButton(
+                        onPressed: _isLoading ? null : _confirmReturn,
+                        label: _isLoading ? 'Processing...' : 'Return Vehicle',
+                        isPrimary: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildImageSection() {
@@ -480,7 +456,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             ),
             const SizedBox(width: 8),
             const Text(
-              'Odometer Reading',
+              'Final Odometer Reading',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
                 fontSize: 16,

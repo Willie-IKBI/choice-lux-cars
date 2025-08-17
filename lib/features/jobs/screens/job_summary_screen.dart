@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -34,6 +35,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   dynamic _vehicle;
   dynamic _driver;
   
+  // Step completion times
+  Map<String, dynamic>? _driverFlowData;
+  List<Map<String, dynamic>> _tripProgressData = [];
+  
   // Mobile accordion state
   final Map<String, bool> _expandedSections = {
     'jobDetails': true,
@@ -41,6 +46,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     'vehicleDriver': true,
     'payment': true,
     'trips': true,
+    'stepTimeline': true, // New section for step timeline
   };
   
   @override
@@ -85,6 +91,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         print('Warning: Could not load trips: $e');
         _trips = [];
       }
+      
+      // Load step completion times
+      await _loadStepCompletionData();
       
       // Ensure all providers have loaded data
       await _ensureDataLoaded();
@@ -157,6 +166,35 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     if (users.isEmpty) {
       print('Users not loaded, fetching...');
       await ref.read(usersProvider.notifier).fetchUsers();
+    }
+  }
+  
+  Future<void> _loadStepCompletionData() async {
+    try {
+      // Load driver flow data
+      final driverFlowResponse = await Supabase.instance.client
+          .from('driver_flow')
+          .select('*')
+          .eq('job_id', int.parse(widget.jobId))
+          .maybeSingle();
+      
+      _driverFlowData = driverFlowResponse;
+      
+      // Load trip progress data
+      final tripProgressResponse = await Supabase.instance.client
+          .from('trip_progress')
+          .select('*')
+          .eq('job_id', int.parse(widget.jobId))
+          .order('trip_index');
+      
+      _tripProgressData = List<Map<String, dynamic>>.from(tripProgressResponse);
+      
+      print('Loaded step completion data:');
+      print('Driver flow: $_driverFlowData');
+      print('Trip progress: $_tripProgressData');
+    } catch (e) {
+      print('Error loading step completion data: $e');
+      // Don't fail the entire load if this fails
     }
   }
   
@@ -262,6 +300,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 _buildVehicleDriverCard(),
                 const SizedBox(height: 24),
                 _buildPaymentCard(),
+                const SizedBox(height: 24),
+                _buildStepTimelineCard(),
                 if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _buildNotesCard(),
@@ -324,6 +364,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             'payment',
             _buildPaymentContent(),
             Icons.payment,
+          ),
+          const SizedBox(height: 16),
+          _buildAccordionSection(
+            'Step Timeline',
+            'stepTimeline',
+            _buildStepTimelineContent(),
+            Icons.timeline,
           ),
           if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -629,6 +676,147 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
   
+  Widget _buildStepTimelineCard() {
+    final steps = _getStepTimeline();
+    
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Step Timeline', Icons.timeline),
+            const SizedBox(height: 16),
+            if (steps.isEmpty)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                ),
+                child: Row(
+                  children: [
+                    Icon(
+                      Icons.info_outline,
+                      color: Colors.grey[600],
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              )
+            else
+              ...steps.map((step) {
+                return _buildStepTimelineItem(step);
+              }).toList(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStepTimelineItem(Map<String, dynamic> step) {
+    final isTotal = step['isTotal'] == true;
+    
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 40,
+            height: 40,
+            decoration: BoxDecoration(
+              color: isTotal 
+                ? Colors.indigo.withOpacity(0.2)
+                : step['color']!.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: isTotal 
+                  ? Colors.indigo.withOpacity(0.5)
+                  : step['color']!.withOpacity(0.3),
+                width: isTotal ? 2 : 1,
+              ),
+            ),
+            child: Icon(
+              step['icon'],
+              color: step['color'],
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  step['title'],
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: isTotal ? FontWeight.w700 : FontWeight.bold,
+                    color: isTotal ? Colors.indigo : null,
+                  ),
+                ),
+                Text(
+                  step['description'],
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: Colors.grey,
+                  ),
+                ),
+                if (step['odometer'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isTotal 
+                        ? Colors.indigo.withOpacity(0.1)
+                        : Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isTotal 
+                          ? Colors.indigo.withOpacity(0.3)
+                          : Colors.grey.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      step['odometer']!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: isTotal ? Colors.indigo : Colors.grey[700],
+                      ),
+                    ),
+                  ),
+                if (step['completedAt'] != null)
+                  Text(
+                    'Completed on: ${_formatDateTime(step['completedAt'])}',
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: Colors.green,
+                    ),
+                  ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+  
   Widget _buildNotesCard() {
     return Card(
       elevation: 2,
@@ -647,6 +835,47 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
   
+  Widget _buildStepTimelineContent() {
+    final steps = _getStepTimeline();
+    
+    if (steps.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.grey.withOpacity(0.1),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: Colors.grey.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: Colors.grey[600],
+              size: 20,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Colors.grey[600],
+                  fontStyle: FontStyle.italic,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    
+    return Column(
+      children: steps.map((step) {
+        return _buildStepTimelineItem(step);
+      }).toList(),
+    );
+  }
+
   Widget _buildNotesContent() {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -1126,12 +1355,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   
   Color _getStatusColor() {
     switch (_job!.status) {
-      case 'open':
+      case 'assigned':
         return ChoiceLuxTheme.richGold;
+      case 'started':
+        return Colors.orange;
       case 'in_progress':
         return Colors.blue;
-      case 'closed':
-        return Colors.grey;
+      case 'ready_to_close':
+        return Colors.purple;
+      case 'completed':
+        return ChoiceLuxTheme.successColor;
+      case 'cancelled':
+        return ChoiceLuxTheme.errorColor;
       default:
         return ChoiceLuxTheme.platinumSilver;
     }
@@ -1139,12 +1374,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   
   String _getStatusText(String status) {
     switch (status) {
-      case 'open':
-        return 'OPEN';
+      case 'assigned':
+        return 'ASSIGNED';
+      case 'started':
+        return 'STARTED';
       case 'in_progress':
         return 'IN PROGRESS';
-      case 'closed':
-        return 'CLOSED';
+      case 'ready_to_close':
+        return 'READY TO CLOSE';
+      case 'completed':
+        return 'COMPLETED';
+      case 'cancelled':
+        return 'CANCELLED';
       default:
         return status.toUpperCase();
     }
@@ -1166,6 +1407,117 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   String _formatLuggageCount(dynamic count) {
     final intCount = int.tryParse(count.toString()) ?? 0;
     return '$intCount Bag${intCount == 1 ? '' : 's'}';
+  }
+
+  String _formatDateTime(String? dateTimeString) {
+    if (dateTimeString == null) return 'Not completed';
+    
+    try {
+      final dateTime = DateTime.parse(dateTimeString);
+      return '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+    } catch (e) {
+      return 'Invalid date';
+    }
+  }
+
+  List<Map<String, dynamic>> _getStepTimeline() {
+    final steps = <Map<String, dynamic>>[];
+    
+    // Get odometer readings
+    final startOdo = _driverFlowData?['odo_start_reading'] ?? 0.0;
+    final endOdo = _driverFlowData?['job_closed_odo'] ?? 0.0;
+    final totalKm = endOdo - startOdo;
+    
+    // Vehicle Collection - only show if completed
+    final vehicleCollectedAt = _driverFlowData?['vehicle_collected_at'];
+    if (vehicleCollectedAt != null) {
+      steps.add({
+        'title': 'Vehicle Collection',
+        'description': 'Vehicle collected and odometer recorded',
+        'completedAt': vehicleCollectedAt,
+        'icon': Icons.directions_car,
+        'color': ChoiceLuxTheme.richGold,
+        'odometer': startOdo > 0 ? 'Start: ${startOdo.toStringAsFixed(1)} km' : null,
+      });
+    }
+    
+    // Pickup Arrival - only show if completed
+    if (_tripProgressData.isNotEmpty) {
+      final pickupArrivedAt = _tripProgressData.first['pickup_arrived_at'];
+      if (pickupArrivedAt != null) {
+        steps.add({
+          'title': 'Arrive at Pickup',
+          'description': 'Arrived at passenger pickup location',
+          'completedAt': pickupArrivedAt,
+          'icon': Icons.location_on,
+          'color': Colors.blue,
+        });
+      }
+      
+      // Passenger Onboard - only show if completed
+      final passengerOnboardAt = _tripProgressData.first['passenger_onboard_at'];
+      if (passengerOnboardAt != null) {
+        steps.add({
+          'title': 'Passenger Onboard',
+          'description': 'Passenger has boarded the vehicle',
+          'completedAt': passengerOnboardAt,
+          'icon': Icons.person_add,
+          'color': Colors.green,
+        });
+      }
+      
+      // Dropoff Arrival - only show if completed
+      final dropoffArrivedAt = _tripProgressData.first['dropoff_arrived_at'];
+      if (dropoffArrivedAt != null) {
+        steps.add({
+          'title': 'Arrive at Dropoff',
+          'description': 'Arrived at passenger dropoff location',
+          'completedAt': dropoffArrivedAt,
+          'icon': Icons.location_on,
+          'color': Colors.orange,
+        });
+      }
+      
+      // Trip Complete - only show if completed
+      final tripCompletedAt = _tripProgressData.first['updated_at'];
+      if (tripCompletedAt != null) {
+        steps.add({
+          'title': 'Trip Complete',
+          'description': 'Trip has been completed',
+          'completedAt': tripCompletedAt,
+          'icon': Icons.check_circle,
+          'color': Colors.purple,
+        });
+      }
+    }
+    
+    // Vehicle Return - only show if completed
+    final vehicleReturnedAt = _driverFlowData?['job_closed_time'];
+    if (vehicleReturnedAt != null) {
+      steps.add({
+        'title': 'Vehicle Return',
+        'description': 'Vehicle returned and final odometer recorded',
+        'completedAt': vehicleReturnedAt,
+        'icon': Icons.home,
+        'color': ChoiceLuxTheme.successColor,
+        'odometer': endOdo > 0 ? 'End: ${endOdo.toStringAsFixed(1)} km' : null,
+      });
+    }
+    
+    // Add total kilometers traveled if we have both readings and job is completed
+    if (startOdo > 0 && endOdo > 0 && totalKm > 0 && vehicleReturnedAt != null) {
+      steps.add({
+        'title': 'Total Distance Traveled',
+        'description': 'Total kilometers covered during this job',
+        'completedAt': null, // This is calculated, not a completion time
+        'icon': Icons.speed,
+        'color': Colors.indigo,
+        'odometer': 'Total: ${totalKm.toStringAsFixed(1)} km',
+        'isTotal': true,
+      });
+    }
+    
+    return steps;
   }
   
   void _printJobSummary() {

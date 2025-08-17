@@ -32,37 +32,42 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
     final voucherState = ref.watch(voucherControllerProvider);
     final hasVoucher = widget.voucherPdfUrl != null && widget.voucherPdfUrl!.isNotEmpty;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Voucher section header
-        Padding(
-          padding: const EdgeInsets.only(bottom: 8.0),
-          child: Text(
-            'Voucher',
-            style: Theme.of(context).textTheme.titleSmall?.copyWith(
-              fontWeight: FontWeight.bold,
-              color: Theme.of(context).colorScheme.primary,
+    return Container(
+      constraints: const BoxConstraints(maxHeight: 120), // Increased height to prevent overflow
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Voucher section header
+          Padding(
+            padding: const EdgeInsets.only(bottom: 4.0), // Reduced padding
+            child: Text(
+              'Voucher',
+              style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+                fontSize: 12, // Smaller font size
+              ),
             ),
           ),
-        ),
 
-        // Voucher status and actions
-        if (!hasVoucher && widget.canCreateVoucher)
-          _buildCreateVoucherButton(voucherState)
-        else if (hasVoucher)
-          _buildVoucherActions(voucherState)
-        else if (!widget.canCreateVoucher)
-          _buildNoPermissionMessage(),
+          // Voucher status and actions
+          if (!hasVoucher && widget.canCreateVoucher)
+            _buildCreateVoucherButton(voucherState)
+          else if (hasVoucher)
+            _buildVoucherActions(voucherState)
+          else if (!widget.canCreateVoucher)
+            _buildNoPermissionMessage(),
 
-        // Loading indicator
-        if (voucherState.isLoading)
-          _buildLoadingIndicator(voucherState),
+          // Loading indicator
+          if (voucherState.isLoading)
+            _buildLoadingIndicator(voucherState),
 
-        // Error message
-        if (voucherState.hasError)
-          _buildErrorMessage(voucherState),
-      ],
+          // Error message
+          if (voucherState.hasError)
+            _buildErrorMessage(voucherState),
+        ],
+      ),
     );
   }
 
@@ -71,12 +76,13 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: voucherState.isLoading ? null : _createVoucher,
-        icon: const Icon(Icons.receipt_long, size: 18),
-        label: const Text('Create Voucher'),
+        icon: const Icon(Icons.receipt_long, size: 14), // Smaller icon
+        label: const Text('Create Voucher', style: TextStyle(fontSize: 11)), // Smaller text
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10), // Reduced padding
+          minimumSize: const Size(0, 28), // Smaller minimum height
         ),
       ),
     );
@@ -87,10 +93,10 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       children: [
         // Status chip
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // Reduced padding
           decoration: BoxDecoration(
             color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(12), // Smaller radius
             border: Border.all(color: Colors.green.withOpacity(0.3)),
           ),
           child: Row(
@@ -98,14 +104,14 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
             children: [
               Icon(
                 Icons.check_circle,
-                size: 16,
+                size: 14, // Smaller icon
                 color: Colors.green[700],
               ),
-              const SizedBox(width: 4),
+              const SizedBox(width: 3), // Reduced spacing
               Text(
                 'Voucher Created',
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: 11, // Smaller font
                   fontWeight: FontWeight.w500,
                   color: Colors.green[700],
                 ),
@@ -113,58 +119,45 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
             ],
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6), // Reduced spacing
 
         // Open button
         IconButton(
           onPressed: voucherState.isLoading ? null : _openVoucher,
-          icon: const Icon(Icons.open_in_new, size: 20),
+          icon: const Icon(Icons.open_in_new, size: 14), // Smaller icon
           tooltip: 'Open Voucher',
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+            padding: const EdgeInsets.all(4), // Reduced padding
+            minimumSize: const Size(24, 24), // Smaller minimum size
           ),
         ),
 
         // Share button
         IconButton(
           onPressed: voucherState.isLoading ? null : _showShareOptions,
-          icon: const Icon(Icons.share, size: 20),
+          icon: const Icon(Icons.share, size: 14), // Smaller icon
           tooltip: 'Share Voucher',
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
+            padding: const EdgeInsets.all(4), // Reduced padding
+            minimumSize: const Size(24, 24), // Smaller minimum size
           ),
         ),
 
-        // Regenerate button (if user has permission)
+        // Reload button (if user has permission)
         if (widget.canCreateVoucher)
-          PopupMenuButton<String>(
-            onSelected: (value) {
-              if (value == 'regenerate') {
-                _regenerateVoucher();
-              }
-            },
-            itemBuilder: (context) => [
-              const PopupMenuItem(
-                value: 'regenerate',
-                child: Row(
-                  children: [
-                    Icon(Icons.refresh, size: 18),
-                    SizedBox(width: 8),
-                    Text('Regenerate Voucher'),
-                  ],
-                ),
-              ),
-            ],
-            child: IconButton(
-              onPressed: voucherState.isLoading ? null : null,
-              icon: const Icon(Icons.more_vert, size: 20),
-              tooltip: 'More Options',
-              style: IconButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.surfaceVariant,
-                foregroundColor: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
+          IconButton(
+            onPressed: voucherState.isLoading ? null : _regenerateVoucher,
+            icon: const Icon(Icons.refresh, size: 14), // Smaller icon
+            tooltip: 'Reload Voucher',
+            style: IconButton.styleFrom(
+              backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
+              foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
+              padding: const EdgeInsets.all(4), // Reduced padding
+              minimumSize: const Size(24, 24), // Smaller minimum size
             ),
           ),
       ],
@@ -173,7 +166,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
 
   Widget _buildNoPermissionMessage() {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(8), // Reduced padding
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(8),
@@ -182,15 +175,17 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         children: [
           Icon(
             Icons.lock,
-            size: 16,
+            size: 14, // Smaller icon
             color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
-          const SizedBox(width: 8),
-          Text(
-            'Insufficient permissions to create vouchers',
-            style: TextStyle(
-              fontSize: 12,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+          const SizedBox(width: 6), // Reduced spacing
+          Expanded(
+            child: Text(
+              'Insufficient permissions to create vouchers',
+              style: TextStyle(
+                fontSize: 11, // Smaller font size
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],
@@ -200,29 +195,29 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
 
   Widget _buildLoadingIndicator(VoucherControllerState voucherState) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         children: [
           SizedBox(
-            width: 16,
-            height: 16,
+            width: 14,
+            height: 14,
             child: CircularProgressIndicator(
-              strokeWidth: 2,
+              strokeWidth: 1.5,
               valueColor: AlwaysStoppedAnimation<Color>(
                 Theme.of(context).colorScheme.primary,
               ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8), // Reduced spacing
           Expanded(
             child: Text(
               voucherState.loadingMessage,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11, // Smaller font
                 color: Theme.of(context).colorScheme.onSurfaceVariant,
               ),
             ),
@@ -234,31 +229,35 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
 
   Widget _buildErrorMessage(VoucherControllerState voucherState) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(6),
       ),
       child: Row(
         children: [
           Icon(
             Icons.error_outline,
-            size: 16,
+            size: 14, // Smaller icon
             color: Theme.of(context).colorScheme.error,
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 6), // Reduced spacing
           Expanded(
             child: Text(
               voucherState.errorMessage ?? 'An error occurred',
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11, // Smaller font
                 color: Theme.of(context).colorScheme.error,
               ),
             ),
           ),
           TextButton(
             onPressed: _createVoucher,
-            child: const Text('Retry'),
+            child: const Text('Retry', style: TextStyle(fontSize: 11)), // Smaller text
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
+              minimumSize: const Size(0, 24), // Smaller minimum size
+            ),
           ),
         ],
       ),
@@ -297,7 +296,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Regenerate Voucher'),
+        title: const Text('Reload Voucher'),
         content: const Text(
           'This will replace the existing voucher with updated information. Continue?',
         ),
@@ -308,7 +307,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.of(context).pop(true),
-            child: const Text('Regenerate'),
+            child: const Text('Reload'),
           ),
         ],
       ),
@@ -323,7 +322,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Voucher regenerated successfully!'),
+              content: Text('Voucher reloaded successfully!'),
               backgroundColor: Colors.green,
             ),
           );
@@ -332,7 +331,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Failed to regenerate voucher: ${e.toString()}'),
+              content: Text('Failed to reload voucher: ${e.toString()}'),
               backgroundColor: Colors.red,
             ),
           );

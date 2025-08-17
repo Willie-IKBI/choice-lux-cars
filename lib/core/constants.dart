@@ -88,10 +88,9 @@ class AppConstants {
   static const Duration longAnimation = Duration(milliseconds: 500);
 }
 
-// Error messages
+// Error messages (non-auth related)
 class ErrorMessages {
   static const String networkError = 'Network error. Please check your connection.';
-  static const String authError = 'Authentication failed. Please try again.';
   static const String permissionError = 'You don\'t have permission to perform this action.';
   static const String validationError = 'Please check your input and try again.';
   static const String unknownError = 'An unexpected error occurred. Please try again.';

@@ -5,7 +5,9 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class InactiveClientsScreen extends ConsumerStatefulWidget {
   const InactiveClientsScreen({super.key});
@@ -29,6 +31,23 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
     final inactiveClientsAsync = ref.watch(inactiveClientsProvider);
 
     return Scaffold(
+      appBar: LuxuryAppBar(
+        title: 'Inactive Clients',
+        subtitle: 'View and manage inactive clients',
+        showBackButton: true,
+        onBackPressed: () => context.go('/clients'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh_rounded),
+            onPressed: () {
+              ref.invalidate(inactiveClientsProvider);
+            },
+          ),
+        ],
+      ),
       body: Container(
         decoration: const BoxDecoration(
           gradient: ChoiceLuxTheme.backgroundGradient,
@@ -36,41 +55,6 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-              // App Bar
-              Container(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    IconButton(
-                      icon: const Icon(
-                        Icons.arrow_back,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                      onPressed: () => context.go('/clients'),
-                    ),
-                    const SizedBox(width: 16),
-                    const Text(
-                      'Inactive Clients',
-                      style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                    ),
-                    const Spacer(),
-                    IconButton(
-                      icon: const Icon(
-                        Icons.refresh,
-                        color: ChoiceLuxTheme.richGold,
-                      ),
-                      onPressed: () {
-                        ref.invalidate(inactiveClientsProvider);
-                      },
-                    ),
-                  ],
-                ),
-              ),
-
               // Search Bar
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16),

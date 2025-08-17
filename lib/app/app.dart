@@ -52,14 +52,14 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
-
+    
     return MaterialApp.router(
       title: 'Choice Lux Cars',
       theme: ChoiceLuxTheme.lightTheme,
       darkTheme: ChoiceLuxTheme.darkTheme,
       themeMode: ThemeMode.dark,
-      routerConfig: _buildRouter(authState, userProfile),
       debugShowCheckedModeBanner: false,
+      routerConfig: _buildRouter(authState, userProfile),
     );
   }
 
@@ -70,6 +70,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
         // Handle authentication and role-based routing
         if (authState.isLoading) {
           return null; // Still loading, don't redirect
+        }
+
+        // Check for errors first
+        if (authState.hasError) {
+          return null; // Don't redirect on error, let the UI handle it
         }
 
         final isAuthenticated = authState.value != null;
@@ -240,7 +245,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
               paymentAmount: null,
               collectPayment: false,
             );
-            return JobProgressScreen(jobId: int.parse(jobId), job: placeholderJob);
+            return JobProgressScreen(jobId: jobId, job: placeholderJob);
           },
         ),
         GoRoute(
@@ -300,31 +305,73 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
       ],
       errorBuilder: (context, state) => Scaffold(
         appBar: LuxuryAppBar(
-          title: 'Page Not Found',
-          subtitle: 'The requested page could not be found',
+          title: 'Something went wrong',
+          subtitle: 'An unexpected error occurred',
           showBackButton: true,
           onBackPressed: () => context.go('/'),
         ),
         body: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red,
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Page not found: ${state.uri}',
-                style: Theme.of(context).textTheme.bodyLarge,
-              ),
-              const SizedBox(height: 16),
-              ElevatedButton(
-                onPressed: () => context.go('/'),
-                child: const Text('Go to Dashboard'),
-              ),
-            ],
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.error_outline_rounded,
+                    size: 64,
+                    color: ChoiceLuxTheme.errorColor,
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  'Oops! Something went wrong',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: ChoiceLuxTheme.softWhite,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'We encountered an unexpected error. Please try again or contact support if the problem persists.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: () => context.go('/'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ChoiceLuxTheme.richGold,
+                        foregroundColor: Colors.black,
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('Go to Dashboard'),
+                    ),
+                    const SizedBox(width: 16),
+                    OutlinedButton(
+                      onPressed: () => context.go('/login'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: ChoiceLuxTheme.richGold,
+                        side: BorderSide(color: ChoiceLuxTheme.richGold),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: const Text('Sign In Again'),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),

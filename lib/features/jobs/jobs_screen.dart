@@ -94,6 +94,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
         subtitle: 'Manage transportation jobs',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
         actions: [
           if (canCreateJobs)
             ElevatedButton.icon(
@@ -436,7 +439,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   List<Job> _filterJobs(List<Job> jobs) {
     switch (_currentFilter) {
       case 'open':
-        return jobs.where((job) => job.status == 'open').toList();
+        return jobs.where((job) => job.isOpen).toList(); // Use the isOpen property instead of status == 'open'
       case 'in_progress':
         return jobs.where((job) => job.isInProgress).toList();
       case 'completed':

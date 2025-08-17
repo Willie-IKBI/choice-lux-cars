@@ -59,6 +59,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         subtitle: 'User administration',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
         actions: [
           IconButton(
             icon: Container(

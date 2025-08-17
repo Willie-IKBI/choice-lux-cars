@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import '../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -37,6 +38,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         subtitle: 'Manage your clients',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
         actions: [
           IconButton(
             icon: Container(

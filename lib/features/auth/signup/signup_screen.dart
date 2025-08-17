@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 
 class SignupScreen extends ConsumerStatefulWidget {
   const SignupScreen({super.key});
@@ -333,18 +334,65 @@ class _SignupScreenState extends ConsumerState<SignupScreen> with TickerProvider
                                       padding: const EdgeInsets.all(16),
                                       margin: const EdgeInsets.only(bottom: 20),
                                       decoration: BoxDecoration(
-                                        color: Colors.red.withOpacity(0.1),
+                                        color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
                                         borderRadius: BorderRadius.circular(12),
-                                        border: Border.all(color: Colors.red.withOpacity(0.3)),
+                                        border: Border.all(
+                                          color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                                          width: 1,
+                                        ),
                                       ),
                                       child: Row(
                                         children: [
-                                          Icon(Icons.error_outline, color: Colors.red[400], size: 20),
+                                          Container(
+                                            padding: const EdgeInsets.all(8),
+                                            decoration: BoxDecoration(
+                                              color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(8),
+                                            ),
+                                            child: Icon(
+                                              Icons.error_outline_rounded,
+                                              color: ChoiceLuxTheme.errorColor,
+                                              size: 20,
+                                            ),
+                                          ),
                                           const SizedBox(width: 12),
                                           Expanded(
-                                            child: Text(
-                                              authState.error.toString(),
-                                              style: TextStyle(color: Colors.red[300]),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Signup Error',
+                                                  style: TextStyle(
+                                                    color: ChoiceLuxTheme.errorColor,
+                                                    fontSize: 14,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 4),
+                                                Text(
+                                                  AuthErrorUtils.getErrorMessage(authState.error),
+                                                  style: TextStyle(
+                                                    color: ChoiceLuxTheme.platinumSilver,
+                                                    fontSize: 13,
+                                                    height: 1.3,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          IconButton(
+                                            onPressed: () {
+                                              ref.read(authProvider.notifier).clearError();
+                                            },
+                                            icon: Icon(
+                                              Icons.close_rounded,
+                                              color: ChoiceLuxTheme.platinumSilver,
+                                              size: 20,
+                                            ),
+                                            padding: EdgeInsets.zero,
+                                            constraints: const BoxConstraints(
+                                              minWidth: 32,
+                                              minHeight: 32,
                                             ),
                                           ),
                                         ],

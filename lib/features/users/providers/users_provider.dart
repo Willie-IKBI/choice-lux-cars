@@ -39,7 +39,8 @@ class UsersNotifier extends StateNotifier<List<User>> {
     final url = await UploadService.uploadImageBytes(
       bytes,
       'clc_images',
-      'profiles/$userId/profile.jpg',
+      'profiles',
+      '$userId/profile.jpg',
     );
     // Update user profileImage field
     await SupabaseService.instance.updateUser(userId: userId, data: {'profile_image': url});
@@ -52,7 +53,8 @@ class UsersNotifier extends StateNotifier<List<User>> {
     final url = await UploadService.uploadImageBytes(
       bytes,
       'clc_images',
-      'driver_lic/$userId/license.jpg',
+      'driver_lic',
+      '$userId/license.jpg',
     );
     await SupabaseService.instance.updateUser(userId: userId, data: {'driver_licence': url});
     await fetchUsers();
@@ -64,7 +66,8 @@ class UsersNotifier extends StateNotifier<List<User>> {
     final url = await UploadService.uploadImageBytes(
       bytes,
       'clc_images',
-      'pdp_lic/$userId/pdp.jpg',
+      'pdp_lic',
+      '$userId/pdp.jpg',
     );
     await SupabaseService.instance.updateUser(userId: userId, data: {'pdp': url});
     await fetchUsers();

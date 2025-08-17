@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'dart:math';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -26,6 +28,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
   
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonScaleAnimation;
+  late AnimationController _shakeAnimationController;
+  late Animation<double> _shakeAnimation;
 
   @override
   void initState() {
@@ -41,6 +45,18 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
       parent: _buttonAnimationController,
       curve: Curves.easeInOut,
     ));
+    
+    _shakeAnimationController = AnimationController(
+      duration: const Duration(milliseconds: 500),
+      vsync: this,
+    );
+    _shakeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(
+      parent: _shakeAnimationController,
+      curve: Curves.elasticOut,
+    ));
   }
 
   @override
@@ -48,125 +64,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
     _emailController.dispose();
     _passwordController.dispose();
     _buttonAnimationController.dispose();
+    _shakeAnimationController.dispose();
     super.dispose();
   }
 
+  // Get user-friendly error message using centralized utility
   String _getErrorMessage(Object? error) {
-    if (error == null) return 'An unknown error occurred';
-    
-    final errorString = error.toString();
-    
-    // Handle common authentication errors
-    if (errorString.contains('Invalid login credentials')) {
-      return 'Invalid email or password. Please check your credentials and try again.';
-    } else if (errorString.contains('Email not confirmed')) {
-      return 'Please check your email and confirm your account before signing in.';
-    } else if (errorString.contains('Too many requests')) {
-      return 'Too many login attempts. Please wait a moment before trying again.';
-    } else if (errorString.contains('User not found')) {
-      return 'No account found with this email address. Please check your email or sign up.';
-    } else if (errorString.contains('Network') || errorString.contains('connection')) {
-      return 'Network error. Please check your internet connection and try again.';
-    } else if (errorString.contains('timeout')) {
-      return 'Request timed out. Please check your connection and try again.';
-    } else if (errorString.contains('server')) {
-      return 'Server error. Please try again later.';
-    }
-    
-    // Return a sanitized version of the error message
-    return errorString.replaceAll('Exception:', '').replaceAll('Error:', '').trim();
+    return AuthErrorUtils.getErrorMessage(error);
   }
 
-  void _showErrorDialog(BuildContext context, String message) {
-    showDialog(
-      context: context,
-      barrierDismissible: true,
-      builder: (BuildContext context) {
-        return Dialog(
-          backgroundColor: Colors.transparent,
-          child: Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.9),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
-                width: 1,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.5),
-                  blurRadius: 20,
-                  offset: const Offset(0, 10),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
-                  ),
-                  child: Icon(
-                    Icons.error_outline,
-                    color: ChoiceLuxTheme.errorColor,
-                    size: 32,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Login Error',
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.errorColor,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver,
-                    fontSize: 14,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  height: 44,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      // Clear the error state
-                      ref.read(authProvider.notifier).clearError();
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ChoiceLuxTheme.richGold,
-                      foregroundColor: Colors.black,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'OK',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        );
-      },
-    );
+  // Clear error when user starts typing
+  void _clearError() {
+    ref.read(authProvider.notifier).clearError();
+  }
+
+  // Trigger shake animation for error feedback
+  void _triggerShakeAnimation() {
+    _shakeAnimationController.forward().then((_) {
+      _shakeAnimationController.reset();
+    });
   }
 
   Future<void> _signIn() async {
@@ -181,34 +97,119 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           password: _passwordController.text,
         );
       } catch (e) {
-        // The auth provider should handle the error and set the state
-        // This catch is just for any unexpected errors
         print('Unexpected sign in error in UI: $e');
+        // Ensure the error is properly handled by the auth provider
+        // The auth provider should have already set the error state
       }
     }
+  }
+
+  // Shake animation widget
+  Widget _buildShakeAnimation({
+    required Widget child,
+    required bool shouldShake,
+  }) {
+    if (!shouldShake) return child;
+    
+    return AnimatedBuilder(
+      animation: _shakeAnimation,
+      builder: (context, child) {
+        final shakeOffset = sin(_shakeAnimation.value * 3 * pi) * 10;
+        return Transform.translate(
+          offset: Offset(shakeOffset, 0),
+          child: child,
+        );
+      },
+      child: child,
+    );
+  }
+
+  Widget _buildInputField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    Widget? suffixIcon,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      validator: validator,
+      onChanged: (value) {
+        // Clear error state when user starts typing
+        if (ref.read(authProvider).hasError) {
+          ref.read(authProvider.notifier).clearError();
+        }
+      },
+      style: const TextStyle(
+        color: ChoiceLuxTheme.softWhite,
+        fontSize: 16,
+      ),
+      decoration: InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(
+          icon,
+          color: ChoiceLuxTheme.platinumSilver,
+        ),
+        suffixIcon: suffixIcon,
+        filled: true,
+        fillColor: Colors.white.withOpacity(0.05),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(
+            color: ChoiceLuxTheme.richGold,
+            width: 2,
+          ),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.8)),
+        ),
+        labelStyle: TextStyle(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
 
-    // Handle authentication state changes
+    // Handle authentication state changes with error protection
     ref.listen(authProvider, (previous, next) {
-      print('Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}');
-      print('Next error: ${next.error}');
-      
-      // Navigate to dashboard if authenticated
-      if (next.hasValue && next.value != null) {
-        context.go('/');
-      }
-      
-      // Handle authentication errors with popup
-      if (next.hasError) {
-        print('Showing error popup for: ${next.error}');
-        // Show error popup
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _showErrorDialog(context, _getErrorMessage(next.error));
-        });
+      try {
+        print('Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}');
+        print('Next error: ${next.error}');
+        
+        // Navigate to dashboard if authenticated
+        if (next.hasValue && next.value != null) {
+          context.go('/');
+        }
+        
+        // Trigger shake animation on error
+        if (next.hasError && (previous == null || !previous.hasError)) {
+          _triggerShakeAnimation();
+        }
+      } catch (e) {
+        print('Error in auth state listener: $e');
+        // Don't let the error propagate
       }
     });
 
@@ -341,50 +342,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       ),
                                       const SizedBox(height: 40),
 
-                                      // Email Field
-                                      _buildInputField(
-                                        controller: _emailController,
-                                        label: 'Email Address',
-                                        icon: Icons.email_outlined,
-                                        keyboardType: TextInputType.emailAddress,
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Please enter your email';
-                                          }
-                                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                                            return 'Please enter a valid email';
-                                          }
-                                          return null;
-                                        },
+                                      // Email Field with Shake Animation
+                                      _buildShakeAnimation(
+                                        shouldShake: authState.hasError,
+                                        child: _buildInputField(
+                                          controller: _emailController,
+                                          label: 'Email Address',
+                                          icon: Icons.email_outlined,
+                                          keyboardType: TextInputType.emailAddress,
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter your email';
+                                            }
+                                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                              return 'Please enter a valid email';
+                                            }
+                                            return null;
+                                          },
+                                        ),
                                       ),
                                       const SizedBox(height: 20),
 
-                                      // Password Field
-                                      _buildInputField(
-                                        controller: _passwordController,
-                                        label: 'Password',
-                                        icon: Icons.lock_outline,
-                                        obscureText: _obscurePassword,
-                                        suffixIcon: IconButton(
-                                          icon: Icon(
-                                            _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                            color: ChoiceLuxTheme.platinumSilver,
+                                      // Password Field with Shake Animation
+                                      _buildShakeAnimation(
+                                        shouldShake: authState.hasError,
+                                        child: _buildInputField(
+                                          controller: _passwordController,
+                                          label: 'Password',
+                                          icon: Icons.lock_outline,
+                                          obscureText: _obscurePassword,
+                                          suffixIcon: IconButton(
+                                            icon: Icon(
+                                              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                              color: ChoiceLuxTheme.platinumSilver,
+                                            ),
+                                            onPressed: () {
+                                              setState(() {
+                                                _obscurePassword = !_obscurePassword;
+                                              });
+                                            },
                                           ),
-                                          onPressed: () {
-                                            setState(() {
-                                              _obscurePassword = !_obscurePassword;
-                                            });
+                                          validator: (value) {
+                                            if (value == null || value.isEmpty) {
+                                              return 'Please enter your password';
+                                            }
+                                            if (value.length < AppConstants.minPasswordLength) {
+                                              return 'Password must be at least ${AppConstants.minPasswordLength} characters';
+                                            }
+                                            return null;
                                           },
                                         ),
-                                        validator: (value) {
-                                          if (value == null || value.isEmpty) {
-                                            return 'Please enter your password';
-                                          }
-                                          if (value.length < AppConstants.minPasswordLength) {
-                                            return 'Password must be at least ${AppConstants.minPasswordLength} characters';
-                                          }
-                                          return null;
-                                        },
                                       ),
                                       LayoutBuilder(
                                         builder: (context, constraints) {
@@ -392,6 +399,75 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           return SizedBox(height: isMobile ? 16.0 : 20.0);
                                         },
                                       ),
+
+                                      // Inline Error Display
+                                      if (authState.hasError)
+                                        Container(
+                                          padding: const EdgeInsets.all(16),
+                                          margin: const EdgeInsets.only(bottom: 20),
+                                          decoration: BoxDecoration(
+                                            color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(12),
+                                            border: Border.all(
+                                              color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                                              width: 1,
+                                            ),
+                                          ),
+                                          child: Row(
+                                            children: [
+                                              Container(
+                                                padding: const EdgeInsets.all(8),
+                                                decoration: BoxDecoration(
+                                                  color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
+                                                  borderRadius: BorderRadius.circular(8),
+                                                ),
+                                                child: Icon(
+                                                  Icons.error_outline_rounded,
+                                                  color: ChoiceLuxTheme.errorColor,
+                                                  size: 20,
+                                                ),
+                                              ),
+                                              const SizedBox(width: 12),
+                                              Expanded(
+                                                child: Column(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Text(
+                                                      'Login Error',
+                                                      style: TextStyle(
+                                                        color: ChoiceLuxTheme.errorColor,
+                                                        fontSize: 14,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 4),
+                                                    Text(
+                                                      _getErrorMessage(authState.error),
+                                                      style: TextStyle(
+                                                        color: ChoiceLuxTheme.platinumSilver,
+                                                        fontSize: 13,
+                                                        height: 1.3,
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ),
+                                              IconButton(
+                                                onPressed: _clearError,
+                                                icon: Icon(
+                                                  Icons.close_rounded,
+                                                  color: ChoiceLuxTheme.platinumSilver,
+                                                  size: 20,
+                                                ),
+                                                padding: EdgeInsets.zero,
+                                                constraints: const BoxConstraints(
+                                                  minWidth: 32,
+                                                  minHeight: 32,
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
 
                                       // Remember Me and Forgot Password
                                       LayoutBuilder(
@@ -635,70 +711,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildInputField({
-    required TextEditingController controller,
-    required String label,
-    required IconData icon,
-    bool obscureText = false,
-    TextInputType? keyboardType,
-    Widget? suffixIcon,
-    String? Function(String?)? validator,
-  }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      validator: validator,
-      onChanged: (value) {
-        // Clear error state when user starts typing
-        if (ref.read(authProvider).hasError) {
-          ref.read(authProvider.notifier).clearError();
-        }
-      },
-      style: const TextStyle(
-        color: ChoiceLuxTheme.softWhite,
-        fontSize: 16,
-      ),
-      decoration: InputDecoration(
-        labelText: label,
-        prefixIcon: Icon(
-          icon,
-          color: ChoiceLuxTheme.platinumSilver,
-        ),
-        suffixIcon: suffixIcon,
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: ChoiceLuxTheme.richGold,
-            width: 2,
-          ),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.withOpacity(0.8)),
-        ),
-        labelStyle: TextStyle(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       ),
     );
   }

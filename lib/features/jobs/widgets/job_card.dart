@@ -97,8 +97,10 @@ class JobCard extends ConsumerWidget {
                   
                   SizedBox(height: railSpacing),
                   
-                  // Footer row: voucher state
-                  _buildVoucherFooter(ref),
+                  // Footer row: voucher state - constrained to prevent overflow
+                  Flexible(
+                    child: _buildVoucherFooter(ref),
+                  ),
                 ],
               ),
             ),
@@ -276,22 +278,39 @@ class JobCard extends ConsumerWidget {
               Expanded(
                 child: ElevatedButton.icon(
                   onPressed: () {
-                    context.go('/jobs/${job.id}/progress');
+                    if (job.status == 'completed') {
+                      // Navigate to job summary for completed jobs
+                      context.go('/jobs/${job.id}/summary');
+                    } else if (job.status == 'in_progress' || job.status == 'started') {
+                      // Resume existing job
+                      context.go('/jobs/${job.id}/progress');
+                    } else {
+                      // Start new job
+                      context.go('/jobs/${job.id}/progress');
+                    }
                   },
                   icon: Icon(
-                    job.status == 'in_progress' || job.status == 'started' 
-                      ? Icons.sync 
-                      : Icons.play_arrow,
+                    job.status == 'completed'
+                      ? Icons.summarize
+                      : job.status == 'in_progress' || job.status == 'started' 
+                        ? Icons.sync 
+                        : Icons.play_arrow,
                     size: iconSize,
                   ),
                   label: Text(
-                    job.status == 'in_progress' || job.status == 'started' 
-                      ? 'Resume Job' 
-                      : 'Start Job'
+                    job.status == 'completed' 
+                      ? 'Job Overview'
+                      : job.status == 'in_progress' || job.status == 'started' 
+                        ? 'Resume Job' 
+                        : 'Start Job'
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.withOpacity(0.15),
-                    foregroundColor: Colors.green,
+                    backgroundColor: job.status == 'completed'
+                      ? ChoiceLuxTheme.richGold.withOpacity(0.15)
+                      : Colors.green.withOpacity(0.15),
+                    foregroundColor: job.status == 'completed'
+                      ? ChoiceLuxTheme.richGold
+                      : Colors.green,
                     padding: const EdgeInsets.symmetric(vertical: 8),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(6),
@@ -580,13 +599,18 @@ class JobCard extends ConsumerWidget {
 
   Color _getStatusColor() {
     switch (job.status) {
-      case 'open':
+      case 'assigned':
         return ChoiceLuxTheme.richGold;
+      case 'started':
+        return Colors.orange;
       case 'in_progress':
         return Colors.blue;
-      case 'closed':
+      case 'ready_to_close':
+        return Colors.purple;
       case 'completed':
         return ChoiceLuxTheme.successColor;
+      case 'cancelled':
+        return ChoiceLuxTheme.errorColor;
       default:
         return ChoiceLuxTheme.platinumSilver;
     }
@@ -594,14 +618,18 @@ class JobCard extends ConsumerWidget {
 
   String _getStatusText() {
     switch (job.status) {
-      case 'open':
-        return 'OPEN';
+      case 'assigned':
+        return 'ASSIGNED';
+      case 'started':
+        return 'STARTED';
       case 'in_progress':
         return 'IN PROGRESS';
-      case 'closed':
-        return 'CLOSED';
+      case 'ready_to_close':
+        return 'READY TO CLOSE';
       case 'completed':
         return 'COMPLETED';
+      case 'cancelled':
+        return 'CANCELLED';
       default:
         return job.status.toUpperCase();
     }
@@ -615,7 +643,7 @@ class JobCard extends ConsumerWidget {
         return 'TRACK';
       case 'closed':
       case 'completed':
-        return 'DETAILS';
+        return 'OVERVIEW';
       default:
         return 'VIEW';
     }

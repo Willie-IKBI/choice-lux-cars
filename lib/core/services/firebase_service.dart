@@ -43,7 +43,8 @@ class FirebaseService {
       print('Firebase initialized successfully for ${kIsWeb ? 'Web' : 'Mobile'}');
     } catch (error) {
       print('Failed to initialize Firebase: $error');
-      rethrow;
+      // Don't rethrow Firebase initialization errors to prevent app crashes
+      print('Continuing without Firebase...');
     }
   }
 

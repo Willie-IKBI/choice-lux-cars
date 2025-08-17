@@ -5,6 +5,7 @@ import '../vehicles/widgets/vehicle_card.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/luxury_app_bar.dart';
 import '../../app/theme.dart';
+import '../auth/providers/auth_provider.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({Key? key}) : super(key: key);
@@ -32,6 +33,9 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         subtitle: 'Manage your fleet',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
         actions: [
           IconButton(
             icon: Container(
