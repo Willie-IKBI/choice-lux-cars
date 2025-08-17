@@ -187,7 +187,7 @@ class Job {
   }
 
   // Helper methods
-  bool get isOpen => status == 'pending' || status == 'assigned';
+  bool get isOpen => status == 'assigned';
   bool get isClosed => status == 'completed' || status == 'cancelled';
   bool get isInProgress => status == 'started' || status == 'in_progress' || status == 'ready_to_close';
   bool get isStarted => status == 'started';

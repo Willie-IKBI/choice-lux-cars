@@ -1126,12 +1126,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   
   Color _getStatusColor() {
     switch (_job!.status) {
-      case 'open':
+      case 'assigned':
         return ChoiceLuxTheme.richGold;
+      case 'started':
+        return Colors.orange;
       case 'in_progress':
         return Colors.blue;
-      case 'closed':
-        return Colors.grey;
+      case 'ready_to_close':
+        return Colors.purple;
+      case 'completed':
+        return ChoiceLuxTheme.successColor;
+      case 'cancelled':
+        return ChoiceLuxTheme.errorColor;
       default:
         return ChoiceLuxTheme.platinumSilver;
     }
@@ -1139,12 +1145,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   
   String _getStatusText(String status) {
     switch (status) {
-      case 'open':
-        return 'OPEN';
+      case 'assigned':
+        return 'ASSIGNED';
+      case 'started':
+        return 'STARTED';
       case 'in_progress':
         return 'IN PROGRESS';
-      case 'closed':
-        return 'CLOSED';
+      case 'ready_to_close':
+        return 'READY TO CLOSE';
+      case 'completed':
+        return 'COMPLETED';
+      case 'cancelled':
+        return 'CANCELLED';
       default:
         return status.toUpperCase();
     }

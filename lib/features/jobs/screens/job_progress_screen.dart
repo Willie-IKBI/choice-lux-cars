@@ -17,7 +17,7 @@ import '../providers/jobs_provider.dart';
 import '../../../app/theme.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
-  final int jobId;
+  final String jobId;
   final Job job;
 
   const JobProgressScreen({
@@ -104,8 +104,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     try {
       setState(() => _isLoading = true);
       
+      // Parse job ID once and validate
+      final jobIdInt = int.tryParse(widget.jobId);
+      if (jobIdInt == null) {
+        throw Exception('Invalid job ID: ${widget.jobId}');
+      }
+      
       // Load job progress
-      final progress = await DriverFlowApiService.getJobProgress(widget.jobId);
+      final progress = await DriverFlowApiService.getJobProgress(jobIdInt);
       print('=== LOADED JOB PROGRESS ===');
       print('Progress data: $progress');
       print('Vehicle collected: ${progress['vehicle_collected']}');
@@ -113,7 +119,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       print('Job status: ${progress['job_status']}');
       
       // Load trip progress
-      final trips = await DriverFlowApiService.getTripProgress(widget.jobId);
+      final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
       print('=== LOADED TRIP PROGRESS ===');
       print('Trip data: $trips');
       
@@ -139,8 +145,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         setState(() {
           // This ensures the UI reflects the latest step progression
-          // Force rebuild by updating a dummy variable
-          _isLoading = _isLoading;
         });
         
         // Add a small delay and force another rebuild to ensure UI updates
@@ -154,6 +158,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         });
       }
     } catch (e) {
+      print('ERROR in _loadJobProgress: $e');
       setState(() => _isLoading = false);
       _showErrorSnackBar('Failed to load job progress: $e');
     }
@@ -209,49 +214,28 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     String newCurrentStep = 'vehicle_collection'; // Default
 
-    // Priority 1: Use the current_step from the database if it exists and is valid
+    // Priority 1: Trust the database current_step if it exists and is valid
     if (_jobProgress!['current_step'] != null && 
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null') {
       newCurrentStep = _jobProgress!['current_step'].toString();
       print('Using current step from DB: $newCurrentStep');
     } else {
-      // Priority 2: Fallback logic based on completion status
-      print('No valid current_step in DB, using fallback logic');
+      // Priority 2: Simple fallback logic based on vehicle collection status
+      print('No valid current_step in DB, using simple fallback logic');
       
-      if (_jobProgress!['vehicle_collected'] != true) {
-        newCurrentStep = 'vehicle_collection';
-        print('Setting current step to: vehicle_collection (vehicle not collected)');
-      } else if (_tripProgress?.any((trip) => trip['pickup_arrived_at'] != null) != true) {
+      if (_jobProgress!['vehicle_collected'] == true) {
         newCurrentStep = 'pickup_arrival';
-        print('Setting current step to: pickup_arrival (no pickup arrival recorded)');
-      } else if (_tripProgress?.any((trip) => trip['passenger_onboard_at'] != null) != true) {
-        newCurrentStep = 'passenger_onboard';
-        print('Setting current step to: passenger_onboard (no passenger onboard recorded)');
-      } else if (_tripProgress?.any((trip) => trip['dropoff_arrived_at'] != null) != true) {
-        newCurrentStep = 'dropoff_arrival';
-        print('Setting current step to: dropoff_arrival (no dropoff arrival recorded)');
-      } else if (_tripProgress?.any((trip) => trip['status'] == 'completed') != true) {
-        newCurrentStep = 'trip_complete';
-        print('Setting current step to: trip_complete (no trip completion recorded)');
-      } else if (_jobProgress!['job_closed_time'] == null) {
-        newCurrentStep = 'vehicle_return';
-        print('Setting current step to: vehicle_return (job not closed)');
+        print('Vehicle collected, setting to pickup_arrival');
       } else {
-        newCurrentStep = 'vehicle_return'; // All steps completed
-        print('Setting current step to: vehicle_return (completed)');
+        newCurrentStep = 'vehicle_collection';
+        print('Vehicle not collected, setting to vehicle_collection');
       }
-    }
-
-    // Priority 3: Override logic - if vehicle is collected, we should be at pickup_arrival or later
-    if (_jobProgress!['vehicle_collected'] == true && newCurrentStep == 'vehicle_collection') {
-      print('Vehicle collected but step still shows vehicle_collection. Forcing to pickup_arrival.');
-      newCurrentStep = 'pickup_arrival';
     }
 
     print('Final current step: $newCurrentStep');
     
-    // Always update the current step to ensure UI reflects the latest state
+    // Update the current step if it changed
     if (_currentStep != newCurrentStep) {
       print('Step changed from $_currentStep to $newCurrentStep');
       setState(() {
@@ -291,7 +275,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
                
               await DriverFlowApiService.startJob(
-                widget.jobId,
+                int.parse(widget.jobId),
                 odoStartReading: odometerReading,
                 pdpStartImage: odometerImageUrl,
                 gpsLat: gpsLat,
@@ -378,7 +362,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       final position = await _getCurrentLocation();
       
       await DriverFlowApiService.collectVehicle(
-        widget.jobId,
+        int.parse(widget.jobId),
         gpsLat: position.latitude,
         gpsLng: position.longitude,
         gpsAccuracy: position.accuracy,
@@ -417,7 +401,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               setState(() => _isUpdating = true);
               
               await DriverFlowApiService.arriveAtPickup(
-                widget.jobId,
+                int.parse(widget.jobId),
                 _currentTripIndex,
                 gpsLat: gpsLat,
                 gpsLng: gpsLng,
@@ -468,7 +452,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       setState(() => _isUpdating = true);
       
       await DriverFlowApiService.passengerOnboard(
-        widget.jobId,
+        int.parse(widget.jobId),
         _currentTripIndex,
       );
       
@@ -496,7 +480,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       final position = await _getCurrentLocation();
       
       await DriverFlowApiService.arriveAtDropoff(
-        widget.jobId,
+        int.parse(widget.jobId),
         _currentTripIndex,
         gpsLat: position.latitude,
         gpsLng: position.longitude,
@@ -525,7 +509,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       setState(() => _isUpdating = true);
       
       await DriverFlowApiService.completeTrip(
-        widget.jobId,
+        int.parse(widget.jobId),
         _currentTripIndex,
       );
       
@@ -552,7 +536,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       final odometerImage = await _captureOdometerImage();
       
       await DriverFlowApiService.returnVehicle(
-        widget.jobId,
+        int.parse(widget.jobId),
         odoEndReading: 0.0, // This should be captured from odometer widget
         pdpEndImage: odometerImage,
         gpsLat: position.latitude,
@@ -573,7 +557,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     try {
       setState(() => _isUpdating = true);
       
-      await DriverFlowApiService.closeJob(widget.jobId);
+      await DriverFlowApiService.closeJob(int.parse(widget.jobId));
       
       await _loadJobProgress();
       _showSuccessSnackBar('Job closed successfully!');
