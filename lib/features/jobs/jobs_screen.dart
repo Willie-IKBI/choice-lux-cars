@@ -301,45 +301,88 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                       ),
                     )
                   : clientsAsync.when(
-                    data: (clients) => ResponsiveGrid(
-                      children: paginatedJobs.map((job) {
-                        // Find related data
-                        Client? client;
-                        Vehicle? vehicle;
-                        User? driver;
-                        
-                        try {
-                          client = clients.firstWhere(
-                            (c) => c.id.toString() == job.clientId,
-                          );
-                        } catch (e) {
-                          client = null;
-                        }
-                        
-                        try {
-                          vehicle = vehiclesState.vehicles.firstWhere(
-                            (v) => v.id.toString() == job.vehicleId,
-                          );
-                        } catch (e) {
-                          vehicle = null;
-                        }
-                        
-                        try {
-                          driver = users.firstWhere(
-                            (u) => u.id == job.driverId,
-                          );
-                        } catch (e) {
-                          driver = null;
-                        }
-                        
-                        return JobCard(
-                          job: job,
-                          client: client,
-                          vehicle: vehicle,
-                          driver: driver,
-                        );
-                      }).toList(),
-                    ),
+                    data: (clients) => isMobile 
+                        ? ListView.builder( // Mobile: ListView
+                            padding: const EdgeInsets.all(8),
+                            itemCount: paginatedJobs.length,
+                            itemBuilder: (context, index) {
+                              final job = paginatedJobs[index];
+                              // Find related data
+                              Client? client;
+                              Vehicle? vehicle;
+                              User? driver;
+                              
+                              try {
+                                client = clients.firstWhere(
+                                  (c) => c.id.toString() == job.clientId,
+                                );
+                              } catch (e) {
+                                client = null;
+                              }
+                              
+                              try {
+                                vehicle = vehiclesState.vehicles.firstWhere(
+                                  (v) => v.id.toString() == job.vehicleId,
+                                );
+                              } catch (e) {
+                                vehicle = null;
+                              }
+                              
+                              try {
+                                driver = users.firstWhere(
+                                  (u) => u.id == job.driverId,
+                                );
+                              } catch (e) {
+                                driver = null;
+                              }
+                              
+                              return JobCard(
+                                job: job,
+                                client: client,
+                                vehicle: vehicle,
+                                driver: driver,
+                              );
+                            },
+                          )
+                        : ResponsiveGrid( // Desktop: Keep existing grid
+                            children: paginatedJobs.map((job) {
+                              // Find related data
+                              Client? client;
+                              Vehicle? vehicle;
+                              User? driver;
+                              
+                              try {
+                                client = clients.firstWhere(
+                                  (c) => c.id.toString() == job.clientId,
+                                );
+                              } catch (e) {
+                                client = null;
+                              }
+                              
+                              try {
+                                vehicle = vehiclesState.vehicles.firstWhere(
+                                  (v) => v.id.toString() == job.vehicleId,
+                                );
+                              } catch (e) {
+                                vehicle = null;
+                              }
+                              
+                              try {
+                                driver = users.firstWhere(
+                                  (u) => u.id == job.driverId,
+                                );
+                              } catch (e) {
+                                driver = null;
+                              }
+                              
+                              return JobCard(
+                                job: job,
+                                client: client,
+                                vehicle: vehicle,
+                                driver: driver,
+                              );
+                            }).toList(),
+                          ),
                     loading: () => const Center(child: CircularProgressIndicator()),
                     error: (error, stack) => Center(
                       child: Text('Error loading clients: $error'),

@@ -40,7 +40,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         children: [
           // Voucher section header
           Padding(
-            padding: const EdgeInsets.only(bottom: 4.0), // Reduced padding
+            padding: const EdgeInsets.only(bottom: 8.0), // Increased from 4.0
             child: Text(
               'Voucher',
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
@@ -54,10 +54,13 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
           // Voucher status and actions
           if (!hasVoucher && widget.canCreateVoucher)
             _buildCreateVoucherButton(voucherState)
-          else if (hasVoucher)
+          else if (hasVoucher) ...[
+            const SizedBox(height: 6), // Add spacing between header and content
             _buildVoucherActions(voucherState)
-          else if (!widget.canCreateVoucher)
-            _buildNoPermissionMessage(),
+          ] else if (!widget.canCreateVoucher) ...[
+            const SizedBox(height: 6), // Add spacing between header and content
+            _buildNoPermissionMessage()
+          ],
 
           // Loading indicator
           if (voucherState.isLoading)
@@ -76,13 +79,16 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: voucherState.isLoading ? null : _createVoucher,
-        icon: const Icon(Icons.receipt_long, size: 14), // Smaller icon
-        label: const Text('Create Voucher', style: TextStyle(fontSize: 11)), // Smaller text
+        icon: const Icon(Icons.receipt_long, size: 16), // Increased from 14
+        label: const Text('Create Voucher', style: TextStyle(fontSize: 12)), // Increased from 11
         style: ElevatedButton.styleFrom(
           backgroundColor: Theme.of(context).colorScheme.primary,
           foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 10), // Reduced padding
-          minimumSize: const Size(0, 28), // Smaller minimum height
+          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16), // Increased padding
+          minimumSize: const Size(0, 36), // Increased from 28
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8), // Add rounded corners
+          ),
         ),
       ),
     );
@@ -93,10 +99,10 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       children: [
         // Status chip
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4), // Reduced padding
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
           decoration: BoxDecoration(
             color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12), // Smaller radius
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: Colors.green.withOpacity(0.3)),
           ),
           child: Row(
@@ -104,14 +110,14 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
             children: [
               Icon(
                 Icons.check_circle,
-                size: 14, // Smaller icon
+                size: 14,
                 color: Colors.green[700],
               ),
-              const SizedBox(width: 3), // Reduced spacing
+              const SizedBox(width: 3),
               Text(
                 'Voucher Created',
                 style: TextStyle(
-                  fontSize: 11, // Smaller font
+                  fontSize: 11,
                   fontWeight: FontWeight.w500,
                   color: Colors.green[700],
                 ),
@@ -119,45 +125,47 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
             ],
           ),
         ),
-        const SizedBox(width: 6), // Reduced spacing
+        const SizedBox(width: 12), // Increased from 6 to 12
 
         // Open button
         IconButton(
           onPressed: voucherState.isLoading ? null : _openVoucher,
-          icon: const Icon(Icons.open_in_new, size: 14), // Smaller icon
+          icon: const Icon(Icons.open_in_new, size: 14),
           tooltip: 'Open Voucher',
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            padding: const EdgeInsets.all(4), // Reduced padding
-            minimumSize: const Size(24, 24), // Smaller minimum size
+            padding: const EdgeInsets.all(6), // Increased from 4
+            minimumSize: const Size(28, 28), // Increased from 24x24
           ),
         ),
+        const SizedBox(width: 8), // Add spacing between buttons
 
         // Share button
         IconButton(
           onPressed: voucherState.isLoading ? null : _showShareOptions,
-          icon: const Icon(Icons.share, size: 14), // Smaller icon
+          icon: const Icon(Icons.share, size: 14),
           tooltip: 'Share Voucher',
           style: IconButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
             foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-            padding: const EdgeInsets.all(4), // Reduced padding
-            minimumSize: const Size(24, 24), // Smaller minimum size
+            padding: const EdgeInsets.all(6), // Increased from 4
+            minimumSize: const Size(28, 28), // Increased from 24x24
           ),
         ),
+        const SizedBox(width: 8), // Add spacing between buttons
 
         // Reload button (if user has permission)
         if (widget.canCreateVoucher)
           IconButton(
             onPressed: voucherState.isLoading ? null : _regenerateVoucher,
-            icon: const Icon(Icons.refresh, size: 14), // Smaller icon
+            icon: const Icon(Icons.refresh, size: 14),
             tooltip: 'Reload Voucher',
             style: IconButton.styleFrom(
               backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
               foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
-              padding: const EdgeInsets.all(4), // Reduced padding
-              minimumSize: const Size(24, 24), // Smaller minimum size
+              padding: const EdgeInsets.all(6), // Increased from 4
+              minimumSize: const Size(28, 28), // Increased from 24x24
             ),
           ),
       ],

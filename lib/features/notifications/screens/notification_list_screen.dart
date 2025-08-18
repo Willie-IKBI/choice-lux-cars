@@ -188,20 +188,23 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
   void _createTestNotification() async {
     try {
       final notificationService = NotificationService();
-      await notificationService.createTestNotification();
+      await notificationService.createJobAssignmentNotification(
+        jobId: '1', // Test job ID
+        jobNumber: 'TEST-001',
+      );
       
       // Refresh notifications
       await ref.read(notificationProvider.notifier).fetchNotifications();
       
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Test notification created successfully'),
+          content: Text('Job assignment notification created successfully'),
         ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error creating test notification: $e'),
+          content: Text('Error creating job assignment notification: $e'),
           backgroundColor: Colors.red,
         ),
       );

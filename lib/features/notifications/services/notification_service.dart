@@ -219,4 +219,34 @@ class NotificationService {
       throw Exception('Failed to create test notification: $e');
     }
   }
+
+  /// Test method to create a job assignment notification
+  Future<void> createJobAssignmentNotification({
+    required String jobId,
+    required String jobNumber,
+  }) async {
+    try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
+      print('Creating job assignment notification for user: ${currentUser.id}');
+
+      await _supabase
+          .from('notifications')
+          .insert({
+            'user_id': currentUser.id,
+            'job_id': jobId,
+            'body': 'New job assigned - Job #$jobNumber',
+            'notification_type': 'job_assignment',
+            'is_read': false,
+          });
+
+      print('Job assignment notification created successfully');
+    } catch (e) {
+      print('Error creating job assignment notification: $e');
+      throw Exception('Failed to create job assignment notification: $e');
+    }
+  }
 } 

@@ -20,8 +20,6 @@ class JobCard extends ConsumerWidget {
 
   // Design tokens for consistent sizing
   static const double cardWidth = 380.0; // Target width
-  static const double cardMinHeight = 280.0; // Minimum height
-  static const double cardMaxHeight = 320.0; // Maximum height
   static const double cardPadding = 16.0; // Consistent padding
   static const double railSpacing = 12.0; // Vertical rhythm
   static const double cornerRadius = 12.0; // Modern feel
@@ -51,6 +49,7 @@ class JobCard extends ConsumerWidget {
             borderRadius: BorderRadius.circular(cornerRadius),
           ),
           child: Container(
+            width: double.infinity, // Let container expand to full width
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(cornerRadius),
               gradient: const LinearGradient(
@@ -97,10 +96,9 @@ class JobCard extends ConsumerWidget {
                   
                   SizedBox(height: railSpacing),
                   
-                  // Footer row: voucher state - constrained to prevent overflow
-                  Flexible(
-                    child: _buildVoucherFooter(ref),
-                  ),
+                  // Footer row: voucher state with better spacing
+                  const SizedBox(height: 8), // Consistent spacing before voucher
+                  _buildVoucherFooter(ref),
                 ],
               ),
             ),
@@ -331,7 +329,15 @@ class JobCard extends ConsumerWidget {
                 label: Text(_getActionText()),
                 style: TextButton.styleFrom(
                   foregroundColor: _getStatusColor(),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
+                  backgroundColor: _getStatusColor().withOpacity(0.1), // Add subtle background
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12), // Add horizontal padding
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                    side: BorderSide(
+                      color: _getStatusColor().withOpacity(0.3),
+                      width: 1,
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -345,10 +351,14 @@ class JobCard extends ConsumerWidget {
   Widget _buildVoucherFooter(WidgetRef ref) {
     final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
     
-    return VoucherActionButtons(
-      jobId: job.id,
-      voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
-      canCreateVoucher: ref.watch(canCreateVoucherProvider).value ?? false,
+    return Container(
+      margin: const EdgeInsets.only(top: 8), // Add top margin
+      padding: const EdgeInsets.symmetric(vertical: 8), // Add vertical padding
+      child: VoucherActionButtons(
+        jobId: job.id,
+        voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
+        canCreateVoucher: ref.watch(canCreateVoucherProvider).value ?? false,
+      ),
     );
   }
 
