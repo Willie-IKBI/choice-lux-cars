@@ -14,6 +14,9 @@ import 'package:choice_lux_cars/features/clients/screens/client_detail_screen.da
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import 'package:choice_lux_cars/features/clients/inactive_clients_screen.dart';
 import 'package:choice_lux_cars/features/quotes/quotes_screen.dart';
+import 'package:choice_lux_cars/features/quotes/screens/create_quote_screen.dart';
+import 'package:choice_lux_cars/features/quotes/screens/quote_details_screen.dart';
+import 'package:choice_lux_cars/features/quotes/screens/quote_transport_details_screen.dart';
 import 'package:choice_lux_cars/features/jobs/jobs_screen.dart';
 import 'package:choice_lux_cars/features/jobs/screens/create_job_screen.dart';
 import 'package:choice_lux_cars/features/jobs/screens/trip_management_screen.dart';
@@ -192,6 +195,40 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/quotes',
           name: 'quotes',
           builder: (context, state) => const QuotesScreen(),
+        ),
+        GoRoute(
+          path: '/quotes/create',
+          name: 'create_quote',
+          builder: (context, state) => const CreateQuoteScreen(),
+        ),
+        GoRoute(
+          path: '/quotes/:id',
+          name: 'quote_details',
+          builder: (context, state) {
+            final quoteId = state.pathParameters['id']!;
+            return QuoteDetailsScreen(quoteId: quoteId);
+          },
+        ),
+        GoRoute(
+          path: '/quotes/:id/transport-details',
+          name: 'quote_transport_details',
+          builder: (context, state) {
+            final quoteId = state.pathParameters['id']!;
+            return QuoteTransportDetailsScreen(quoteId: quoteId);
+          },
+        ),
+        GoRoute(
+          path: '/quotes/:id/summary',
+          name: 'quote_summary',
+          builder: (context, state) {
+            final quoteId = state.pathParameters['id']!;
+            // TODO: Create QuoteSummaryScreen
+            return const Scaffold(
+              body: Center(
+                child: Text('Quote Summary Screen - Coming Soon'),
+              ),
+            );
+          },
         ),
         GoRoute(
           path: '/jobs',

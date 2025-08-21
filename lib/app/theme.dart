@@ -10,6 +10,7 @@ class ChoiceLuxTheme {
   static const Color platinumSilver = Color(0xFFC0C0C0); // Dividers, hints
   static const Color errorColor = Color(0xFFDC2626);
   static const Color successColor = Color(0xFF059669);
+  static const Color warningColor = Color(0xFFF59E0B);
 
   // Background gradient
   static const LinearGradient backgroundGradient = LinearGradient(

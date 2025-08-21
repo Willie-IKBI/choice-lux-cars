@@ -305,16 +305,19 @@ class SupabaseService {
   Future<Map<String, dynamic>?> getQuote(String quoteId) async {
     final response = await supabase
         .from('quotes')
-        .select('*, clients(*), quote_details(*)')
+        .select('*, clients(*)')
         .eq('id', quoteId)
         .single();
     return response;
   }
 
-  Future<void> createQuote(Map<String, dynamic> quoteData) async {
-    await supabase
+  Future<Map<String, dynamic>> createQuote(Map<String, dynamic> quoteData) async {
+    final response = await supabase
         .from('quotes')
-        .insert(quoteData);
+        .insert(quoteData)
+        .select()
+        .single();
+    return response;
   }
 
   Future<void> updateQuote({
@@ -332,6 +335,48 @@ class SupabaseService {
         .from('quotes')
         .delete()
         .eq('id', quoteId);
+  }
+
+  Future<List<Map<String, dynamic>>> getQuotesByUser(String userId) async {
+    final response = await supabase
+        .from('quotes')
+        .select('*, clients(*)')
+        .eq('created_by', userId)
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Quote transport detail methods
+  Future<List<Map<String, dynamic>>> getQuoteTransportDetails(String quoteId) async {
+    final response = await supabase
+        .from('quotes_transport_details')
+        .select('*')
+        .eq('quote_id', quoteId)
+        .order('pickup_date', ascending: true);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  Future<void> createQuoteTransportDetail(Map<String, dynamic> transportData) async {
+    await supabase
+        .from('quotes_transport_details')
+        .insert(transportData);
+  }
+
+  Future<void> updateQuoteTransportDetail({
+    required String transportDetailId,
+    required Map<String, dynamic> data,
+  }) async {
+    await supabase
+        .from('quotes_transport_details')
+        .update(data)
+        .eq('id', transportDetailId);
+  }
+
+  Future<void> deleteQuoteTransportDetail(String transportDetailId) async {
+    await supabase
+        .from('quotes_transport_details')
+        .delete()
+        .eq('id', transportDetailId);
   }
 
   // Job methods
@@ -480,6 +525,34 @@ class SupabaseService {
       return Vehicle.fromJson(response);
     } catch (e) {
       throw Exception('Failed to update vehicle: $e');
+    }
+  }
+
+  Future<Map<String, dynamic>?> getVehicle(String vehicleId) async {
+    try {
+      final response = await supabase
+          .from('vehicles')
+          .select('*')
+          .eq('id', vehicleId)
+          .single();
+      return response;
+    } catch (e) {
+      print('Error getting vehicle: $e');
+      return null;
+    }
+  }
+
+  Future<Map<String, dynamic>?> getUser(String userId) async {
+    try {
+      final response = await supabase
+          .from('profiles')
+          .select()
+          .eq('id', userId)
+          .single();
+      return response;
+    } catch (e) {
+      print('Error getting user: $e');
+      return null;
     }
   }
 
