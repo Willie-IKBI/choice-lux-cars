@@ -1556,6 +1556,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               child: DropdownButtonFormField<String>(
                 value: value,
                 isExpanded: true,
+                menuMaxHeight: 200, // Limit dropdown menu height to prevent overflow
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: TextStyle(
