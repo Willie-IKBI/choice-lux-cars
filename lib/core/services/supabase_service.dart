@@ -69,6 +69,30 @@ class SupabaseService {
     }
   }
 
+  // Forgot password methods
+  Future<void> resetPassword({required String email}) async {
+    try {
+      await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'https://choice-lux-cars-8d510.web.app/reset-password', // Firebase deployed URL
+      );
+    } catch (error) {
+      print('Supabase resetPassword error: $error');
+      throw error.toString();
+    }
+  }
+
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+    } catch (error) {
+      print('Supabase updatePassword error: $error');
+      throw error.toString();
+    }
+  }
+
   User? get currentUser => supabase.auth.currentUser;
 
   Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;

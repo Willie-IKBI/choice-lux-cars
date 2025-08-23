@@ -5,6 +5,8 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/auth/login/login_screen.dart';
 import 'package:choice_lux_cars/features/auth/signup/signup_screen.dart';
+import 'package:choice_lux_cars/features/auth/forgot_password/forgot_password_screen.dart';
+import 'package:choice_lux_cars/features/auth/reset_password/reset_password_screen.dart';
 import 'package:choice_lux_cars/features/auth/pending_approval_screen.dart';
 import 'package:choice_lux_cars/features/dashboard/dashboard_screen.dart';
 import 'package:choice_lux_cars/features/clients/clients_screen.dart';
@@ -83,11 +85,13 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
         final isAuthenticated = authState.value != null;
         final isLoginRoute = state.matchedLocation == '/login';
         final isSignupRoute = state.matchedLocation == '/signup';
+        final isForgotPasswordRoute = state.matchedLocation == '/forgot-password';
+        final isResetPasswordRoute = state.matchedLocation == '/reset-password';
         final isPendingApprovalRoute = state.matchedLocation == '/pending-approval';
 
-        // If not authenticated, redirect to login (except for login/signup routes)
+        // If not authenticated, redirect to login (except for auth routes)
         if (!isAuthenticated) {
-          if (isLoginRoute || isSignupRoute) {
+          if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isResetPasswordRoute) {
             return null; // Allow access to auth routes
           }
           return '/login';
@@ -107,8 +111,13 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           }
 
           // If user is assigned but on auth routes, redirect to dashboard
-          if (isLoginRoute || isSignupRoute || isPendingApprovalRoute) {
+          // EXCEPT for reset-password route which should be accessible even when authenticated
+          if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isPendingApprovalRoute) {
             return '/';
+          }
+          // Allow access to reset-password route even when authenticated
+          if (isResetPasswordRoute) {
+            return null;
           }
         }
 
@@ -125,6 +134,21 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/signup',
           name: 'signup',
           builder: (context, state) => const SignupScreen(),
+        ),
+        GoRoute(
+          path: '/forgot-password',
+          name: 'forgot_password',
+          builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          name: 'reset_password',
+          builder: (context, state) => const ResetPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/reset-password/:token',
+          name: 'reset_password_with_token',
+          builder: (context, state) => const ResetPasswordScreen(),
         ),
         GoRoute(
           path: '/pending-approval',

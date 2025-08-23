@@ -39,19 +39,30 @@ class JobCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isCompact = constraints.maxWidth < 600;
+        // Enhanced responsive breakpoints for mobile optimization
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 600;
+        final isSmallMobile = screenWidth < 400;
+        final isTablet = screenWidth >= 600 && screenWidth < 800;
+        final isDesktop = screenWidth >= 800;
+        
+        // Responsive design tokens
+        final responsivePadding = isSmallMobile ? 12.0 : isMobile ? 14.0 : cardPadding;
+        final responsiveSpacing = isSmallMobile ? 8.0 : isMobile ? 10.0 : railSpacing;
+        final responsiveCornerRadius = isSmallMobile ? 8.0 : isMobile ? 10.0 : cornerRadius;
+        final responsiveMargin = isSmallMobile ? 4.0 : isMobile ? 6.0 : 8.0;
         
         return Card(
-          margin: const EdgeInsets.all(8),
-          elevation: 2,
-          shadowColor: Colors.black.withOpacity(0.1),
+          margin: EdgeInsets.all(responsiveMargin),
+          elevation: isMobile ? 3 : 2,
+          shadowColor: Colors.black.withOpacity(0.15),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(cornerRadius),
+            borderRadius: BorderRadius.circular(responsiveCornerRadius),
           ),
           child: Container(
-            width: double.infinity, // Let container expand to full width
+            width: double.infinity,
             decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(cornerRadius),
+              borderRadius: BorderRadius.circular(responsiveCornerRadius),
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -66,39 +77,39 @@ class JobCard extends ConsumerWidget {
               ),
             ),
             child: Padding(
-              padding: const EdgeInsets.all(cardPadding),
+              padding: EdgeInsets.all(responsivePadding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   // Status row: chips + date badge
-                  _buildStatusRow(isCompact),
+                  _buildStatusRow(isMobile, isSmallMobile),
                   
-                  SizedBox(height: railSpacing),
+                  SizedBox(height: responsiveSpacing),
                   
                   // Title row: passenger/job title
-                  _buildTitleRow(),
+                  _buildTitleRow(isMobile, isSmallMobile),
                   
-                  SizedBox(height: railSpacing),
+                  SizedBox(height: responsiveSpacing),
                   
                   // Details block: key fields
-                  _buildDetailsBlock(isCompact),
+                  _buildDetailsBlock(isMobile, isSmallMobile),
                   
-                  SizedBox(height: railSpacing),
+                  SizedBox(height: responsiveSpacing),
                   
                   // Metrics row: stat tiles
-                  _buildMetricsRow(isCompact),
+                  _buildMetricsRow(isMobile, isSmallMobile),
                   
-                  SizedBox(height: railSpacing),
+                  SizedBox(height: responsiveSpacing),
                   
                   // Action row: buttons
-                  _buildActionRow(context, ref),
+                  _buildActionRow(context, ref, isMobile, isSmallMobile),
                   
-                  SizedBox(height: railSpacing),
+                  SizedBox(height: responsiveSpacing),
                   
                   // Footer row: voucher state with better spacing
-                  const SizedBox(height: 8), // Consistent spacing before voucher
-                  _buildVoucherFooter(ref),
+                  SizedBox(height: isSmallMobile ? 6 : isMobile ? 8 : 8),
+                  _buildVoucherFooter(ref, isMobile, isSmallMobile),
                 ],
               ),
             ),
@@ -109,7 +120,7 @@ class JobCard extends ConsumerWidget {
   }
 
   // Status row: chips + date badge
-  Widget _buildStatusRow(bool isCompact) {
+  Widget _buildStatusRow(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -119,34 +130,34 @@ class JobCard extends ConsumerWidget {
           children: [
             Expanded(
               child: Wrap(
-                spacing: 6,
-                runSpacing: 4,
+                spacing: isSmallMobile ? 4 : isMobile ? 6 : 8,
+                runSpacing: isSmallMobile ? 3 : isMobile ? 4 : 6,
                 children: [
-                  _buildStatusChip(),
-                  if (!isCompact) _buildDriverConfirmationChip(),
+                  _buildStatusChip(isMobile, isSmallMobile),
+                  if (!isMobile) _buildDriverConfirmationChip(isMobile, isSmallMobile),
                 ],
               ),
             ),
-            const SizedBox(width: 8),
-            _buildTimeChip(),
+            SizedBox(width: isSmallMobile ? 6 : isMobile ? 8 : 12),
+            _buildTimeChip(isMobile, isSmallMobile),
           ],
         ),
-        // Second line: additional chips for compact mode
-        if (isCompact) ...[
-          const SizedBox(height: 4),
-          _buildDriverConfirmationChip(),
+        // Second line: additional chips for mobile mode
+        if (isMobile) ...[
+          SizedBox(height: isSmallMobile ? 3 : 4),
+          _buildDriverConfirmationChip(isMobile, isSmallMobile),
         ],
       ],
     );
   }
 
   // Title row: passenger/job title (1 line, ellipsis)
-  Widget _buildTitleRow() {
+  Widget _buildTitleRow(bool isMobile, bool isSmallMobile) {
     return Text(
       job.passengerName ?? 'Unnamed Job',
-      style: const TextStyle(
+      style: TextStyle(
         fontWeight: FontWeight.bold,
-        fontSize: 16, // Primary action readable
+        fontSize: isSmallMobile ? 14 : isMobile ? 15 : 16,
         color: ChoiceLuxTheme.softWhite,
         height: 1.2,
       ),
@@ -156,12 +167,12 @@ class JobCard extends ConsumerWidget {
   }
 
   // Details block: 3-4 key fields (each 1 line, ellipsis)
-  Widget _buildDetailsBlock(bool isCompact) {
+  Widget _buildDetailsBlock(bool isMobile, bool isSmallMobile) {
     return Container(
-      padding: const EdgeInsets.all(12),
+      padding: EdgeInsets.all(isSmallMobile ? 10 : isMobile ? 12 : 16),
       decoration: BoxDecoration(
         color: Colors.grey.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(isSmallMobile ? 6 : isMobile ? 8 : 10),
         border: Border.all(
           color: Colors.grey.withOpacity(0.2),
           width: 1,
@@ -174,21 +185,21 @@ class JobCard extends ConsumerWidget {
           Text(
             'Job Details',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
               fontWeight: FontWeight.w600,
               color: ChoiceLuxTheme.platinumSilver,
             ),
           ),
-          const SizedBox(height: 8),
-          _buildDetailRow(Icons.business, 'Client', client?.companyName ?? 'Unknown Client'),
-          const SizedBox(height: 6),
-          _buildDetailRow(Icons.person, 'Driver', driver?.displayName ?? 'Unassigned'),
-          const SizedBox(height: 6),
+          SizedBox(height: isSmallMobile ? 6 : isMobile ? 8 : 10),
+          _buildDetailRow(Icons.business, 'Client', client?.companyName ?? 'Unknown Client', isMobile, isSmallMobile),
+          SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+          _buildDetailRow(Icons.person, 'Driver', driver?.displayName ?? 'Unassigned', isMobile, isSmallMobile),
+          SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
           _buildDetailRow(Icons.directions_car, 'Vehicle', 
-            vehicle != null ? '${vehicle!.make} ${vehicle!.model}' : 'Vehicle not assigned'),
-          if (!isCompact) ...[
-            const SizedBox(height: 6),
-            _buildDetailRow(Icons.tag, 'Job Number', 'Job #${job.id}'),
+            vehicle != null ? '${vehicle!.make} ${vehicle!.model}' : 'Vehicle not assigned', isMobile, isSmallMobile),
+          if (!isMobile) ...[
+            SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+            _buildDetailRow(Icons.tag, 'Job Number', 'Job #${job.id}', isMobile, isSmallMobile),
           ],
         ],
       ),
@@ -196,18 +207,18 @@ class JobCard extends ConsumerWidget {
   }
 
   // Metrics row: two small stat tiles (Passengers/Bags)
-  Widget _buildMetricsRow(bool isCompact) {
-    if (isCompact) {
-      // Compact: collapse into small pills
+  Widget _buildMetricsRow(bool isMobile, bool isSmallMobile) {
+    if (isMobile) {
+      // Mobile: collapse into small pills
       return Row(
         children: [
-          _buildCompactMetricPill(Icons.people, '${job.pasCount} pax'),
-          const SizedBox(width: 8),
-          _buildCompactMetricPill(Icons.work, '${job.luggageCount} bags'),
+          _buildCompactMetricPill(Icons.people, '${job.pasCount} pax', isMobile, isSmallMobile),
+          SizedBox(width: isSmallMobile ? 6 : 8),
+          _buildCompactMetricPill(Icons.work, '${job.luggageCount} bags', isMobile, isSmallMobile),
         ],
       );
     } else {
-      // Regular: separate metric tiles
+      // Desktop: separate metric tiles
       return Row(
         children: [
           Expanded(
@@ -216,6 +227,8 @@ class JobCard extends ConsumerWidget {
               'Passengers',
               '${job.pasCount}',
               Colors.blue,
+              isMobile,
+              isSmallMobile,
             ),
           ),
           const SizedBox(width: 8),
@@ -225,6 +238,8 @@ class JobCard extends ConsumerWidget {
               'Bags',
               '${job.luggageCount}',
               Colors.blue,
+              isMobile,
+              isSmallMobile,
             ),
           ),
         ],
@@ -233,7 +248,7 @@ class JobCard extends ConsumerWidget {
   }
 
   // Action row: Primary (Start Job), secondary (View)
-  Widget _buildActionRow(BuildContext context, WidgetRef ref) {
+  Widget _buildActionRow(BuildContext context, WidgetRef ref, bool isMobile, bool isSmallMobile) {
     final isAssignedDriver = _isAssignedDriver(ref);
     final needsConfirmation = isAssignedDriver && job.driverConfirmation != true;
     
@@ -348,12 +363,12 @@ class JobCard extends ConsumerWidget {
   }
 
   // Footer row: Voucher state chip
-  Widget _buildVoucherFooter(WidgetRef ref) {
+  Widget _buildVoucherFooter(WidgetRef ref, bool isMobile, bool isSmallMobile) {
     final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
     
     return Container(
-      margin: const EdgeInsets.only(top: 8), // Add top margin
-      padding: const EdgeInsets.symmetric(vertical: 8), // Add vertical padding
+      margin: EdgeInsets.only(top: isSmallMobile ? 6 : isMobile ? 8 : 10),
+      padding: EdgeInsets.symmetric(vertical: isSmallMobile ? 6 : isMobile ? 8 : 10),
       child: VoucherActionButtons(
         jobId: job.id,
         voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
@@ -363,29 +378,29 @@ class JobCard extends ConsumerWidget {
   }
 
   // Helper methods
-  Widget _buildDetailRow(IconData icon, String label, String value) {
+  Widget _buildDetailRow(IconData icon, String label, String value, bool isMobile, bool isSmallMobile) {
     return Row(
       children: [
         Icon(
           icon,
-          size: 16,
+          size: isSmallMobile ? 14 : isMobile ? 16 : 18,
           color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
         ),
-        const SizedBox(width: 6),
+        SizedBox(width: isSmallMobile ? 4 : isMobile ? 6 : 8),
         Text(
           '$label: ',
           style: TextStyle(
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
-            fontSize: 12,
+            fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
             fontWeight: FontWeight.w500,
           ),
         ),
         Expanded(
           child: Text(
             value,
-            style: const TextStyle(
+            style: TextStyle(
               color: ChoiceLuxTheme.softWhite,
-              fontSize: 12,
+              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
               fontWeight: FontWeight.w600,
             ),
             overflow: TextOverflow.ellipsis,
@@ -396,12 +411,15 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactMetricPill(IconData icon, String text) {
+  Widget _buildCompactMetricPill(IconData icon, String text, bool isMobile, bool isSmallMobile) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(
+        horizontal: isSmallMobile ? 6 : isMobile ? 8 : 10,
+        vertical: isSmallMobile ? 3 : isMobile ? 4 : 6,
+      ),
       decoration: BoxDecoration(
         color: Colors.blue.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(isSmallMobile ? 8 : isMobile ? 10 : 12),
         border: Border.all(
           color: Colors.blue.withOpacity(0.3),
           width: 1,
@@ -410,13 +428,17 @@ class JobCard extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: Colors.blue),
-          const SizedBox(width: 4),
+          Icon(
+            icon, 
+            size: isSmallMobile ? 12 : isMobile ? 14 : 16, 
+            color: Colors.blue
+          ),
+          SizedBox(width: isSmallMobile ? 3 : isMobile ? 4 : 6),
           Text(
             text,
             style: TextStyle(
               color: Colors.blue,
-              fontSize: 11,
+              fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -425,12 +447,12 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricTile(IconData icon, String label, String value, Color color) {
+  Widget _buildMetricTile(IconData icon, String label, String value, Color color, bool isMobile, bool isSmallMobile) {
     return Container(
-      padding: const EdgeInsets.all(8),
+      padding: EdgeInsets.all(isSmallMobile ? 6 : isMobile ? 8 : 10),
       decoration: BoxDecoration(
         color: color.withOpacity(0.08),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(isSmallMobile ? 6 : isMobile ? 8 : 10),
         border: Border.all(
           color: color.withOpacity(0.2),
           width: 1,
@@ -439,13 +461,17 @@ class JobCard extends ConsumerWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: color),
-          const SizedBox(height: 2),
+          Icon(
+            icon, 
+            size: isSmallMobile ? 14 : isMobile ? 16 : 18, 
+            color: color
+          ),
+          SizedBox(height: isSmallMobile ? 1 : isMobile ? 2 : 3),
           Text(
             value,
             style: TextStyle(
               color: color,
-              fontSize: 14,
+              fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -453,7 +479,7 @@ class JobCard extends ConsumerWidget {
             label,
             style: TextStyle(
               color: color.withOpacity(0.8),
-              fontSize: 10,
+              fontSize: isSmallMobile ? 9 : isMobile ? 10 : 12,
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -462,13 +488,18 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildStatusChip() {
+  Widget _buildStatusChip(bool isMobile, bool isSmallMobile) {
+    final responsiveChipHeight = isSmallMobile ? 20.0 : isMobile ? 24.0 : chipHeight;
+    final responsivePadding = isSmallMobile ? 6.0 : isMobile ? 8.0 : 10.0;
+    final responsiveFontSize = isSmallMobile ? 10.0 : isMobile ? 11.0 : 12.0;
+    final responsiveDotSize = isSmallMobile ? 4.0 : isMobile ? 5.0 : 6.0;
+    
     return Container(
-      height: chipHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: responsiveChipHeight,
+      padding: EdgeInsets.symmetric(horizontal: responsivePadding),
       decoration: BoxDecoration(
         color: _getStatusColor().withOpacity(0.15),
-        borderRadius: BorderRadius.circular(chipHeight / 2),
+        borderRadius: BorderRadius.circular(responsiveChipHeight / 2),
         border: Border.all(
           color: _getStatusColor().withOpacity(0.3),
           width: 1,
@@ -478,19 +509,19 @@ class JobCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: responsiveDotSize,
+            height: responsiveDotSize,
             decoration: BoxDecoration(
               color: _getStatusColor(),
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: isSmallMobile ? 3 : isMobile ? 4 : 6),
           Text(
             _getStatusText(),
             style: TextStyle(
               color: _getStatusColor(),
-              fontSize: 11,
+              fontSize: responsiveFontSize,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -499,7 +530,7 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildDriverConfirmationChip() {
+  Widget _buildDriverConfirmationChip(bool isMobile, bool isSmallMobile) {
     Color color;
     String text;
     
@@ -514,12 +545,17 @@ class JobCard extends ConsumerWidget {
       text = 'Not Confirmed';
     }
     
+    final responsiveChipHeight = isSmallMobile ? 20.0 : isMobile ? 24.0 : chipHeight;
+    final responsivePadding = isSmallMobile ? 6.0 : isMobile ? 8.0 : 10.0;
+    final responsiveFontSize = isSmallMobile ? 10.0 : isMobile ? 11.0 : 12.0;
+    final responsiveDotSize = isSmallMobile ? 4.0 : isMobile ? 5.0 : 6.0;
+    
     return Container(
-      height: chipHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: responsiveChipHeight,
+      padding: EdgeInsets.symmetric(horizontal: responsivePadding),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(chipHeight / 2),
+        borderRadius: BorderRadius.circular(responsiveChipHeight / 2),
         border: Border.all(
           color: color.withOpacity(0.3),
           width: 1,
@@ -529,19 +565,19 @@ class JobCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Container(
-            width: 6,
-            height: 6,
+            width: responsiveDotSize,
+            height: responsiveDotSize,
             decoration: BoxDecoration(
               color: color,
               shape: BoxShape.circle,
             ),
           ),
-          const SizedBox(width: 4),
+          SizedBox(width: isSmallMobile ? 3 : isMobile ? 4 : 6),
           Text(
             text,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: responsiveFontSize,
               fontWeight: FontWeight.bold,
             ),
           ),
@@ -550,7 +586,7 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildTimeChip() {
+  Widget _buildTimeChip(bool isMobile, bool isSmallMobile) {
     final daysUntilStart = job.daysUntilStart;
     final isStarted = daysUntilStart < 0;
     final isToday = daysUntilStart == 0;
@@ -561,7 +597,7 @@ class JobCard extends ConsumerWidget {
     IconData icon;
     
     if (isStarted) {
-      text = 'Started ${daysUntilStart.abs()}d ago';
+      text = isSmallMobile ? '${daysUntilStart.abs()}d ago' : 'Started ${daysUntilStart.abs()}d ago';
       color = Colors.grey;
       icon = Icons.schedule;
     } else if (isToday) {
@@ -569,21 +605,26 @@ class JobCard extends ConsumerWidget {
       color = Colors.orange;
       icon = Icons.today;
     } else if (isSoon) {
-      text = 'URGENT ${daysUntilStart}d';
+      text = isSmallMobile ? '${daysUntilStart}d' : 'URGENT ${daysUntilStart}d';
       color = Colors.red;
       icon = Icons.warning;
     } else {
-      text = 'In ${daysUntilStart}d';
+      text = isSmallMobile ? '${daysUntilStart}d' : 'In ${daysUntilStart}d';
       color = Colors.green;
       icon = Icons.calendar_today;
     }
     
+    final responsiveChipHeight = isSmallMobile ? 20.0 : isMobile ? 24.0 : chipHeight;
+    final responsivePadding = isSmallMobile ? 6.0 : isMobile ? 8.0 : 10.0;
+    final responsiveFontSize = isSmallMobile ? 10.0 : isMobile ? 11.0 : 12.0;
+    final responsiveIconSize = isSmallMobile ? 12.0 : isMobile ? 14.0 : 16.0;
+    
     return Container(
-      height: chipHeight,
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      height: responsiveChipHeight,
+      padding: EdgeInsets.symmetric(horizontal: responsivePadding),
       decoration: BoxDecoration(
         color: color.withOpacity(0.15),
-        borderRadius: BorderRadius.circular(chipHeight / 2),
+        borderRadius: BorderRadius.circular(responsiveChipHeight / 2),
         border: Border.all(
           color: color.withOpacity(0.3),
           width: 1,
@@ -592,13 +633,13 @@ class JobCard extends ConsumerWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: color),
-          const SizedBox(width: 4),
+          Icon(icon, size: responsiveIconSize, color: color),
+          SizedBox(width: isSmallMobile ? 3 : isMobile ? 4 : 6),
           Text(
             text,
             style: TextStyle(
               color: color,
-              fontSize: 11,
+              fontSize: responsiveFontSize,
               fontWeight: FontWeight.bold,
             ),
           ),

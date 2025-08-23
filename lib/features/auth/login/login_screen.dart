@@ -511,7 +511,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                   onExit: (_) => setState(() => _isHoveringForgotPassword = false),
                                                   child: TextButton(
                                                     onPressed: () {
-                                                      // TODO: Implement forgot password
+                                                      context.push('/forgot-password');
                                                     },
                                                     style: TextButton.styleFrom(
                                                       foregroundColor: _isHoveringForgotPassword 
@@ -570,7 +570,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                   onExit: (_) => setState(() => _isHoveringForgotPassword = false),
                                                   child: TextButton(
                                                     onPressed: () {
-                                                      // TODO: Implement forgot password
+                                                      context.push('/forgot-password');
                                                     },
                                                     style: TextButton.styleFrom(
                                                       foregroundColor: _isHoveringForgotPassword 

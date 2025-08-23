@@ -78,8 +78,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               // Search and Filter Section
               _buildSearchAndFilterSection(isMobile),
               
-              // View Toggle (Desktop only)
-              if (!isMobile) _buildViewToggle(),
+              // View Toggle - Mobile uses compact version, Desktop uses full version
+              if (isMobile) _buildMobileViewToggle() else _buildViewToggle(),
               
               // Quotes List/Grid
               Expanded(
@@ -92,13 +92,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         ),
       ),
       floatingActionButton: canCreateQuotes
-          ? FloatingActionButton.extended(
-              onPressed: () => context.go('/quotes/create'),
-              backgroundColor: ChoiceLuxTheme.richGold,
-              foregroundColor: Colors.white,
-              icon: const Icon(Icons.add),
-              label: const Text('Create Quote'),
-            )
+          ? _buildMobileOptimizedFAB()
           : null,
     );
   }
@@ -107,11 +101,17 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
+    final isTablet = screenWidth >= 600 && screenWidth < 800;
+    final isDesktop = screenWidth >= 800;
+
+    // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
+    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : isTablet ? 16.0 : 24.0;
+    final verticalPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : isTablet ? 20.0 : 24.0;
 
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallMobile ? 16 : isMobile ? 20 : 24,
-        vertical: isSmallMobile ? 16 : isMobile ? 20 : 24,
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -146,6 +146,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               if (!isMobile) _buildQuickStats(),
             ],
           ),
+          // Mobile Quick Stats - Show below header on mobile
+          if (isMobile) ...[
+            const SizedBox(height: 16),
+            _buildMobileQuickStats(),
+          ],
           const SizedBox(height: 16),
           Container(
             height: 2,
@@ -215,15 +220,100 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
+  Widget _buildMobileQuickStats() {
+    final quotes = ref.watch(quotesProvider);
+    final openCount = quotes.where((q) => q.isOpen).length;
+    final acceptedCount = quotes.where((q) => q.isAccepted).length;
+    final expiredCount = quotes.where((q) => q.isExpired).length;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+        children: [
+          _buildMobileStatChip('Open', openCount, Colors.blue),
+          _buildMobileStatChip('Accepted', acceptedCount, ChoiceLuxTheme.successColor),
+          _buildMobileStatChip('Expired', expiredCount, ChoiceLuxTheme.errorColor),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileStatChip(String label, int count, Color color) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(8),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.1),
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: color.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Icon(
+            _getStatusIcon(label),
+            color: color,
+            size: 16,
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          '$count',
+          style: TextStyle(
+            color: color,
+            fontWeight: FontWeight.w700,
+            fontSize: 16,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            color: ChoiceLuxTheme.platinumSilver,
+            fontWeight: FontWeight.w500,
+            fontSize: 10,
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'open': return Icons.folder_open;
+      case 'accepted': return Icons.check_circle;
+      case 'expired': return Icons.schedule;
+      default: return Icons.info;
+    }
+  }
+
   Widget _buildSearchAndFilterSection(bool isMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallMobile = screenWidth < 400;
+    final isTablet = screenWidth >= 600 && screenWidth < 800;
+    final isDesktop = screenWidth >= 800;
+
+    // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
+    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : isTablet ? 16.0 : 24.0;
+    final verticalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : isTablet ? 16.0 : 16.0;
+
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 16 : 24,
-        vertical: isMobile ? 12 : 16,
+        horizontal: horizontalPadding,
+        vertical: verticalPadding,
       ),
       child: Column(
         children: [
-          // Search Bar
+          // Search Bar - Mobile optimized
           Container(
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray,
@@ -231,47 +321,75 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               border: Border.all(
                 color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 4,
+                  offset: const Offset(0, 2),
+                ),
+              ],
             ),
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: 'Search quotes by passenger name or quote ID...',
+                hintText: isMobile 
+                    ? 'Search quotes...' 
+                    : 'Search quotes by passenger name or quote ID...',
                 hintStyle: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  fontSize: isMobile ? 14 : 16,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
                   color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  size: isMobile ? 20 : 24,
                 ),
+                suffixIcon: _searchQuery.isNotEmpty
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.clear,
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                          size: isMobile ? 20 : 24,
+                        ),
+                        onPressed: () => setState(() => _searchQuery = ''),
+                        tooltip: 'Clear search',
+                      )
+                    : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
+                contentPadding: EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 16,
+                  vertical: isMobile ? 14 : 16,
                 ),
               ),
-              style: const TextStyle(color: ChoiceLuxTheme.softWhite),
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontSize: isMobile ? 14 : 16,
+              ),
             ),
           ),
           
           const SizedBox(height: 16),
           
-          // Status Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            child: Row(
-              children: [
-                _buildStatusChip('all', 'All', Colors.grey),
-                const SizedBox(width: 8),
-                _buildStatusChip('open', 'Open', Colors.blue),
-                const SizedBox(width: 8),
-                _buildStatusChip('accepted', 'Accepted', ChoiceLuxTheme.successColor),
-                const SizedBox(width: 8),
-                _buildStatusChip('expired', 'Expired', ChoiceLuxTheme.errorColor),
-                const SizedBox(width: 8),
-                _buildStatusChip('closed', 'Closed', Colors.grey),
-              ],
+          // Status Filter - Mobile uses bottom sheet, Desktop uses horizontal chips
+          if (isMobile) 
+            _buildMobileFilterButton()
+          else
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildStatusChip('all', 'All', Colors.grey),
+                  const SizedBox(width: 8),
+                  _buildStatusChip('open', 'Open', Colors.blue),
+                  const SizedBox(width: 8),
+                  _buildStatusChip('accepted', 'Accepted', ChoiceLuxTheme.successColor),
+                  const SizedBox(width: 8),
+                  _buildStatusChip('expired', 'Expired', ChoiceLuxTheme.errorColor),
+                  const SizedBox(width: 8),
+                  _buildStatusChip('closed', 'Closed', Colors.grey),
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );
@@ -346,6 +464,82 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
+  Widget _buildMobileViewToggle() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      child: Row(
+        children: [
+          const Spacer(),
+          Container(
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildMobileToggleButton(
+                  icon: Icons.view_list,
+                  label: 'List',
+                  isSelected: !_isGridView,
+                  onTap: () => setState(() => _isGridView = false),
+                ),
+                _buildMobileToggleButton(
+                  icon: Icons.grid_view,
+                  label: 'Grid',
+                  isSelected: _isGridView,
+                  onTap: () => setState(() => _isGridView = true),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMobileToggleButton({
+    required IconData icon,
+    required String label,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), // Increased vertical padding for better touch target
+        constraints: const BoxConstraints(minHeight: 44), // Ensure minimum 44px touch target
+        decoration: BoxDecoration(
+          color: isSelected ? ChoiceLuxTheme.richGold : Colors.transparent,
+          borderRadius: BorderRadius.circular(8),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: 18,
+              color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildToggleButton({
     required IconData icon,
     required bool isSelected,
@@ -370,12 +564,18 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   }
 
   Widget _buildQuotesList(List<dynamic> quotes, bool isMobile, bool isSmallMobile, bool isDesktop) {
+    // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
+    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : 16.0;
+    final gridPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0;
+    
     if (_isGridView && !isMobile) {
       // Grid view for desktop
       return RefreshIndicator(
         onRefresh: () => ref.read(quotesProvider.notifier).fetchQuotes(),
+        color: ChoiceLuxTheme.richGold,
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
         child: GridView.builder(
-          padding: const EdgeInsets.all(24),
+          padding: EdgeInsets.all(gridPadding),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: isDesktop ? 3 : 2,
             crossAxisSpacing: 20,
@@ -396,9 +596,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       // List view for mobile and desktop
       return RefreshIndicator(
         onRefresh: () => ref.read(quotesProvider.notifier).fetchQuotes(),
+        color: ChoiceLuxTheme.richGold,
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
         child: ListView.builder(
           padding: EdgeInsets.symmetric(
-            horizontal: isSmallMobile ? 12 : isMobile ? 16 : 24,
+            horizontal: horizontalPadding,
             vertical: 8,
           ),
           itemCount: quotes.length,
@@ -472,5 +674,209 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildMobileFilterButton() {
+    return Container(
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () => _showMobileFilterBottomSheet(),
+        icon: Icon(
+          Icons.filter_list,
+          color: ChoiceLuxTheme.richGold,
+          size: 20,
+        ),
+        label: Text(
+          'Filter: ${_getStatusLabel(_selectedStatus)}',
+          style: TextStyle(
+            color: ChoiceLuxTheme.richGold,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+          foregroundColor: ChoiceLuxTheme.richGold,
+          elevation: 0,
+          padding: const EdgeInsets.symmetric(vertical: 16),
+          minimumSize: const Size(0, 48), // Ensure minimum 44px touch target
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+            side: BorderSide(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _showMobileFilterBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      isScrollControlled: true,
+      builder: (context) => Container(
+        decoration: const BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray,
+          borderRadius: BorderRadius.only(
+            topLeft: Radius.circular(20),
+            topRight: Radius.circular(20),
+          ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Handle bar
+            Container(
+              margin: const EdgeInsets.symmetric(vertical: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            
+            // Title
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.filter_list,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Text(
+                    'Filter Quotes',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: ChoiceLuxTheme.softWhite,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Filter options
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Column(
+                children: [
+                  _buildMobileFilterOption('all', 'All Quotes', Colors.grey),
+                  _buildMobileFilterOption('open', 'Open Quotes', Colors.blue),
+                  _buildMobileFilterOption('accepted', 'Accepted Quotes', ChoiceLuxTheme.successColor),
+                  _buildMobileFilterOption('expired', 'Expired Quotes', ChoiceLuxTheme.errorColor),
+                  _buildMobileFilterOption('closed', 'Closed Quotes', Colors.grey),
+                ],
+              ),
+            ),
+            
+            const SizedBox(height: 24),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMobileFilterOption(String status, String label, Color color) {
+    final isSelected = _selectedStatus == status;
+    
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            setState(() => _selectedStatus = status);
+            Navigator.of(context).pop();
+          },
+          borderRadius: BorderRadius.circular(12),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            constraints: const BoxConstraints(minHeight: 48), // Ensure minimum 44px touch target
+            decoration: BoxDecoration(
+              color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: isSelected ? color : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 12,
+                  height: 12,
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      color: isSelected ? color : ChoiceLuxTheme.softWhite,
+                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontSize: 16,
+                    ),
+                  ),
+                ),
+                if (isSelected)
+                  Icon(
+                    Icons.check_circle,
+                    color: color,
+                    size: 20,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+    String _getStatusLabel(String status) {
+    switch (status) {
+      case 'all': return 'All';
+      case 'open': return 'Open';
+      case 'accepted': return 'Accepted';
+      case 'expired': return 'Expired';
+      case 'closed': return 'Closed';
+      default: return 'All';
+    }
+  }
+
+  Widget _buildMobileOptimizedFAB() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isSmallMobile = screenWidth < 400;
+
+    if (isMobile) {
+      // Mobile: Compact FAB with icon only
+      return FloatingActionButton(
+        onPressed: () => context.go('/quotes/create'),
+        backgroundColor: ChoiceLuxTheme.richGold,
+        foregroundColor: Colors.black,
+        elevation: 6,
+        child: const Icon(Icons.add, size: 24),
+        tooltip: 'Create Quote',
+      );
+    } else {
+      // Desktop: Extended FAB with label
+      return FloatingActionButton.extended(
+        onPressed: () => context.go('/quotes/create'),
+        backgroundColor: ChoiceLuxTheme.richGold,
+        foregroundColor: Colors.black,
+        icon: const Icon(Icons.add),
+        label: const Text('Create Quote'),
+        elevation: 6,
+      );
+    }
   }
 } 

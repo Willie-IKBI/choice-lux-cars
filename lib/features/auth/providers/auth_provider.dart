@@ -216,6 +216,31 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     state = AsyncValue.data(currentUser);
   }
 
+  // Forgot password methods
+  Future<bool> resetPassword({required String email}) async {
+    try {
+      await _supabaseService.resetPassword(email: email);
+      return true;
+    } catch (error) {
+      print('Reset password error: $error');
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
+      return false;
+    }
+  }
+
+  Future<bool> updatePassword({required String newPassword}) async {
+    try {
+      await _supabaseService.updatePassword(newPassword: newPassword);
+      return true;
+    } catch (error) {
+      print('Update password error: $error');
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
+      return false;
+    }
+  }
+
   User? get currentUser => state.value;
   bool get isAuthenticated => currentUser != null;
   bool get isLoading => state.isLoading;

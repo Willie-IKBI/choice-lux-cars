@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -25,6 +26,7 @@ class CreateQuoteScreen extends ConsumerStatefulWidget {
 
 class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   final _formKey = GlobalKey<FormState>();
+  final _scrollController = ScrollController();
   
   // Controllers
   final _passengerNameController = TextEditingController();
@@ -35,6 +37,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   final _quoteTitleController = TextEditingController();
   final _quoteDescriptionController = TextEditingController();
   final _clientSearchController = TextEditingController();
+  
+  // Focus nodes for better mobile keyboard handling
+  final _passengerNameFocus = FocusNode();
+  final _passengerContactFocus = FocusNode();
+  final _pasCountFocus = FocusNode();
+  final _luggageFocus = FocusNode();
+  final _quoteTitleFocus = FocusNode();
+  final _quoteDescriptionFocus = FocusNode();
+  final _notesFocus = FocusNode();
   
   // Form values
   String? _selectedClientId;
@@ -70,6 +81,25 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     return completedFields / totalFields;
   }
 
+  // Get progress message for mobile
+  String _getProgressMessage() {
+    final completedFields = (_completionPercentage * 8).toInt();
+    
+    if (completedFields == 0) {
+      return 'Start by selecting a client and vehicle';
+    } else if (completedFields <= 2) {
+      return 'Great start! Add driver and location details';
+    } else if (completedFields <= 4) {
+      return 'Almost there! Complete passenger information';
+    } else if (completedFields <= 6) {
+      return 'Nearly complete! Add final details';
+    } else if (completedFields <= 7) {
+      return 'Almost ready! Just a few more fields';
+    } else {
+      return 'Ready to create your quote!';
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -93,7 +123,31 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     _quoteTitleController.dispose();
     _quoteDescriptionController.dispose();
     _clientSearchController.dispose();
+    
+    // Dispose focus nodes
+    _passengerNameFocus.dispose();
+    _passengerContactFocus.dispose();
+    _pasCountFocus.dispose();
+    _luggageFocus.dispose();
+    _quoteTitleFocus.dispose();
+    _quoteDescriptionFocus.dispose();
+    _notesFocus.dispose();
+    
+    // Dispose scroll controller
+    _scrollController.dispose();
+    
     super.dispose();
+  }
+  
+  // Scroll to submit button for mobile keyboard handling
+  void _scrollToSubmitButton() {
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
+        duration: const Duration(milliseconds: 300),
+        curve: Curves.easeInOut,
+      );
+    }
   }
 
   Future<void> _selectJobDate() async {
@@ -193,8 +247,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Get responsive breakpoint
+    // Responsive breakpoints for mobile optimization
     final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isSmallMobile = screenWidth < 400;
+    final isTablet = screenWidth >= 600 && screenWidth < 800;
+    final isDesktop = screenWidth >= 800;
+    final isLargeDesktop = screenWidth >= 1200;
+    
     final maxWidth = _getMaxWidth(screenWidth);
     
     return Scaffold(
@@ -213,168 +273,76 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           final users = ref.watch(usersProvider);
           
           if (vehiclesState.isLoading || users.isEmpty) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-              ),
-            );
+            return _buildMobileLoadingState(isMobile, isSmallMobile);
           }
           
           if (vehiclesState.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
-                  const SizedBox(height: 16),
-                  Text('Error loading vehicles: ${vehiclesState.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
+            return _buildErrorState(vehiclesState.error!, isMobile, isSmallMobile);
           }
           
           return clientsAsync.when(
-            data: (clients) => _buildForm(clients, vehiclesState.vehicles, users),
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-              ),
-            ),
-            error: (error, stack) => Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
-                  const SizedBox(height: 16),
-                  Text('Error loading clients: $error'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () => ref.read(clientsNotifierProvider.notifier).refresh(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            ),
+            data: (clients) => _buildForm(clients, vehiclesState.vehicles, users, isMobile, isSmallMobile),
+            loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
+            error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
           );
         },
       ),
     );
   }
 
-  Widget _buildForm(List<dynamic> clients, List<dynamic> vehicles, List<dynamic> users) {
+  Widget _buildForm(List<dynamic> clients, List<dynamic> vehicles, List<dynamic> users, bool isMobile, bool isSmallMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final maxWidth = _getMaxWidth(screenWidth);
+    
     return Center(
       child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 800),
+        constraints: BoxConstraints(maxWidth: maxWidth),
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
+          controller: _scrollController,
+          padding: EdgeInsets.all(isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Progress indicator
-                Container(
-                  width: double.infinity,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: Colors.grey[200],
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: _completionPercentage,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold,
-                        borderRadius: BorderRadius.circular(4),
-                      ),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  '${(_completionPercentage * 100).toInt()}% Complete',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.grey[600],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                _buildMobileProgressIndicator(isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Client Selection
-                _buildClientSelection(clients),
-                const SizedBox(height: 24),
+                _buildClientSelection(clients, isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Agent Selection (auto-populated from client)
-                _buildAgentSelection(clients),
-                const SizedBox(height: 24),
+                _buildAgentSelection(clients, isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Vehicle Selection
-                _buildVehicleSelection(vehicles),
-                const SizedBox(height: 24),
+                _buildVehicleSelection(vehicles, isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Driver Selection
-                _buildDriverSelection(users),
-                const SizedBox(height: 24),
+                _buildDriverSelection(users, isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Location and Date
-                Row(
-                  children: [
-                    Expanded(child: _buildLocationSelection()),
-                    const SizedBox(width: 16),
-                    Expanded(child: _buildDateSelection()),
-                  ],
-                ),
-                const SizedBox(height: 24),
+                _buildLocationAndDateSection(isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Passenger Details
-                _buildPassengerDetails(),
-                const SizedBox(height: 24),
+                _buildPassengerDetails(isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Quote Details
-                _buildQuoteDetails(),
-                const SizedBox(height: 24),
+                _buildQuoteDetails(isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
 
                 // Notes
-                _buildNotesSection(),
-                const SizedBox(height: 32),
+                _buildNotesSection(isMobile, isSmallMobile),
+                SizedBox(height: isSmallMobile ? 20.0 : isMobile ? 24.0 : 28.0),
 
                 // Submit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : _createQuote,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ChoiceLuxTheme.richGold,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                            ),
-                          )
-                        : const Text(
-                            'Create Quote & Continue to Transport Details',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ),
+                _buildMobileSubmitButton(isMobile, isSmallMobile),
               ],
             ),
           ),
@@ -383,30 +351,290 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     );
   }
 
-  Widget _buildClientSelection(List<dynamic> clients) {
+
+
+  double _getMaxWidth(double screenWidth) {
+    // Responsive max-width calculations for optimal form display
+    if (screenWidth < 400) {
+      // Small mobile: full width with minimal padding
+      return screenWidth - 24;
+    } else if (screenWidth < 600) {
+      // Mobile: full width with comfortable padding
+      return screenWidth - 32;
+    } else if (screenWidth < 768) {
+      // Large mobile/Small tablet: 600px max for better readability
+      return 600;
+    } else if (screenWidth < 1024) {
+      // Tablet: 700px max for optimal form width
+      return 700;
+    } else if (screenWidth < 1200) {
+      // Small desktop: 800px max for comfortable reading
+      return 800;
+    } else if (screenWidth < 1440) {
+      // Desktop: 900px max for optimal form layout
+      return 900;
+    } else {
+      // Large desktop: 1000px max to prevent excessive line length
+      return 1000;
+    }
+  }
+
+  // Helper method to calculate optimal form field widths
+  double _getFormFieldWidth(double screenWidth) {
+    if (screenWidth < 600) {
+      return double.infinity; // Full width on mobile
+    } else if (screenWidth < 900) {
+      return 280; // Fixed width for tablet
+    } else {
+      return 320; // Fixed width for desktop
+    }
+  }
+
+  // Mobile-optimized progress indicator with enhanced features
+  Widget _buildMobileProgressIndicator(bool isMobile, bool isSmallMobile) {
+    final completionPercent = (_completionPercentage * 100).toInt();
+    final isComplete = completionPercent == 100;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Client *',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+        // Progress bar with animation
+        Container(
+          width: double.infinity,
+          height: isSmallMobile ? 6 : isMobile ? 8 : 10,
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 2,
+                offset: const Offset(0, 1),
+              ),
+            ],
+          ),
+          child: Stack(
+            children: [
+              // Background progress
+              FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: _completionPercentage,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: isComplete 
+                          ? [ChoiceLuxTheme.successColor, ChoiceLuxTheme.successColor.withOpacity(0.8)]
+                          : [ChoiceLuxTheme.richGold, ChoiceLuxTheme.richGold.withOpacity(0.8)],
+                    ),
+                    borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
+                    boxShadow: [
+                      BoxShadow(
+                        color: (isComplete ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.richGold).withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 1),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              // Animated shimmer effect for mobile
+              if (isMobile && !isComplete && _completionPercentage > 0)
+                FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: _completionPercentage,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          Colors.transparent,
+                          Colors.white.withOpacity(0.3),
+                          Colors.transparent,
+                        ],
+                        stops: const [0.0, 0.5, 1.0],
+                      ),
+                      borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
+                    ),
+                  ),
+                ),
+            ],
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedClientId,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
+        SizedBox(height: isSmallMobile ? 6 : 8),
+        
+        // Progress text with status
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                isComplete 
+                    ? 'Form Complete! Ready to submit' 
+                    : '$completionPercent% Complete',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                  color: isComplete ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.platinumSilver,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
             ),
-            hintText: 'Select a client',
+            // Status icon
+            if (isComplete)
+              Icon(
+                Icons.check_circle,
+                color: ChoiceLuxTheme.successColor,
+                size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              ),
+          ],
+        ),
+        
+        // Progress details for mobile
+        if (isMobile && !isComplete) ...[
+          SizedBox(height: isSmallMobile ? 4 : 6),
+          Text(
+            _getProgressMessage(),
+            style: TextStyle(
+              fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+              fontStyle: FontStyle.italic,
+            ),
           ),
+        ],
+      ],
+    );
+  }
+
+  // Mobile-optimized loading state
+  Widget _buildMobileLoadingState(bool isMobile, bool isSmallMobile) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              shape: BoxShape.circle,
+            ),
+            child: CircularProgressIndicator(
+              color: ChoiceLuxTheme.richGold,
+              strokeWidth: isMobile ? 2.0 : 3.0,
+            ),
+          ),
+          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          Text(
+            'Loading form data...',
+            style: TextStyle(
+              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontWeight: FontWeight.w500,
+              color: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          Text(
+            'Please wait while we prepare the quote form',
+            style: TextStyle(
+              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile-optimized error state
+  Widget _buildErrorState(Object error, bool isMobile, bool isSmallMobile) {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: EdgeInsets.all(isSmallMobile ? 20 : isMobile ? 24 : 28),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              Icons.error_outline,
+              size: isSmallMobile ? 40 : isMobile ? 48 : 56,
+              color: ChoiceLuxTheme.errorColor,
+            ),
+          ),
+          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          Text(
+            'Error loading form data',
+            style: TextStyle(
+              fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              fontWeight: FontWeight.w500,
+              color: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          Text(
+            error.toString(),
+            style: TextStyle(
+              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+            textAlign: TextAlign.center,
+          ),
+          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          ElevatedButton.icon(
+            onPressed: () {
+              // Refresh data
+              ref.invalidate(vehiclesProvider);
+              ref.invalidate(clientsNotifierProvider);
+            },
+            icon: Icon(
+              Icons.refresh,
+              size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+            ),
+            label: Text(
+              'Retry',
+              style: TextStyle(
+                fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              ),
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallMobile ? 16 : isMobile ? 20 : 24,
+                vertical: isSmallMobile ? 12 : isMobile ? 14 : 16,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Mobile-optimized client selection
+  Widget _buildClientSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Client *',
+          style: TextStyle(
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
+          ),
+        ),
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveDropdown(
+          value: _selectedClientId,
+          hintText: 'Select a client',
           items: clients.map((client) {
             return DropdownMenuItem(
               value: client.id.toString(),
-              child: Text(client.companyName ?? 'Unknown Client'),
+              child: Text(
+                client.companyName ?? 'Unknown Client',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                ),
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -431,12 +659,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             }
             return null;
           },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildAgentSelection(List<dynamic> clients) {
+  // Mobile-optimized agent selection
+  Widget _buildAgentSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
     if (_selectedClientId == null || clients.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -451,26 +682,27 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Agent',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveDropdown(
           value: _selectedAgentId,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            hintText: 'Select an agent (optional)',
-          ),
+          hintText: 'Select an agent (optional)',
           items: agents.map((agent) {
             return DropdownMenuItem(
               value: agent.id.toString(),
-              child: Text(agent.agentName ?? 'Unknown Agent'),
+              child: Text(
+                agent.agentName ?? 'Unknown Agent',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                ),
+              ),
             );
           }).toList(),
           onChanged: (value) {
@@ -478,31 +710,30 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               _selectedAgentId = value;
             });
           },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildVehicleSelection(List<dynamic> vehicles) {
+  // Mobile-optimized vehicle selection
+  Widget _buildVehicleSelection(List<dynamic> vehicles, bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Vehicle *',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveDropdown(
           value: _selectedVehicleId,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            hintText: 'Select a vehicle',
-          ),
+          hintText: 'Select a vehicle',
           items: vehicles.map((vehicle) {
             final isExpired = vehicle.licenseExpiryDate != null && 
                 vehicle.licenseExpiryDate.isBefore(DateTime.now());
@@ -516,14 +747,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       '${vehicle.make} ${vehicle.model} (${vehicle.regPlate})',
                       style: TextStyle(
                         color: isExpired ? ChoiceLuxTheme.errorColor : null,
+                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
                       ),
                     ),
                   ),
                   if (isExpired)
-                    const Icon(
+                    Icon(
                       Icons.warning,
                       color: ChoiceLuxTheme.errorColor,
-                      size: 16,
+                      size: isSmallMobile ? 14 : isMobile ? 16 : 18,
                     ),
                 ],
               ),
@@ -545,12 +777,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             }
             return null;
           },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildDriverSelection(List<dynamic> users) {
+  // Mobile-optimized driver selection
+  Widget _buildDriverSelection(List<dynamic> users, bool isMobile, bool isSmallMobile) {
     final drivers = users.where((user) => 
         user.role?.toLowerCase() == 'driver' && 
         user.status == 'active'
@@ -559,27 +794,23 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Driver *',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveDropdown(
           value: _selectedDriverId,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            hintText: 'Select a driver',
-          ),
+          hintText: 'Select a driver',
           items: drivers.map((driver) {
-                         final isPdpExpired = driver.pdpExpDate != null && 
-                 DateTime.parse(driver.pdpExpDate).isBefore(DateTime.now());
-                         final isLicenseExpired = driver.trafExpDate != null && 
-                 DateTime.parse(driver.trafExpDate).isBefore(DateTime.now());
+            final isPdpExpired = driver.pdpExpDate != null && 
+                DateTime.parse(driver.pdpExpDate).isBefore(DateTime.now());
+            final isLicenseExpired = driver.trafExpDate != null && 
+                DateTime.parse(driver.trafExpDate).isBefore(DateTime.now());
             
             return DropdownMenuItem(
               value: driver.id.toString(),
@@ -590,14 +821,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       '${driver.displayName}',
                       style: TextStyle(
                         color: (isPdpExpired || isLicenseExpired) ? ChoiceLuxTheme.errorColor : null,
+                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
                       ),
                     ),
                   ),
                   if (isPdpExpired || isLicenseExpired)
-                    const Icon(
+                    Icon(
                       Icons.warning,
                       color: ChoiceLuxTheme.errorColor,
-                      size: 16,
+                      size: isSmallMobile ? 14 : isMobile ? 16 : 18,
                     ),
                 ],
               ),
@@ -614,31 +846,53 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             }
             return null;
           },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildLocationSelection() {
+  // Mobile-optimized location and date section
+  Widget _buildLocationAndDateSection(bool isMobile, bool isSmallMobile) {
+    if (isMobile) {
+      // Stack vertically on mobile
+      return Column(
+        children: [
+          _buildLocationSelection(isMobile, isSmallMobile),
+          SizedBox(height: isSmallMobile ? 12 : 16),
+          _buildDateSelection(isMobile, isSmallMobile),
+        ],
+      );
+    } else {
+      // Side by side on desktop
+      return Row(
+        children: [
+          Expanded(child: _buildLocationSelection(isMobile, isSmallMobile)),
+          SizedBox(width: isSmallMobile ? 12 : 16),
+          Expanded(child: _buildDateSelection(isMobile, isSmallMobile)),
+        ],
+      );
+    }
+  }
+
+  // Mobile-optimized location selection
+  Widget _buildLocationSelection(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Location *',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveDropdown(
           value: _selectedLocation,
-          decoration: InputDecoration(
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(8),
-            ),
-            hintText: 'Select location',
-          ),
+          hintText: 'Select location',
           items: const [
             DropdownMenuItem(value: 'Jhb', child: Text('Johannesburg (Jhb)')),
             DropdownMenuItem(value: 'Cpt', child: Text('Cape Town (Cpt)')),
@@ -655,195 +909,719 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             }
             return null;
           },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildDateSelection() {
+  // Mobile-optimized date selection
+  Widget _buildDateSelection(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Job Date *',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
         InkWell(
           onTap: _selectJobDate,
-          child: InputDecorator(
+          child: _buildResponsiveInputDecorator(
             decoration: InputDecoration(
               border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(8),
+                borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
               ),
               hintText: 'Select job date',
-              suffixIcon: const Icon(Icons.calendar_today),
+              suffixIcon: Icon(
+                Icons.calendar_today,
+                size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
             ),
             child: Text(
               _selectedJobDate != null
                   ? '${_selectedJobDate!.day}/${_selectedJobDate!.month}/${_selectedJobDate!.year}'
                   : '',
               style: TextStyle(
-                color: _selectedJobDate != null ? Colors.black : Colors.grey[500],
+                color: _selectedJobDate != null ? ChoiceLuxTheme.softWhite : ChoiceLuxTheme.platinumSilver,
+                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
               ),
             ),
+            isMobile: isMobile,
+            isSmallMobile: isSmallMobile,
           ),
         ),
       ],
     );
   }
 
-  Widget _buildPassengerDetails() {
+  // Mobile-optimized passenger details with enhanced keyboard handling
+  Widget _buildPassengerDetails(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Passenger Details',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _passengerNameController,
-                decoration: const InputDecoration(
+        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        if (isMobile) ...[
+          // Stack vertically on mobile with enhanced keyboard flow
+          _buildResponsiveTextField(
+            controller: _passengerNameController,
+            labelText: 'Passenger Name',
+            focusNode: _passengerNameFocus,
+            textInputAction: TextInputAction.next,
+            isMobile: isMobile,
+            isSmallMobile: isSmallMobile,
+          ),
+          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          _buildResponsiveTextField(
+            controller: _passengerContactController,
+            labelText: 'Contact Number',
+            keyboardType: TextInputType.phone,
+            focusNode: _passengerContactFocus,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(10),
+            ],
+            isMobile: isMobile,
+            isSmallMobile: isSmallMobile,
+          ),
+          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          _buildResponsiveTextField(
+            controller: _pasCountController,
+            labelText: 'Number of Passengers *',
+            keyboardType: TextInputType.number,
+            focusNode: _pasCountFocus,
+            textInputAction: TextInputAction.next,
+            inputFormatters: [
+              FilteringTextInputFormatter.digitsOnly,
+              LengthLimitingTextInputFormatter(2),
+            ],
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter passenger count';
+              }
+              if (double.tryParse(value) == null) {
+                return 'Please enter a valid number';
+              }
+              return null;
+            },
+            isMobile: isMobile,
+            isSmallMobile: isSmallMobile,
+          ),
+          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          _buildResponsiveTextField(
+            controller: _luggageController,
+            labelText: 'Luggage Description *',
+            focusNode: _luggageFocus,
+            textInputAction: TextInputAction.done,
+            maxLength: 100,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter luggage description';
+              }
+              return null;
+            },
+            isMobile: isMobile,
+            isSmallMobile: isSmallMobile,
+          ),
+        ] else ...[
+          // Side by side on desktop with enhanced keyboard flow
+          Row(
+            children: [
+              Expanded(
+                child: _buildResponsiveTextField(
+                  controller: _passengerNameController,
                   labelText: 'Passenger Name',
-                  border: OutlineInputBorder(),
+                  focusNode: _passengerNameFocus,
+                  textInputAction: TextInputAction.next,
+                  isMobile: isMobile,
+                  isSmallMobile: isSmallMobile,
                 ),
               ),
+                        SizedBox(width: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          Expanded(
+            child: _buildResponsiveTextField(
+              controller: _passengerContactController,
+              labelText: 'Contact Number',
+              keyboardType: TextInputType.phone,
+              focusNode: _passengerContactFocus,
+              textInputAction: TextInputAction.next,
+              inputFormatters: [
+                FilteringTextInputFormatter.digitsOnly,
+                LengthLimitingTextInputFormatter(10),
+              ],
+              isMobile: isMobile,
+              isSmallMobile: isSmallMobile,
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _passengerContactController,
-                decoration: const InputDecoration(
-                  labelText: 'Contact Number',
-                  border: OutlineInputBorder(),
-                ),
-                keyboardType: TextInputType.phone,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        Row(
-          children: [
-            Expanded(
-              child: TextFormField(
-                controller: _pasCountController,
-                decoration: const InputDecoration(
+          ),
+        ],
+      ),
+      SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          Row(
+            children: [
+              Expanded(
+                child: _buildResponsiveTextField(
+                  controller: _pasCountController,
                   labelText: 'Number of Passengers *',
-                  border: OutlineInputBorder(),
+                  keyboardType: TextInputType.number,
+                  focusNode: _pasCountFocus,
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(2),
+                  ],
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter passenger count';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid number';
+                    }
+                    return null;
+                  },
+                  isMobile: isMobile,
+                  isSmallMobile: isSmallMobile,
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter passenger count';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Please enter a valid number';
-                  }
-                  return null;
-                },
               ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: TextFormField(
-                controller: _luggageController,
-                decoration: const InputDecoration(
+              SizedBox(width: isSmallMobile ? 8 : isMobile ? 12 : 16),
+              Expanded(
+                child: _buildResponsiveTextField(
+                  controller: _luggageController,
                   labelText: 'Luggage Description *',
-                  border: OutlineInputBorder(),
+                  focusNode: _luggageFocus,
+                  textInputAction: TextInputAction.done,
+                  maxLength: 100,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'Please enter luggage description';
+                    }
+                    return null;
+                  },
+                  isMobile: isMobile,
+                  isSmallMobile: isSmallMobile,
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'Please enter luggage description';
-                  }
-                  return null;
-                },
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
+        ],
       ],
     );
   }
 
-  Widget _buildQuoteDetails() {
+  // Mobile-optimized quote details with enhanced keyboard handling
+  Widget _buildQuoteDetails(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Quote Details',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 16),
-        TextFormField(
+        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        _buildResponsiveTextField(
           controller: _quoteTitleController,
-          decoration: const InputDecoration(
-            labelText: 'Quote Title',
-            border: OutlineInputBorder(),
-            hintText: 'e.g., Airport Transfer - JHB to CPT',
-          ),
+          labelText: 'Quote Title',
+          hintText: 'e.g., Airport Transfer - JHB to CPT',
+          focusNode: _quoteTitleFocus,
+          textInputAction: TextInputAction.next,
+          maxLength: 50,
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
-        const SizedBox(height: 16),
-        TextFormField(
+        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        _buildResponsiveTextField(
           controller: _quoteDescriptionController,
-          decoration: const InputDecoration(
-            labelText: 'Quote Description',
-            border: OutlineInputBorder(),
-            hintText: 'Brief description of the quote',
-          ),
+          labelText: 'Quote Description',
+          hintText: 'Brief description of the quote',
+          focusNode: _quoteDescriptionFocus,
+          textInputAction: TextInputAction.next,
           maxLines: 3,
+          maxLength: 200,
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  Widget _buildNotesSection() {
+  // Mobile-optimized notes section with enhanced keyboard handling
+  Widget _buildNotesSection(bool isMobile, bool isSmallMobile) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
+        Text(
           'Additional Notes',
           style: TextStyle(
-            fontSize: 16,
+            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
             fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: 8),
-        TextFormField(
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        _buildResponsiveTextField(
           controller: _notesController,
-          decoration: const InputDecoration(
-            labelText: 'Notes',
-            border: OutlineInputBorder(),
-            hintText: 'Flight details, special requirements, etc.',
-          ),
+          labelText: 'Notes',
+          hintText: 'Flight details, special requirements, etc.',
+          focusNode: _notesFocus,
+          textInputAction: TextInputAction.done,
           maxLines: 4,
+          maxLength: 500,
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
         ),
       ],
     );
   }
 
-  double _getMaxWidth(double screenWidth) {
-    if (screenWidth < 600) {
-      return screenWidth - 32; // Mobile: full width minus padding
-    } else if (screenWidth < 900) {
-      return 600; // Tablet: 600px max
-    } else if (screenWidth < 1200) {
-      return 800; // Small desktop: 800px max
-    } else {
-      return 1000; // Large desktop: 1000px max
+  // Mobile-optimized submit button with validation feedback
+  Widget _buildMobileSubmitButton(bool isMobile, bool isSmallMobile) {
+    return Column(
+      children: [
+        // Validation summary for mobile
+        if (isMobile) _buildMobileValidationSummary(isMobile, isSmallMobile),
+        SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: _isSubmitting ? null : _createQuote,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(
+                vertical: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+              ),
+              minimumSize: Size(0, isSmallMobile ? 44 : isMobile ? 48 : 52),
+            ),
+            child: _isSubmitting
+                ? SizedBox(
+                    height: isSmallMobile ? 18 : isMobile ? 20 : 22,
+                    width: isSmallMobile ? 18 : isMobile ? 20 : 22,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                    ),
+                  )
+                : Text(
+                    isMobile ? 'Create Quote & Continue' : 'Create Quote & Continue to Transport Details',
+                    style: TextStyle(
+                      fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  // Mobile validation summary widget
+  Widget _buildMobileValidationSummary(bool isMobile, bool isSmallMobile) {
+    return FormField<String>(
+      builder: (FormFieldState<String> field) {
+        // This will be populated by the form validation
+        return const SizedBox.shrink();
+      },
+    );
+  }
+
+  // Mobile-specific validation helpers
+  String? _validateRequiredField(String? value, String fieldName, bool isMobile) {
+    if (value == null || value.trim().isEmpty) {
+      return isMobile 
+          ? '$fieldName is required' 
+          : 'Please enter $fieldName';
     }
+    return null;
+  }
+
+  String? _validateNumberField(String? value, String fieldName, bool isMobile) {
+    final requiredError = _validateRequiredField(value, fieldName, isMobile);
+    if (requiredError != null) return requiredError;
+    
+    if (double.tryParse(value!) == null) {
+      return isMobile 
+          ? '$fieldName must be a valid number' 
+          : 'Please enter a valid number for $fieldName';
+    }
+    return null;
+  }
+
+  String? _validatePhoneField(String? value, String fieldName, bool isMobile) {
+    if (value == null || value.trim().isEmpty) return null; // Optional field
+    
+    // Basic phone validation for South African numbers
+    final phoneRegex = RegExp(r'^(\+27|0)[6-8][0-9]{8}$');
+    if (!phoneRegex.hasMatch(value.replaceAll(RegExp(r'[\s\-\(\)]'), ''))) {
+      return isMobile 
+          ? 'Please enter a valid SA phone number' 
+          : 'Please enter a valid South African phone number';
+    }
+    return null;
+  }
+
+  String? _validateDateField(DateTime? value, String fieldName, bool isMobile) {
+    if (value == null) {
+      return isMobile 
+          ? '$fieldName is required' 
+          : 'Please select $fieldName';
+    }
+    
+    if (value.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
+      return isMobile 
+          ? '$fieldName cannot be in the past' 
+          : 'Please select a future date for $fieldName';
+    }
+    return null;
+  }
+
+  // Responsive dropdown helper with mobile validation feedback
+  Widget _buildResponsiveDropdown({
+    required String? value,
+    required String hintText,
+    required List<DropdownMenuItem<String>> items,
+    required ValueChanged<String?> onChanged,
+    String? Function(String?)? validator,
+    required bool isMobile,
+    required bool isSmallMobile,
+  }) {
+    return FormField<String>(
+      validator: validator,
+      builder: (FormFieldState<String> field) {
+        final hasError = field.hasError;
+        final errorText = field.errorText;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.charcoalGray,
+                borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+                border: Border.all(
+                  color: hasError 
+                      ? ChoiceLuxTheme.errorColor 
+                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  width: hasError ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: hasError 
+                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+                    blurRadius: hasError ? 8 : 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: DropdownButtonFormField<String>(
+                value: value,
+                isExpanded: true,
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isSmallMobile ? 12 : 16,
+                    vertical: isSmallMobile ? 12 : 16,
+                  ),
+                  suffixIcon: hasError 
+                      ? Icon(
+                          Icons.error_outline,
+                          color: ChoiceLuxTheme.errorColor,
+                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        )
+                      : null,
+                ),
+                dropdownColor: ChoiceLuxTheme.charcoalGray,
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                ),
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: hasError 
+                      ? ChoiceLuxTheme.errorColor
+                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  size: isSmallMobile ? 20 : isMobile ? 24 : 28,
+                ),
+                items: items,
+                onChanged: (newValue) {
+                  onChanged(newValue);
+                  field.didChange(newValue);
+                  field.validate();
+                },
+              ),
+            ),
+            if (hasError && errorText != null) ...[
+              SizedBox(height: isSmallMobile ? 6 : 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: ChoiceLuxTheme.errorColor,
+                    size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.errorColor,
+                        fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // Responsive text field helper with mobile validation feedback and enhanced keyboard handling
+  Widget _buildResponsiveTextField({
+    required TextEditingController controller,
+    required String labelText,
+    String? hintText,
+    TextInputType? keyboardType,
+    int? maxLines,
+    String? Function(String?)? validator,
+    required bool isMobile,
+    required bool isSmallMobile,
+    TextInputAction? textInputAction,
+    FocusNode? focusNode,
+    VoidCallback? onTap,
+    bool enabled = true,
+    bool readOnly = false,
+    int? maxLength,
+    String? counterText,
+    List<TextInputFormatter>? inputFormatters,
+  }) {
+    return FormField<String>(
+      validator: validator,
+      builder: (FormFieldState<String> field) {
+        final hasError = field.hasError;
+        final errorText = field.errorText;
+        
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.charcoalGray,
+                borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+                border: Border.all(
+                  color: hasError 
+                      ? ChoiceLuxTheme.errorColor 
+                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  width: hasError ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: hasError 
+                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+                    blurRadius: hasError ? 8 : 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: TextFormField(
+                controller: controller,
+                focusNode: focusNode,
+                keyboardType: keyboardType,
+                textInputAction: textInputAction,
+                maxLines: maxLines ?? 1,
+                maxLength: maxLength,
+                enabled: enabled,
+                readOnly: readOnly,
+                inputFormatters: inputFormatters,
+                onTap: onTap,
+                decoration: InputDecoration(
+                  labelText: labelText,
+                  hintText: hintText,
+                  counterText: counterText,
+                  labelStyle: TextStyle(
+                    color: hasError 
+                        ? ChoiceLuxTheme.errorColor
+                        : ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  ),
+                  hintStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  ),
+                  counterStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isSmallMobile ? 12 : 16,
+                    vertical: isSmallMobile ? 12 : 16,
+                  ),
+                  suffixIcon: hasError 
+                      ? Icon(
+                          Icons.error_outline,
+                          color: ChoiceLuxTheme.errorColor,
+                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        )
+                      : null,
+                ),
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                ),
+                onChanged: (value) {
+                  field.didChange(value);
+                  field.validate();
+                },
+                onFieldSubmitted: (value) {
+                  // Handle field submission for better mobile flow
+                  if (textInputAction == TextInputAction.next) {
+                    // Focus next field
+                    FocusScope.of(context).nextFocus();
+                  } else if (textInputAction == TextInputAction.done) {
+                    // Hide keyboard and submit form
+                    FocusScope.of(context).unfocus();
+                    if (isMobile) {
+                      // On mobile, scroll to submit button
+                      _scrollToSubmitButton();
+                    }
+                  }
+                },
+              ),
+            ),
+            if (hasError && errorText != null) ...[
+              SizedBox(height: isSmallMobile ? 6 : 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: ChoiceLuxTheme.errorColor,
+                    size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.errorColor,
+                        fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
+    );
+  }
+
+  // Responsive input decorator helper with mobile validation feedback
+  Widget _buildResponsiveInputDecorator({
+    required InputDecoration decoration,
+    required Widget child,
+    required bool isMobile,
+    required bool isSmallMobile,
+    bool hasError = false,
+    String? errorText,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.charcoalGray,
+            borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+            border: Border.all(
+              color: hasError 
+                  ? ChoiceLuxTheme.errorColor 
+                  : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              width: hasError ? 2 : 1,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: hasError 
+                    ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
+                    : Colors.black.withOpacity(0.1),
+                blurRadius: hasError ? 8 : 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: InputDecorator(
+            decoration: decoration.copyWith(
+              border: InputBorder.none,
+              contentPadding: EdgeInsets.symmetric(
+                horizontal: isSmallMobile ? 12 : 16,
+                vertical: isSmallMobile ? 12 : 16,
+              ),
+              suffixIcon: hasError 
+                  ? Icon(
+                      Icons.error_outline,
+                      color: ChoiceLuxTheme.errorColor,
+                      size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                    )
+                  : decoration.suffixIcon,
+            ),
+            child: child,
+          ),
+        ),
+        if (hasError && errorText != null) ...[
+          SizedBox(height: isSmallMobile ? 6 : 8),
+          Row(
+            children: [
+              Icon(
+                Icons.error_outline,
+                color: ChoiceLuxTheme.errorColor,
+                size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              ),
+              SizedBox(width: isSmallMobile ? 6 : 8),
+              Expanded(
+                child: Text(
+                  errorText,
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.errorColor,
+                    fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
   }
 }

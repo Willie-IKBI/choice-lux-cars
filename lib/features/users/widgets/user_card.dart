@@ -32,14 +32,24 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    // Responsive breakpoints for mobile optimization
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isSmallMobile = screenWidth < 400;
+    
+    // Responsive sizing
+    final avatarRadius = isSmallMobile ? 20.0 : isMobile ? 22.0 : 24.0;
+    final avatarIconSize = isSmallMobile ? 24.0 : isMobile ? 26.0 : 28.0;
+    final cardPadding = isSmallMobile ? 12.0 : isMobile ? 14.0 : 16.0;
+    final cardMargin = isSmallMobile ? 4.0 : isMobile ? 6.0 : 8.0;
+    
     final user = widget.user;
     final status = _statusInfo(user);
     final avatar = CircleAvatar(
-      radius: 24,
+      radius: avatarRadius,
       backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
       backgroundImage: user.profileImage != null && user.profileImage!.isNotEmpty ? NetworkImage(user.profileImage!) : null,
-      child: user.profileImage == null || user.profileImage!.isEmpty ? Icon(Icons.person, color: ChoiceLuxTheme.richGold, size: 28) : null,
+      child: user.profileImage == null || user.profileImage!.isEmpty ? Icon(Icons.person, color: ChoiceLuxTheme.richGold, size: avatarIconSize) : null,
     );
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
@@ -48,36 +58,55 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
         opacity: _fadeAnimation,
         child: Card(
           elevation: _isHovered ? 6 : 2,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12), side: _isHovered ? BorderSide(color: ChoiceLuxTheme.richGold.withOpacity(0.3), width: 1) : BorderSide.none),
-          margin: const EdgeInsets.symmetric(vertical: 6, horizontal: 0),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12), 
+            side: _isHovered ? BorderSide(color: ChoiceLuxTheme.richGold.withOpacity(0.3), width: 1) : BorderSide.none
+          ),
+          margin: EdgeInsets.symmetric(vertical: cardMargin, horizontal: 0),
           clipBehavior: Clip.antiAlias,
-          child: InkWell(
-            onTap: widget.onTap,
-            splashColor: ChoiceLuxTheme.richGold.withOpacity(0.08),
-            highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.04),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              child: isMobile
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: cardPadding, vertical: cardPadding - 2),
+                child: isMobile
                   ? Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
-                          children: [avatar, const SizedBox(width: 12), Expanded(child: _userInfo(user, isMobile)), _statusChip(status)],
+                          children: [
+                            avatar, 
+                            SizedBox(width: isSmallMobile ? 10 : 12), 
+                            Expanded(child: _userInfo(user, isMobile, isSmallMobile)), 
+                            _statusChip(status, isSmallMobile)
+                          ],
                         ),
-                        const SizedBox(height: 8),
-                        Align(alignment: Alignment.centerRight, child: Icon(Icons.chevron_right, color: ChoiceLuxTheme.platinumSilver)),
+                        SizedBox(height: isSmallMobile ? 6 : 8),
+                        Align(
+                          alignment: Alignment.centerRight, 
+                          child: Icon(
+                            Icons.chevron_right, 
+                            color: ChoiceLuxTheme.platinumSilver,
+                            size: isSmallMobile ? 20 : 24,
+                          )
+                        ),
                       ],
                     )
                   : Row(
                       children: [
                         avatar,
                         const SizedBox(width: 16),
-                        Expanded(child: _userInfo(user, isMobile)),
-                        _statusChip(status),
+                        Expanded(child: _userInfo(user, isMobile, isSmallMobile)),
+                        _statusChip(status, isSmallMobile),
                         const SizedBox(width: 8),
                         Icon(Icons.chevron_right, color: ChoiceLuxTheme.platinumSilver),
                       ],
                     ),
+              ),
             ),
           ),
         ),
@@ -85,28 +114,61 @@ class _UserCardState extends State<UserCard> with SingleTickerProviderStateMixin
     );
   }
 
-  Widget _userInfo(User user, bool isMobile) {
+  Widget _userInfo(User user, bool isMobile, bool isSmallMobile) {
+    final titleSize = isSmallMobile ? 16.0 : isMobile ? 18.0 : 20.0;
+    final subtitleSize = isSmallMobile ? 12.0 : isMobile ? 13.0 : 14.0;
+    final detailSize = isSmallMobile ? 11.0 : isMobile ? 12.0 : 13.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(user.displayName, style: Theme.of(context).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold)),
-        const SizedBox(height: 2),
-        Text(_titleCase(user.role ?? 'Unassigned'), style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: ChoiceLuxTheme.platinumSilver, fontSize: 13)),
+        Text(
+          user.displayName, 
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            fontWeight: FontWeight.bold,
+            fontSize: titleSize,
+          )
+        ),
+        SizedBox(height: isSmallMobile ? 1 : 2),
+        Text(
+          _titleCase(user.role ?? 'Unassigned'), 
+          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+            color: ChoiceLuxTheme.platinumSilver, 
+            fontSize: subtitleSize
+          )
+        ),
         if ((user.userEmail.isNotEmpty || (user.number?.isNotEmpty ?? false)))
           Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: Text(user.userEmail.isNotEmpty ? user.userEmail : (user.number ?? ''), style: Theme.of(context).textTheme.bodySmall?.copyWith(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7), fontSize: 12)),
+            padding: EdgeInsets.only(top: isSmallMobile ? 1 : 2),
+            child: Text(
+              user.userEmail.isNotEmpty ? user.userEmail : (user.number ?? ''), 
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7), 
+                fontSize: detailSize
+              )
+            ),
           ),
       ],
     );
   }
 
-  Widget _statusChip(_StatusInfo status) {
+  Widget _statusChip(_StatusInfo status, bool isSmallMobile) {
+    final fontSize = isSmallMobile ? 10.0 : 12.0;
+    final padding = isSmallMobile ? 6.0 : 8.0;
+    
     return Chip(
-      label: Text(status.label, style: TextStyle(color: status.textColor, fontWeight: FontWeight.w600, fontSize: 12)),
+      label: Text(
+        status.label, 
+        style: TextStyle(
+          color: status.textColor, 
+          fontWeight: FontWeight.w600, 
+          fontSize: fontSize
+        )
+      ),
       backgroundColor: status.color,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 0),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 0),
+      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 

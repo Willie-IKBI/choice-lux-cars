@@ -22,42 +22,72 @@ class ResponsiveGrid extends StatelessWidget {
       builder: (context, constraints) {
         final availableWidth = maxWidth ?? constraints.maxWidth;
         
-        // Card width from JobCard design tokens
-        const double cardWidth = 380.0;
-        const double cardMargin = 16.0; // 8px margin on each side
-        const double gridSpacing = 16.0;
+        // Responsive breakpoints for mobile optimization
+        final isMobile = availableWidth < 600;
+        final isSmallMobile = availableWidth < 400;
+        final isTablet = availableWidth >= 600 && availableWidth < 800;
+        final isDesktop = availableWidth >= 800;
+        final isLargeDesktop = availableWidth >= 1200;
         
-        // Calculate how many cards can fit in the available width
-        final effectiveCardWidth = cardWidth + cardMargin * 2; // Card + margins
-        final availableSpaceForCards = availableWidth - (gridSpacing * 2); // Account for grid padding
-        final maxCardsPerRow = (availableSpaceForCards / (effectiveCardWidth + gridSpacing)).floor();
+        // Mobile-optimized grid configuration
+        int crossAxisCount;
+        double gridSpacing;
+        EdgeInsets gridPadding;
         
-        // Ensure at least 1 column and cap at 4 columns for very large screens
-        final crossAxisCount = maxCardsPerRow.clamp(1, 4);
+        if (isSmallMobile) {
+          // Small mobile: 1 column, compact spacing
+          crossAxisCount = 1;
+          gridSpacing = 8.0;
+          gridPadding = const EdgeInsets.all(8.0);
+        } else if (isMobile) {
+          // Mobile: 1-2 columns, moderate spacing
+          crossAxisCount = availableWidth < 500 ? 1 : 2;
+          gridSpacing = 12.0;
+          gridPadding = const EdgeInsets.all(12.0);
+        } else if (isTablet) {
+          // Tablet: 2 columns, standard spacing
+          crossAxisCount = 2;
+          gridSpacing = 16.0;
+          gridPadding = const EdgeInsets.all(16.0);
+        } else if (isDesktop) {
+          // Desktop: 3 columns, generous spacing
+          crossAxisCount = 3;
+          gridSpacing = 20.0;
+          gridPadding = const EdgeInsets.all(20.0);
+        } else {
+          // Large desktop: 4 columns, premium spacing
+          crossAxisCount = 4;
+          gridSpacing = 24.0;
+          gridPadding = const EdgeInsets.all(24.0);
+        }
         
-        // Debug logging
-        print('ResponsiveGrid - Available width: $availableWidth');
-        print('ResponsiveGrid - Effective card width: $effectiveCardWidth');
-        print('ResponsiveGrid - Available space for cards: $availableSpaceForCards');
-        print('ResponsiveGrid - Max cards per row: $maxCardsPerRow');
-        print('ResponsiveGrid - Final column count: $crossAxisCount');
-        
-        // Use GridView with calculated cross axis count
+        // Use GridView with mobile-optimized configuration
         return GridView.builder(
-          padding: padding ?? EdgeInsets.all(gridSpacing),
+          padding: padding ?? gridPadding,
           shrinkWrap: shrinkWrap,
-          physics: physics,
+          physics: physics ?? (isMobile ? const AlwaysScrollableScrollPhysics() : null),
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
             crossAxisCount: crossAxisCount,
             crossAxisSpacing: gridSpacing,
             mainAxisSpacing: gridSpacing,
-            // Let cards size themselves naturally
+            childAspectRatio: _getChildAspectRatio(isMobile, isSmallMobile),
           ),
           itemCount: children.length,
           itemBuilder: (context, index) => children[index],
         );
       },
     );
+  }
+
+  double _getChildAspectRatio(bool isMobile, bool isSmallMobile) {
+    // Mobile-optimized aspect ratios for better card proportions
+    if (isSmallMobile) {
+      return 1.2; // More compact for small screens
+    } else if (isMobile) {
+      return 1.4; // Slightly taller for mobile
+    } else {
+      return 1.6; // Standard aspect ratio for larger screens
+    }
   }
 }
 
