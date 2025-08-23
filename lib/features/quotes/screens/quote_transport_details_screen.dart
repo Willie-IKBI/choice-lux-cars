@@ -32,6 +32,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
   final _amountController = TextEditingController();
   final _notesController = TextEditingController();
   DateTime? _selectedPickupDate;
+  TimeOfDay? _selectedPickupTime;
 
   // Edit mode
   QuoteTransportDetail? _editingTransport;
@@ -99,6 +100,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     _amountController.text = transport.amount.toString();
     _notesController.text = transport.notes ?? '';
     _selectedPickupDate = transport.pickupDate;
+    _selectedPickupTime = TimeOfDay.fromDateTime(transport.pickupDate);
     
     _showTransportDialog();
   }
@@ -155,25 +157,53 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                   ),
                   const SizedBox(height: 16),
                   
-                  // Pickup Date
-                  InkWell(
-                    onTap: () => _selectDate(context),
-                    child: InputDecorator(
-                      decoration: const InputDecoration(
-                        labelText: 'Pickup Date *',
-                        border: OutlineInputBorder(),
-                      ),
-                      child: Text(
-                        _selectedPickupDate != null
-                            ? '${_selectedPickupDate!.day}/${_selectedPickupDate!.month}/${_selectedPickupDate!.year}'
-                            : 'Select Date',
-                        style: TextStyle(
-                          color: _selectedPickupDate != null
-                              ? ChoiceLuxTheme.softWhite
-                              : ChoiceLuxTheme.platinumSilver,
+                  // Pickup Date and Time
+                  Row(
+                    children: [
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectDate(context),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Pickup Date *',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              _selectedPickupDate != null
+                                  ? '${_selectedPickupDate!.day}/${_selectedPickupDate!.month}/${_selectedPickupDate!.year}'
+                                  : 'Select Date',
+                              style: TextStyle(
+                                color: _selectedPickupDate != null
+                                    ? ChoiceLuxTheme.softWhite
+                                    : ChoiceLuxTheme.platinumSilver,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _selectTime(context),
+                          child: InputDecorator(
+                            decoration: const InputDecoration(
+                              labelText: 'Pickup Time *',
+                              border: OutlineInputBorder(),
+                            ),
+                            child: Text(
+                              _selectedPickupTime != null
+                                  ? _selectedPickupTime!.format(context)
+                                  : 'Select Time',
+                              style: TextStyle(
+                                color: _selectedPickupTime != null
+                                    ? ChoiceLuxTheme.softWhite
+                                    : ChoiceLuxTheme.platinumSilver,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 16),
                   
@@ -263,17 +293,64 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
         );
       },
     );
-    if (picked != null && picked != _selectedPickupDate) {
-      setState(() => _selectedPickupDate = picked);
+    if (picked != null) {
+      setState(() {
+        _selectedPickupDate = picked;
+        // If we have a time selected, combine it with the new date
+        if (_selectedPickupTime != null) {
+          _selectedPickupDate = DateTime(
+            picked.year,
+            picked.month,
+            picked.day,
+            _selectedPickupTime!.hour,
+            _selectedPickupTime!.minute,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _selectTime(BuildContext context) async {
+    final TimeOfDay? picked = await showTimePicker(
+      context: context,
+      initialTime: _selectedPickupTime ?? TimeOfDay.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: ChoiceLuxTheme.richGold,
+              onPrimary: Colors.black,
+              surface: ChoiceLuxTheme.charcoalGray,
+              onSurface: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
+      setState(() {
+        _selectedPickupTime = picked;
+        // If we have a date selected, combine it with the new time
+        if (_selectedPickupDate != null) {
+          _selectedPickupDate = DateTime(
+            _selectedPickupDate!.year,
+            _selectedPickupDate!.month,
+            _selectedPickupDate!.day,
+            picked.hour,
+            picked.minute,
+          );
+        }
+      });
     }
   }
 
   Future<void> _saveTransport() async {
     if (!_formKey.currentState!.validate()) return;
-    if (_selectedPickupDate == null) {
+    if (_selectedPickupDate == null || _selectedPickupTime == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('Please select a pickup date'),
+          content: Text('Please select both pickup date and time'),
           backgroundColor: ChoiceLuxTheme.errorColor,
         ),
       );
@@ -343,6 +420,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     _amountController.clear();
     _notesController.clear();
     _selectedPickupDate = null;
+    _selectedPickupTime = null;
   }
 
   Future<void> _deleteTransport(QuoteTransportDetail transport) async {
