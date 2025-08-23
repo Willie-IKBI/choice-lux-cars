@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
@@ -77,10 +78,20 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         
         if (event == AuthChangeEvent.signedIn && session != null) {
           state = AsyncValue.data(session.user);
+          
           // Handle FCM token update for newly signed in user
           _handleFCMTokenUpdate(session.user.id);
         } else if (event == AuthChangeEvent.signedOut) {
           state = const AsyncValue.data(null);
+        } else if (event == AuthChangeEvent.passwordRecovery) {
+          // Handle password recovery event - user clicked reset link
+          print('Password recovery event detected - user should be redirected to reset password screen');
+          // The user is now authenticated with a recovery session
+          if (session != null) {
+            state = AsyncValue.data(session.user);
+            // Set password recovery state
+            setPasswordRecovery(true);
+          }
         }
       }, onError: (error) {
         print('Auth state change error: $error');
@@ -220,6 +231,9 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   Future<bool> resetPassword({required String email}) async {
     try {
       await _supabaseService.resetPassword(email: email);
+      // Set password recovery flag when reset is requested
+      setPasswordRecovery(true);
+      print('Password recovery requested for: $email');
       return true;
     } catch (error) {
       print('Reset password error: $error');
@@ -244,6 +258,17 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   User? get currentUser => state.value;
   bool get isAuthenticated => currentUser != null;
   bool get isLoading => state.isLoading;
+
+  // Track password recovery state
+  bool _isPasswordRecovery = false;
+  bool get isPasswordRecovery => _isPasswordRecovery;
+
+  // Set password recovery state
+  void setPasswordRecovery(bool isRecovery) {
+    _isPasswordRecovery = isRecovery;
+  }
+
+
 }
 
 // User Profile Notifier

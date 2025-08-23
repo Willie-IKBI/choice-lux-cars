@@ -138,16 +138,23 @@ class SupabaseService {
   }
 
   Future<void> deactivateUser(String userId) async {
-    await supabase
-        .from('profiles')
-        .update({'status': 'deactivated', 'deleted_at': DateTime.now().toIso8601String()})
-        .eq('id', userId);
+    print('SupabaseService.deactivateUser called for userId: $userId');
+    try {
+      await supabase
+          .from('profiles')
+          .update({'status': 'deactivated'})
+          .eq('id', userId);
+      print('Supabase deactivateUser query completed successfully');
+    } catch (error) {
+      print('Error in SupabaseService.deactivateUser: $error');
+      rethrow;
+    }
   }
 
   Future<void> reactivateUser(String userId) async {
     await supabase
         .from('profiles')
-        .update({'status': 'active', 'deleted_at': null})
+        .update({'status': 'active'})
         .eq('id', userId);
   }
 
@@ -326,6 +333,16 @@ class SupabaseService {
     return List<Map<String, dynamic>>.from(response);
   }
 
+  // Get quotes by client
+  Future<List<Map<String, dynamic>>> getQuotesByClient(String clientId) async {
+    final response = await supabase
+        .from('quotes')
+        .select('*, clients(*)')
+        .eq('client_id', int.parse(clientId))
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
   Future<Map<String, dynamic>?> getQuote(String quoteId) async {
     final response = await supabase
         .from('quotes')
@@ -410,6 +427,47 @@ class SupabaseService {
         .select('*')
         .order('created_at', ascending: false);
     return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get jobs by client
+  Future<List<Map<String, dynamic>>> getJobsByClient(String clientId) async {
+    final response = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('client_id', int.parse(clientId))
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get completed jobs by client
+  Future<List<Map<String, dynamic>>> getCompletedJobsByClient(String clientId) async {
+    final response = await supabase
+        .from('jobs')
+        .select('*')
+        .eq('client_id', int.parse(clientId))
+        .eq('job_status', 'completed')
+        .order('created_at', ascending: false);
+    return List<Map<String, dynamic>>.from(response);
+  }
+
+  // Get completed jobs revenue by client
+  Future<double> getCompletedJobsRevenueByClient(String clientId) async {
+    final response = await supabase
+        .from('jobs')
+        .select('amount')
+        .eq('client_id', int.parse(clientId))
+        .eq('job_status', 'completed');
+    
+    if (response == null || response.isEmpty) return 0.0;
+    
+    double totalRevenue = 0.0;
+    for (final job in response) {
+      final amount = job['amount'];
+      if (amount != null) {
+        totalRevenue += (amount is int) ? amount.toDouble() : amount;
+      }
+    }
+    return totalRevenue;
   }
 
   Future<List<Map<String, dynamic>>> getJobsByDriver(String driverId) async {

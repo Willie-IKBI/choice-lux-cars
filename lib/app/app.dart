@@ -57,6 +57,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
+    final authNotifier = ref.read(authProvider.notifier);
     
     return MaterialApp.router(
       title: 'Choice Lux Cars',
@@ -64,11 +65,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
       darkTheme: ChoiceLuxTheme.darkTheme,
       themeMode: ThemeMode.dark,
       debugShowCheckedModeBanner: false,
-      routerConfig: _buildRouter(authState, userProfile),
+      routerConfig: _buildRouter(authState, userProfile, authNotifier),
     );
   }
 
-  GoRouter _buildRouter(AsyncValue authState, userProfile) {
+  GoRouter _buildRouter(AsyncValue authState, userProfile, AuthNotifier authNotifier) {
     return GoRouter(
       initialLocation: '/login',
       redirect: (context, state) {
@@ -82,46 +83,58 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           return null; // Don't redirect on error, let the UI handle it
         }
 
-        final isAuthenticated = authState.value != null;
-        final isLoginRoute = state.matchedLocation == '/login';
-        final isSignupRoute = state.matchedLocation == '/signup';
-        final isForgotPasswordRoute = state.matchedLocation == '/forgot-password';
-        final isResetPasswordRoute = state.matchedLocation == '/reset-password';
-        final isPendingApprovalRoute = state.matchedLocation == '/pending-approval';
+                 final isAuthenticated = authState.value != null;
+         final isLoginRoute = state.matchedLocation == '/login';
+         final isSignupRoute = state.matchedLocation == '/signup';
+         final isForgotPasswordRoute = state.matchedLocation == '/forgot-password';
+         final isResetPasswordRoute = state.matchedLocation == '/reset-password';
+         final isPendingApprovalRoute = state.matchedLocation == '/pending-approval';
 
-        // If not authenticated, redirect to login (except for auth routes)
-        if (!isAuthenticated) {
-          if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isResetPasswordRoute) {
-            return null; // Allow access to auth routes
-          }
-          return '/login';
-        }
+         // If not authenticated, redirect to login (except for auth routes)
+         if (!isAuthenticated) {
+           if (isLoginRoute || isSignupRoute || isForgotPasswordRoute) {
+             return null; // Allow access to auth routes
+           }
+           return '/login';
+         }
 
-        // If authenticated, check role
-        if (isAuthenticated && userProfile != null) {
-          final userRole = userProfile.role;
-          final isUnassigned = userRole == null || userRole == 'unassigned';
+         // If authenticated, check role
+         if (isAuthenticated && userProfile != null) {
+           final userRole = userProfile.role;
+           final isUnassigned = userRole == null || userRole == 'unassigned';
 
-          // If user is unassigned, redirect to pending approval (except for pending approval route)
-          if (isUnassigned) {
-            if (isPendingApprovalRoute) {
-              return null; // Allow access to pending approval route
-            }
-            return '/pending-approval';
-          }
+           // If user is unassigned, redirect to pending approval (except for pending approval route)
+           if (isUnassigned) {
+             if (isPendingApprovalRoute) {
+               return null; // Allow access to pending approval route
+             }
+             return '/pending-approval';
+           }
 
-          // If user is assigned but on auth routes, redirect to dashboard
-          // EXCEPT for reset-password route which should be accessible even when authenticated
-          if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isPendingApprovalRoute) {
-            return '/';
-          }
-          // Allow access to reset-password route even when authenticated
-          if (isResetPasswordRoute) {
-            return null;
-          }
-        }
+           // If user is assigned but on auth routes, redirect to dashboard
+           if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isPendingApprovalRoute) {
+             return '/';
+           }
+         }
 
-        return null; // No redirect needed
+                  // Check if user is in password recovery mode
+         if (authNotifier.isPasswordRecovery && isAuthenticated) {
+           // If user is in password recovery and not on reset password page, redirect there
+           if (!isResetPasswordRoute) {
+             print('Router - Redirecting to reset password due to password recovery state');
+             return '/reset-password';
+           }
+           // Don't clear the recovery state here - let the reset password screen handle it
+           // after successful password reset or when user navigates away
+           return null; // Allow access to reset password page
+         }
+
+         // Allow access to reset-password route for authenticated users (password recovery flow)
+         if (isResetPasswordRoute && isAuthenticated) {
+           return null;
+         }
+
+         return null; // No redirect needed
       },
       routes: [
         // Authentication routes
@@ -140,17 +153,13 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           name: 'forgot_password',
           builder: (context, state) => const ForgotPasswordScreen(),
         ),
-        GoRoute(
-          path: '/reset-password',
-          name: 'reset_password',
-          builder: (context, state) => const ResetPasswordScreen(),
-        ),
-        GoRoute(
-          path: '/reset-password/:token',
-          name: 'reset_password_with_token',
-          builder: (context, state) => const ResetPasswordScreen(),
-        ),
-        GoRoute(
+                 GoRoute(
+           path: '/reset-password',
+           name: 'reset_password',
+           builder: (context, state) => const ResetPasswordScreen(),
+         ),
+         
+         GoRoute(
           path: '/pending-approval',
           name: 'pending_approval',
           builder: (context, state) => const PendingApprovalScreen(),

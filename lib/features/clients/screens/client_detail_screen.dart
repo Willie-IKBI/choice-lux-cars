@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
+import 'package:choice_lux_cars/features/clients/providers/client_stats_provider.dart';
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import '../../../shared/widgets/luxury_app_bar.dart';
@@ -110,12 +111,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
       child: Row(
         children: [
-          // Company Logo - Circular Style
+          // Company Logo - Rounded Square Style (matching client list)
           Container(
             width: isMobile ? 70 : 90,
             height: isMobile ? 70 : 90,
             decoration: BoxDecoration(
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(8),
               color: ChoiceLuxTheme.richGold.withOpacity(0.1),
               border: Border.all(
                 color: ChoiceLuxTheme.richGold.withOpacity(0.3),
@@ -130,10 +131,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               ],
             ),
             child: client.companyLogo != null
-                ? ClipOval(
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
                     child: Image.network(
                       client.companyLogo!,
                       fit: BoxFit.cover,
+                      width: double.infinity,
+                      height: double.infinity,
                       errorBuilder: (context, error, stackTrace) =>
                           _buildLogoPlaceholder(),
                     ),
@@ -221,6 +225,28 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     );
   }
 
+  // Helper method to format currency with comma separators
+  String _formatCurrency(dynamic amount) {
+    if (amount == null) return 'R0';
+    
+    double value;
+    if (amount is int) {
+      value = amount.toDouble();
+    } else if (amount is double) {
+      value = amount;
+    } else {
+      value = double.tryParse(amount.toString()) ?? 0.0;
+    }
+    
+    // Format with comma separators and no decimals
+    final formatted = value.toStringAsFixed(0).replaceAllMapped(
+      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+      (Match match) => '${match[1]},',
+    );
+    
+    return 'R$formatted';
+  }
+
   Widget _buildLoadingHeader() {
     return Container(
       padding: const EdgeInsets.all(24),
@@ -271,7 +297,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
 
   Widget _buildTabBar(bool isMobile) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: isMobile ? 16 : 24),
+      margin: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
@@ -295,7 +321,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isMobile ? 8 : 10),
+        padding: EdgeInsets.all(isMobile ? 12 : 10),
         child: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
@@ -321,18 +347,18 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           labelColor: Colors.black,
           unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
           labelStyle: TextStyle(
-            fontSize: isMobile ? 14 : 16,
+            fontSize: isMobile ? 13 : 16,
             fontWeight: FontWeight.w700,
-            letterSpacing: 0.8,
-          ),
-          unselectedLabelStyle: TextStyle(
-            fontSize: isMobile ? 14 : 16,
-            fontWeight: FontWeight.w500,
             letterSpacing: 0.5,
           ),
+          unselectedLabelStyle: TextStyle(
+            fontSize: isMobile ? 13 : 16,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0.3,
+          ),
           labelPadding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 18 : 24,
-            vertical: isMobile ? 12 : 16,
+            horizontal: isMobile ? 12 : 24,
+            vertical: isMobile ? 14 : 16,
           ),
           tabs: [
             _buildTab('Overview', Icons.dashboard_outlined, isMobile),
@@ -351,9 +377,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         children: [
           Icon(
             icon,
-            size: isMobile ? 16 : 18,
+            size: isMobile ? 15 : 18,
           ),
-          const SizedBox(width: 6),
+          SizedBox(width: isMobile ? 4 : 6),
           Text(text),
         ],
       ),
@@ -387,6 +413,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     AsyncValue<List<Agent>> agentsAsync,
     bool isMobile,
   ) {
+    // Get client stats using the new provider
+    final clientStatsAsync = ref.watch(clientStatsProvider(widget.clientId));
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -425,20 +454,32 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   isMobile,
                 ),
                 _buildStatCard(
-                  'Active Jobs',
-                  '0', // TODO: Get from jobs provider
+                  'Completed Jobs',
+                  clientStatsAsync.when(
+                    data: (stats) => stats['completedJobs'].toString(),
+                    loading: () => '...',
+                    error: (_, __) => '0',
+                  ),
                   Icons.work,
                   isMobile,
                 ),
                 _buildStatCard(
                   'Total Quotes',
-                  '0', // TODO: Get from quotes provider
+                  clientStatsAsync.when(
+                    data: (stats) => stats['totalQuotes'].toString(),
+                    loading: () => '...',
+                    error: (_, __) => '0',
+                  ),
                   Icons.description,
                   isMobile,
                 ),
                 _buildStatCard(
                   'Total Revenue',
-                  '\$0', // TODO: Get from invoices provider
+                  clientStatsAsync.when(
+                    data: (stats) => _formatCurrency(stats['totalRevenue']),
+                    loading: () => '...',
+                    error: (_, __) => 'R0',
+                  ),
                   Icons.attach_money,
                   isMobile,
                 ),

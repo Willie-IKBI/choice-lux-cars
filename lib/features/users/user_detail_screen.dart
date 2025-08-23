@@ -56,10 +56,22 @@ class UserDetailScreen extends ConsumerWidget {
                 canDeactivate: canDeactivate,
                 onDeactivate: canDeactivate
                     ? () async {
-                        await usersNotifier.deactivateUser(user!.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('User deactivated')),
-                        );
+                        print('Deactivate button clicked for user: ${user!.id}');
+                        try {
+                          await usersNotifier.deactivateUser(user!.id);
+                          print('User deactivated successfully');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('User deactivated')),
+                          );
+                        } catch (error) {
+                          print('Error deactivating user: $error');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error deactivating user: $error'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
                       }
                     : null,
                 onSave: (updatedUser) async {

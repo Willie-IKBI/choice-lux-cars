@@ -186,7 +186,10 @@ class _UserFormState extends State<UserForm> {
                               minimumSize: const Size.fromHeight(48),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
-                            onPressed: widget.onDeactivate,
+                            onPressed: () {
+                              print('Deactivate button pressed in UserForm');
+                              widget.onDeactivate?.call();
+                            },
                           ),
                         if (widget.canDeactivate && widget.onDeactivate != null)
                           const SizedBox(height: 12),
@@ -240,7 +243,10 @@ class _UserFormState extends State<UserForm> {
                               style: OutlinedButton.styleFrom(
                                 foregroundColor: Theme.of(context).colorScheme.error,
                               ),
-                              onPressed: widget.onDeactivate,
+                              onPressed: () {
+                              print('Deactivate button pressed in UserForm (desktop)');
+                              widget.onDeactivate?.call();
+                            },
                             ),
                           ),
                         FilledButton(

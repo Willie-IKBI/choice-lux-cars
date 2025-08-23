@@ -24,8 +24,16 @@ class UsersNotifier extends StateNotifier<List<User>> {
   }
 
   Future<void> deactivateUser(String userId) async {
-    await SupabaseService.instance.deactivateUser(userId);
-    await fetchUsers();
+    print('UsersNotifier.deactivateUser called for userId: $userId');
+    try {
+      await SupabaseService.instance.deactivateUser(userId);
+      print('Supabase deactivateUser completed');
+      await fetchUsers();
+      print('fetchUsers completed after deactivation');
+    } catch (error) {
+      print('Error in UsersNotifier.deactivateUser: $error');
+      rethrow;
+    }
   }
 
   Future<void> reactivateUser(String userId) async {
