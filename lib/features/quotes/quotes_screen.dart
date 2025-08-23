@@ -116,41 +116,29 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Quotes',
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                        color: ChoiceLuxTheme.richGold,
-                        fontWeight: FontWeight.w700,
-                        fontSize: isSmallMobile ? 20 : isMobile ? 24 : 28,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      filteredCount == totalCount 
-                          ? '$totalCount total quotes'
-                          : '$filteredCount of $totalCount quotes',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: ChoiceLuxTheme.platinumSilver,
-                        fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              if (!isMobile) _buildQuickStats(),
-            ],
-          ),
-          // Mobile Quick Stats - Show below header on mobile
-          if (isMobile) ...[
-            const SizedBox(height: 16),
-            _buildMobileQuickStats(),
-          ],
+                     Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               Text(
+                 'Quotes',
+                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                   color: ChoiceLuxTheme.richGold,
+                   fontWeight: FontWeight.w700,
+                   fontSize: isSmallMobile ? 20 : isMobile ? 24 : 28,
+                 ),
+               ),
+               const SizedBox(height: 4),
+               Text(
+                 filteredCount == totalCount 
+                     ? '$totalCount total quotes'
+                     : '$filteredCount of $totalCount quotes',
+                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                   color: ChoiceLuxTheme.platinumSilver,
+                   fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                 ),
+               ),
+             ],
+           ),
           const SizedBox(height: 16),
           Container(
             height: 2,
@@ -170,131 +158,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-  Widget _buildQuickStats() {
-    final quotes = ref.watch(quotesProvider);
-    final openCount = quotes.where((q) => q.isOpen).length;
-    final acceptedCount = quotes.where((q) => q.isAccepted).length;
-    final expiredCount = quotes.where((q) => q.isExpired).length;
 
-    return Row(
-      children: [
-        _buildStatChip('Open', openCount, Colors.blue),
-        const SizedBox(width: 8),
-        _buildStatChip('Accepted', acceptedCount, ChoiceLuxTheme.successColor),
-        const SizedBox(width: 8),
-        _buildStatChip('Expired', expiredCount, ChoiceLuxTheme.errorColor),
-      ],
-    );
-  }
-
-  Widget _buildStatChip(String label, int count, Color color) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            width: 8,
-            height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(width: 6),
-          Text(
-            '$count',
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 12,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileQuickStats() {
-    final quotes = ref.watch(quotesProvider);
-    final openCount = quotes.where((q) => q.isOpen).length;
-    final acceptedCount = quotes.where((q) => q.isAccepted).length;
-    final expiredCount = quotes.where((q) => q.isExpired).length;
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-        ),
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-        children: [
-          _buildMobileStatChip('Open', openCount, Colors.blue),
-          _buildMobileStatChip('Accepted', acceptedCount, ChoiceLuxTheme.successColor),
-          _buildMobileStatChip('Expired', expiredCount, ChoiceLuxTheme.errorColor),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildMobileStatChip(String label, int count, Color color) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: color.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Icon(
-            _getStatusIcon(label),
-            color: color,
-            size: 16,
-          ),
-        ),
-        const SizedBox(height: 4),
-        Text(
-          '$count',
-          style: TextStyle(
-            color: color,
-            fontWeight: FontWeight.w700,
-            fontSize: 16,
-          ),
-        ),
-        Text(
-          label,
-          style: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver,
-            fontWeight: FontWeight.w500,
-            fontSize: 10,
-          ),
-        ),
-      ],
-    );
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'open': return Icons.folder_open;
-      case 'accepted': return Icons.check_circle;
-      case 'expired': return Icons.schedule;
-      default: return Icons.info;
-    }
-  }
 
   Widget _buildSearchAndFilterSection(bool isMobile) {
     final screenWidth = MediaQuery.of(context).size.width;

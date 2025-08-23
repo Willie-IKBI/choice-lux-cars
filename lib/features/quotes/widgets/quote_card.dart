@@ -375,9 +375,14 @@ class QuoteCard extends StatelessWidget {
               child: InkWell(
                 onTap: () => _openPdf(quote.quotePdf!),
                 borderRadius: BorderRadius.circular(12),
-                child: Center(
+                child: Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    vertical: isSmallMobile ? 8 : isMobile ? 10 : 12,
+                  ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
                         Icons.picture_as_pdf,
