@@ -27,8 +27,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     List<dynamic> filteredQuotes = quotes;
     if (_selectedStatus != 'all') {
       switch (_selectedStatus) {
+        case 'draft':
+          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'draft').toList();
+          break;
         case 'open':
-          filteredQuotes = quotes.where((quote) => quote.isOpen).toList();
+          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'open').toList();
           break;
         case 'accepted':
           filteredQuotes = quotes.where((quote) => quote.isAccepted).toList();
@@ -37,7 +40,10 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           filteredQuotes = quotes.where((quote) => quote.isExpired).toList();
           break;
         case 'closed':
-          filteredQuotes = quotes.where((quote) => quote.isClosed).toList();
+          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'closed').toList();
+          break;
+        case 'rejected':
+          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'rejected').toList();
           break;
       }
     }
@@ -244,6 +250,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 children: [
                   _buildStatusChip('all', 'All', Colors.grey),
                   const SizedBox(width: 8),
+                  _buildStatusChip('draft', 'Draft', Colors.orange),
+                  const SizedBox(width: 8),
                   _buildStatusChip('open', 'Open', Colors.blue),
                   const SizedBox(width: 8),
                   _buildStatusChip('accepted', 'Accepted', ChoiceLuxTheme.successColor),
@@ -251,6 +259,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                   _buildStatusChip('expired', 'Expired', ChoiceLuxTheme.errorColor),
                   const SizedBox(width: 8),
                   _buildStatusChip('closed', 'Closed', Colors.grey),
+                  const SizedBox(width: 8),
+                  _buildStatusChip('rejected', 'Rejected', Colors.red),
                 ],
               ),
             ),
@@ -631,10 +641,12 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               child: Column(
                 children: [
                   _buildMobileFilterOption('all', 'All Quotes', Colors.grey),
+                  _buildMobileFilterOption('draft', 'Draft Quotes', Colors.orange),
                   _buildMobileFilterOption('open', 'Open Quotes', Colors.blue),
                   _buildMobileFilterOption('accepted', 'Accepted Quotes', ChoiceLuxTheme.successColor),
                   _buildMobileFilterOption('expired', 'Expired Quotes', ChoiceLuxTheme.errorColor),
                   _buildMobileFilterOption('closed', 'Closed Quotes', Colors.grey),
+                  _buildMobileFilterOption('rejected', 'Rejected Quotes', Colors.red),
                 ],
               ),
             ),
@@ -708,10 +720,12 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     String _getStatusLabel(String status) {
     switch (status) {
       case 'all': return 'All';
+      case 'draft': return 'Draft';
       case 'open': return 'Open';
       case 'accepted': return 'Accepted';
       case 'expired': return 'Expired';
       case 'closed': return 'Closed';
+      case 'rejected': return 'Rejected';
       default: return 'All';
     }
   }
