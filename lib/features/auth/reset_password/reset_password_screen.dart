@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
@@ -46,6 +47,24 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
       curve: Curves.easeOutBack,
     ));
     _animationController.forward();
+    
+    // Check if user has a valid session for password reset
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkResetSession();
+    });
+  }
+
+  void _checkResetSession() {
+    final session = Supabase.instance.client.auth.currentSession;
+    if (session == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Invalid or expired reset link. Please request a new password reset.'),
+          backgroundColor: ChoiceLuxTheme.errorColor,
+        ),
+      );
+      context.go('/forgot-password');
+    }
   }
 
   @override
@@ -62,30 +81,42 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen>
         _isLoading = true;
       });
 
-      final success = await ref.read(authProvider.notifier).updatePassword(
-        newPassword: _passwordController.text.trim(),
-      );
+      try {
+        // Get the current session from Supabase
+        final session = Supabase.instance.client.auth.currentSession;
+        if (session == null) {
+          throw Exception('No active session found. Please use the reset link from your email.');
+        }
 
-      setState(() {
-        _isLoading = false;
-      });
+        // Update the password using the current session
+        await Supabase.instance.client.auth.updateUser(
+          UserAttributes(password: _passwordController.text.trim()),
+        );
 
-      if (success) {
+        setState(() {
+          _isLoading = false;
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Password updated successfully!'),
+              content: const Text('Password updated successfully! Please sign in with your new password.'),
               backgroundColor: ChoiceLuxTheme.successColor,
             ),
           );
-          // Redirect to login after successful password reset
+          // Sign out the user and redirect to login
+          await Supabase.instance.client.auth.signOut();
           context.go('/login');
         }
-      } else {
+      } catch (error) {
+        setState(() {
+          _isLoading = false;
+        });
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Failed to update password. Please try again.'),
+              content: Text('Failed to update password: ${error.toString()}'),
               backgroundColor: ChoiceLuxTheme.errorColor,
             ),
           );
