@@ -807,10 +807,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           value: _selectedDriverId,
           hintText: 'Select a driver',
           items: drivers.map((driver) {
-            final isPdpExpired = driver.pdpExpDate != null && 
-                DateTime.parse(driver.pdpExpDate).isBefore(DateTime.now());
-            final isLicenseExpired = driver.trafExpDate != null && 
-                DateTime.parse(driver.trafExpDate).isBefore(DateTime.now());
+            final isPdpExpired = driver.pdpExp != null && 
+                driver.pdpExp!.isBefore(DateTime.now());
+            final isLicenseExpired = driver.driverLicExp != null && 
+                driver.driverLicExp!.isBefore(DateTime.now());
             
             return DropdownMenuItem(
               value: driver.id.toString(),
