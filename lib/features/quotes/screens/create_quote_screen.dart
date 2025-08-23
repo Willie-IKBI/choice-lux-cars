@@ -609,8 +609,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     );
   }
 
-  // Mobile-optimized client selection
+  // Mobile-optimized client selection with search functionality
   Widget _buildClientSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
+    final filteredClients = clients.where((client) {
+      if (_clientSearchQuery.isEmpty) return true;
+      return client.companyName.toLowerCase().contains(_clientSearchQuery.toLowerCase());
+    }).toList();
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -623,44 +628,151 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           ),
         ),
         SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
-        _buildResponsiveDropdown(
-          value: _selectedClientId,
-          hintText: 'Select a client',
-          items: clients.map((client) {
-            return DropdownMenuItem(
-              value: client.id.toString(),
-              child: Text(
-                client.companyName ?? 'Unknown Client',
-                style: TextStyle(
-                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+        Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+            border: Border.all(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Column(
+            children: [
+              // Search input
+              TextFormField(
+                controller: _clientSearchController,
+                onChanged: (value) {
+                  setState(() {
+                    _clientSearchQuery = value;
+                    _showClientDropdown = true;
+                  });
+                },
+                onTap: () {
+                  setState(() {
+                    _showClientDropdown = true;
+                  });
+                },
+                decoration: InputDecoration(
+                  hintText: 'Search for a client...',
+                  hintStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  ),
+                  prefixIcon: Icon(
+                    Icons.search,
+                    color: ChoiceLuxTheme.platinumSilver,
+                    size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                  ),
+                  suffixIcon: _selectedClientId != null
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.clear,
+                            size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                          ),
+                          onPressed: () {
+                            setState(() {
+                              _selectedClientId = null;
+                              _selectedAgentId = null; // Reset agent when client changes
+                              _clientSearchController.clear();
+                              _clientSearchQuery = '';
+                            });
+                          },
+                        )
+                      : null,
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isSmallMobile ? 12 : 16,
+                    vertical: isSmallMobile ? 12 : 16,
+                  ),
                 ),
+                validator: (value) {
+                  if (_selectedClientId == null) {
+                    return 'Please select a client';
+                  }
+                  return null;
+                },
               ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedClientId = value;
-              _selectedAgentId = null; // Reset agent when client changes
-            });
-            
-            // Auto-select first agent for this client
-            if (value != null) {
-              final selectedClient = clients.firstWhere((c) => c.id.toString() == value);
-              if (selectedClient.agents != null && selectedClient.agents.isNotEmpty) {
-                setState(() {
-                  _selectedAgentId = selectedClient.agents.first.id.toString();
-                });
-              }
-            }
-          },
-          validator: (value) {
-            if (value == null || value.isEmpty) {
-              return 'Please select a client';
-            }
-            return null;
-          },
-          isMobile: isMobile,
-          isSmallMobile: isSmallMobile,
+              
+              // Selected client display
+              if (_selectedClientId != null)
+                Container(
+                  padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    border: Border(
+                      top: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        color: ChoiceLuxTheme.richGold,
+                        size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                      ),
+                      SizedBox(width: isSmallMobile ? 8 : 12),
+                      Expanded(
+                        child: Text(
+                          clients.firstWhere((c) => c.id.toString() == _selectedClientId).companyName,
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.richGold,
+                            fontWeight: FontWeight.w500,
+                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              
+              // Dropdown list
+              if (_showClientDropdown && filteredClients.isNotEmpty)
+                Container(
+                  constraints: BoxConstraints(maxHeight: isSmallMobile ? 150 : 200),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.charcoalGray,
+                    border: Border(
+                      top: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                  ),
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: filteredClients.length,
+                    itemBuilder: (context, index) {
+                      final client = filteredClients[index];
+                      return ListTile(
+                        leading: Icon(
+                          Icons.business,
+                          color: ChoiceLuxTheme.platinumSilver,
+                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        ),
+                        title: Text(
+                          client.companyName,
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.softWhite,
+                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                          ),
+                        ),
+                        onTap: () {
+                          setState(() {
+                            _selectedClientId = client.id.toString();
+                            _selectedAgentId = null; // Reset agent when client changes
+                            _clientSearchController.text = client.companyName;
+                            _showClientDropdown = false;
+                          });
+                        },
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ],
     );
@@ -668,52 +780,143 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
   // Mobile-optimized agent selection
   Widget _buildAgentSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
-    if (_selectedClientId == null || clients.isEmpty) {
-      return const SizedBox.shrink();
-    }
-    
-    final selectedClient = clients.firstWhere(
-      (client) => client.id.toString() == _selectedClientId,
-      orElse: () => clients.first,
-    );
-    
-    final agents = selectedClient?.agents ?? [];
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          'Agent',
-          style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
-            fontWeight: FontWeight.w600,
-            color: ChoiceLuxTheme.softWhite,
+    if (_selectedClientId == null) {
+      return Container(
+        padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            width: 1,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
-        _buildResponsiveDropdown(
-          value: _selectedAgentId,
-          hintText: 'Select an agent (optional)',
-          items: agents.map((agent) {
-            return DropdownMenuItem(
-              value: agent.id.toString(),
+        child: Row(
+          children: [
+            Icon(
+              Icons.info_outline,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+            ),
+            SizedBox(width: isSmallMobile ? 8 : 12),
+            Expanded(
               child: Text(
-                agent.agentName ?? 'Unknown Agent',
+                'Please select a client first to choose an agent',
                 style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
                   fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
                 ),
               ),
-            );
-          }).toList(),
-          onChanged: (value) {
-            setState(() {
-              _selectedAgentId = value;
-            });
-          },
-          isMobile: isMobile,
-          isSmallMobile: isSmallMobile,
+            ),
+          ],
         ),
-      ],
+      );
+    }
+
+    return Consumer(
+      builder: (context, ref, child) {
+        final agentsAsync = ref.watch(agentsByClientProvider(_selectedClientId!));
+        
+        return agentsAsync.when(
+          data: (agents) => Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Agent',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                  fontWeight: FontWeight.w600,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
+              ),
+              SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+              _buildResponsiveDropdown(
+                value: _selectedAgentId,
+                hintText: 'Select an agent (optional)',
+                items: agents.map((agent) {
+                  return DropdownMenuItem(
+                    value: agent.id.toString(),
+                    child: Text(
+                      agent.agentName,
+                      style: TextStyle(
+                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (value) {
+                  setState(() {
+                    _selectedAgentId = value;
+                  });
+                },
+                isMobile: isMobile,
+                isSmallMobile: isSmallMobile,
+              ),
+            ],
+          ),
+          loading: () => Container(
+            padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                SizedBox(
+                  width: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                  height: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                  ),
+                ),
+                SizedBox(width: isSmallMobile ? 8 : 12),
+                Text(
+                  'Loading agents...',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver,
+                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          error: (error, stack) => Container(
+            padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+              border: Border.all(
+                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: ChoiceLuxTheme.errorColor,
+                  size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                ),
+                SizedBox(width: isSmallMobile ? 8 : 12),
+                Expanded(
+                  child: Text(
+                    'Error loading agents',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.errorColor,
+                      fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 
