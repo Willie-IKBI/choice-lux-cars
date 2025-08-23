@@ -989,9 +989,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
   // Mobile-optimized driver selection
   Widget _buildDriverSelection(List<dynamic> users, bool isMobile, bool isSmallMobile) {
+    // Include all users as potential drivers, excluding unassigned and deactivated
     final drivers = users.where((user) => 
-        user.role?.toLowerCase() == 'driver' && 
-        user.status == 'active'
+        user.status != 'deactivated' && 
+        user.status != 'unassigned' &&
+        user.displayName.isNotEmpty
     ).toList();
 
     return Column(
@@ -1008,7 +1010,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
         _buildResponsiveDropdown(
           value: _selectedDriverId,
-          hintText: 'Select a driver',
+          hintText: 'Select a driver (any user)',
           items: drivers.map((driver) {
             final isPdpExpired = driver.pdpExp != null && 
                 driver.pdpExp!.isBefore(DateTime.now());
@@ -1020,12 +1022,26 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               child: Row(
                 children: [
                   Expanded(
-                    child: Text(
-                      '${driver.displayName}',
-                      style: TextStyle(
-                        color: (isPdpExpired || isLicenseExpired) ? ChoiceLuxTheme.errorColor : null,
-                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          driver.displayName,
+                          style: TextStyle(
+                            color: (isPdpExpired || isLicenseExpired) ? ChoiceLuxTheme.errorColor : null,
+                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (driver.role != null && driver.role!.isNotEmpty)
+                          Text(
+                            '(${driver.role})',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                   if (isPdpExpired || isLicenseExpired)
