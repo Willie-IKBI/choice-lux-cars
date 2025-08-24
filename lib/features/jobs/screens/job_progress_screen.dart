@@ -376,7 +376,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 
                 // Show success message after modal is closed and widget is still mounted
                 if (mounted) {
-                  _showSuccessSnackBar('Job started successfully!');
+                  SnackBarUtils.showSuccess(context, 'Job started successfully!');
                 }
               }
             } catch (e) {

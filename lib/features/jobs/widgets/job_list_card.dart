@@ -8,10 +8,10 @@ import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
 import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons.dart';
-import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
+
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
-import 'package:choice_lux_cars/shared/utils/date_utils.dart';
+import 'package:choice_lux_cars/shared/utils/date_utils.dart' as app_date_utils;
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 
 class JobListCard extends ConsumerWidget {
@@ -220,7 +220,7 @@ class JobListCard extends ConsumerWidget {
             ),
             SizedBox(width: spacing * 0.25),
             Text(
-                             DateUtils.formatDate(job.jobStartDate),
+                             app_date_utils.DateUtils.formatDate(job.jobStartDate),
               style: TextStyle(
                 fontSize: isSmallMobile ? 11 : 12,
                 color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
@@ -429,7 +429,11 @@ class JobListCard extends ConsumerWidget {
              
              // Invoice Actions
              if (canCreateInvoice) ...[
-               if (_shouldShowDriverFlowButton(ref) || canCreateVoucher) SizedBox(width: spacing),
+                               if (DriverFlowUtils.shouldShowDriverFlowButton(
+                  currentUserId: ref.read(currentUserProfileProvider)?.id,
+                  jobDriverId: job.driverId,
+                  jobStatus: job.statusEnum,
+                ) || canCreateVoucher) SizedBox(width: spacing),
                Expanded(
                  child: _buildInvoiceSection(context, spacing),
                ),
@@ -536,7 +540,7 @@ class JobListCard extends ConsumerWidget {
   Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref) async {
     try {
       // Navigate to the appropriate screen based on job status
-             final route = DriverFlowUtils.getDriverFlowRoute(job.id, job.statusEnum);
+             final route = DriverFlowUtils.getDriverFlowRoute(int.parse(job.id.toString()), job.statusEnum);
       
       if (context.mounted) {
         context.go(route);
