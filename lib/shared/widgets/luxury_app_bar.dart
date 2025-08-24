@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+
 import 'package:choice_lux_cars/shared/widgets/notification_bell.dart';
 import 'package:go_router/go_router.dart';
 
@@ -55,13 +55,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.jetBlack.withOpacity(0.95),
-            ChoiceLuxTheme.jetBlack.withOpacity(0.90),
+            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
+            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -108,7 +108,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                       Text(
                         subtitle!,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                           fontSize: isMobile ? 12 : 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -150,10 +150,10 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _buildBackButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -164,17 +164,17 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           size: 20,
         ),
         onPressed: onBackPressed ?? () {
-          print('Back button pressed - attempting to pop context');
+          debugPrint('Back button pressed - attempting to pop context');
           try {
             if (Navigator.of(context).canPop()) {
               context.pop();
-              print('Context pop successful');
+              debugPrint('Context pop successful');
             } else {
-              print('Cannot pop - navigating to dashboard');
+              debugPrint('Cannot pop - navigating to dashboard');
               context.go('/dashboard');
             }
           } catch (e) {
-            print('Error popping context: $e');
+            debugPrint('Error popping context: $e');
             // Fallback to go to dashboard
             context.go('/dashboard');
           }
@@ -190,10 +190,10 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _buildMenuButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -222,12 +222,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         gradient: LinearGradient(
           colors: [
             ChoiceLuxTheme.richGold,
-            ChoiceLuxTheme.richGold.withOpacity(0.8),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.25),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.25),
             blurRadius: 12,
             spreadRadius: 2,
           ),
@@ -274,14 +274,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       elevation: 8,
       child: Container(
         padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-            width: 1,
-          ),
-        ),
+                 decoration: BoxDecoration(
+           color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+           borderRadius: BorderRadius.circular(10),
+           border: Border.all(
+             color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+             width: 1,
+           ),
+         ),
         child: Stack(
           children: [
             Icon(
@@ -428,14 +428,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       elevation: 8,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
+                 decoration: BoxDecoration(
+           color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+           borderRadius: BorderRadius.circular(24),
+           border: Border.all(
+             color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+             width: 1,
+           ),
+         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [

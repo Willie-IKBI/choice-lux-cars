@@ -64,10 +64,10 @@ class PaginationWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
@@ -108,7 +108,7 @@ class PaginationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: isEnabled ? [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -122,7 +122,7 @@ class PaginationWidget extends StatelessWidget {
               : ChoiceLuxTheme.charcoalGray,
           foregroundColor: isEnabled 
               ? Colors.black 
-              : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
           elevation: isEnabled ? 1 : 0,
           padding: isMobile
               ? const EdgeInsets.all(8)
@@ -132,7 +132,7 @@ class PaginationWidget extends StatelessWidget {
             side: isEnabled 
                 ? BorderSide.none
                 : BorderSide(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                     width: 1,
                   ),
           ),
@@ -207,7 +207,7 @@ class PaginationWidget extends StatelessWidget {
         borderRadius: BorderRadius.circular(8),
         boxShadow: isCurrentPage ? [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 1),
           ),
@@ -229,7 +229,7 @@ class PaginationWidget extends StatelessWidget {
             side: isCurrentPage 
                 ? BorderSide.none
                 : BorderSide(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                     width: 1,
                   ),
           ),

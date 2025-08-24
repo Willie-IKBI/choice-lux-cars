@@ -153,7 +153,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               gradient: LinearGradient(
                 colors: [
                   ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.5),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.5),
                 ],
               ),
               borderRadius: BorderRadius.circular(1),
@@ -189,11 +189,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               color: ChoiceLuxTheme.charcoalGray,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:url_launcher/url_launcher.dart';
-import 'package:share_plus/share_plus.dart';
+
 import '../models/voucher_data.dart';
 import '../providers/voucher_controller.dart';
 import '../services/voucher_sharing_service.dart';
@@ -30,245 +29,17 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
   @override
   Widget build(BuildContext context) {
     final voucherState = ref.watch(voucherControllerProvider);
-    final hasVoucher = widget.voucherPdfUrl != null && widget.voucherPdfUrl!.isNotEmpty;
 
-    return Container(
-      constraints: const BoxConstraints(maxHeight: 120), // Increased height to prevent overflow
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          // Voucher section header
-          Padding(
-            padding: const EdgeInsets.only(bottom: 8.0), // Increased from 4.0
-            child: Text(
-              'Voucher',
-              style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 12, // Smaller font size
-              ),
-            ),
-          ),
-
-          // Voucher status and actions
-          if (!hasVoucher && widget.canCreateVoucher)
-            _buildCreateVoucherButton(voucherState)
-          else if (hasVoucher) ...[
-            const SizedBox(height: 6), // Add spacing between header and content
-            _buildVoucherActions(voucherState)
-          ] else if (!widget.canCreateVoucher) ...[
-            const SizedBox(height: 6), // Add spacing between header and content
-            _buildNoPermissionMessage()
-          ],
-
-          // Loading indicator
-          if (voucherState.isLoading)
-            _buildLoadingIndicator(voucherState),
-
-          // Error message
-          if (voucherState.hasError)
-            _buildErrorMessage(voucherState),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildCreateVoucherButton(VoucherControllerState voucherState) {
-    return SizedBox(
-      width: double.infinity,
-      child: ElevatedButton.icon(
-        onPressed: voucherState.isLoading ? null : _createVoucher,
-        icon: const Icon(Icons.receipt_long, size: 16), // Increased from 14
-        label: const Text('Create Voucher', style: TextStyle(fontSize: 12)), // Increased from 11
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          foregroundColor: Theme.of(context).colorScheme.onPrimary,
-          padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16), // Increased padding
-          minimumSize: const Size(0, 36), // Increased from 28
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8), // Add rounded corners
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildVoucherActions(VoucherControllerState voucherState) {
-    return Row(
-      children: [
-        // Status chip
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.green.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withOpacity(0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: Colors.green[700],
-              ),
-              const SizedBox(width: 3),
-              Text(
-                'Voucher Created',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.green[700],
-                ),
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(width: 12), // Increased from 6 to 12
-
-        // Open button
-        IconButton(
-          onPressed: voucherState.isLoading ? null : _openVoucher,
-          icon: const Icon(Icons.open_in_new, size: 14),
-          tooltip: 'Open Voucher',
-          style: IconButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-            padding: const EdgeInsets.all(6), // Increased from 4
-            minimumSize: const Size(28, 28), // Increased from 24x24
-          ),
-        ),
-        const SizedBox(width: 8), // Add spacing between buttons
-
-        // Share button
-        IconButton(
-          onPressed: voucherState.isLoading ? null : _showShareOptions,
-          icon: const Icon(Icons.share, size: 14),
-          tooltip: 'Share Voucher',
-          style: IconButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.secondaryContainer,
-            foregroundColor: Theme.of(context).colorScheme.onSecondaryContainer,
-            padding: const EdgeInsets.all(6), // Increased from 4
-            minimumSize: const Size(28, 28), // Increased from 24x24
-          ),
-        ),
-        const SizedBox(width: 8), // Add spacing between buttons
-
-        // Reload button (if user has permission)
-        if (widget.canCreateVoucher)
-          IconButton(
-            onPressed: voucherState.isLoading ? null : _regenerateVoucher,
-            icon: const Icon(Icons.refresh, size: 14),
-            tooltip: 'Reload Voucher',
-            style: IconButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.tertiaryContainer,
-              foregroundColor: Theme.of(context).colorScheme.onTertiaryContainer,
-              padding: const EdgeInsets.all(6), // Increased from 4
-              minimumSize: const Size(28, 28), // Increased from 24x24
-            ),
-          ),
-      ],
-    );
-  }
-
-  Widget _buildNoPermissionMessage() {
-    return Container(
-      padding: const EdgeInsets.all(8), // Reduced padding
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.surfaceVariant,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lock,
-            size: 14, // Smaller icon
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-          ),
-          const SizedBox(width: 6), // Reduced spacing
-          Expanded(
-            child: Text(
-              'Insufficient permissions to create vouchers',
-              style: TextStyle(
-                fontSize: 11, // Smaller font size
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLoadingIndicator(VoucherControllerState voucherState) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 14,
-            height: 14,
-            child: CircularProgressIndicator(
-              strokeWidth: 1.5,
-              valueColor: AlwaysStoppedAnimation<Color>(
-                Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ),
-          const SizedBox(width: 8), // Reduced spacing
-          Expanded(
-            child: Text(
-              voucherState.loadingMessage,
-              style: TextStyle(
-                fontSize: 11, // Smaller font
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorMessage(VoucherControllerState voucherState) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6), // Reduced padding
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.errorContainer,
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.error_outline,
-            size: 14, // Smaller icon
-            color: Theme.of(context).colorScheme.error,
-          ),
-          const SizedBox(width: 6), // Reduced spacing
-          Expanded(
-            child: Text(
-              voucherState.errorMessage ?? 'An error occurred',
-              style: TextStyle(
-                fontSize: 11, // Smaller font
-                color: Theme.of(context).colorScheme.error,
-              ),
-            ),
-          ),
-          TextButton(
-            onPressed: _createVoucher,
-            child: const Text('Retry', style: TextStyle(fontSize: 11)), // Smaller text
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
-              minimumSize: const Size(0, 24), // Smaller minimum size
-            ),
-          ),
-        ],
-      ),
+    return VoucherActionBar(
+      jobId: widget.jobId,
+      voucherPdfUrl: widget.voucherPdfUrl,
+      voucherData: widget.voucherData,
+      canCreateVoucher: widget.canCreateVoucher,
+      voucherState: voucherState,
+      onCreateVoucher: _createVoucher,
+      onRegenerateVoucher: _regenerateVoucher,
+      onOpenVoucher: _openVoucher,
+      onShowShareOptions: _showShareOptions,
     );
   }
 
@@ -278,7 +49,6 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         jobId: widget.jobId,
       );
       
-      // Show success message
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -300,7 +70,6 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
   }
 
   Future<void> _regenerateVoucher() async {
-    // Show confirmation dialog
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -385,10 +154,10 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
             style: Theme.of(context).textTheme.titleMedium,
           ),
           const SizedBox(height: 16),
-                     ListTile(
-             leading: const Icon(Icons.chat, color: Colors.green),
-             title: const Text('WhatsApp'),
-             subtitle: Text('Share via WhatsApp'),
+          ListTile(
+            leading: const Icon(Icons.chat, color: Colors.green),
+            title: const Text('WhatsApp'),
+            subtitle: const Text('Share via WhatsApp'),
             onTap: () {
               Navigator.of(context).pop();
               _shareViaWhatsApp();
@@ -475,5 +244,325 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
         );
       }
     }
+  }
+}
+
+/// Responsive voucher action bar that prevents overflow on narrow cards
+class VoucherActionBar extends StatelessWidget {
+  final String jobId;
+  final String? voucherPdfUrl;
+  final VoucherData? voucherData;
+  final bool canCreateVoucher;
+  final VoucherControllerState voucherState;
+  final VoidCallback onCreateVoucher;
+  final VoidCallback onRegenerateVoucher;
+  final VoidCallback onOpenVoucher;
+  final VoidCallback onShowShareOptions;
+
+  const VoucherActionBar({
+    super.key,
+    required this.jobId,
+    this.voucherPdfUrl,
+    this.voucherData,
+    required this.canCreateVoucher,
+    required this.voucherState,
+    required this.onCreateVoucher,
+    required this.onRegenerateVoucher,
+    required this.onOpenVoucher,
+    required this.onShowShareOptions,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasVoucher = voucherPdfUrl != null && voucherPdfUrl!.isNotEmpty;
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final isTight = constraints.maxWidth < 320; // Breakpoint for tight layouts
+        final horizontalGap = isTight ? 6.0 : 8.0;
+        final verticalGap = isTight ? 6.0 : 8.0;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            // Voucher section header
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: Text(
+                'Voucher',
+                style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: Theme.of(context).colorScheme.primary,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+
+            // Voucher status and actions
+            if (!hasVoucher && canCreateVoucher)
+              _buildCreateVoucherButton(context, isTight, constraints.maxWidth)
+            else if (hasVoucher) ...[
+              const SizedBox(height: 6),
+              _buildVoucherActions(context, isTight, horizontalGap, verticalGap, constraints.maxWidth)
+            ] else if (!canCreateVoucher) ...[
+              const SizedBox(height: 6),
+              _buildNoPermissionMessage(context)
+            ],
+
+            // Loading indicator
+            if (voucherState.isLoading)
+              _buildLoadingIndicator(context),
+
+            // Error message
+            if (voucherState.hasError)
+              _buildErrorMessage(context),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildCreateVoucherButton(BuildContext context, bool isTight, double maxWidth) {
+    // Ensure constraints are valid - minWidth cannot exceed maxWidth
+    final availableWidth = maxWidth;
+    final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
+    final effectiveMinWidth = minWidth < availableWidth ? minWidth : availableWidth * 0.8;
+    
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+        minWidth: effectiveMinWidth,
+        maxWidth: availableWidth,
+      ),
+      child: SizedBox(
+        width: double.infinity, // Always use full available width
+        child: ElevatedButton.icon(
+          onPressed: voucherState.isLoading ? null : onCreateVoucher,
+          icon: const Icon(Icons.receipt_long, size: 16),
+          label: const Text('Create Voucher', style: TextStyle(fontSize: 12)),
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Theme.of(context).colorScheme.primary,
+            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            minimumSize: const Size(0, 36),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            visualDensity: VisualDensity.compact,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildVoucherActions(BuildContext context, bool isTight, double horizontalGap, double verticalGap, double maxWidth) {
+    return Wrap(
+      spacing: horizontalGap,
+      runSpacing: verticalGap,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        // Status chip
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: Colors.green.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.check_circle,
+                size: 14,
+                color: Colors.green[700],
+              ),
+              const SizedBox(width: 3),
+              Text(
+                'Voucher Created',
+                style: TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                  color: Colors.green[700],
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        // Primary action button
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: isTight ? 100 : 120, // Reduced minimum width
+            maxWidth: maxWidth,
+          ),
+          child: SizedBox(
+            width: double.infinity, // Always use full available width
+            child: ElevatedButton.icon(
+              onPressed: voucherState.isLoading ? null : onOpenVoucher,
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text('Open Voucher', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                minimumSize: const Size(0, 32),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
+              ),
+            ),
+          ),
+        ),
+
+        // Secondary icon actions
+        _iconAction(
+          context,
+          Icons.share,
+          'Share Voucher',
+          onTap: voucherState.isLoading ? null : onShowShareOptions,
+        ),
+
+        // Reload button (if user has permission)
+        if (canCreateVoucher)
+          _iconAction(
+            context,
+            Icons.refresh,
+            'Reload Voucher',
+            onTap: voucherState.isLoading ? null : onRegenerateVoucher,
+          ),
+      ],
+    );
+  }
+
+  Widget _iconAction(BuildContext context, IconData icon, String tooltip, {VoidCallback? onTap}) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: onTap == null 
+              ? Colors.grey 
+              : Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNoPermissionMessage(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock,
+            size: 14,
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              'Insufficient permissions to create vouchers',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingIndicator(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 14,
+            height: 14,
+            child: CircularProgressIndicator(
+              strokeWidth: 1.5,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                Theme.of(context).colorScheme.primary,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              voucherState.loadingMessage,
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorMessage(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.errorContainer,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: 14,
+            color: Theme.of(context).colorScheme.error,
+          ),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Text(
+              voucherState.errorMessage ?? 'An error occurred',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.error,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onCreateVoucher,
+            child: const Text('Retry', style: TextStyle(fontSize: 11)),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              minimumSize: const Size(0, 24),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

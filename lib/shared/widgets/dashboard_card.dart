@@ -75,7 +75,7 @@ class _DashboardCardState extends State<DashboardCard>
     final isSmallMobile = screenWidth < 400;
     
     // Debug: Print card sizing info
-    print('DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile');
+    debugPrint('DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile');
     
     // Mobile-optimized sizing with better touch targets
     final iconSize = isSmallMobile ? 24.0 : isMobile ? 28.0 : 36.0;
@@ -104,26 +104,26 @@ class _DashboardCardState extends State<DashboardCard>
                   end: Alignment.bottomRight,
                   colors: [
                     backgroundColor,
-                    backgroundColor.withOpacity(0.8),
+                    backgroundColor.withValues(alpha: 0.8),
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.3),
+                    color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: _isHovered ? 20 : 10,
                     offset: Offset(0, _isHovered ? 8 : 4),
                   ),
                   if (_isHovered)
                     BoxShadow(
-                      color: iconColor.withOpacity(0.2),
+                      color: iconColor.withValues(alpha: 0.2),
                       blurRadius: 15,
                       offset: const Offset(0, 5),
                     ),
                 ],
                 border: Border.all(
                   color: _isHovered 
-                      ? iconColor.withOpacity(0.3) 
-                      : Colors.white.withOpacity(0.1),
+                      ? iconColor.withValues(alpha: 0.3) 
+                      : Colors.white.withValues(alpha: 0.1),
                   width: _isHovered ? 1.5 : 1,
                 ),
               ),
@@ -144,10 +144,10 @@ class _DashboardCardState extends State<DashboardCard>
                             Container(
                               padding: EdgeInsets.all(iconContainerPadding),
                               decoration: BoxDecoration(
-                                color: iconColor.withOpacity(0.1),
+                                color: iconColor.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(borderRadius * 0.8),
                                 border: Border.all(
-                                  color: iconColor.withOpacity(0.2),
+                                  color: iconColor.withValues(alpha: 0.2),
                                   width: 1,
                                 ),
                               ),

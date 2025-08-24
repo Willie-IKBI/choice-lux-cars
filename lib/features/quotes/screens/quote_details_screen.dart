@@ -8,9 +8,7 @@ import '../models/quote.dart';
 import '../providers/quotes_provider.dart';
 import '../services/quote_pdf_service.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../clients/providers/clients_provider.dart';
-import '../../vehicles/providers/vehicles_provider.dart';
-import '../../users/providers/users_provider.dart';
+
 import '../../../core/services/supabase_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';

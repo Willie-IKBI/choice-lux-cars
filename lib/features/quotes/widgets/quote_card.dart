@@ -29,12 +29,12 @@ class QuoteCard extends StatelessWidget {
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: _getStatusColor().withOpacity(0.2),
+          color: _getStatusColor().withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -97,10 +97,10 @@ class QuoteCard extends StatelessWidget {
             vertical: isSmallMobile ? 3 : isMobile ? 4 : 6,
           ),
           decoration: BoxDecoration(
-            color: _getStatusColor().withOpacity(0.15),
+            color: _getStatusColor().withValues(alpha: 0.15),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _getStatusColor().withOpacity(0.3),
+              color: _getStatusColor().withValues(alpha: 0.3),
               width: 1,
             ),
           ),

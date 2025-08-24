@@ -12,6 +12,12 @@ class ChoiceLuxTheme {
   static const Color successColor = Color(0xFF059669);
   static const Color warningColor = Color(0xFFF59E0B);
 
+  // Semantic color tokens for consistent design
+  static const Color infoColor = Color(0xFF3B82F6); // Blue for info/status
+  static const Color purple = Color(0xFF8B5CF6); // Purple for special states
+  static const Color orange = Color(0xFFF59E0B); // Orange for warnings/urgent
+  static const Color grey = Color(0xFF6B7280); // Grey for neutral states
+
   // Background gradient
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
@@ -101,128 +107,206 @@ class ChoiceLuxTheme {
           borderRadius: BorderRadius.circular(8),
           borderSide: const BorderSide(color: errorColor),
         ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(8),
+          borderSide: const BorderSide(color: errorColor, width: 2),
+        ),
         filled: true,
         fillColor: charcoalGray,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        labelStyle: const TextStyle(color: platinumSilver),
         hintStyle: const TextStyle(color: platinumSilver),
-        labelStyle: const TextStyle(color: softWhite),
       ),
-      textTheme: const TextTheme(
-        headlineLarge: TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.bold,
-          color: richGold,
+      textButtonTheme: TextButtonThemeData(
+        style: TextButton.styleFrom(
+          foregroundColor: richGold,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
         ),
-        headlineMedium: TextStyle(
-          fontSize: 24,
-          fontWeight: FontWeight.w600,
+      ),
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: richGold,
+          side: const BorderSide(color: richGold),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+        ),
+      ),
+      chipTheme: const ChipThemeData(
+        backgroundColor: charcoalGray,
+        selectedColor: richGold,
+        disabledColor: Colors.grey,
+        labelStyle: TextStyle(color: softWhite),
+        secondaryLabelStyle: TextStyle(color: Colors.black),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      dividerTheme: const DividerThemeData(
+        color: platinumSilver,
+        thickness: 1,
+        space: 1,
+      ),
+      listTileTheme: const ListTileThemeData(
+        tileColor: Colors.transparent,
+        textColor: softWhite,
+        iconColor: richGold,
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      ),
+      switchTheme: SwitchThemeData(
+        thumbColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return richGold;
+          }
+          return platinumSilver;
+        }),
+        trackColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return richGold.withOpacity(0.3);
+          }
+          return platinumSilver.withOpacity(0.3);
+        }),
+      ),
+      checkboxTheme: CheckboxThemeData(
+        fillColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return richGold;
+          }
+          return Colors.transparent;
+        }),
+        checkColor: MaterialStateProperty.all(Colors.black),
+        side: const BorderSide(color: platinumSilver),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+      radioTheme: RadioThemeData(
+        fillColor: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return richGold;
+          }
+          return platinumSilver;
+        }),
+      ),
+      sliderTheme: SliderThemeData(
+        activeTrackColor: richGold,
+        inactiveTrackColor: platinumSilver.withOpacity(0.3),
+        thumbColor: richGold,
+        overlayColor: richGold.withOpacity(0.2),
+        valueIndicatorColor: richGold,
+        valueIndicatorTextStyle: const TextStyle(color: Colors.black),
+      ),
+      progressIndicatorTheme: const ProgressIndicatorThemeData(
+        color: richGold,
+        linearTrackColor: platinumSilver,
+        circularTrackColor: platinumSilver,
+      ),
+      bottomNavigationBarTheme: const BottomNavigationBarThemeData(
+        backgroundColor: charcoalGray,
+        selectedItemColor: richGold,
+        unselectedItemColor: platinumSilver,
+        type: BottomNavigationBarType.fixed,
+        elevation: 8,
+      ),
+      navigationBarTheme: NavigationBarThemeData(
+        backgroundColor: charcoalGray,
+        indicatorColor: richGold.withOpacity(0.2),
+        labelTextStyle: MaterialStateProperty.all(
+          const TextStyle(color: softWhite, fontSize: 12),
+        ),
+        iconTheme: MaterialStateProperty.resolveWith((states) {
+          if (states.contains(MaterialState.selected)) {
+            return const IconThemeData(color: richGold);
+          }
+          return const IconThemeData(color: platinumSilver);
+        }),
+      ),
+      drawerTheme: const DrawerThemeData(
+        backgroundColor: charcoalGray,
+        scrimColor: Colors.black54,
+      ),
+      floatingActionButtonTheme: const FloatingActionButtonThemeData(
+        backgroundColor: richGold,
+        foregroundColor: Colors.black,
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.all(Radius.circular(16)),
+        ),
+      ),
+      snackBarTheme: SnackBarThemeData(
+        backgroundColor: charcoalGray,
+        contentTextStyle: const TextStyle(color: softWhite),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
+        behavior: SnackBarBehavior.floating,
+      ),
+      dialogTheme: DialogThemeData(
+        backgroundColor: charcoalGray,
+        titleTextStyle: const TextStyle(
           color: softWhite,
-        ),
-        headlineSmall: TextStyle(
           fontSize: 20,
           fontWeight: FontWeight.w600,
-          color: softWhite,
         ),
-        titleLarge: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.w600,
-          color: softWhite,
+        contentTextStyle: const TextStyle(color: platinumSilver),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        titleMedium: TextStyle(
-          fontSize: 16,
-          fontWeight: FontWeight.w500,
-          color: softWhite,
+      ),
+      popupMenuTheme: PopupMenuThemeData(
+        color: charcoalGray,
+        textStyle: const TextStyle(color: softWhite),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
         ),
-        titleSmall: TextStyle(
-          fontSize: 14,
-          fontWeight: FontWeight.w500,
-          color: platinumSilver,
+      ),
+      tooltipTheme: TooltipThemeData(
+        decoration: BoxDecoration(
+          color: charcoalGray,
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: platinumSilver),
         ),
-        bodyLarge: TextStyle(
-          fontSize: 16,
-          color: softWhite,
-        ),
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          color: softWhite,
-        ),
-        bodySmall: TextStyle(
-          fontSize: 12,
-          color: platinumSilver,
-        ),
+        textStyle: const TextStyle(color: softWhite),
+      ),
+      dataTableTheme: const DataTableThemeData(
+        dataTextStyle: TextStyle(color: softWhite),
+        headingTextStyle: TextStyle(color: richGold, fontWeight: FontWeight.w600),
+        dividerThickness: 1,
+        dataRowColor: MaterialStatePropertyAll(Colors.transparent),
+        headingRowColor: MaterialStatePropertyAll(Colors.transparent),
+      ),
+      timePickerTheme: TimePickerThemeData(
+        backgroundColor: charcoalGray,
+        hourMinuteTextColor: softWhite,
+        hourMinuteColor: Colors.transparent,
+        dayPeriodTextColor: softWhite,
+        dayPeriodColor: Colors.transparent,
+        dialHandColor: richGold,
+        dialBackgroundColor: Colors.transparent,
+        dialTextColor: softWhite,
+        entryModeIconColor: richGold,
+      ),
+      datePickerTheme: DatePickerThemeData(
+        backgroundColor: charcoalGray,
+        headerBackgroundColor: richGold,
+        headerForegroundColor: Colors.black,
+        dayForegroundColor: MaterialStateProperty.all(softWhite),
+        yearForegroundColor: MaterialStateProperty.all(softWhite),
+        dayBackgroundColor: MaterialStateProperty.all(Colors.transparent),
+        yearBackgroundColor: MaterialStateProperty.all(Colors.transparent),
+        todayForegroundColor: MaterialStateProperty.all(richGold),
+        todayBackgroundColor: MaterialStateProperty.all(richGold.withOpacity(0.2)),
+        dayOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
+        yearOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
       ),
     );
   }
 
-  // Dark theme (same as light theme for luxury design)
-  static ThemeData get darkTheme {
-    return ThemeData(
-      useMaterial3: true,
-      scaffoldBackgroundColor: jetBlack,
-      fontFamily: GoogleFonts.inter().fontFamily,
-      colorScheme: ColorScheme.fromSeed(
-        seedColor: richGold,
-        brightness: Brightness.dark,
-        primary: richGold,
-        secondary: platinumSilver,
-        surface: charcoalGray,
-        error: errorColor,
-        tertiary: successColor,
-        onPrimary: Colors.black,
-        onSurface: softWhite,
-      ),
-      appBarTheme: const AppBarTheme(
-        backgroundColor: Colors.transparent,
-        foregroundColor: softWhite,
-        elevation: 0,
-        centerTitle: false,
-        titleTextStyle: TextStyle(
-          fontSize: 20,
-          fontWeight: FontWeight.w600,
-          color: softWhite,
-        ),
-      ),
-      cardTheme: const CardThemeData(
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.all(Radius.circular(16)),
-        ),
-        color: charcoalGray,
-      ),
-      elevatedButtonTheme: ElevatedButtonThemeData(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: richGold,
-          foregroundColor: Colors.black,
-          elevation: 1,
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-          ),
-        ),
-      ),
-      inputDecorationTheme: InputDecorationTheme(
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: platinumSilver),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: platinumSilver),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: richGold, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(8),
-          borderSide: const BorderSide(color: errorColor),
-        ),
-        filled: true,
-        fillColor: charcoalGray,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        hintStyle: const TextStyle(color: platinumSilver),
-        labelStyle: const TextStyle(color: softWhite),
-      ),
-    );
-  }
+  // Dark theme (same as light theme for this luxury dark design)
+  static ThemeData get darkTheme => lightTheme;
 } 

@@ -1,3 +1,59 @@
+import 'package:flutter/material.dart';
+import 'package:choice_lux_cars/app/theme.dart';
+
+// Job status enum for type-safe status handling
+enum JobStatus {
+  open, assigned, started, inProgress, readyToClose, completed, cancelled
+}
+
+// Extension for JobStatus to provide labels and colors
+extension JobStatusX on JobStatus {
+  String get label => switch (this) {
+    JobStatus.open => 'OPEN',
+    JobStatus.assigned => 'ASSIGNED',
+    JobStatus.started => 'STARTED',
+    JobStatus.inProgress => 'IN PROGRESS',
+    JobStatus.readyToClose => 'READY TO CLOSE',
+    JobStatus.completed => 'COMPLETED',
+    JobStatus.cancelled => 'CANCELLED',
+  };
+
+  Color get color => switch (this) {
+    JobStatus.open => ChoiceLuxTheme.platinumSilver,
+    JobStatus.assigned => ChoiceLuxTheme.richGold,
+    JobStatus.started => ChoiceLuxTheme.orange,
+    JobStatus.inProgress => ChoiceLuxTheme.infoColor,
+    JobStatus.readyToClose => ChoiceLuxTheme.purple,
+    JobStatus.completed => ChoiceLuxTheme.successColor,
+    JobStatus.cancelled => ChoiceLuxTheme.errorColor,
+  };
+
+  // Convert string to JobStatus enum
+  static JobStatus fromString(String status) {
+    return switch (status.toLowerCase()) {
+      'open' => JobStatus.open,
+      'assigned' => JobStatus.assigned,
+      'started' => JobStatus.started,
+      'in_progress' => JobStatus.inProgress,
+      'ready_to_close' => JobStatus.readyToClose,
+      'completed' => JobStatus.completed,
+      'cancelled' => JobStatus.cancelled,
+      _ => JobStatus.open, // Default fallback
+    };
+  }
+
+  // Convert JobStatus enum to string
+  String get value => switch (this) {
+    JobStatus.open => 'open',
+    JobStatus.assigned => 'assigned',
+    JobStatus.started => 'started',
+    JobStatus.inProgress => 'in_progress',
+    JobStatus.readyToClose => 'ready_to_close',
+    JobStatus.completed => 'completed',
+    JobStatus.cancelled => 'cancelled',
+  };
+}
+
 class Job {
   final String id;
   final String clientId;
@@ -56,6 +112,16 @@ class Job {
     this.confirmedBy,
     this.jobNumber,
   });
+
+  // Getter for JobStatus enum
+  JobStatus get statusEnum => JobStatusX.fromString(status);
+
+  // Getter for days until start with null safety
+  int? get daysUntilStart {
+    final now = DateTime.now();
+    final start = jobStartDate;
+    return start.difference(now).inDays;
+  }
 
   factory Job.fromMap(Map<String, dynamic> map) {
     return Job(
@@ -199,16 +265,10 @@ class Job {
       passengerContact != null && 
       passengerContact!.isNotEmpty;
 
-  int get daysUntilStart {
-    final now = DateTime.now();
-    final startDate = DateTime(jobStartDate.year, jobStartDate.month, jobStartDate.day);
-    final today = DateTime(now.year, now.month, now.day);
-    return startDate.difference(today).inDays;
-  }
-
   String get daysUntilStartText {
     if (daysUntilStart == 0) return 'Starts today';
-    if (daysUntilStart < 0) return 'Started ${daysUntilStart.abs()} days ago';
-    return 'Starts in $daysUntilStart days';
+    if (daysUntilStart == null) return 'Unknown start date';
+    if (daysUntilStart! < 0) return 'Started ${daysUntilStart!.abs()} days ago';
+    return 'Starts in ${daysUntilStart!} days';
   }
 } 

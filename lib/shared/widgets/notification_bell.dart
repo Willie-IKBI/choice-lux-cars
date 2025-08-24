@@ -26,7 +26,6 @@ class _NotificationBellState extends State<NotificationBell>
   late AnimationController _animationController;
   late AnimationController _pulseController;
   late Animation<double> _scaleAnimation;
-  late Animation<double> _bounceAnimation;
   late Animation<double> _pulseAnimation;
 
   @override
@@ -50,13 +49,7 @@ class _NotificationBellState extends State<NotificationBell>
       curve: Curves.elasticOut,
     ));
 
-    _bounceAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.bounceOut,
-    ));
+
 
     _pulseAnimation = Tween<double>(
       begin: 1.0,
@@ -164,7 +157,7 @@ class _NotificationBellState extends State<NotificationBell>
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: const Color(0xFFD32F2F).withOpacity(0.3),
+                                color: const Color(0xFFD32F2F).withValues(alpha: 0.3),
                                 blurRadius: 3,
                                 offset: const Offset(0, 1),
                               ),

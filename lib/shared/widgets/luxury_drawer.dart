@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
@@ -63,7 +63,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             width: 40,
             height: 4,
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -93,7 +93,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.settings_outlined,
                           title: 'Settings',
                           onTap: () {
-                            print('Navigate to Settings');
+                            debugPrint('Navigate to Settings');
                           },
                         ),
                       ],
@@ -103,20 +103,20 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   _buildMobileMenuSection(
                     title: 'Company',
                     items: [
-                      _buildMobileMenuItem(
-                        icon: Icons.business_outlined,
-                        title: 'About Choice Lux Cars',
-                        onTap: () {
-                          print('Navigate to About');
-                        },
-                      ),
-                      _buildMobileMenuItem(
-                        icon: Icons.contact_support_outlined,
-                        title: 'Contact Information',
-                        onTap: () {
-                          print('Navigate to Contact');
-                        },
-                      ),
+                                              _buildMobileMenuItem(
+                          icon: Icons.business_outlined,
+                          title: 'About Choice Lux Cars',
+                          onTap: () {
+                            debugPrint('Navigate to About');
+                          },
+                        ),
+                                              _buildMobileMenuItem(
+                          icon: Icons.contact_support_outlined,
+                          title: 'Contact Information',
+                          onTap: () {
+                            debugPrint('Navigate to Contact');
+                          },
+                        ),
                     ],
                   ),
                   

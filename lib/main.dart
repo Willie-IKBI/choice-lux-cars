@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'dart:ui';
-import 'dart:async';
+
 import 'package:choice_lux_cars/app/app.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
-import 'package:choice_lux_cars/core/services/fcm_service.dart';
+
 import 'package:firebase_messaging/firebase_messaging.dart';
 
 void main() async {
@@ -13,26 +13,26 @@ void main() async {
   
   // Set up comprehensive global error handling
   FlutterError.onError = (FlutterErrorDetails details) {
-    print('Flutter Error: ${details.exception}');
-    print('Stack trace: ${details.stack}');
-    // Don't show red screen, just log the error
+    // Log error without showing red screen
+    debugPrint('Flutter Error: ${details.exception}');
+    debugPrint('Stack trace: ${details.stack}');
   };
   
   // Handle errors that occur during async operations
   PlatformDispatcher.instance.onError = (error, stack) {
-    print('Platform Error: $error');
-    print('Stack trace: $stack');
-    // Don't show red screen, just log the error
+    // Log error without showing red screen
+    debugPrint('Platform Error: $error');
+    debugPrint('Stack trace: $stack');
     return true;
   };
   
   try {
     // Initialize Supabase
     await SupabaseService.initialize();
-    print('Supabase initialized successfully');
+    debugPrint('Supabase initialized successfully');
   } catch (error) {
-    print('Error initializing Supabase: $error');
-    print('Continuing with app initialization...');
+    debugPrint('Error initializing Supabase: $error');
+    debugPrint('Continuing with app initialization...');
     // Continue with app initialization even if Supabase fails
   }
 
@@ -40,11 +40,11 @@ void main() async {
   try {
     // Initialize Firebase
     await FirebaseService.initialize();
-    print('Firebase initialized successfully');
+    debugPrint('Firebase initialized successfully');
     firebaseInitialized = true;
   } catch (error) {
-    print('Error initializing Firebase: $error');
-    print('Continuing with app initialization without Firebase...');
+    debugPrint('Error initializing Firebase: $error');
+    debugPrint('Continuing with app initialization without Firebase...');
     // Continue with app initialization even if Firebase fails
   }
 
@@ -58,8 +58,8 @@ void main() async {
       FirebaseService.instance.setupTokenRefreshListener();
       FirebaseService.instance.setupForegroundMessageHandler();
     } catch (error) {
-      print('Error setting up Firebase messaging: $error');
-      print('Continuing without Firebase messaging...');
+      debugPrint('Error setting up Firebase messaging: $error');
+      debugPrint('Continuing without Firebase messaging...');
     }
   }
   
