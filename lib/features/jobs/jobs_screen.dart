@@ -110,6 +110,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
       appBar: LuxuryAppBar(
         title: 'Jobs',
         subtitle: 'Manage transportation jobs',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
         actions: [
           if (canCreateJobs)
             ElevatedButton.icon(

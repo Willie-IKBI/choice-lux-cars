@@ -197,6 +197,8 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       appBar: LuxuryAppBar(
         title: 'My Profile',
         showProfile: false, // Hide profile menu since we're on profile page
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
       ),
       drawer: isMobile ? const LuxuryDrawer() : null,
       body: Container(
