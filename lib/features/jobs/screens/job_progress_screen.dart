@@ -11,12 +11,17 @@ import '../widgets/progress_bar.dart';
 import '../widgets/gps_capture_widget.dart';
 import '../widgets/odometer_capture_widget.dart';
 import '../widgets/vehicle_collection_modal.dart';
-import '../widgets/vehicle_return_modal.dart'; // Added import for VehicleReturnModal
+import '../widgets/vehicle_return_modal.dart';
 import '../models/job_step.dart';
 import '../providers/jobs_provider.dart';
 import '../../../app/theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../../features/auth/providers/auth_provider.dart';
+import '../../../shared/utils/snackbar_utils.dart';
+import '../../../shared/utils/status_color_utils.dart';
+import '../../../shared/utils/date_utils.dart';
+import '../../../shared/utils/driver_flow_utils.dart';
+import '../../../shared/widgets/luxury_button.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -182,7 +187,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       print('ERROR in _loadJobProgress: $e');
       if (mounted) {
         setState(() => _isLoading = false);
-        _showErrorSnackBar('Failed to load job progress: $e');
+        SnackBarUtils.showError(context, 'Failed to load job progress: $e');
       }
     }
   }
@@ -385,7 +390,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               
               // Show error message after modal is closed and widget is still mounted
               if (mounted) {
-                _showErrorSnackBar('Failed to start job: $e');
+                SnackBarUtils.showError(context, 'Failed to start job: $e');
               }
             } finally {
               if (mounted) {
@@ -420,11 +425,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       if (mounted) {
         await _loadJobProgress();
-        _showSuccessSnackBar('Vehicle collected successfully!');
+        SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to collect vehicle: $e');
+        SnackBarUtils.showError(context, 'Failed to collect vehicle: $e');
       }
     } finally {
       if (mounted) {
@@ -459,14 +464,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       if (mounted) {
         await _loadJobProgress();
-        _showSuccessSnackBar('Arrived at pickup location!');
+        SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
       }
     } catch (e) {
       print('=== ERROR IN PICKUP ARRIVAL ===');
       print('Error: $e');
       
       if (mounted) {
-        _showErrorSnackBar('Failed to record pickup arrival: $e');
+        SnackBarUtils.showError(context, 'Failed to record pickup arrival: $e');
       }
     } finally {
       if (mounted) {
@@ -488,11 +493,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       if (mounted) {
         await _loadJobProgress();
-        _showSuccessSnackBar('Passenger onboard!');
+        SnackBarUtils.showSuccess(context, 'Passenger onboard!');
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to record passenger onboard: $e');
+        SnackBarUtils.showError(context, 'Failed to record passenger onboard: $e');
       }
     } finally {
       if (mounted) {
@@ -519,11 +524,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       if (mounted) {
         await _loadJobProgress();
-        _showSuccessSnackBar('Arrived at dropoff location!');
+        SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to record dropoff arrival: $e');
+        SnackBarUtils.showError(context, 'Failed to record dropoff arrival: $e');
       }
     } finally {
       if (mounted) {
@@ -545,11 +550,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       if (mounted) {
         await _loadJobProgress();
-        _showSuccessSnackBar('Trip completed!');
+        SnackBarUtils.showSuccess(context, 'Trip completed!');
       }
     } catch (e) {
       if (mounted) {
-        _showErrorSnackBar('Failed to complete trip: $e');
+        SnackBarUtils.showError(context, 'Failed to complete trip: $e');
       }
     } finally {
       if (mounted) {
@@ -607,7 +612,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 
                 // Show success message after modal is closed and widget is still mounted
                 if (mounted) {
-                  _showSuccessSnackBar('Vehicle returned successfully!');
+                  SnackBarUtils.showSuccess(context, 'Vehicle returned successfully!');
                   
                   // Refresh jobs list to update job card status
                   ref.invalidate(jobsProvider);
@@ -634,7 +639,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               
               // Show error message after modal is closed and widget is still mounted
               if (mounted) {
-                _showErrorSnackBar('Failed to return vehicle: $e');
+                SnackBarUtils.showError(context, 'Failed to return vehicle: $e');
               }
             } finally {
               if (mounted) {
@@ -659,9 +664,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
       
       await _loadJobProgress();
-      _showSuccessSnackBar('Job closed successfully!');
+              SnackBarUtils.showSuccess(context, 'Job closed successfully!');
     } catch (e) {
-      _showErrorSnackBar('Failed to close job: $e');
+              SnackBarUtils.showError(context, 'Failed to close job: $e');
     } finally {
       setState(() => _isUpdating = false);
     }
@@ -693,39 +698,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     return 'placeholder_image_url';
   }
 
-  void _showSuccessSnackBar(String message) {
-    if (!mounted) return;
-    
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: ChoiceLuxTheme.successColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-    } catch (e) {
-      print('Error showing success snackbar: $e');
-    }
-  }
 
-  void _showErrorSnackBar(String message) {
-    if (!mounted) return;
-    
-    try {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: ChoiceLuxTheme.errorColor,
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        ),
-      );
-    } catch (e) {
-      print('Error showing error snackbar: $e');
-    }
-  }
 
   Future<void> _debugCurrentState() async {
     print('=== DEBUG CURRENT STATE ===');

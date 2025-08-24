@@ -10,7 +10,9 @@ import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons
 import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:intl/intl.dart';
+import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
+import 'package:choice_lux_cars/shared/utils/date_utils.dart';
+import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 
 class JobListCard extends ConsumerWidget {
   final Job job;
@@ -85,7 +87,7 @@ class JobListCard extends ConsumerWidget {
   // 1. Top Bar: Status + Urgency
   Widget _buildTopBar(BuildContext context, double spacing) {
     final isUrgent = job.daysUntilStart != null && job.daysUntilStart! <= 3;
-    final statusColor = _getStatusColor(job.statusEnum);
+    final statusColor = StatusColorUtils.getJobStatusColor(job.statusEnum);
     
     return Container(
       padding: EdgeInsets.symmetric(
@@ -218,7 +220,7 @@ class JobListCard extends ConsumerWidget {
             ),
             SizedBox(width: spacing * 0.25),
             Text(
-              _formatDate(job.jobStartDate),
+                             DateUtils.formatDate(job.jobStartDate),
               style: TextStyle(
                 fontSize: isSmallMobile ? 11 : 12,
                 color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
@@ -386,32 +388,40 @@ class JobListCard extends ConsumerWidget {
         Row(
           children: [
             // Driver Flow Button (if applicable)
-            if (_shouldShowDriverFlowButton(ref))
-              Expanded(
-                child: ElevatedButton.icon(
-                  onPressed: () => _handleDriverFlow(context, ref),
-                  icon: Icon(_getDriverFlowIcon(), size: 16),
-                  label: Text(
-                    _getDriverFlowText(),
-                    style: TextStyle(fontSize: isSmallMobile ? 12 : 14),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _getDriverFlowColor(),
-                    foregroundColor: Colors.white,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: spacing,
-                      vertical: spacing * 0.75,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-              ),
+                         if (DriverFlowUtils.shouldShowDriverFlowButton(
+               currentUserId: ref.read(currentUserProfileProvider)?.id,
+               jobDriverId: job.driverId,
+               jobStatus: job.statusEnum,
+             ))
+               Expanded(
+                 child: ElevatedButton.icon(
+                   onPressed: () => _handleDriverFlow(context, ref),
+                   icon: Icon(DriverFlowUtils.getDriverFlowIcon(job.statusEnum), size: 16),
+                   label: Text(
+                     DriverFlowUtils.getDriverFlowText(job.statusEnum),
+                     style: TextStyle(fontSize: isSmallMobile ? 12 : 14),
+                   ),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum),
+                     foregroundColor: Colors.white,
+                     padding: EdgeInsets.symmetric(
+                       horizontal: spacing,
+                       vertical: spacing * 0.75,
+                     ),
+                     shape: RoundedRectangleBorder(
+                       borderRadius: BorderRadius.circular(8),
+                     ),
+                   ),
+                 ),
+               ),
             
                          // Voucher Actions
              if (canCreateVoucher) ...[
-               if (_shouldShowDriverFlowButton(ref)) SizedBox(width: spacing),
+               if (DriverFlowUtils.shouldShowDriverFlowButton(
+               currentUserId: ref.read(currentUserProfileProvider)?.id,
+               jobDriverId: job.driverId,
+               jobStatus: job.statusEnum,
+             )) SizedBox(width: spacing),
                Expanded(
                  child: _buildVoucherSection(context, spacing),
                ),
@@ -517,90 +527,16 @@ class JobListCard extends ConsumerWidget {
   }
 
   // Helper Methods
-  Color _getStatusColor(JobStatus status) {
-    switch (status) {
-      case JobStatus.open:
-        return Colors.blue;
-      case JobStatus.assigned:
-        return Colors.orange;
-      case JobStatus.started:
-        return Colors.purple;
-      case JobStatus.inProgress:
-        return Colors.indigo;
-      case JobStatus.readyToClose:
-        return Colors.amber;
-      case JobStatus.completed:
-        return Colors.green;
-      case JobStatus.cancelled:
-        return Colors.red;
-    }
-  }
 
-  bool _shouldShowDriverFlowButton(WidgetRef ref) {
-    // Check if current user is the assigned driver
-    final currentUser = ref.read(currentUserProfileProvider);
-    final isAssignedDriver = currentUser?.id == job.driverId;
-    
-    // Only show button if user is assigned driver and job status allows it
-    return isAssignedDriver && (
-      job.statusEnum == JobStatus.assigned || 
-      job.statusEnum == JobStatus.started ||
-      job.statusEnum == JobStatus.inProgress
-    );
-  }
 
-  IconData _getDriverFlowIcon() {
-    switch (job.statusEnum) {
-      case JobStatus.assigned:
-        return Icons.play_arrow;
-      case JobStatus.started:
-        return Icons.sync;
-      case JobStatus.inProgress:
-        return Icons.sync;
-      case JobStatus.completed:
-        return Icons.summarize;
-      default:
-        return Icons.info;
-    }
-  }
 
-  String _getDriverFlowText() {
-    switch (job.statusEnum) {
-      case JobStatus.assigned:
-        return 'Start Job';
-      case JobStatus.started:
-        return 'Resume Job';
-      case JobStatus.inProgress:
-        return 'Continue Job';
-      case JobStatus.completed:
-        return 'Job Overview';
-      default:
-        return 'View Job';
-    }
-  }
 
-  Color _getDriverFlowColor() {
-    switch (job.statusEnum) {
-      case JobStatus.assigned:
-        return ChoiceLuxTheme.successColor;
-      case JobStatus.started:
-        return ChoiceLuxTheme.infoColor;
-      case JobStatus.inProgress:
-        return ChoiceLuxTheme.orange;
-      case JobStatus.completed:
-        return ChoiceLuxTheme.richGold;
-      default:
-        return ChoiceLuxTheme.platinumSilver;
-    }
-  }
+
 
   Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref) async {
     try {
       // Navigate to the appropriate screen based on job status
-      final route = switch (job.statusEnum) {
-        JobStatus.completed => '/jobs/${job.id}/summary',
-        _ => '/jobs/${job.id}/progress',
-      };
+             final route = DriverFlowUtils.getDriverFlowRoute(job.id, job.statusEnum);
       
       if (context.mounted) {
         context.go(route);
@@ -617,7 +553,5 @@ class JobListCard extends ConsumerWidget {
     }
   }
 
-  String _formatDate(DateTime date) {
-    return DateFormat('MMM dd, yyyy').format(date);
-  }
+
 }
