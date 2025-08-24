@@ -352,7 +352,7 @@ class JobListCard extends StatelessWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => context.go('/jobs/${job.id}'),
+            onPressed: () => context.go('/jobs/${job.id}/summary'),
             icon: const Icon(Icons.visibility, size: 16),
             label: Text(
               'View Details',
