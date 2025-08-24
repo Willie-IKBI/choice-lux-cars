@@ -282,13 +282,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           route: '/invoices',
           color: ChoiceLuxTheme.richGold,
         ),
-        DashboardItem(
-          title: 'Vouchers',
-          subtitle: 'Create and track vouchers',
-          icon: Icons.card_giftcard_outlined,
-          route: '/vouchers',
-          color: ChoiceLuxTheme.richGold,
-        ),
       ];
     }
 

@@ -19,6 +19,7 @@ class JobListCard extends StatelessWidget {
   final bool isMobile;
   final bool isTablet;
   final bool isDesktop;
+  final bool canCreateVoucher;
 
   const JobListCard({
     super.key,
@@ -30,6 +31,7 @@ class JobListCard extends StatelessWidget {
     required this.isMobile,
     required this.isTablet,
     required this.isDesktop,
+    this.canCreateVoucher = false,
   });
 
   @override
@@ -86,7 +88,7 @@ class JobListCard extends StatelessWidget {
             style: TextStyle(
               fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
               fontWeight: FontWeight.w600,
-              color: ChoiceLuxTheme.jetBlack,
+              color: Colors.white,
             ),
           ),
         ),
@@ -110,7 +112,7 @@ class JobListCard extends StatelessWidget {
           style: TextStyle(
             fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
             fontWeight: FontWeight.bold,
-            color: ChoiceLuxTheme.jetBlack,
+            color: Colors.white,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -196,7 +198,7 @@ class JobListCard extends StatelessWidget {
           location,
           style: TextStyle(
             fontSize: isSmallMobile ? 12 : 14,
-            color: ChoiceLuxTheme.jetBlack,
+            color: Colors.white,
           ),
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
@@ -345,13 +347,13 @@ class JobListCard extends StatelessWidget {
           ),
         
         // Voucher Actions
-        if (job.statusEnum == JobStatus.completed)
+        if (canCreateVoucher)
           Expanded(
             child: VoucherActionButtons(
               jobId: job.id,
               voucherPdfUrl: job.voucherPdf,
-              voucherData: null, // You'll need to pass actual voucher data
-              canCreateVoucher: true, // You'll need to determine this
+              voucherData: null, // Will be fetched by the voucher controller
+              canCreateVoucher: canCreateVoucher,
             ),
           ),
       ],

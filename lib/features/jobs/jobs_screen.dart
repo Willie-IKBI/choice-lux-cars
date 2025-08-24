@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
@@ -68,6 +69,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     final vehiclesState = ref.watch(vehiclesProvider);
     final users = ref.watch(usersProvider);
     final clientsAsync = ref.watch(clientsProvider);
+    final userProfile = ref.watch(currentUserProfileProvider);
+    
+    // Check if user can create vouchers based on role
+    final userRole = userProfile?.role?.toLowerCase();
+    final canCreateVoucher = userRole == 'administrator' || 
+                            userRole == 'admin' ||
+                            userRole == 'manager' ||
+                            userRole == 'driver_manager' ||
+                            userRole == 'drivermanager';
 
     // Filter jobs based on current filter
     List<Job> filteredJobs = _filterJobs(jobs);
@@ -144,6 +154,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                         isMobile,
                         isTablet,
                         isDesktop,
+                        canCreateVoucher,
                       ),
                       loading: () => _buildLoadingState(isSmallMobile, isMobile, isTablet, isDesktop),
                       error: (error, stack) => _buildErrorState(error, isSmallMobile, isMobile, isTablet, isDesktop),
@@ -333,6 +344,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     bool isMobile,
     bool isTablet,
     bool isDesktop,
+    bool canCreateVoucher,
   ) {
     final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
     final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
@@ -386,6 +398,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
             isMobile: isMobile,
             isTablet: isTablet,
             isDesktop: isDesktop,
+            canCreateVoucher: canCreateVoucher,
           ),
         );
       },
