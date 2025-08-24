@@ -428,23 +428,106 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        title: const Text(
-          'Delete Transport Leg',
-          style: TextStyle(
-            color: ChoiceLuxTheme.softWhite,
-            fontWeight: FontWeight.w600,
-          ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(16),
         ),
-        content: const Text(
-          'Are you sure you want to delete this transport leg? This action cannot be undone.',
-          style: TextStyle(color: ChoiceLuxTheme.softWhite),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Icon(
+                Icons.warning_amber_rounded,
+                color: ChoiceLuxTheme.errorColor,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Delete Transport Leg',
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Are you sure you want to delete this transport leg?',
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontSize: 16,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(
+                  color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'From: ${transport.pickupLocation}',
+                    style: const TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'To: ${transport.dropoffLocation}',
+                    style: const TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 14,
+                    ),
+                  ),
+                  Text(
+                    'Amount: R ${transport.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
+                      color: ChoiceLuxTheme.richGold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'This action cannot be undone.',
+              style: TextStyle(
+                color: ChoiceLuxTheme.errorColor,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
+            style: TextButton.styleFrom(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            ),
             child: const Text(
               'Cancel',
-              style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 16,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           ElevatedButton(
@@ -452,8 +535,18 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             style: ElevatedButton.styleFrom(
               backgroundColor: ChoiceLuxTheme.errorColor,
               foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
             ),
-            child: const Text('Delete'),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
         ],
       ),
@@ -539,12 +632,32 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showAddTransportDialog,
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Transport'),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+              spreadRadius: 2,
+            ),
+          ],
+        ),
+        child: FloatingActionButton.extended(
+          onPressed: _showAddTransportDialog,
+          backgroundColor: ChoiceLuxTheme.richGold,
+          foregroundColor: Colors.black,
+          elevation: 0,
+          icon: const Icon(Icons.add, size: 24),
+          label: const Text(
+            'Add Transport',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -562,6 +675,31 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
       ),
       child: Column(
         children: [
+          // Breadcrumb Navigation
+          Row(
+            children: [
+              Icon(
+                Icons.arrow_back_ios,
+                size: 16,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
+              TextButton(
+                onPressed: () => context.go('/quotes/${widget.quoteId}'),
+                child: Text(
+                  'Back to Quote',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              const Spacer(),
+            ],
+          ),
+          const SizedBox(height: 16),
+          
+          // Main Header Content
           Row(
             children: [
               Container(
@@ -641,43 +779,81 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(32),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              gradient: LinearGradient(
+                colors: [
+                  ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
               shape: BoxShape.circle,
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                width: 2,
+              ),
             ),
-            child: const Icon(
+            child: Icon(
               Icons.route_outlined,
-              size: 48,
-              color: ChoiceLuxTheme.platinumSilver,
+              size: 64,
+              color: ChoiceLuxTheme.richGold.withOpacity(0.6),
             ),
           ),
-          const SizedBox(height: 24),
-          const Text(
+          const SizedBox(height: 32),
+          Text(
             'No Transport Details',
             style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w600,
+              fontSize: 24,
+              fontWeight: FontWeight.w700,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          const SizedBox(height: 8),
-          const Text(
-            'Add transport legs to define the route and pricing',
-            style: TextStyle(
-              fontSize: 14,
-              color: ChoiceLuxTheme.platinumSilver,
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
+            child: Text(
+              'Add transport legs to define the route and pricing for this quote. Each leg represents a segment of the journey with its own pickup, dropoff, and cost.',
+              style: TextStyle(
+                fontSize: 16,
+                color: ChoiceLuxTheme.platinumSilver,
+                height: 1.5,
+              ),
+              textAlign: TextAlign.center,
             ),
-            textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 32),
-          ElevatedButton.icon(
-            onPressed: _showAddTransportDialog,
-            icon: const Icon(Icons.add),
-            label: const Text('Add First Transport'),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.richGold,
-              foregroundColor: Colors.black,
+          const SizedBox(height: 40),
+          Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(16),
+              boxShadow: [
+                BoxShadow(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                  spreadRadius: 2,
+                ),
+              ],
+            ),
+            child: ElevatedButton.icon(
+              onPressed: _showAddTransportDialog,
+              icon: const Icon(Icons.add, size: 24),
+              label: const Text(
+                'Add First Transport',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
             ),
           ),
         ],
@@ -708,10 +884,17 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
         border: Border.all(
           color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
         ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Column(
         children: [
-          // Header with leg number and actions
+          // Header with leg number, title, date/time, and actions
           Container(
             padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
             decoration: BoxDecoration(
@@ -723,43 +906,123 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             ),
             child: Row(
               children: [
+                // Leg number badge
                 Container(
-                  padding: EdgeInsets.all(isSmallMobile ? 6 : isMobile ? 8 : 10),
+                  padding: EdgeInsets.all(isSmallMobile ? 8 : isMobile ? 10 : 12),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold,
-                    borderRadius: BorderRadius.circular(8),
+                    gradient: LinearGradient(
+                      colors: [ChoiceLuxTheme.richGold, ChoiceLuxTheme.richGold.withOpacity(0.8)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Text(
                     '${index + 1}',
                     style: TextStyle(
-                      fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
-                      fontWeight: FontWeight.w700,
+                      fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
+                
+                // Title and date/time
                 Expanded(
-                  child: Text(
-                    'Transport Leg ${index + 1}',
-                    style: TextStyle(
-                      fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
-                      fontWeight: FontWeight.w600,
-                      color: ChoiceLuxTheme.softWhite,
-                    ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Transport Leg ${index + 1}',
+                        style: TextStyle(
+                          fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+                          fontWeight: FontWeight.w700,
+                          color: ChoiceLuxTheme.softWhite,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.calendar_today,
+                            size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${transport.pickupDate.day}/${transport.pickupDate.month}/${transport.pickupDate.year}',
+                            style: TextStyle(
+                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                              color: ChoiceLuxTheme.platinumSilver,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.access_time,
+                            size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            '${transport.pickupDate.hour.toString().padLeft(2, '0')}:${transport.pickupDate.minute.toString().padLeft(2, '0')}',
+                            style: TextStyle(
+                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                              color: ChoiceLuxTheme.platinumSilver,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
+                
+                // Action buttons
                 Row(
                   children: [
-                    IconButton(
-                      onPressed: () => _showEditTransportDialog(transport),
-                      icon: const Icon(Icons.edit, color: ChoiceLuxTheme.richGold),
-                      tooltip: 'Edit',
+                    Container(
+                      decoration: BoxDecoration(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                        ),
+                      ),
+                      child: IconButton(
+                        onPressed: () => _showEditTransportDialog(transport),
+                        icon: const Icon(Icons.edit, color: ChoiceLuxTheme.richGold, size: 18),
+                        tooltip: 'Edit Transport Leg',
+                        style: IconButton.styleFrom(
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
                     ),
-                    IconButton(
-                      onPressed: () => _deleteTransport(transport),
-                      icon: const Icon(Icons.delete, color: ChoiceLuxTheme.errorColor),
-                      tooltip: 'Delete',
+                    const SizedBox(width: 8),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
+                        ),
+                      ),
+                      child: IconButton(
+                        onPressed: () => _deleteTransport(transport),
+                        icon: const Icon(Icons.delete, color: ChoiceLuxTheme.errorColor, size: 18),
+                        tooltip: 'Delete Transport Leg',
+                        style: IconButton.styleFrom(
+                          padding: const EdgeInsets.all(8),
+                          minimumSize: const Size(36, 36),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -767,129 +1030,259 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             ),
           ),
           
-          // Transport details
+          // Route information
           Padding(
             padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
             child: Column(
               children: [
-                // Route information
-                Row(
-                  children: [
-                    Expanded(
-                      child: _buildRouteInfo(
-                        icon: Icons.location_on,
-                        title: 'From',
-                        location: transport.pickupLocation,
-                        isMobile: isMobile,
-                        isSmallMobile: isSmallMobile,
-                      ),
+                // Pickup location
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
                     ),
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: const Icon(
-                        Icons.arrow_forward,
-                        color: ChoiceLuxTheme.richGold,
-                        size: 16,
-                      ),
-                    ),
-                    Expanded(
-                      child: _buildRouteInfo(
-                        icon: Icons.location_on,
-                        title: 'To',
-                        location: transport.dropoffLocation,
-                        isMobile: isMobile,
-                        isSmallMobile: isSmallMobile,
-                      ),
-                    ),
-                  ],
-                ),
-                
-                const SizedBox(height: 16),
-                
-                // Date and amount
-                Row(
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: isSmallMobile ? 14 : isMobile ? 16 : 18,
-                            color: ChoiceLuxTheme.platinumSilver,
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            '${transport.pickupDate.day}/${transport.pickupDate.month}/${transport.pickupDate.year}',
-                            style: TextStyle(
-                              fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
-                              color: ChoiceLuxTheme.softWhite,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: EdgeInsets.all(isSmallMobile ? 8 : isMobile ? 10 : 12),
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                      ),
-                      child: Text(
-                        'R ${transport.amount.toStringAsFixed(2)}',
-                        style: TextStyle(
-                          fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
-                          fontWeight: FontWeight.w700,
+                        child: const Icon(
+                          Icons.directions_car,
                           color: ChoiceLuxTheme.richGold,
+                          size: 20,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'From',
+                              style: TextStyle(
+                                fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                fontWeight: FontWeight.w600,
+                                color: ChoiceLuxTheme.richGold,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              transport.pickupLocation,
+                              style: TextStyle(
+                                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                                fontWeight: FontWeight.w500,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
                 
-                // Notes (if any)
-                if (transport.notes?.isNotEmpty == true) ...[
-                  const SizedBox(height: 12),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
-                      borderRadius: BorderRadius.circular(8),
+                // Arrow connector
+                Container(
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.keyboard_arrow_down,
+                          color: ChoiceLuxTheme.platinumSilver,
+                          size: 24,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Dropoff location
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.flag,
+                          color: ChoiceLuxTheme.platinumSilver,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Icons.note,
-                              size: 14,
-                              color: ChoiceLuxTheme.platinumSilver,
-                            ),
-                            const SizedBox(width: 6),
                             Text(
-                              'Notes',
+                              'To',
                               style: TextStyle(
                                 fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
                                 fontWeight: FontWeight.w600,
                                 color: ChoiceLuxTheme.platinumSilver,
                               ),
                             ),
+                            const SizedBox(height: 2),
+                            Text(
+                              transport.dropoffLocation,
+                              style: TextStyle(
+                                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                                fontWeight: FontWeight.w500,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                            ),
                           ],
                         ),
-                        const SizedBox(height: 4),
-                        Text(
-                          transport.notes!,
-                          style: TextStyle(
-                            fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
-                            color: ChoiceLuxTheme.softWhite,
+                      ),
+                    ],
+                  ),
+                ),
+                
+                const SizedBox(height: 16),
+                
+                // Amount section
+                Container(
+                  width: double.infinity,
+                  padding: EdgeInsets.all(isSmallMobile ? 14 : isMobile ? 16 : 18),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [ChoiceLuxTheme.richGold.withOpacity(0.2), ChoiceLuxTheme.richGold.withOpacity(0.1)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.attach_money,
+                          color: ChoiceLuxTheme.richGold,
+                          size: 20,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Amount',
+                              style: TextStyle(
+                                fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                fontWeight: FontWeight.w600,
+                                color: ChoiceLuxTheme.platinumSilver,
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              'R ${transport.amount.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: isSmallMobile ? 18 : isMobile ? 20 : 22,
+                                fontWeight: FontWeight.w800,
+                                color: ChoiceLuxTheme.richGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                
+                // Notes section (if any)
+                if (transport.notes?.isNotEmpty == true) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                      ),
+                    ),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Icon(
+                            Icons.note,
+                            color: ChoiceLuxTheme.platinumSilver,
+                            size: 16,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Notes',
+                                style: TextStyle(
+                                  fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                  fontWeight: FontWeight.w600,
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                transport.notes!,
+                                style: TextStyle(
+                                  fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+                                  color: ChoiceLuxTheme.softWhite,
+                                  height: 1.4,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -904,46 +1297,5 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     );
   }
 
-  Widget _buildRouteInfo({
-    required IconData icon,
-    required String title,
-    required String location,
-    required bool isMobile,
-    required bool isSmallMobile,
-  }) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          children: [
-            Icon(
-              icon,
-              size: isSmallMobile ? 12 : isMobile ? 14 : 16,
-              color: ChoiceLuxTheme.platinumSilver,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
-                fontWeight: FontWeight.w600,
-                color: ChoiceLuxTheme.platinumSilver,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 4),
-        Text(
-          location,
-          style: TextStyle(
-            fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
-            fontWeight: FontWeight.w500,
-            color: ChoiceLuxTheme.softWhite,
-          ),
-          maxLines: 2,
-          overflow: TextOverflow.ellipsis,
-        ),
-      ],
-    );
-  }
+
 }

@@ -2,14 +2,42 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
+
 import 'package:intl/intl.dart';
+
 import '../models/quote.dart';
 import '../models/quote_transport_detail.dart';
 
 class QuotePdfService {
-  static const String _logoUrl = 'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
-  
-  /// Generate modern quote PDF with enhanced styling
+  static const String _logoUrl =
+      'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
+
+  // ---- THEME / TOKENS -------------------------------------------------------
+
+  // Palette (grey + gold)
+  static const PdfColor _grey800 = PdfColor.fromInt(0xFF323F4B);
+  static const PdfColor _grey700 = PdfColor.fromInt(0xFF3E4C59);
+  static const PdfColor _grey600 = PdfColor.fromInt(0xFF52606D);
+  static const PdfColor _grey300 = PdfColor.fromInt(0xFFCBD2D9);
+  static const PdfColor _grey100 = PdfColor.fromInt(0xFFF5F7FA);
+
+  static const PdfColor _gold700 = PdfColor.fromInt(0xFFB38600);
+  static const PdfColor _gold400 = PdfColor.fromInt(0xFFD4A800);
+  static const PdfColor _gold50  = PdfColor.fromInt(0xFFFFF9E6);
+
+  // Radii & spacing
+  static const double _radius = 8;
+  static const double _s8 = 8, _s12 = 12, _s16 = 16, _s20 = 20;
+
+  // Label column width for info rows
+  static const double _labelW = 110;
+
+  // Fonts (using built-in fonts for better compatibility)
+  pw.Font get _fontRegular => pw.Font.helvetica();
+  pw.Font get _fontBold => pw.Font.helveticaBold();
+
+  // ---- PUBLIC API -----------------------------------------------------------
+
   Future<Uint8List> buildQuotePdf({
     required Quote quote,
     required List<QuoteTransportDetail> transportDetails,
@@ -18,782 +46,472 @@ class QuotePdfService {
     required Map<String, dynamic>? vehicleData,
     required Map<String, dynamic>? driverData,
   }) async {
+    // Load logo (graceful fallback)
+    pw.MemoryImage? logoImage;
     try {
-      // Load company logo
-      pw.MemoryImage? logoImage;
-      try {
-        final response = await http.get(Uri.parse(_logoUrl));
-        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-          logoImage = pw.MemoryImage(response.bodyBytes);
-        }
-      } catch (e) {
-        print('Logo load error: $e');
+      final response = await http.get(Uri.parse(_logoUrl));
+      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
+        logoImage = pw.MemoryImage(response.bodyBytes);
       }
+    } catch (_) {/* ignore */ }
 
-      final pdf = pw.Document();
-      final currency = NumberFormat.currency(locale: 'en_ZA', symbol: 'R');
-      final dateFormat = DateFormat('dd/MM/yyyy');
-      final timeFormat = DateFormat('HH:mm');
+    final currency = NumberFormat.currency(locale: 'en_ZA', symbol: 'R');
+    final dateFormat = DateFormat('dd/MM/yyyy');
+    final timeFormat = DateFormat('HH:mm');
 
-      pdf.addPage(
-        pw.MultiPage(
-          pageFormat: PdfPageFormat.a4,
-          margin: const pw.EdgeInsets.all(25),
-          footer: (context) => pw.Container(
-            alignment: pw.Alignment.centerRight,
-            margin: const pw.EdgeInsets.only(top: 15),
-            child: pw.Text(
-              'Choice Lux Cars - www.choicelux.co.za',
-              style: pw.TextStyle(
-                fontSize: 9, 
-                color: PdfColors.grey600,
-                fontWeight: pw.FontWeight.normal,
+    // Pre-compute table data & totals (single source of truth)
+    final validDetails = transportDetails
+        .where((d) => (d.pickupLocation).trim().isNotEmpty && (d.dropoffLocation).trim().isNotEmpty)
+        .toList();
+    final totalFromLegs = validDetails.fold<double>(0.0, (sum, d) => sum + (d.amount));
+
+    final doc = pw.Document();
+
+    final pageTheme = pw.PageTheme(
+      margin: const pw.EdgeInsets.all(25),
+      theme: pw.ThemeData.withFont(base: _fontRegular, bold: _fontBold),
+      buildBackground: (context) => _buildWatermark(), // "QUOTE" watermark
+    );
+
+    doc.addPage(
+      pw.MultiPage(
+        pageTheme: pageTheme,
+        header: (context) => context.pageNumber == 1
+            ? _buildHeroHeader(logoImage) // page 1
+            : _buildCompactHeader(logoImage, 'QN#${quote.id}'), // page 2+
+        footer: (context) => _buildFooter('www.choiceluxcars.com | bookings@choiceluxcars.com'),
+        build: (context) => [
+          _sectionQuoteSummary(quote, dateFormat),
+          pw.SizedBox(height: _s20),
+
+          _sectionClientService(quote, clientData, agentData, vehicleData, driverData, dateFormat),
+          pw.SizedBox(height: _s20),
+
+          _sectionPassenger(quote),
+          if (validDetails.isNotEmpty) pw.SizedBox(height: _s20),
+
+          if (validDetails.isNotEmpty)
+            _sectionTransportTable(validDetails, currency, dateFormat, timeFormat, totalFromLegs),
+          if (_hasTripNotes(transportDetails)) pw.SizedBox(height: _s20),
+
+          if (_hasTripNotes(transportDetails)) _sectionTripNotes(transportDetails),
+          if ((quote.notes ?? '').trim().isNotEmpty) pw.SizedBox(height: _s20),
+
+          if ((quote.notes ?? '').trim().isNotEmpty) _sectionGeneralNotes(quote),
+          pw.SizedBox(height: _s20),
+
+          _sectionTermsAndConditions(),
+          pw.SizedBox(height: _s20),
+
+          _sectionPaymentInfo(),
+        ],
+      ),
+    );
+
+    return doc.save();
+  }
+
+  // ---- WATERMARK ------------------------------------------------------------
+
+  pw.Widget _buildWatermark() {
+    return pw.Stack(
+      children: [
+        pw.Positioned.fill(
+          child: pw.Center(
+            child: pw.Transform.rotate(
+              angle: -0.5, // ~-28.6 degrees
+              child: pw.Opacity(
+                opacity: 0.06,
+                child: pw.Text(
+                  'QUOTE',
+                  style: pw.TextStyle(
+                    font: _fontBold,
+                    fontSize: 120,
+                    color: _grey300,
+                  ),
+                ),
               ),
             ),
           ),
-          build: (context) => [
-            // Modern Header with Gradient Effect
-            _buildModernHeader(quote, logoImage, dateFormat),
-            pw.SizedBox(height: 20),
-            
-            // Quote Metadata Card
-            _buildMetadataCard(quote, dateFormat),
-            pw.SizedBox(height: 20),
-            
-            // Information Cards Grid
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Left Column
-                pw.Expanded(
-                  child: pw.Column(
-                    children: [
-                      _buildInfoCard(
-                        title: 'Client Details',
-                        icon: 'C',
-                        content: [
-                          _buildInfoRow('Company', clientData['company_name'] ?? 'Not specified'),
-                          if (agentData != null) _buildInfoRow('Agent', agentData['agent_name'] ?? 'Not specified'),
-                        ],
-                        color: PdfColors.grey50,
-                        borderColor: PdfColors.grey300,
-                      ),
-                      pw.SizedBox(height: 16),
-                      _buildInfoCard(
-                        title: 'Passenger Details',
-                        icon: 'P',
-                        content: [
-                          _buildInfoRow('Name', quote.passengerName ?? 'Not specified'),
-                          _buildInfoRow('Contact', quote.passengerContact ?? 'Not specified'),
-                          _buildInfoRow('Passengers', quote.pasCount.toInt().toString()),
-                          _buildInfoRow('Luggage', quote.luggage),
-                        ],
-                        color: PdfColors.grey50,
-                        borderColor: PdfColors.grey300,
-                      ),
-                    ],
-                  ),
-                ),
-                pw.SizedBox(width: 16),
-                
-                // Right Column
-                pw.Expanded(
-                  child: pw.Column(
-                    children: [
-                      _buildInfoCard(
-                        title: 'Service Details',
-                        icon: 'S',
-                        content: [
-                          _buildInfoRow('Vehicle', vehicleData?['make'] != null && vehicleData?['model'] != null 
-                              ? '${vehicleData!['make']} ${vehicleData!['model']}'
-                              : quote.vehicleType ?? 'Not specified'),
-                          if (driverData != null) _buildInfoRow('Driver', driverData['display_name'] ?? 'Not specified'),
-                          _buildInfoRow('Job Date', dateFormat.format(quote.jobDate)),
-                          _buildInfoRow('Location', quote.location ?? 'Not specified'),
-                        ],
-                        color: PdfColors.grey50,
-                        borderColor: PdfColors.grey300,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 20),
-            
-            // Quote Details Card
-            _buildQuoteDetailsCard(quote),
-            pw.SizedBox(height: 20),
-            
-            // Transport Details Card
-            _buildTransportDetailsCard(transportDetails, currency, dateFormat, timeFormat),
-            
-            // Notes Section (if available)
-            if (quote.notes?.isNotEmpty == true) ...[
-              pw.SizedBox(height: 20),
-              _buildNotesCard(quote),
-            ],
-            
-            pw.SizedBox(height: 25),
-            
-            // Modern Terms & Conditions
-            _buildModernTermsAndConditions(),
-          ],
         ),
-      );
-
-      return await pdf.save();
-    } catch (e) {
-      throw Exception('Failed to generate modern quote PDF: $e');
-    }
+      ],
+    );
   }
 
-  // Modern Header with gradient effect
-  pw.Widget _buildModernHeader(Quote quote, pw.MemoryImage? logoImage, DateFormat dateFormat) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(20),
-      decoration: pw.BoxDecoration(
-        gradient: pw.LinearGradient(
-          colors: [PdfColors.grey100, PdfColors.grey50],
-          begin: pw.Alignment.topLeft,
-          end: pw.Alignment.bottomRight,
+  // ---- HEADERS / FOOTER -----------------------------------------------------
+
+  pw.Widget _buildHeroHeader(pw.MemoryImage? logo) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: 6),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  height: 50,
+                  width: 120,
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                )
+              else
+                pw.Text(
+                  'Choice Lux Cars',
+                  style: pw.TextStyle(
+                    font: _fontBold,
+                    fontSize: 28,
+                    color: _grey800,
+                  ),
+                ),
+              pw.SizedBox(width: _s12),
+              pw.Expanded(
+                child: pw.Text(
+                  'Choice Lux Cars',
+                  style: pw.TextStyle(
+                    font: _fontBold,
+                    fontSize: 28,
+                    color: _grey800,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1),
+        // Contact strip (two rows)
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: pw.BoxDecoration(
+            color: _grey100,
+            borderRadius: pw.BorderRadius.only(
+              bottomLeft: pw.Radius.circular(_radius),
+              bottomRight: pw.Radius.circular(_radius),
+            ),
+          ),
+          child: pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              _contactRow(['Email: bookings@choiceluxcars.com', 'Phone: +27 74 239 2222']),
+              pw.SizedBox(height: 4),
+              _contactRow(['Web: www.choiceluxcars.com', 'Address: 25 Johnson Road, Bedfordview, Johannesburg']),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: _s16),
+      ],
+    );
+  }
+
+  pw.Widget _buildCompactHeader(pw.MemoryImage? logo, String quoteNumber) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.center,
+        children: [
+          if (logo != null)
+            pw.Container(height: 26, width: 60, child: pw.Image(logo, fit: pw.BoxFit.contain))
+          else
+            pw.Text('CLC', style: pw.TextStyle(font: _fontBold, fontSize: 16, color: _grey800)),
+          pw.SizedBox(width: _s8),
+          pw.Text(
+            'Quote $quoteNumber',
+            style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _buildFooter(String text) {
+    return pw.Column(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Container(height: 0.8, color: _grey300),
+        pw.SizedBox(height: 6),
+        pw.Text(
+          text,
+          style: pw.TextStyle(fontSize: 8, color: _grey600),
+          textAlign: pw.TextAlign.center,
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _contactRow(List<String> items) {
+    return pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.start,
+      children: items
+          .map((t) => pw.Padding(
+                padding: const pw.EdgeInsets.only(right: 16),
+                child: pw.Text(
+                  t,
+                  style: pw.TextStyle(fontSize: 9, color: _grey700),
+                ),
+              ))
+          .toList(),
+    );
+  }
+
+  // ---- SECTION CARDS --------------------------------------------------------
+
+  pw.Widget _sectionCard({
+    required String title,
+    required pw.Widget child,
+    pw.Widget? footer,
+  }) {
+    return pw.Container(
+      decoration: pw.BoxDecoration(
+        border: pw.Border.all(color: _grey300, width: 0.5),
+        borderRadius: pw.BorderRadius.circular(_radius),
+        color: _grey100,
+      ),
+      child: pw.Column(
+        children: [
+          pw.Container(
+            padding: const pw.EdgeInsets.all(16),
+            child: pw.Text(
+              title,
+              style: pw.TextStyle(
+                font: _fontBold,
+                fontSize: 16,
+                color: PdfColors.black,
+              ),
+            ),
+          ),
+          pw.Container(
+            width: double.infinity,
+            padding: const pw.EdgeInsets.all(16),
+            decoration: pw.BoxDecoration(
+              color: PdfColors.white,
+              borderRadius: pw.BorderRadius.only(
+                bottomLeft: pw.Radius.circular(_radius - 1),
+                bottomRight: pw.Radius.circular(_radius - 1),
+              ),
+            ),
+            child: child,
+          ),
+          if (footer != null) footer,
+        ],
+      ),
+    );
+  }
+
+  // ---- SECTIONS -------------------------------------------------------------
+
+  pw.Widget _sectionQuoteSummary(Quote quote, DateFormat dateFormat) {
+    return _sectionCard(
+      title: 'QUOTE SUMMARY',
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Expanded(
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                if ((quote.quoteTitle ?? '').trim().isNotEmpty) ...[
+                  pw.Text(
+                    quote.quoteTitle!.trim(),
+                    style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
+                  ),
+                  pw.SizedBox(height: 6),
+                ],
+                if ((quote.quoteDescription ?? '').trim().isNotEmpty)
+                  pw.Text(
+                    quote.quoteDescription!.trim(),
+                    style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+                  ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: _s20),
+          pw.Column(
+            crossAxisAlignment: pw.CrossAxisAlignment.end,
+            children: [
+              _kv('Quote Number', 'QN#${quote.id}'),
+              _kv('Date', dateFormat.format(quote.quoteDate)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _sectionClientService(
+    Quote quote,
+    Map<String, dynamic> client,
+    Map<String, dynamic>? agent,
+    Map<String, dynamic>? vehicle,
+    Map<String, dynamic>? driver,
+    DateFormat dateFormat,
+  ) {
+    return _sectionCard(
+      title: 'CLIENT & SERVICE INFORMATION',
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          // Client
+          pw.Expanded(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: _innerBox(),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _subTitle('Client Information'),
+                  pw.SizedBox(height: 12),
+                  _infoRow('Company', (client['company_name'] ?? 'Not specified').toString()),
+                  if (agent != null) _infoRow('Contact Person', (agent['agent_name'] ?? 'Not specified').toString()),
+                  _infoRow('Contact Number', (quote.passengerContact ?? 'Not specified')),
+                ],
+              ),
+            ),
+          ),
+          pw.SizedBox(width: _s16),
+          // Service
+          pw.Expanded(
+            child: pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: _innerBox(),
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  _subTitle('Service Information'),
+                  pw.SizedBox(height: 12),
+                  _infoRow(
+                    'Vehicle',
+                    (vehicle?['make'] != null && vehicle?['model'] != null)
+                        ? '${vehicle!['make']} ${vehicle['model']}'
+                        : (quote.vehicleType ?? 'Not specified'),
+                  ),
+                  if (driver != null) _infoRow('Driver', (driver['display_name'] ?? 'Not specified').toString()),
+                  _infoRow('Job Date', dateFormat.format(quote.jobDate)),
+                  _infoRow('Location', (quote.location ?? 'Not specified')),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _sectionPassenger(Quote quote) {
+    return _sectionCard(
+      title: 'PASSENGER INFORMATION',
+      child: pw.Column(
+        children: [
+          _infoRow('Name', quote.passengerName ?? 'Not specified'),
+          _infoRow('Passengers', quote.pasCount.toInt().toString()),
+          _infoRow('Luggage', quote.luggage),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _sectionTransportTable(
+    List<QuoteTransportDetail> rows,
+    NumberFormat currency,
+    DateFormat dateFormat,
+    DateFormat timeFormat,
+    double totalFromLegs,
+  ) {
+    final table = pw.TableHelper.fromTextArray(
+      border: pw.TableBorder.all(color: _grey300, width: 0.5),
+      headerStyle: pw.TextStyle(font: _fontBold, fontSize: 11, color: PdfColors.white),
+      headerDecoration: pw.BoxDecoration(color: _grey700),
+      cellStyle: pw.TextStyle(fontSize: 10, color: _grey800),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellPadding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      headers: ['Date', 'Time', 'Pick-Up Location', 'Drop-Off Location', 'Amount'],
+      data: rows.map((r) {
+        return [
+          dateFormat.format(r.pickupDate),
+          timeFormat.format(r.pickupDate),
+          r.pickupLocation,
+          r.dropoffLocation,
+          currency.format(r.amount),
+        ];
+      }).toList(),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(85),
+        1: const pw.FixedColumnWidth(50),
+        2: const pw.FlexColumnWidth(),
+        3: const pw.FlexColumnWidth(),
+        4: const pw.FixedColumnWidth(90),
+      },
+    );
+
+    final totalFooter = pw.Container(
+      padding: const pw.EdgeInsets.all(16),
+      decoration: pw.BoxDecoration(
+        color: _grey100,
+        borderRadius: pw.BorderRadius.only(
+          bottomLeft: pw.Radius.circular(_radius - 1),
+          bottomRight: pw.Radius.circular(_radius - 1),
+        ),
+        border: pw.Border.all(color: _grey300, width: 0.5),
       ),
       child: pw.Row(
         mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
         children: [
-          pw.Expanded(
-            child: pw.Column(
+          pw.Text(
+            'Total Quote Amount',
+            style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey800),
+          ),
+          pw.Text(
+            currency.format(totalFromLegs),
+            style: pw.TextStyle(font: _fontBold, fontSize: 16, color: _gold700),
+          ),
+        ],
+      ),
+    );
+
+    return _sectionCard(
+      title: 'TRANSPORT DETAILS',
+      child: table,
+      footer: totalFooter,
+    );
+  }
+
+  pw.Widget _sectionTripNotes(List<QuoteTransportDetail> details) {
+    final items = <pw.Widget>[];
+    for (var i = 0; i < details.length; i++) {
+      final n = details[i].notes?.trim();
+      if (n != null && n.isNotEmpty) {
+        items.add(
+          pw.Padding(
+            padding: const pw.EdgeInsets.only(bottom: 8),
+            child: pw.Row(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                pw.Text(
-                  'Choice Lux Cars',
-                  style: pw.TextStyle(
-                    fontSize: 28,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.blue900,
-                  ),
-                ),
-                pw.SizedBox(height: 8),
                 pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: pw.BoxDecoration(
-                    color: PdfColors.white,
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(20)),
-                    border: pw.Border.all(color: PdfColors.blue200, width: 1),
-                  ),
-                  child: pw.Text(
-                    'Professional Quote',
-                    style: pw.TextStyle(
-                      fontSize: 16,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue700,
-                    ),
-                  ),
+                  margin: const pw.EdgeInsets.only(top: 4, right: 8),
+                  width: 4,
+                  height: 4,
+                  decoration: pw.BoxDecoration(color: _gold400, shape: pw.BoxShape.circle),
                 ),
-                pw.SizedBox(height: 8),
-                pw.Text(
-                  'Reg: 2024/420673/07',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    color: PdfColors.grey700,
+                pw.Expanded(
+                  child: pw.Text(
+                    'Leg ${i + 1}: $n',
+                    style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
                   ),
                 ),
               ],
             ),
           ),
-          if (logoImage != null)
-            pw.Container(
-              height: 80,
-              width: 220,
-              child: pw.Image(logoImage, fit: pw.BoxFit.contain),
-            ),
-        ],
-      ),
+        );
+      }
+    }
+
+    return _sectionCard(
+      title: 'TRIP NOTES',
+      child: pw.Column(children: items),
     );
   }
 
-  // Modern Metadata Card
-  pw.Widget _buildMetadataCard(Quote quote, DateFormat dateFormat) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1),
-      ),
-      child: pw.Row(
-        children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Quote Date',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  dateFormat.format(quote.quoteDate),
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.normal,
-                    color: PdfColors.grey800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Quote Number',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'QN#${quote.id}',
-                  style: pw.TextStyle(
-                    fontSize: 12,
-                    fontWeight: pw.FontWeight.normal,
-                    color: PdfColors.grey800,
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Status',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey700,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Container(
-                  padding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: pw.BoxDecoration(
-                                         color: _getStatusColor(quote.quoteStatus),
-                    borderRadius: const pw.BorderRadius.all(pw.Radius.circular(12)),
-                  ),
-                  child: pw.Text(
-                    quote.statusDisplayName,
-                                         style: pw.TextStyle(
-                       fontSize: 10,
-                       fontWeight: pw.FontWeight.normal,
-                       color: _getStatusColor(quote.quoteStatus),
-                     ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Modern Info Card
-  pw.Widget _buildInfoCard({
-    required String title,
-    required String icon,
-    required List<pw.Widget> content,
-    required PdfColor color,
-    required PdfColor borderColor,
-  }) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: color,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: borderColor, width: 1.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 20,
-                height: 20,
-                decoration: pw.BoxDecoration(
-                  color: borderColor,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    icon,
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                title,
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 12),
-          ...content,
-        ],
-      ),
-    );
-  }
-
-  // Info Row Helper
-  pw.Widget _buildInfoRow(String label, String value) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(
-            width: 80,
-            child: pw.Text(
-              '$label:',
-              style: pw.TextStyle(
-                fontSize: 10,
-                fontWeight: pw.FontWeight.normal,
-                color: PdfColors.grey600,
-              ),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(
-                fontSize: 10,
-                color: PdfColors.grey800,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Quote Details Card
-  pw.Widget _buildQuoteDetailsCard(Quote quote) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 20,
-                height: 20,
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.grey600,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    'Q',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'Quote Details',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 12),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-              border: pw.Border.all(color: PdfColors.grey200, width: 1),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                if (quote.quoteTitle?.isNotEmpty == true) ...[
-                  pw.Text(
-                    quote.quoteTitle!,
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.grey800,
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                ],
-                if (quote.quoteDescription?.isNotEmpty == true) ...[
-                  pw.Text(
-                    quote.quoteDescription!,
-                    style: pw.TextStyle(
-                      fontSize: 10,
-                      color: PdfColors.grey700,
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Transport Details Card
-  pw.Widget _buildTransportDetailsCard(
-    List<QuoteTransportDetail> transportDetails,
-    NumberFormat currency,
-    DateFormat dateFormat,
-    DateFormat timeFormat,
-  ) {
-    final totalAmount = transportDetails.fold(0.0, (sum, transport) => sum + transport.amount);
-    
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 20,
-                height: 20,
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.grey600,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    'T',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'Transport Details',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 12),
-          if (transportDetails.isNotEmpty)
-            pw.Container(
-              decoration: pw.BoxDecoration(
-                color: PdfColors.white,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                border: pw.Border.all(color: PdfColors.purple100, width: 1),
-              ),
-              child: pw.TableHelper.fromTextArray(
-                border: pw.TableBorder.all(color: PdfColors.grey300, width: 0.5),
-                headerStyle: pw.TextStyle(
-                  fontWeight: pw.FontWeight.bold,
-                  fontSize: 9,
-                  color: PdfColors.white,
-                ),
-                headerDecoration: pw.BoxDecoration(
-                  color: PdfColors.grey600,
-                  borderRadius: const pw.BorderRadius.only(
-                    topLeft: pw.Radius.circular(6),
-                    topRight: pw.Radius.circular(6),
-                  ),
-                ),
-                cellStyle: pw.TextStyle(fontSize: 9, color: PdfColors.grey800),
-                cellAlignment: pw.Alignment.centerLeft,
-                cellPadding: const pw.EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                headers: ['Date', 'Time', 'Pick-Up Location', 'Drop-Off Location', 'Amount'],
-                data: transportDetails.map((item) {
-                  return [
-                    dateFormat.format(item.pickupDate),
-                    timeFormat.format(item.pickupDate),
-                    item.pickupLocation,
-                    item.dropoffLocation,
-                    currency.format(item.amount),
-                  ];
-                }).toList(),
-                columnWidths: {
-                  0: const pw.FixedColumnWidth(70),
-                  1: const pw.FixedColumnWidth(45),
-                  2: const pw.FlexColumnWidth(),
-                  3: const pw.FlexColumnWidth(),
-                  4: const pw.FixedColumnWidth(60),
-                },
-              ),
-            )
-          else
-            pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.white,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                border: pw.Border.all(color: PdfColors.grey200, width: 1),
-              ),
-              child: pw.Text(
-                'No transport details available.',
-                style: pw.TextStyle(
-                  fontStyle: pw.FontStyle.italic,
-                  color: PdfColors.grey600,
-                ),
-              ),
-            ),
-          
-          if (transportDetails.isNotEmpty) ...[
-            pw.SizedBox(height: 12),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfColors.blue50,
-                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-                border: pw.Border.all(color: PdfColors.blue200, width: 1),
-              ),
-              child: pw.Row(
-                mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-                children: [
-                  pw.Text(
-                    'Total Quote Amount:',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.grey800,
-                    ),
-                  ),
-                  pw.Text(
-                    currency.format(totalAmount),
-                    style: pw.TextStyle(
-                      fontSize: 14,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.blue700,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Notes Card
-  pw.Widget _buildNotesCard(Quote quote) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(16),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 20,
-                height: 20,
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.grey600,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    'N',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'Additional Notes',
-                style: pw.TextStyle(
-                  fontSize: 14,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 12),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-              border: pw.Border.all(color: PdfColors.grey200, width: 1),
-            ),
-            child: pw.Text(
-              quote.notes!,
-              style: pw.TextStyle(
-                fontSize: 10,
-                color: PdfColors.grey700,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Modern Terms & Conditions
-  pw.Widget _buildModernTermsAndConditions() {
-    return pw.Container(
-      padding: const pw.EdgeInsets.all(20),
-      decoration: pw.BoxDecoration(
-        color: PdfColors.grey50,
-        borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-        border: pw.Border.all(color: PdfColors.grey300, width: 1.5),
-      ),
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Row(
-            children: [
-              pw.Container(
-                width: 20,
-                height: 20,
-                decoration: pw.BoxDecoration(
-                  color: PdfColors.grey600,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(10)),
-                ),
-                child: pw.Center(
-                  child: pw.Text(
-                    'T',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      fontWeight: pw.FontWeight.bold,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                ),
-              ),
-              pw.SizedBox(width: 8),
-              pw.Text(
-                'Terms & Conditions',
-                style: pw.TextStyle(
-                  fontSize: 16,
-                  fontWeight: pw.FontWeight.bold,
-                  color: PdfColors.grey800,
-                ),
-              ),
-            ],
-          ),
-          pw.SizedBox(height: 16),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-              border: pw.Border.all(color: PdfColors.grey200, width: 1),
-            ),
-            child: pw.Column(
-              children: [
-                _buildTermItem('All quotes are valid for 24 Hours. Prices are subject to change based on availability.'),
-                _buildTermItem('Quotation is subject to vehicle and driver availability at the time of booking confirmation. Final confirmation is only provided upon receipt of payment.'),
-                _buildTermItem('Any itinerary amendments may affect the quoted price. Special requests are subject to availability and may incur additional costs.'),
-                _buildTermItem('This document is subject to the operator\'s standard conditions.'),
-              ],
-            ),
-          ),
-          pw.SizedBox(height: 16),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.blue50,
-              borderRadius: const pw.BorderRadius.all(pw.Radius.circular(6)),
-              border: pw.Border.all(color: PdfColors.blue200, width: 1),
-            ),
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Banking Details:',
-                  style: pw.TextStyle(
-                    fontSize: 10,
-                    fontWeight: pw.FontWeight.bold,
-                    color: PdfColors.grey800,
-                  ),
-                ),
-                pw.SizedBox(height: 4),
-                pw.Text(
-                  'Account Name: Choice Lux Cars JHB',
-                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-                ),
-                pw.Text(
-                  'Bank: First Rand - Acc#: 62808002802 - Branch: 250655',
-                  style: pw.TextStyle(fontSize: 9, color: PdfColors.grey700),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // Term Item Helper
-  pw.Widget _buildTermItem(String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
+  pw.Widget _sectionGeneralNotes(Quote quote) {
+    return _sectionCard(
+      title: 'GENERAL NOTES',
       child: pw.Row(
         crossAxisAlignment: pw.CrossAxisAlignment.start,
         children: [
@@ -801,19 +519,12 @@ class QuotePdfService {
             margin: const pw.EdgeInsets.only(top: 4, right: 8),
             width: 4,
             height: 4,
-            decoration: const pw.BoxDecoration(
-              color: PdfColors.blue600,
-              shape: pw.BoxShape.circle,
-            ),
+            decoration: pw.BoxDecoration(color: _grey600, shape: pw.BoxShape.circle),
           ),
           pw.Expanded(
             child: pw.Text(
-              text,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfColors.grey700,
-                height: 1.4,
-              ),
+              quote.notes!.trim(),
+              style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
             ),
           ),
         ],
@@ -821,25 +532,138 @@ class QuotePdfService {
     );
   }
 
-  // Helper method to get status color
-  PdfColor _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'draft':
-        return PdfColors.grey;
-      case 'open':
-        return PdfColors.blue;
-      case 'sent':
-        return PdfColors.orange;
-      case 'accepted':
-        return PdfColors.green;
-      case 'rejected':
-        return PdfColors.red;
-      case 'expired':
-        return PdfColors.red;
-      case 'closed':
-        return PdfColors.grey700;
-      default:
-        return PdfColors.grey;
-    }
+  pw.Widget _sectionTermsAndConditions() {
+    return _sectionCard(
+      title: 'TERMS & CONDITIONS',
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          _numberedTerm(1, 'Quotes valid for 24 hours. Prices subject to availability.'),
+          _numberedTerm(2, 'Confirmation subject to vehicle/driver availability. Payment required for final confirmation.'),
+          _numberedTerm(3, 'Itinerary changes may affect pricing. Special requests subject to availability.'),
+          _numberedTerm(4, 'Cancellation policy: 24 hours notice required for full refund.'),
+          _numberedTerm(5, 'All prices include VAT and are quoted in South African Rands (ZAR).'),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _sectionPaymentInfo() {
+    return _sectionCard(
+      title: 'PAYMENT INFORMATION',
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          _subTitle('Banking Details'),
+          pw.SizedBox(height: _s12),
+          _infoRow('Bank', 'First Rand Bank'),
+          _infoRow('Account Name', 'Choice Lux Cars JHB'),
+          _infoRow('Account Number', '62808002802'),
+          _infoRow('Branch Code', '250655'),
+          pw.SizedBox(height: _s16),
+          pw.Container(
+            padding: const pw.EdgeInsets.all(12),
+            decoration: pw.BoxDecoration(
+              color: _gold50,
+              borderRadius: pw.BorderRadius.circular(6),
+              border: pw.Border.all(color: _gold400, width: 0.5),
+            ),
+            child: pw.Text(
+              'Note: Please use Quote Number as payment reference',
+              style: pw.TextStyle(font: _fontBold, fontSize: 11, color: _gold700),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ---- SMALL HELPERS --------------------------------------------------------
+
+  pw.BoxDecoration _innerBox() => pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(6),
+        border: pw.Border.all(color: _grey300, width: 0.5),
+      );
+
+  pw.Widget _subTitle(String text) => pw.Text(
+        text,
+        style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey800),
+      );
+
+  pw.Widget _kv(String k, String v) => pw.Padding(
+        padding: const pw.EdgeInsets.only(bottom: 4),
+        child: pw.Row(
+          mainAxisSize: pw.MainAxisSize.min,
+          children: [
+            pw.Text('$k: ', style: pw.TextStyle(font: _fontBold, fontSize: 11, color: _grey600)),
+            pw.Text(v, style: pw.TextStyle(fontSize: 11, color: _grey800)),
+          ],
+        ),
+      );
+
+  pw.Widget _infoRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 8),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: _labelW,
+            child: pw.Text(
+              '$label:',
+              style: pw.TextStyle(font: _fontBold, fontSize: 11, color: _grey600),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              value,
+              style: pw.TextStyle(fontSize: 11, color: _grey800),
+              softWrap: true,
+              overflow: pw.TextOverflow.visible,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  pw.Widget _numberedTerm(int n, String text) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.only(bottom: 6),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Container(
+            margin: const pw.EdgeInsets.only(top: 1, right: 8),
+            width: 16,
+            height: 16,
+            decoration: pw.BoxDecoration(
+              color: _grey700,
+              borderRadius: pw.BorderRadius.circular(8),
+            ),
+            child: pw.Center(
+              child: pw.Text(
+                '$n',
+                style: pw.TextStyle(font: _fontBold, fontSize: 8, color: PdfColors.white),
+              ),
+            ),
+          ),
+          pw.Expanded(
+            child: pw.Text(
+              text,
+              style: pw.TextStyle(fontSize: 9, color: _grey700, lineSpacing: 1.2),
+              softWrap: true,
+              overflow: pw.TextOverflow.visible,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasTripNotes(List<QuoteTransportDetail> details) {
+    return details.any((t) => (t.notes ?? '').trim().isNotEmpty);
   }
 }
+
