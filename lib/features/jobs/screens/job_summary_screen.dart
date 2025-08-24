@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
@@ -1044,45 +1045,67 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
      final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
                     currentUser?.role?.toLowerCase() == 'manager';
      
-     return Row(
+     return Column(
        children: [
-         Expanded(
-           child: ElevatedButton.icon(
-             onPressed: () => context.go('/jobs'),
-             icon: const Icon(Icons.list),
-             label: const Text('Back to Jobs'),
-             style: ElevatedButton.styleFrom(
-               backgroundColor: Colors.grey,
-               foregroundColor: Colors.white,
-               padding: const EdgeInsets.symmetric(vertical: 16),
-               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-             ),
-           ),
-         ),
-         if (needsConfirmation) ...[
-           const SizedBox(width: 16),
-           Expanded(
-             child: ElevatedButton.icon(
-               onPressed: _confirmJob,
-               icon: const Icon(Icons.check_circle),
-               label: const Text('Confirm Job'),
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: Colors.green,
-                 foregroundColor: Colors.white,
-                 padding: const EdgeInsets.symmetric(vertical: 16),
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+         Row(
+           children: [
+             Expanded(
+               child: ElevatedButton.icon(
+                 onPressed: () => context.go('/jobs'),
+                 icon: const Icon(Icons.list),
+                 label: const Text('Back to Jobs'),
+                 style: ElevatedButton.styleFrom(
+                   backgroundColor: Colors.grey,
+                   foregroundColor: Colors.white,
+                   padding: const EdgeInsets.symmetric(vertical: 16),
+                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                 ),
                ),
              ),
-           ),
-         ] else if (canEdit) ...[
-           const SizedBox(width: 16),
-           Expanded(
+             if (needsConfirmation) ...[
+               const SizedBox(width: 16),
+               Expanded(
+                 child: ElevatedButton.icon(
+                   onPressed: _confirmJob,
+                   icon: const Icon(Icons.check_circle),
+                   label: const Text('Confirm Job'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: Colors.green,
+                     foregroundColor: Colors.white,
+                     padding: const EdgeInsets.symmetric(vertical: 16),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                   ),
+                 ),
+               ),
+             ] else if (canEdit) ...[
+               const SizedBox(width: 16),
+               Expanded(
+                 child: ElevatedButton.icon(
+                   onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
+                   icon: const Icon(Icons.edit),
+                   label: const Text('Edit Job'),
+                   style: ElevatedButton.styleFrom(
+                     backgroundColor: ChoiceLuxTheme.richGold,
+                     foregroundColor: Colors.white,
+                     padding: const EdgeInsets.symmetric(vertical: 16),
+                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                   ),
+                 ),
+               ),
+             ],
+           ],
+         ),
+         // Add Another Trip Button
+         if (canEdit) ...[
+           const SizedBox(height: 12),
+           SizedBox(
+             width: double.infinity,
              child: ElevatedButton.icon(
-               onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
-               icon: const Icon(Icons.edit),
-               label: const Text('Edit Job'),
+               onPressed: _showAddTripModal,
+               icon: const Icon(Icons.add),
+               label: const Text('Add Another Trip'),
                style: ElevatedButton.styleFrom(
-                 backgroundColor: ChoiceLuxTheme.richGold,
+                 backgroundColor: ChoiceLuxTheme.infoColor,
                  foregroundColor: Colors.white,
                  padding: const EdgeInsets.symmetric(vertical: 16),
                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -1540,6 +1563,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       builder: (context) => TripEditModal(
         trip: trip,
         onTripUpdated: (updatedTrip) {
+          // Refresh the trips list
+          _loadJobData();
+        },
+      ),
+    );
+  }
+
+  void _showAddTripModal() {
+    showDialog(
+      context: context,
+      builder: (context) => AddTripModal(
+        jobId: widget.jobId,
+        onTripAdded: (newTrip) {
           // Refresh the trips list
           _loadJobData();
         },
