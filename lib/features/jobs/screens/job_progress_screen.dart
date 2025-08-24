@@ -1880,9 +1880,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     children: [
                       _buildLuxuryJobInfoCard(),
                       const SizedBox(height: 24),
-                      _buildLuxuryTimeline(),
-                      const SizedBox(height: 24),
                       _buildLuxuryCurrentStepCard(),
+                      const SizedBox(height: 24),
+                      _buildLuxuryTimeline(),
                       const SizedBox(height: 24),
                       
                       // Trip Progress (if available)

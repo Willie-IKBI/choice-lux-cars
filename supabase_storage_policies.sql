@@ -33,6 +33,35 @@ FOR DELETE USING (
   auth.role() = 'authenticated'
 );
 
+-- Set up Row Level Security (RLS) policies for the pdfdocuments bucket
+-- Allow authenticated users to upload PDFs to any folder in pdfdocuments
+CREATE POLICY "Allow authenticated users to upload to pdfdocuments" ON storage.objects
+FOR INSERT WITH CHECK (
+  bucket_id = 'pdfdocuments' AND 
+  auth.role() = 'authenticated'
+);
+
+-- Allow authenticated users to view PDFs from pdfdocuments
+CREATE POLICY "Allow authenticated users to view pdfdocuments" ON storage.objects
+FOR SELECT USING (
+  bucket_id = 'pdfdocuments' AND 
+  auth.role() = 'authenticated'
+);
+
+-- Allow users to update their own PDFs in pdfdocuments
+CREATE POLICY "Allow users to update their own pdfdocuments" ON storage.objects
+FOR UPDATE USING (
+  bucket_id = 'pdfdocuments' AND 
+  auth.role() = 'authenticated'
+);
+
+-- Allow users to delete their own PDFs in pdfdocuments
+CREATE POLICY "Allow users to delete their own pdfdocuments" ON storage.objects
+FOR DELETE USING (
+  bucket_id = 'pdfdocuments' AND 
+  auth.role() = 'authenticated'
+);
+
 -- Grant necessary permissions
 GRANT USAGE ON SCHEMA storage TO authenticated;
 GRANT ALL ON storage.objects TO authenticated;
@@ -52,6 +81,16 @@ SELECT
   allowed_mime_types
 FROM storage.buckets 
 WHERE id = 'clc_images';
+
+-- Verify the pdfdocuments bucket exists and is public
+SELECT 
+  id, 
+  name, 
+  public, 
+  file_size_limit,
+  allowed_mime_types
+FROM storage.buckets 
+WHERE id = 'pdfdocuments';
 
 -- List existing policies
 SELECT 

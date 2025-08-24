@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
@@ -6,10 +7,12 @@ import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
+import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:intl/intl.dart';
 
-class JobListCard extends StatelessWidget {
+class JobListCard extends ConsumerWidget {
   final Job job;
   final Client? client;
   final Vehicle? vehicle;
@@ -19,6 +22,7 @@ class JobListCard extends StatelessWidget {
   final bool isTablet;
   final bool isDesktop;
   final bool canCreateVoucher;
+  final bool canCreateInvoice;
 
   const JobListCard({
     super.key,
@@ -31,10 +35,11 @@ class JobListCard extends StatelessWidget {
     required this.isTablet,
     required this.isDesktop,
     this.canCreateVoucher = false,
+    this.canCreateInvoice = false,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final padding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0;
     final spacing = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
     final cornerRadius = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
@@ -69,8 +74,8 @@ class JobListCard extends StatelessWidget {
             
             SizedBox(height: spacing),
             
-            // 5. Action Buttons
-            _buildActionButtons(context, spacing),
+                         // 5. Action Buttons
+             _buildActionButtons(context, ref, spacing),
           ],
         ),
       ),
@@ -345,7 +350,7 @@ class JobListCard extends StatelessWidget {
   }
 
   // 5. Action Buttons
-  Widget _buildActionButtons(BuildContext context, double spacing) {
+  Widget _buildActionButtons(BuildContext context, WidgetRef ref, double spacing) {
     return Column(
       children: [
         // Primary Action: View Details
@@ -381,10 +386,10 @@ class JobListCard extends StatelessWidget {
         Row(
           children: [
             // Driver Flow Button (if applicable)
-            if (_shouldShowDriverFlowButton())
+            if (_shouldShowDriverFlowButton(ref))
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => _handleDriverFlow(context),
+                  onPressed: () => _handleDriverFlow(context, ref),
                   icon: Icon(_getDriverFlowIcon(), size: 16),
                   label: Text(
                     _getDriverFlowText(),
@@ -404,13 +409,21 @@ class JobListCard extends StatelessWidget {
                 ),
               ),
             
-            // Voucher Actions
-            if (canCreateVoucher) ...[
-              if (_shouldShowDriverFlowButton()) SizedBox(width: spacing),
-              Expanded(
-                child: _buildVoucherSection(context, spacing),
-              ),
-            ],
+                         // Voucher Actions
+             if (canCreateVoucher) ...[
+               if (_shouldShowDriverFlowButton(ref)) SizedBox(width: spacing),
+               Expanded(
+                 child: _buildVoucherSection(context, spacing),
+               ),
+             ],
+             
+             // Invoice Actions
+             if (canCreateInvoice) ...[
+               if (_shouldShowDriverFlowButton(ref) || canCreateVoucher) SizedBox(width: spacing),
+               Expanded(
+                 child: _buildInvoiceSection(context, spacing),
+               ),
+             ],
           ],
         ),
       ],
@@ -434,17 +447,6 @@ class JobListCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Voucher Label
-          Text(
-            'Voucher',
-            style: TextStyle(
-              fontSize: isSmallMobile ? 10 : 12,
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-          
-          SizedBox(height: spacing * 0.5),
           
           // Voucher Actions
           VoucherActionButtons(
@@ -456,6 +458,49 @@ class JobListCard extends StatelessWidget {
           
           // Status Text
           if (hasVoucher)
+            Padding(
+              padding: EdgeInsets.only(top: spacing * 0.25),
+              child: Text(
+                'Created',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 10 : 11,
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  // Invoice Section
+  Widget _buildInvoiceSection(BuildContext context, double spacing) {
+    final hasInvoice = job.invoicePdf != null && job.invoicePdf!.isNotEmpty;
+    
+    return Container(
+      padding: EdgeInsets.all(spacing * 0.75),
+      decoration: BoxDecoration(
+        color: Colors.grey.withValues(alpha: 0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withValues(alpha: 0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          
+          // Invoice Actions
+          InvoiceActionButtons(
+            jobId: job.id,
+            invoicePdfUrl: job.invoicePdf,
+            invoiceData: null,
+            canCreateInvoice: canCreateInvoice,
+          ),
+          
+          // Status Text
+          if (hasInvoice)
             Padding(
               padding: EdgeInsets.only(top: spacing * 0.25),
               child: Text(
@@ -491,10 +536,17 @@ class JobListCard extends StatelessWidget {
     }
   }
 
-  bool _shouldShowDriverFlowButton() {
-    return job.statusEnum == JobStatus.assigned || 
-           job.statusEnum == JobStatus.started ||
-           job.statusEnum == JobStatus.inProgress;
+  bool _shouldShowDriverFlowButton(WidgetRef ref) {
+    // Check if current user is the assigned driver
+    final currentUser = ref.read(currentUserProfileProvider);
+    final isAssignedDriver = currentUser?.id == job.driverId;
+    
+    // Only show button if user is assigned driver and job status allows it
+    return isAssignedDriver && (
+      job.statusEnum == JobStatus.assigned || 
+      job.statusEnum == JobStatus.started ||
+      job.statusEnum == JobStatus.inProgress
+    );
   }
 
   IconData _getDriverFlowIcon() {
@@ -502,9 +554,11 @@ class JobListCard extends StatelessWidget {
       case JobStatus.assigned:
         return Icons.play_arrow;
       case JobStatus.started:
-        return Icons.directions_car;
+        return Icons.sync;
       case JobStatus.inProgress:
-        return Icons.timeline;
+        return Icons.sync;
+      case JobStatus.completed:
+        return Icons.summarize;
       default:
         return Icons.info;
     }
@@ -513,49 +567,49 @@ class JobListCard extends StatelessWidget {
   String _getDriverFlowText() {
     switch (job.statusEnum) {
       case JobStatus.assigned:
-        return 'Start Trip';
+        return 'Start Job';
       case JobStatus.started:
-        return 'In Transit';
+        return 'Resume Job';
       case JobStatus.inProgress:
-        return 'Update';
+        return 'Continue Job';
+      case JobStatus.completed:
+        return 'Job Overview';
       default:
-        return 'Details';
+        return 'View Job';
     }
   }
 
   Color _getDriverFlowColor() {
     switch (job.statusEnum) {
       case JobStatus.assigned:
-        return Colors.green;
+        return ChoiceLuxTheme.successColor;
       case JobStatus.started:
-        return Colors.blue;
+        return ChoiceLuxTheme.infoColor;
       case JobStatus.inProgress:
-        return Colors.orange;
+        return ChoiceLuxTheme.orange;
+      case JobStatus.completed:
+        return ChoiceLuxTheme.richGold;
       default:
-        return Colors.grey;
+        return ChoiceLuxTheme.platinumSilver;
     }
   }
 
-  Future<void> _handleDriverFlow(BuildContext context) async {
+  Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref) async {
     try {
-      final jobId = int.tryParse(job.id);
-      if (jobId != null) {
-        await DriverFlowApiService.confirmDriverAwareness(jobId);
-      }
+      // Navigate to the appropriate screen based on job status
+      final route = switch (job.statusEnum) {
+        JobStatus.completed => '/jobs/${job.id}/summary',
+        _ => '/jobs/${job.id}/progress',
+      };
       
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Driver flow updated successfully'),
-            backgroundColor: Colors.green,
-          ),
-        );
+        context.go(route);
       }
     } catch (e) {
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Failed to update driver flow: ${e.toString()}'),
+            content: Text('Failed to navigate to driver flow: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

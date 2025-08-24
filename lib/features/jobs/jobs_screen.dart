@@ -78,6 +78,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                             userRole == 'manager' ||
                             userRole == 'driver_manager' ||
                             userRole == 'drivermanager';
+    
+    // Check if user can create invoices (same permissions as vouchers for now)
+    final canCreateInvoice = canCreateVoucher;
 
     // Filter jobs based on current filter
     List<Job> filteredJobs = _filterJobs(jobs);
@@ -155,6 +158,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                         isTablet,
                         isDesktop,
                         canCreateVoucher,
+                        canCreateInvoice,
                       ),
                       loading: () => _buildLoadingState(isSmallMobile, isMobile, isTablet, isDesktop),
                       error: (error, stack) => _buildErrorState(error, isSmallMobile, isMobile, isTablet, isDesktop),
@@ -345,6 +349,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     bool isTablet,
     bool isDesktop,
     bool canCreateVoucher,
+    bool canCreateInvoice,
   ) {
     final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
     final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
@@ -399,6 +404,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
             isTablet: isTablet,
             isDesktop: isDesktop,
             canCreateVoucher: canCreateVoucher,
+            canCreateInvoice: canCreateInvoice,
           ),
         );
       },

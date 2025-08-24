@@ -48,8 +48,8 @@ class DriverFlowApiService {
             'driver_user': driverId,
             'current_step': 'vehicle_collection',
             'job_started_at': DateTime.now().toIso8601String(),
-            'job_start_odo': odoStartReading,
-            'job_start_odo_img': pdpStartImage,
+            'odo_start_reading': odoStartReading,
+            'pdp_start_image': pdpStartImage,
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           }, onConflict: 'job_id');

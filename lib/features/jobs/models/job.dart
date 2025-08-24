@@ -72,6 +72,7 @@ class Job {
   final String status; // open, closed, in_progress
   final String? quoteNo;
   final String? voucherPdf;
+  final String? invoicePdf;
   final String? cancelReason;
   final String? location; // Branch location (Jhb, Cpt, Dbn)
   final String createdBy;
@@ -101,6 +102,7 @@ class Job {
     required this.status,
     this.quoteNo,
     this.voucherPdf,
+    this.invoicePdf,
     this.cancelReason,
     this.location,
     required this.createdBy,
@@ -142,6 +144,7 @@ class Job {
       status: map['job_status']?.toString() ?? 'open',
       quoteNo: map['quote_no']?.toString(),
       voucherPdf: map['voucher_pdf']?.toString(),
+      invoicePdf: map['invoice_pdf']?.toString(),
       cancelReason: map['cancel_reason']?.toString(),
       location: map['location']?.toString(),
       createdBy: map['created_by']?.toString() ?? '',
@@ -179,6 +182,7 @@ class Job {
       'job_status': status,
       'quote_no': quoteNo,
       'voucher_pdf': voucherPdf,
+      'invoice_pdf': invoicePdf,
       'cancel_reason': cancelReason,
       'location': location,
       'created_by': createdBy,
@@ -210,6 +214,7 @@ class Job {
     String? status,
     String? quoteNo,
     String? voucherPdf,
+    String? invoicePdf,
     String? cancelReason,
     String? location,
     String? createdBy,
