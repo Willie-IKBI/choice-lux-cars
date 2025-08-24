@@ -26,8 +26,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
   late TextEditingController _amountController;
   late DateTime _pickupDate;
   late TimeOfDay _pickupTime;
-  late DateTime? _clientPickupTime;
-  late DateTime? _clientDropoffTime;
+
   bool _isLoading = false;
 
   @override
@@ -39,8 +38,6 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
     _amountController = TextEditingController();
     _pickupDate = DateTime.now();
     _pickupTime = TimeOfDay.now();
-    _clientPickupTime = null;
-    _clientDropoffTime = null;
   }
 
   @override
@@ -78,57 +75,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
     }
   }
 
-  Future<void> _selectClientPickupTime(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _clientPickupTime ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && mounted) {
-      final TimeOfDay? timePicked = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (timePicked != null && mounted) {
-        setState(() {
-          _clientPickupTime = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            timePicked.hour,
-            timePicked.minute,
-          );
-        });
-      }
-    }
-  }
 
-  Future<void> _selectClientDropoffTime(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _clientDropoffTime ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null && mounted) {
-      final TimeOfDay? timePicked = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (timePicked != null && mounted) {
-        setState(() {
-          _clientDropoffTime = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            timePicked.hour,
-            timePicked.minute,
-          );
-        });
-      }
-    }
-  }
 
   Future<void> _saveTrip() async {
     if (!_formKey.currentState!.validate()) return;
@@ -154,8 +101,6 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
         dropoffLocation: _dropoffLocationController.text.trim(),
         notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
         amount: double.tryParse(_amountController.text) ?? 0.0,
-        clientPickupTime: _clientPickupTime,
-        clientDropoffTime: _clientDropoffTime,
       );
 
       await ref.read(tripsProvider.notifier).addTrip(newTrip);
@@ -317,16 +262,16 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                       
                       const SizedBox(height: 16),
                       
-                      // Amount
-                      TextFormField(
-                        controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Amount',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.attach_money),
-                        ),
-                        keyboardType: TextInputType.number,
-                      ),
+                                             // Amount
+                       TextFormField(
+                         controller: _amountController,
+                         decoration: const InputDecoration(
+                           labelText: 'Amount (R)',
+                           border: OutlineInputBorder(),
+                           prefixIcon: Icon(Icons.attach_money),
+                         ),
+                         keyboardType: TextInputType.number,
+                       ),
                       
                       const SizedBox(height: 16),
                       
@@ -341,65 +286,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                         maxLines: 3,
                       ),
                       
-                      const SizedBox(height: 20),
                       
-                      // Client Pickup/Dropoff Times (Optional)
-                      const Text(
-                        'Client Times (Optional)',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      
-                      Row(
-                        children: [
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _selectClientPickupTime(context),
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Client Pickup Time',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person),
-                                ),
-                                child: Text(
-                                  _clientPickupTime != null
-                                      ? '${_clientPickupTime!.day}/${_clientPickupTime!.month}/${_clientPickupTime!.year} ${_clientPickupTime!.hour.toString().padLeft(2, '0')}:${_clientPickupTime!.minute.toString().padLeft(2, '0')}'
-                                      : 'Not set',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _clientPickupTime != null ? null : Colors.grey,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: InkWell(
-                              onTap: () => _selectClientDropoffTime(context),
-                              child: InputDecorator(
-                                decoration: const InputDecoration(
-                                  labelText: 'Client Dropoff Time',
-                                  border: OutlineInputBorder(),
-                                  prefixIcon: Icon(Icons.person_off),
-                                ),
-                                child: Text(
-                                  _clientDropoffTime != null
-                                      ? '${_clientDropoffTime!.day}/${_clientDropoffTime!.month}/${_clientDropoffTime!.year} ${_clientDropoffTime!.hour.toString().padLeft(2, '0')}:${_clientDropoffTime!.minute.toString().padLeft(2, '0')}'
-                                      : 'Not set',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    color: _clientDropoffTime != null ? null : Colors.grey,
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
                     ],
                   ),
                 ),
