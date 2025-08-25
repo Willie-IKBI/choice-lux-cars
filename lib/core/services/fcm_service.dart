@@ -3,49 +3,98 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  static String? _currentToken;
+  static bool _isInitialized = false;
   
-  static Future<void> initialize(WidgetRef ref) async {
-    // Request permission
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+  /// Initialize FCM service
+  static Future<bool> initialize(WidgetRef ref) async {
+    if (_isInitialized) {
+      print('FCMService: Already initialized');
+      return true;
+    }
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      // Get FCM token and save to user profile
-      String? token = await _messaging.getToken();
-      if (token != null) {
-        await _saveFCMToken(token);
+    try {
+      print('FCMService: Initializing...');
+      
+      // Request permission
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+        provisional: false,
+        criticalAlert: true,
+        announcement: true,
+      );
+
+      print('FCMService: Permission status: ${settings.authorizationStatus}');
+
+      if (settings.authorizationStatus == AuthorizationStatus.authorized ||
+          settings.authorizationStatus == AuthorizationStatus.provisional) {
+        
+        // Get FCM token and save to user profile
+        _currentToken = await _messaging.getToken();
+        if (_currentToken != null) {
+          await _saveFCMToken(_currentToken!);
+          print('FCMService: Token saved: ${_currentToken!.substring(0, 20)}...');
+        }
+
+        // Handle token refresh
+        _messaging.onTokenRefresh.listen((token) async {
+          _currentToken = token;
+          await _saveFCMToken(token);
+          print('FCMService: Token refreshed: ${token.substring(0, 20)}...');
+        });
+
+        // Set up message handlers
+        _setupMessageHandlers(ref);
+        
+        _isInitialized = true;
+        print('FCMService: Initialization complete');
+        return true;
+      } else {
+        print('FCMService: Permission denied');
+        return false;
       }
-
-      // Handle token refresh
-      _messaging.onTokenRefresh.listen(_saveFCMToken);
-
-      // Handle background messages
-      FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
-      // Handle foreground messages
-      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-        _handleForegroundMessage(message, ref);
-      });
-
-      // Handle notification taps when app is in background
-      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-        _handleNotificationTap(message, ref);
-      });
+    } catch (e) {
+      print('FCMService: Initialization failed: $e');
+      return false;
     }
   }
 
+  /// Set up message handlers
+  static void _setupMessageHandlers(WidgetRef ref) {
+    // Handle background messages
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    // Handle foreground messages
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      _handleForegroundMessage(message, ref);
+    });
+
+    // Handle notification taps when app is in background
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotificationTap(message, ref);
+    });
+
+    // Handle initial notification when app is opened from terminated state
+    _messaging.getInitialMessage().then((RemoteMessage? message) {
+      if (message != null) {
+        _handleNotificationTap(message, ref);
+      }
+    });
+  }
+
+  /// Save FCM token to user profile
   static Future<void> _saveFCMToken(String token) async {
     try {
       // Get current user ID
       final currentUser = SupabaseService.instance.currentUser;
       if (currentUser == null) {
-        print('No current user found for FCM token save');
+        print('FCMService: No current user found for FCM token save');
         return;
       }
       
@@ -54,50 +103,261 @@ class FCMService {
         userId: currentUser.id,
         data: {
           'fcm_token': token,
+          'fcm_token_updated_at': DateTime.now().toIso8601String(),
         },
       );
-      print('FCM token saved successfully');
+      print('FCMService: FCM token saved successfully');
     } catch (e) {
-      print('Error saving FCM token: $e');
+      print('FCMService: Error saving FCM token: $e');
     }
   }
 
+  /// Handle foreground messages
   static void _handleForegroundMessage(RemoteMessage message, WidgetRef ref) {
-    if (message.data['action'] == 'new_job_assigned') {
-      // Show in-app notification
-      _showJobAssignmentNotification(message.data['job_id'], ref);
+    print('FCMService: Foreground message received: ${message.data}');
+    
+    final action = message.data['action'];
+    final notificationType = message.data['notification_type'];
+    final jobId = message.data['job_id'];
+    final messageText = message.notification?.body ?? 'New notification received';
+    
+    // Update notification count in provider
+    ref.read(notificationProvider.notifier).updateUnreadCount();
+    
+    // Show in-app notification based on type
+    switch (action) {
+      case 'new_job_assigned':
+      case 'job_reassigned':
+        _showJobNotification(messageText, jobId, ref, 'View Job');
+        break;
+      case 'job_cancelled':
+        _showJobNotification(messageText, jobId, ref, 'View Details');
+        break;
+      case 'job_status_changed':
+        _showJobNotification(messageText, jobId, ref, 'View Job');
+        break;
+      case 'payment_reminder':
+        _showPaymentNotification(messageText, jobId, ref);
+        break;
+      case 'system_alert':
+        _showSystemAlert(messageText, ref);
+        break;
+      default:
+        _showGenericNotification(messageText, ref);
     }
   }
 
+  /// Handle notification taps
   static void _handleNotificationTap(RemoteMessage message, WidgetRef ref) {
-    if (message.data['action'] == 'new_job_assigned') {
-      // Navigate to job detail
-      _navigateToJobDetail(message.data['job_id'], ref);
+    print('FCMService: Notification tapped: ${message.data}');
+    
+    final action = message.data['action'];
+    final jobId = message.data['job_id'];
+    final route = message.data['route'];
+    
+    // Navigate based on action data
+    if (route != null) {
+      _navigateToRoute(route, ref);
+    } else if (action == 'view_job' && jobId != null) {
+      _navigateToJobDetail(jobId, ref);
+    } else if (action == 'confirm_job' && jobId != null) {
+      _navigateToJobDetail(jobId, ref);
+    } else {
+      // Default navigation to notifications screen
+      _navigateToNotifications(ref);
     }
   }
 
-  static void _showJobAssignmentNotification(String jobId, WidgetRef ref) {
-    // Show snackbar or custom notification
+  /// Show job-related notification
+  static void _showJobNotification(String message, String? jobId, WidgetRef ref, String actionText) {
     final context = ref.context;
-    if (context != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('🚗 New job assigned! Tap to view details.'),
-          action: SnackBarAction(
-            label: 'View',
-            onPressed: () => _navigateToJobDetail(jobId, ref),
-          ),
-          duration: Duration(seconds: 10),
+    if (context == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.work, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
         ),
-      );
+        action: SnackBarAction(
+          label: actionText,
+          onPressed: () => jobId != null ? _navigateToJobDetail(jobId, ref) : _navigateToNotifications(ref),
+        ),
+        duration: const Duration(seconds: 8),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  /// Show payment notification
+  static void _showPaymentNotification(String message, String? jobId, WidgetRef ref) {
+    final context = ref.context;
+    if (context == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.payment, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'View Payment',
+          onPressed: () => jobId != null ? _navigateToJobDetail(jobId, ref) : _navigateToNotifications(ref),
+        ),
+        duration: const Duration(seconds: 8),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  /// Show system alert
+  static void _showSystemAlert(String message, WidgetRef ref) {
+    final context = ref.context;
+    if (context == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.warning, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        duration: const Duration(seconds: 6),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  /// Show generic notification
+  static void _showGenericNotification(String message, WidgetRef ref) {
+    final context = ref.context;
+    if (context == null) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            Icon(Icons.notifications, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        action: SnackBarAction(
+          label: 'View',
+          onPressed: () => _navigateToNotifications(ref),
+        ),
+        duration: const Duration(seconds: 6),
+        backgroundColor: Colors.grey[700],
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
+  /// Navigate to specific route
+  static void _navigateToRoute(String route, WidgetRef ref) {
+    final context = ref.context;
+    if (context == null) return;
+    
+    try {
+      context.go(route);
+      print('FCMService: Navigated to route: $route');
+    } catch (e) {
+      print('FCMService: Navigation error: $e');
+      // Fallback to notifications screen
+      _navigateToNotifications(ref);
     }
   }
 
+  /// Navigate to job detail
   static void _navigateToJobDetail(String jobId, WidgetRef ref) {
-    // Navigate to job summary screen
     final context = ref.context;
-    if (context != null) {
+    if (context == null) return;
+    
+    try {
       context.go('/jobs/$jobId/summary');
+      print('FCMService: Navigated to job: $jobId');
+    } catch (e) {
+      print('FCMService: Job navigation error: $e');
+      _navigateToNotifications(ref);
+    }
+  }
+
+  /// Navigate to notifications screen
+  static void _navigateToNotifications(WidgetRef ref) {
+    final context = ref.context;
+    if (context == null) return;
+    
+    try {
+      context.go('/notifications');
+      print('FCMService: Navigated to notifications');
+    } catch (e) {
+      print('FCMService: Notifications navigation error: $e');
+    }
+  }
+
+  /// Get current FCM token
+  static String? get currentToken => _currentToken;
+
+  /// Check if FCM is initialized
+  static bool get isInitialized => _isInitialized;
+
+  /// Refresh FCM token
+  static Future<String?> refreshToken() async {
+    try {
+      _currentToken = await _messaging.getToken();
+      if (_currentToken != null) {
+        await _saveFCMToken(_currentToken!);
+      }
+      return _currentToken;
+    } catch (e) {
+      print('FCMService: Error refreshing token: $e');
+      return null;
+    }
+  }
+
+  /// Delete FCM token (for logout)
+  static Future<void> deleteToken() async {
+    try {
+      await _messaging.deleteToken();
+      _currentToken = null;
+      print('FCMService: Token deleted');
+    } catch (e) {
+      print('FCMService: Error deleting token: $e');
+    }
+  }
+
+  /// Subscribe to topic
+  static Future<void> subscribeToTopic(String topic) async {
+    try {
+      await _messaging.subscribeToTopic(topic);
+      print('FCMService: Subscribed to topic: $topic');
+    } catch (e) {
+      print('FCMService: Error subscribing to topic: $e');
+    }
+  }
+
+  /// Unsubscribe from topic
+  static Future<void> unsubscribeFromTopic(String topic) async {
+    try {
+      await _messaging.unsubscribeFromTopic(topic);
+      print('FCMService: Unsubscribed from topic: $topic');
+    } catch (e) {
+      print('FCMService: Error unsubscribing from topic: $e');
     }
   }
 }
@@ -105,9 +365,33 @@ class FCMService {
 // Background message handler
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  // Handle background messages
-  if (message.data['action'] == 'new_job_assigned') {
-    // Could show local notification here
-    print('Background message received: ${message.data}');
+  print('FCMService: Background message received: ${message.data}');
+  
+  // Handle different notification types in background
+  final action = message.data['action'];
+  final notificationType = message.data['notification_type'];
+  
+  switch (action) {
+    case 'new_job_assigned':
+    case 'job_reassigned':
+      print('FCMService: Background job assignment notification');
+      break;
+    case 'job_cancelled':
+      print('FCMService: Background job cancellation notification');
+      break;
+    case 'job_status_changed':
+      print('FCMService: Background job status change notification');
+      break;
+    case 'payment_reminder':
+      print('FCMService: Background payment reminder notification');
+      break;
+    case 'system_alert':
+      print('FCMService: Background system alert notification');
+      break;
+    default:
+      print('FCMService: Background generic notification');
   }
+  
+  // You could show a local notification here if needed
+  // await _showLocalNotification(message);
 } 

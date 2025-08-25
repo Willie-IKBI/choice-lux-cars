@@ -2,16 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
-import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
-import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
-import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
-import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
-import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
-import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
-import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
@@ -30,7 +27,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   bool _isLoading = true;
   String? _errorMessage;
   Job? _job;
-  List<Trip> _trips = [];
+  List<Trip> _trips = []; // Changed from List<Trip> to List<dynamic>
   dynamic _client;
   dynamic _agent;
   dynamic _vehicle;
@@ -83,68 +80,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       _job = job;
       
-      // Try to load trips, but don't fail if trips table doesn't exist
-      try {
-        await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
-        _trips = ref.read(tripsProvider);
-      } catch (e) {
-        // If trips table doesn't exist, just continue with empty trips list
-        print('Warning: Could not load trips: $e');
-        _trips = [];
-      }
+      // Load trips for this job using the tripsProvider
+      print('Loading trips for job ${widget.jobId}...');
+      await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
+      final trips = ref.read(tripsProvider);
+      _trips = trips;
+      print('Loaded ${trips.length} trips for job ${widget.jobId}');
       
       // Load step completion times
       await _loadStepCompletionData();
       
-      // Ensure all providers have loaded data
-      await _ensureDataLoaded();
+      // Load related entities from database directly
+      await _loadRelatedEntities();
       
-      // Get related entities
-      final vehiclesState = ref.read(vehiclesProvider);
-      final users = ref.read(usersProvider);
-      final clients = await ref.read(clientsProvider.future);
-      final vehicles = vehiclesState.vehicles;
-      
-      // Debug information
-      print('Job Vehicle ID: ${_job!.vehicleId}');
-      print('Job Driver ID: ${_job!.driverId}');
-      print('Available vehicles: ${vehicles.length}');
-      print('Available users: ${users.length}');
-      print('Available clients: ${clients.length}');
-      
-      if (vehicles.isNotEmpty) {
-        print('Vehicle IDs: ${vehicles.map((v) => v.id).toList()}');
-      }
-      if (users.isNotEmpty) {
-        print('User IDs: ${users.map((u) => u.id).toList()}');
-      }
-      
-      // Find client
-      try {
-        _client = clients.firstWhere((c) => c.id.toString() == _job!.clientId);
-      } catch (e) {
-        print('Client not found for ID: ${_job!.clientId}');
-        _client = null;
-      }
-      
-      // Find vehicle
-      try {
-        _vehicle = vehicles.firstWhere((v) => v.id.toString() == _job!.vehicleId);
-      } catch (e) {
-        print('Vehicle not found for ID: ${_job!.vehicleId}');
-        _vehicle = null;
-      }
-      
-      // Find driver
-      try {
-        _driver = users.firstWhere((u) => u.id == _job!.driverId);
-      } catch (e) {
-        print('Driver not found for ID: ${_job!.driverId}');
-        _driver = null;
-      }
-      
-      // Note: Agent lookup would need to be implemented separately
-      // For now, we'll leave _agent as null
     } catch (e) {
       print('Error loading job data: $e');
       // Store error to show in build method
@@ -154,19 +102,45 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
   }
   
-  Future<void> _ensureDataLoaded() async {
-    // Ensure vehicles are loaded
-    final vehiclesState = ref.read(vehiclesProvider);
-    if (vehiclesState.vehicles.isEmpty) {
-      print('Vehicles not loaded, fetching...');
-      await ref.read(vehiclesProvider.notifier).fetchVehicles();
-    }
-    
-    // Ensure users are loaded
-    final users = ref.read(usersProvider);
-    if (users.isEmpty) {
-      print('Users not loaded, fetching...');
-      await ref.read(usersProvider.notifier).fetchUsers();
+  Future<void> _loadRelatedEntities() async {
+    try {
+      // Load client data
+      if (_job!.clientId.isNotEmpty) {
+        final clientResponse = await Supabase.instance.client
+            .from('clients')
+            .select('*')
+            .eq('id', int.parse(_job!.clientId))
+            .maybeSingle();
+        _client = clientResponse;
+      }
+      
+      // Load vehicle data
+      if (_job!.vehicleId.isNotEmpty) {
+        final vehicleResponse = await Supabase.instance.client
+            .from('vehicles')
+            .select('*')
+            .eq('id', int.parse(_job!.vehicleId))
+            .maybeSingle();
+        _vehicle = vehicleResponse;
+      }
+      
+      // Load driver data
+      if (_job!.driverId.isNotEmpty) {
+        final driverResponse = await Supabase.instance.client
+            .from('profiles')
+            .select('*')
+            .eq('id', _job!.driverId)
+            .maybeSingle();
+        _driver = driverResponse;
+      }
+      
+      print('Loaded related entities:');
+      print('Client: ${_client != null ? 'Found' : 'Not found'}');
+      print('Vehicle: ${_vehicle != null ? 'Found' : 'Not found'}');
+      print('Driver: ${_driver != null ? 'Found' : 'Not found'}');
+    } catch (e) {
+      print('Error loading related entities: $e');
+      // Don't fail the entire load if this fails
     }
   }
   
@@ -212,7 +186,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => _showBackOptions(),
+          onBackPressed: () => context.go('/jobs'),
         ),
         body: Center(
           child: Column(
@@ -247,7 +221,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => _showBackOptions(),
+          onBackPressed: () => context.go('/jobs'),
         ),
         body: const Center(
           child: Text('Job not found'),
@@ -255,7 +229,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       );
     }
     
-    final totalAmount = _trips.fold(0.0, (sum, trip) => sum + trip.amount);
+    // Calculate total amount from job payment amount since trips are not implemented
+    final totalAmount = _job!.paymentAmount ?? 0.0;
     final isDesktop = MediaQuery.of(context).size.width > 768;
     
     return Scaffold(
@@ -263,7 +238,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         title: 'Job Summary',
         subtitle: 'Job #${_job!.id}',
         showBackButton: true,
-        onBackPressed: () => _showBackOptions(),
+        onBackPressed: () => context.go('/jobs'),
         actions: [
           IconButton(
             icon: const Icon(Icons.print),
@@ -277,7 +252,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ],
       ),
-             body: isDesktop ? _buildDesktopLayout(totalAmount) : _buildMobileLayout(totalAmount),
+      body: isDesktop ? _buildDesktopLayout(totalAmount) : _buildMobileLayout(totalAmount),
     );
   }
   
@@ -562,9 +537,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Widget _buildClientAgentContent() {
     return Column(
       children: [
-        _buildDetailRow('Client', _client?.companyName ?? 'Unknown', Icons.business),
+        _buildDetailRow('Client', _client?['company_name'] ?? 'Unknown', Icons.business),
         if (_agent != null)
-          _buildDetailRow('Agent', _agent.agentName, Icons.person_outline),
+          _buildDetailRow('Agent', _agent['agent_name'] ?? 'Unknown', Icons.person_outline),
         _buildDetailRow('Passenger Name', _job!.passengerName ?? 'Not provided', Icons.person),
         _buildDetailRow('Contact Number', _job!.passengerContact ?? 'Not provided', Icons.phone),
         if (!_job!.hasCompletePassengerDetails)
@@ -618,9 +593,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Widget _buildVehicleDriverContent() {
     return Column(
       children: [
-        _buildDetailRow('Vehicle', '${_vehicle?.make} ${_vehicle?.model}', Icons.directions_car),
-        _buildDetailRow('Registration', _vehicle?.regPlate ?? 'Unknown', Icons.confirmation_number),
-        _buildDetailRow('Driver', _driver?.displayName ?? 'Unknown', Icons.person),
+        _buildDetailRow('Vehicle', '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'.trim().isEmpty ? 'Unknown' : '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'.trim(), Icons.directions_car),
+        _buildDetailRow('Registration', _vehicle?['reg_plate'] ?? 'Unknown', Icons.confirmation_number),
+        _buildDetailRow('Driver', _driver?['display_name'] ?? 'Unknown', Icons.person),
         _buildDetailRow('Passengers', _formatPassengerCount(_job!.pasCount), Icons.people),
         _buildDetailRow('Luggage', _formatLuggageCount(_job!.luggageCount), Icons.work),
       ],
@@ -1005,7 +980,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
                   ),
                   child: Text(
-                    'R${trip.amount.toStringAsFixed(2)}',
+                    'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
                     style: TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
@@ -1027,9 +1002,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildDetailRow('Date & Time', trip.formattedDateTime, Icons.access_time),
-            _buildDetailRow('Pick-up', trip.pickupLocation, Icons.location_on),
-            _buildDetailRow('Drop-off', trip.dropoffLocation, Icons.location_off),
+            _buildDetailRow('Date & Time', trip.formattedDateTime ?? 'Not set', Icons.access_time),
+            _buildDetailRow('Pick-up', trip.pickupLocation ?? 'Not set', Icons.location_on),
+            _buildDetailRow('Drop-off', trip.dropoffLocation ?? 'Not set', Icons.location_off),
             if (trip.notes != null && trip.notes!.isNotEmpty)
               _buildDetailRow('Notes', trip.notes!, Icons.note),
           ],
@@ -1041,7 +1016,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
      Widget _buildActionButtons() {
      final currentUser = ref.read(currentUserProfileProvider);
      final isAssignedDriver = _job?.driverId == currentUser?.id;
-     final needsConfirmation = isAssignedDriver && _job?.isConfirmed != true;
+     final isConfirmed = _job?.isConfirmed == true || _job?.driverConfirmation == true;
+     final needsConfirmation = isAssignedDriver && !isConfirmed;
      final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
                     currentUser?.role?.toLowerCase() == 'manager';
      
@@ -1120,7 +1096,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
    Widget _buildMobileActionButtons() {
      final currentUser = ref.read(currentUserProfileProvider);
      final isAssignedDriver = _job?.driverId == currentUser?.id;
-     final needsConfirmation = isAssignedDriver && _job?.isConfirmed != true;
+     final isConfirmed = _job?.isConfirmed == true || _job?.driverConfirmation == true;
+     final needsConfirmation = isAssignedDriver && !isConfirmed;
      final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
                     currentUser?.role?.toLowerCase() == 'manager';
      
@@ -1178,154 +1155,61 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
    }
 
   Future<void> _confirmJob() async {
+    print('=== JOB SUMMARY SCREEN: _confirmJob() called ===');
+    print('Job ID: ${_job!.id}');
+    print('Job Status: ${_job!.status}');
+    print('Is Confirmed: ${_job!.isConfirmed}');
+    print('Driver Confirmation: ${_job!.driverConfirmation}');
+    
     try {
-      await ref.read(jobsProvider.notifier).confirmJob(_job!.id, ref: ref);
+      // Show loading state
+      if (!mounted) {
+        print('Widget not mounted, returning early');
+        return;
+      }
       
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('✅ Job confirmed successfully!'),
-            backgroundColor: Colors.green,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
-        
-        // Navigate back to jobs management after confirmation
-        context.go('/jobs');
+      print('Calling jobsProvider.confirmJob...');
+      // Confirm the job
+      await ref.read(jobsProvider.notifier).confirmJob(_job!.id, ref: ref);
+      print('jobsProvider.confirmJob completed successfully');
+      
+      // Check if widget is still mounted before showing success message and navigating
+      if (!mounted) {
+        print('Widget not mounted after confirmation, returning early');
+        return;
       }
+      
+      print('Showing success message...');
+      // Show success message
+      SnackBarUtils.showSuccess(context, '✅ Job confirmed successfully!');
+      
+      print('Waiting 500ms before navigation...');
+      // Wait a moment for the SnackBar to show, then navigate
+      await Future.delayed(const Duration(milliseconds: 500));
+      
+      // Check again if widget is still mounted before navigating
+      if (!mounted) {
+        print('Widget not mounted before navigation, returning early');
+        return;
+      }
+      
+      print('Navigating to /jobs...');
+      // Navigate back to jobs management after confirmation
+      context.go('/jobs');
+      print('Navigation completed');
+      
     } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('❌ Failed to confirm job: $e'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
+      print('Error in _confirmJob: $e');
+      // Check if widget is still mounted before showing error
+      if (!mounted) {
+        print('Widget not mounted for error display, returning early');
+        return;
       }
+      
+      SnackBarUtils.showError(context, '❌ Failed to confirm job: $e');
     }
   }
 
-     void _showBackOptions() {
-     showModalBottomSheet(
-       context: context,
-       backgroundColor: Colors.transparent,
-       builder: (context) => Container(
-         decoration: BoxDecoration(
-           color: Theme.of(context).brightness == Brightness.dark 
-             ? const Color(0xFF1E1E1E) 
-             : Colors.white,
-           borderRadius: const BorderRadius.vertical(top: Radius.circular(20)),
-           boxShadow: [
-             BoxShadow(
-               color: Colors.black.withOpacity(0.2),
-               blurRadius: 10,
-               offset: const Offset(0, -2),
-             ),
-           ],
-         ),
-         child: SafeArea(
-           child: Column(
-             mainAxisSize: MainAxisSize.min,
-             children: [
-               Container(
-                 width: 40,
-                 height: 4,
-                 margin: const EdgeInsets.symmetric(vertical: 12),
-                 decoration: BoxDecoration(
-                   color: Colors.grey[400],
-                   borderRadius: BorderRadius.circular(2),
-                 ),
-               ),
-               Padding(
-                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                 child: Text(
-                   'Choose Destination',
-                   style: TextStyle(
-                     fontSize: 18,
-                     fontWeight: FontWeight.bold,
-                     color: Theme.of(context).brightness == Brightness.dark 
-                       ? Colors.white 
-                       : Colors.black87,
-                   ),
-                 ),
-               ),
-               ListTile(
-                 leading: Icon(
-                   Icons.work,
-                   color: ChoiceLuxTheme.richGold,
-                   size: 24,
-                 ),
-                 title: Text(
-                   'Jobs Management',
-                   style: TextStyle(
-                     fontSize: 16,
-                     fontWeight: FontWeight.w600,
-                     color: Theme.of(context).brightness == Brightness.dark 
-                       ? Colors.white 
-                       : Colors.black87,
-                   ),
-                 ),
-                 subtitle: Text(
-                   'Return to jobs list',
-                   style: TextStyle(
-                     fontSize: 14,
-                     color: Theme.of(context).brightness == Brightness.dark 
-                       ? Colors.grey[300] 
-                       : Colors.grey[600],
-                   ),
-                 ),
-                 onTap: () {
-                   Navigator.pop(context);
-                   context.go('/jobs');
-                 },
-                 tileColor: Colors.transparent,
-                 shape: RoundedRectangleBorder(
-                   borderRadius: BorderRadius.circular(12),
-                 ),
-               ),
-               ListTile(
-                 leading: Icon(
-                   Icons.notifications,
-                   color: ChoiceLuxTheme.richGold,
-                   size: 24,
-                 ),
-                 title: Text(
-                   'Notifications',
-                   style: TextStyle(
-                     fontSize: 16,
-                     fontWeight: FontWeight.w600,
-                     color: Theme.of(context).brightness == Brightness.dark 
-                       ? Colors.white 
-                       : Colors.black87,
-                   ),
-                 ),
-                 subtitle: Text(
-                   'Return to notifications',
-                   style: TextStyle(
-                     fontSize: 14,
-                     color: Theme.of(context).brightness == Brightness.dark 
-                       ? Colors.grey[300] 
-                       : Colors.grey[600],
-                   ),
-                 ),
-                 onTap: () {
-                   Navigator.pop(context);
-                   context.go('/notifications');
-                 },
-                 tileColor: Colors.transparent,
-                 shape: RoundedRectangleBorder(
-                   borderRadius: BorderRadius.circular(12),
-                 ),
-               ),
-               const SizedBox(height: 20),
-             ],
-           ),
-         ),
-       ),
-     );
-   }
-  
   Widget _buildSectionHeader(String title, IconData icon) {
     return Row(
       children: [
@@ -1560,12 +1444,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   void _showTripEditModal(Trip trip) {
     showDialog(
       context: context,
-      builder: (context) => TripEditModal(
-        trip: trip,
-        onTripUpdated: (updatedTrip) {
-          // Refresh the trips list
-          _loadJobData();
-        },
+      builder: (context) => AlertDialog(
+        title: const Text('Edit Trip'),
+        content: const Text('Trip editing functionality is not yet implemented.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }
@@ -1573,12 +1460,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   void _showAddTripModal() {
     showDialog(
       context: context,
-      builder: (context) => AddTripModal(
-        jobId: widget.jobId,
-        onTripAdded: (newTrip) {
-          // Refresh the trips list
-          _loadJobData();
-        },
+      builder: (context) => AlertDialog(
+        title: const Text('Add Trip'),
+        content: const Text('Trip creation functionality is not yet implemented.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text('OK'),
+          ),
+        ],
       ),
     );
   }

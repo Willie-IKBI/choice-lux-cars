@@ -71,6 +71,14 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     final clientsAsync = ref.watch(clientsProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
+    // Debug logging
+    print('=== JOBS SCREEN DEBUG ===');
+    print('Current user: ${userProfile?.id} (${userProfile?.role})');
+    print('Total jobs in provider: ${jobs.length}');
+    if (jobs.isNotEmpty) {
+      print('Sample job: ${jobs.first.id} - ${jobs.first.status} - ${jobs.first.passengerName}');
+    }
+    
     // Check if user can create vouchers based on role
     final userRole = userProfile?.role?.toLowerCase();
     final canCreateVoucher = userRole == 'administrator' || 
@@ -84,6 +92,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
 
     // Filter jobs based on current filter
     List<Job> filteredJobs = _filterJobs(jobs);
+    print('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
     
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
@@ -113,6 +122,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
         showBackButton: true,
         onBackPressed: () => context.go('/'),
         actions: [
+          // Refresh button
+          IconButton(
+            onPressed: () {
+              print('Manual refresh triggered');
+              ref.read(jobsProvider.notifier).fetchJobs();
+            },
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh jobs',
+          ),
           if (canCreateJobs)
             ElevatedButton.icon(
               onPressed: () => context.go('/jobs/create'),

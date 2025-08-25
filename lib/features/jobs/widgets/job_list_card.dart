@@ -312,7 +312,7 @@ class JobListCard extends ConsumerWidget {
 
   // 4. Confirmation State
   Widget _buildConfirmationState(BuildContext context, double spacing) {
-    final isConfirmed = job.driverConfirmation ?? false;
+    final isConfirmed = job.isConfirmed == true || job.driverConfirmation == true;
     final confirmationColor = isConfirmed ? Colors.green : Colors.orange;
     final confirmationText = isConfirmed ? 'Confirmed' : 'Not Confirmed';
     final confirmationIcon = isConfirmed ? Icons.check_circle : Icons.pending;

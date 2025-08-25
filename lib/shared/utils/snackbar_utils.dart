@@ -54,4 +54,44 @@ class SnackBarUtils {
       ),
     );
   }
+
+  /// Safe SnackBar methods that check if widget is mounted
+  static void showSuccessSafe(BuildContext context, String message, {bool mounted = true}) {
+    if (mounted) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: ChoiceLuxTheme.successColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      } catch (e) {
+        // Silently handle deactivated widget errors
+        print('SnackBar error (ignored): $e');
+      }
+    }
+  }
+
+  /// Safe error SnackBar that checks if widget is mounted
+  static void showErrorSafe(BuildContext context, String message, {bool mounted = true}) {
+    if (mounted) {
+      try {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: ChoiceLuxTheme.errorColor,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      } catch (e) {
+        // Silently handle deactivated widget errors
+        print('SnackBar error (ignored): $e');
+      }
+    }
+  }
 }

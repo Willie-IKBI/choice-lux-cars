@@ -8,201 +8,207 @@ import '../services/notification_service.dart';
 class NotificationState {
   final List<app_notification.AppNotification> notifications;
   final int unreadCount;
+  final int totalCount;
+  final int highPriorityCount;
   final bool isLoading;
   final String? error;
+  final Map<String, dynamic>? stats;
 
   const NotificationState({
     required this.notifications,
     required this.unreadCount,
+    required this.totalCount,
+    required this.highPriorityCount,
     required this.isLoading,
     this.error,
+    this.stats,
   });
 
   factory NotificationState.initial() => const NotificationState(
     notifications: [],
     unreadCount: 0,
+    totalCount: 0,
+    highPriorityCount: 0,
     isLoading: false,
   );
 
   NotificationState copyWith({
     List<app_notification.AppNotification>? notifications,
     int? unreadCount,
+    int? totalCount,
+    int? highPriorityCount,
     bool? isLoading,
     String? error,
+    Map<String, dynamic>? stats,
   }) {
     return NotificationState(
       notifications: notifications ?? this.notifications,
       unreadCount: unreadCount ?? this.unreadCount,
+      totalCount: totalCount ?? this.totalCount,
+      highPriorityCount: highPriorityCount ?? this.highPriorityCount,
       isLoading: isLoading ?? this.isLoading,
       error: error,
+      stats: stats ?? this.stats,
     );
   }
-
-  List<app_notification.AppNotification> get unreadNotifications => 
-      notifications.where((n) => !n.isRead).toList();
 }
 
-// Notification Provider
-final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  return NotificationNotifier();
-});
-
+// Notification Notifier
 class NotificationNotifier extends StateNotifier<NotificationState> {
   final NotificationService _notificationService = NotificationService();
-  final SupabaseClient _supabase = Supabase.instance.client;
-
-  RealtimeChannel? _notificationChannel;
-  bool _isInitialized = false;
+  StreamSubscription<List<app_notification.AppNotification>>? _subscription;
 
   NotificationNotifier() : super(NotificationState.initial());
 
-  /// Initialize the notification provider
-  Future<void> initialize() async {
-    if (_isInitialized) {
-      print('NotificationProvider: Already initialized, skipping');
-      return;
-    }
-    
-    final currentUser = _supabase.auth.currentUser;
-    if (currentUser == null) {
-      print('NotificationProvider: No current user, skipping initialization');
-      return;
-    }
-    
-    print('NotificationProvider: Initializing for user: ${currentUser.id}');
-    _isInitialized = true; // Set this early to prevent multiple calls
-    
-    try {
-      await fetchNotifications();
-      await updateUnreadCount();
-      _setupRealtimeSubscriptions();
-      print('NotificationProvider: Initialization complete');
-    } catch (e) {
-      print('NotificationProvider: Initialization failed: $e');
-      _isInitialized = false; // Reset on failure
-    }
-  }
-
-  /// Auto-initialize when provider is accessed
-  Future<void> _ensureInitialized() async {
-    if (!_isInitialized) {
-      print('NotificationProvider: Auto-initializing...');
-      await initialize();
-      print('NotificationProvider: Auto-initialization complete');
-    }
-  }
-
-  /// Set up real-time subscriptions for notifications
-  void _setupRealtimeSubscriptions() {
-    final currentUser = _supabase.auth.currentUser;
-    if (currentUser == null) return;
-
-    // Cancel existing subscriptions
-    _notificationChannel?.unsubscribe();
-
-    // Subscribe to notifications for the current user
-    _notificationChannel = _supabase
-        .channel('notifications')
-        .onPostgresChanges(
-          event: PostgresChangeEvent.insert,
-          schema: 'public',
-          table: 'notifications',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: currentUser.id,
-          ),
-          callback: (payload) {
-            final notification = app_notification.AppNotification.fromJson(payload.newRecord);
-            addNotification(notification);
-            updateUnreadCount();
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.update,
-          schema: 'public',
-          table: 'notifications',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: currentUser.id,
-          ),
-          callback: (payload) {
-            final notification = app_notification.AppNotification.fromJson(payload.newRecord);
-            updateNotification(notification);
-            updateUnreadCount();
-          },
-        )
-        .onPostgresChanges(
-          event: PostgresChangeEvent.delete,
-          schema: 'public',
-          table: 'notifications',
-          filter: PostgresChangeFilter(
-            type: PostgresChangeFilterType.eq,
-            column: 'user_id',
-            value: currentUser.id,
-          ),
-          callback: (payload) {
-            final notificationId = payload.oldRecord['id'] as String;
-            removeNotification(notificationId);
-            updateUnreadCount();
-          },
-        )
-        .subscribe();
-  }
-
-  /// Fetch all notifications for the current user
-  Future<void> fetchNotifications({bool unreadOnly = false}) async {
+  /// Load notifications
+  Future<void> loadNotifications({
+    bool unreadOnly = false,
+    String? notificationType,
+    int limit = 50,
+    int offset = 0,
+  }) async {
     try {
       state = state.copyWith(isLoading: true, error: null);
-      
-      print('NotificationProvider: Fetching notifications...');
+
       final notifications = await _notificationService.getNotifications(
         unreadOnly: unreadOnly,
+        notificationType: notificationType,
+        limit: limit,
+        offset: offset,
       );
-      print('NotificationProvider: Fetched ${notifications.length} notifications');
-      
+
+      // Calculate stats from active notifications only
+      final activeNotifications = notifications.where((n) => !n.isHidden).toList();
+      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
+      final totalCount = activeNotifications.length;
+      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+
       state = state.copyWith(
         notifications: notifications,
+        unreadCount: unreadCount,
+        totalCount: totalCount,
+        highPriorityCount: highPriorityCount,
         isLoading: false,
       );
+
+      print('Loaded ${notifications.length} notifications, ${unreadCount} unread');
+      print('Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      
+      // Also update stats based on loaded notifications
+      await _updateStatsFromNotifications(notifications);
     } catch (e) {
-      print('NotificationProvider: Error fetching notifications: $e');
       state = state.copyWith(
-        error: 'Failed to fetch notifications: $e',
         isLoading: false,
+        error: e.toString(),
       );
+      print('Error loading notifications: $e');
     }
   }
 
-  /// Update the unread count
-  Future<void> updateUnreadCount() async {
+  /// Update stats based on loaded notifications
+  Future<void> _updateStatsFromNotifications(List<app_notification.AppNotification> notifications) async {
     try {
-      final count = await _notificationService.getUnreadCount();
-      state = state.copyWith(unreadCount: count);
+      final totalCount = notifications.length;
+      final unreadCount = notifications.where((n) => !n.isRead).length;
+      final readCount = notifications.where((n) => n.isRead).length;
+      final dismissedCount = notifications.where((n) => n.isDismissed).length;
+      
+      // Group by type
+      final byType = <String, int>{};
+      for (final notification in notifications) {
+        byType[notification.notificationType] = (byType[notification.notificationType] ?? 0) + 1;
+      }
+
+      final stats = {
+        'total_count': totalCount,
+        'unread_count': unreadCount,
+        'read_count': readCount,
+        'dismissed_count': dismissedCount,
+        'by_type': byType,
+      };
+
+      state = state.copyWith(stats: stats);
+      print('Updated stats from notifications: $stats');
     } catch (e) {
-      state = state.copyWith(error: 'Failed to update unread count: $e');
+      print('Error updating stats from notifications: $e');
     }
   }
 
-  /// Mark a notification as read
+  /// Load notification statistics
+  Future<void> loadStats() async {
+    try {
+      final stats = await _notificationService.getNotificationStats();
+      state = state.copyWith(stats: stats);
+      print('Loaded notification stats: $stats');
+    } catch (e) {
+      print('Error loading notification stats: $e');
+    }
+  }
+
+  /// Mark notification as read
   Future<void> markAsRead(String notificationId) async {
     try {
       await _notificationService.markAsRead(notificationId);
-      
+
       // Update local state
-      final index = state.notifications.indexWhere((n) => n.id == notificationId);
-      if (index != -1) {
-        final updatedNotifications = List<app_notification.AppNotification>.from(state.notifications);
-        updatedNotifications[index] = updatedNotifications[index].copyWith(isRead: true);
-        
-        state = state.copyWith(
-          notifications: updatedNotifications,
-          unreadCount: state.unreadCount > 0 ? state.unreadCount - 1 : 0,
-        );
-      }
+      final updatedNotifications = state.notifications.map((notification) {
+        if (notification.id == notificationId) {
+          return notification.copyWith(
+            isRead: true,
+            readAt: DateTime.now(),
+          );
+        }
+        return notification;
+      }).toList();
+
+      // Calculate new stats from active notifications only
+      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
+      final totalCount = activeNotifications.length;
+      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+
+      state = state.copyWith(
+        notifications: updatedNotifications,
+        unreadCount: unreadCount,
+        totalCount: totalCount,
+        highPriorityCount: highPriorityCount,
+      );
+
+      print('Marked notification $notificationId as read');
+      print('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: 'Failed to mark notification as read: $e');
+      state = state.copyWith(error: e.toString());
+      print('Error marking notification as read: $e');
+    }
+  }
+
+  /// Mark multiple notifications as read
+  Future<void> markMultipleAsRead(List<String> notificationIds) async {
+    try {
+      await _notificationService.markMultipleAsRead(notificationIds);
+
+      // Update local state
+      final updatedNotifications = state.notifications.map((notification) {
+        if (notificationIds.contains(notification.id)) {
+          return notification.copyWith(
+            isRead: true,
+            readAt: DateTime.now(),
+          );
+        }
+        return notification;
+      }).toList();
+
+      final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
+      state = state.copyWith(
+        notifications: updatedNotifications,
+        unreadCount: unreadCount,
+      );
+
+      print('Marked ${notificationIds.length} notifications as read');
+    } catch (e) {
+      state = state.copyWith(error: e.toString());
+      print('Error marking multiple notifications as read: $e');
     }
   }
 
@@ -210,144 +216,347 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> markAllAsRead() async {
     try {
       await _notificationService.markAllAsRead();
-      
+
       // Update local state
-      final updatedNotifications = state.notifications.map((n) => n.copyWith(isRead: true)).toList();
+      final updatedNotifications = state.notifications.map((notification) {
+        return notification.copyWith(
+          isRead: true,
+          readAt: DateTime.now(),
+        );
+      }).toList();
+
+      // Calculate new stats from active notifications only
+      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final totalCount = activeNotifications.length;
+      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+
       state = state.copyWith(
         notifications: updatedNotifications,
         unreadCount: 0,
+        totalCount: totalCount,
+        highPriorityCount: highPriorityCount,
       );
+
+      print('Marked all notifications as read');
+      print('Updated stats - Total: $totalCount, Unread: 0, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: 'Failed to mark all notifications as read: $e');
+      state = state.copyWith(error: e.toString());
+      print('Error marking all notifications as read: $e');
     }
   }
 
-  /// Mark all notifications for a specific job as read
-  Future<void> markJobNotificationsAsRead(String jobId) async {
+  /// Dismiss notification
+  Future<void> dismissNotification(String notificationId) async {
     try {
-      await _notificationService.markJobNotificationsAsRead(jobId);
-      
+      await _notificationService.dismissNotification(notificationId);
+
       // Update local state
-      int updatedCount = 0;
-      final updatedNotifications = state.notifications.map((n) {
-        if (n.jobId == jobId && !n.isRead) {
-          updatedCount++;
-          return n.copyWith(isRead: true);
+      final updatedNotifications = state.notifications.map((notification) {
+        if (notification.id == notificationId) {
+          return notification.copyWith(
+            isHidden: true,
+            dismissedAt: DateTime.now(),
+          );
         }
-        return n;
+        return notification;
       }).toList();
-      
+
+      // Calculate new stats from active notifications only
+      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
+      final totalCount = activeNotifications.length;
+      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+
       state = state.copyWith(
         notifications: updatedNotifications,
-        unreadCount: state.unreadCount > updatedCount ? state.unreadCount - updatedCount : 0,
+        unreadCount: unreadCount,
+        totalCount: totalCount,
+        highPriorityCount: highPriorityCount,
       );
+
+      print('Dismissed notification $notificationId');
+      print('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: 'Failed to mark job notifications as read: $e');
+      state = state.copyWith(error: e.toString());
+      print('Error dismissing notification: $e');
     }
   }
 
-  /// Hide notifications for a specific job (soft delete)
-  Future<void> hideJobNotifications(String jobId) async {
-    try {
-      await _notificationService.hideJobNotifications(jobId);
-      
-      // Update local state - remove hidden notifications
-      final updatedNotifications = state.notifications.where((n) => n.jobId != jobId).toList();
-      final hiddenCount = state.notifications.length - updatedNotifications.length;
-      
-      state = state.copyWith(
-        notifications: updatedNotifications,
-        unreadCount: state.unreadCount > hiddenCount ? state.unreadCount - hiddenCount : 0,
-      );
-    } catch (e) {
-      state = state.copyWith(error: 'Failed to hide job notifications: $e');
-    }
-  }
-
-  /// Delete a notification
+  /// Delete notification
   Future<void> deleteNotification(String notificationId) async {
     try {
       await _notificationService.deleteNotification(notificationId);
-      
+
       // Update local state
-      final notification = state.notifications.firstWhere((n) => n.id == notificationId);
-      final updatedNotifications = state.notifications.where((n) => n.id != notificationId).toList();
-      
+      final updatedNotifications = state.notifications
+        .where((notification) => notification.id != notificationId)
+        .toList();
+
+      final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
       state = state.copyWith(
         notifications: updatedNotifications,
-        unreadCount: !notification.isRead && state.unreadCount > 0 ? state.unreadCount - 1 : state.unreadCount,
+        unreadCount: unreadCount,
       );
+
+      print('Deleted notification $notificationId');
     } catch (e) {
-      state = state.copyWith(error: 'Failed to delete notification: $e');
+      state = state.copyWith(error: e.toString());
+      print('Error deleting notification: $e');
     }
   }
 
-  /// Add a new notification to the list
+  /// Add notification to state (for real-time updates)
   void addNotification(app_notification.AppNotification notification) {
     final updatedNotifications = [notification, ...state.notifications];
+    final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
     state = state.copyWith(
       notifications: updatedNotifications,
-      unreadCount: !notification.isRead ? state.unreadCount + 1 : state.unreadCount,
+      unreadCount: unreadCount,
     );
+
+    print('Added new notification: ${notification.id}');
   }
 
-  /// Update an existing notification
+  /// Update notification in state (for real-time updates)
   void updateNotification(app_notification.AppNotification notification) {
-    final index = state.notifications.indexWhere((n) => n.id == notification.id);
-    if (index != -1) {
-      final oldNotification = state.notifications[index];
-      final updatedNotifications = List<app_notification.AppNotification>.from(state.notifications);
-      updatedNotifications[index] = notification;
-      
-      // Update unread count if read status changed
-      int newUnreadCount = state.unreadCount;
-      if (oldNotification.isRead != notification.isRead) {
-        if (notification.isRead) {
-          newUnreadCount = newUnreadCount > 0 ? newUnreadCount - 1 : 0;
-        } else {
-          newUnreadCount++;
-        }
+    final updatedNotifications = state.notifications.map((n) {
+      if (n.id == notification.id) {
+        return notification;
       }
+      return n;
+    }).toList();
+
+    final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
+    state = state.copyWith(
+      notifications: updatedNotifications,
+      unreadCount: unreadCount,
+    );
+
+    print('Updated notification: ${notification.id}');
+  }
+
+  /// Remove notification from state (for real-time updates)
+  void removeNotification(String notificationId) {
+    final updatedNotifications = state.notifications
+      .where((n) => n.id != notificationId)
+      .toList();
+
+    final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
+
+    state = state.copyWith(
+      notifications: updatedNotifications,
+      unreadCount: unreadCount,
+    );
+
+    print('Removed notification: $notificationId');
+  }
+
+  /// Update unread count (for FCM updates)
+  void updateUnreadCount() {
+    final unreadCount = state.notifications.where((n) => !n.isRead).length;
+    state = state.copyWith(unreadCount: unreadCount);
+  }
+
+  /// Start real-time subscription
+  void startRealtimeSubscription() {
+    try {
+      _subscription?.cancel();
       
-      state = state.copyWith(
-        notifications: updatedNotifications,
-        unreadCount: newUnreadCount,
+      _subscription = _notificationService.getNotificationsStream().listen(
+        (notifications) {
+          final unreadCount = notifications.where((n) => !n.isRead).length;
+          state = state.copyWith(
+            notifications: notifications,
+            unreadCount: unreadCount,
+          );
+          print('Real-time update: ${notifications.length} notifications');
+        },
+        onError: (error) {
+          print('Real-time subscription error: $error');
+          state = state.copyWith(error: error.toString());
+        },
       );
+
+      print('Started real-time notification subscription');
+    } catch (e) {
+      print('Error starting real-time subscription: $e');
     }
   }
 
-  /// Remove a notification from the list
-  void removeNotification(String notificationId) {
-    final notification = state.notifications.firstWhere((n) => n.id == notificationId);
-    final updatedNotifications = state.notifications.where((n) => n.id != notificationId).toList();
-    
-    state = state.copyWith(
-      notifications: updatedNotifications,
-      unreadCount: !notification.isRead && state.unreadCount > 0 ? state.unreadCount - 1 : state.unreadCount,
-    );
+  /// Stop real-time subscription
+  void stopRealtimeSubscription() {
+    _subscription?.cancel();
+    _subscription = null;
+    print('Stopped real-time notification subscription');
   }
 
-
-
-
-
-  /// Clear all notifications (for testing or cleanup)
-  void clearAll() {
-    state = state.copyWith(
-      notifications: [],
-      unreadCount: 0,
-    );
-  }
-
-  /// Refresh subscriptions (call when user changes)
-  void refreshSubscriptions() {
-    _setupRealtimeSubscriptions();
-  }
-
-  /// Dispose resources
+  /// Dispose the provider and clean up resources
   @override
   void dispose() {
-    _notificationChannel?.unsubscribe();
+    stopRealtimeSubscription();
     super.dispose();
   }
-} 
+
+  /// Send job assignment notification
+  Future<void> sendJobAssignmentNotification({
+    required String userId,
+    required String jobId,
+    required String jobNumber,
+    bool isReassignment = false,
+  }) async {
+    try {
+      await _notificationService.sendJobAssignmentNotification(
+        userId: userId,
+        jobId: jobId,
+        jobNumber: jobNumber,
+        isReassignment: isReassignment,
+      );
+      print('Job assignment notification sent');
+    } catch (e) {
+      print('Error sending job assignment notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Send job cancellation notification
+  Future<void> sendJobCancellationNotification({
+    required String userId,
+    required String jobId,
+    required String jobNumber,
+  }) async {
+    try {
+      await _notificationService.sendJobCancellationNotification(
+        userId: userId,
+        jobId: jobId,
+        jobNumber: jobNumber,
+      );
+      print('Job cancellation notification sent');
+    } catch (e) {
+      print('Error sending job cancellation notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Send job status change notification
+  Future<void> sendJobStatusChangeNotification({
+    required String userId,
+    required String jobId,
+    required String jobNumber,
+    required String oldStatus,
+    required String newStatus,
+  }) async {
+    try {
+      await _notificationService.sendJobStatusChangeNotification(
+        userId: userId,
+        jobId: jobId,
+        jobNumber: jobNumber,
+        oldStatus: oldStatus,
+        newStatus: newStatus,
+      );
+      print('Job status change notification sent');
+    } catch (e) {
+      print('Error sending job status change notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Send payment reminder notification
+  Future<void> sendPaymentReminderNotification({
+    required String userId,
+    required String jobId,
+    required String jobNumber,
+    required String amount,
+  }) async {
+    try {
+      await _notificationService.sendPaymentReminderNotification(
+        userId: userId,
+        jobId: jobId,
+        jobNumber: jobNumber,
+        amount: amount,
+      );
+      print('Payment reminder notification sent');
+    } catch (e) {
+      print('Error sending payment reminder notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Send system alert notification
+  Future<void> sendSystemAlertNotification({
+    required String userId,
+    required String title,
+    required String message,
+    String priority = 'normal',
+    Map<String, dynamic>? actionData,
+  }) async {
+    try {
+      await _notificationService.sendSystemAlertNotification(
+        userId: userId,
+        title: title,
+        message: message,
+        priority: priority,
+        actionData: actionData,
+      );
+      print('System alert notification sent');
+    } catch (e) {
+      print('Error sending system alert notification: $e');
+      rethrow;
+    }
+  }
+
+  /// Clear error
+  void clearError() {
+    state = state.copyWith(error: null);
+  }
+
+  /// Initialize the notification provider
+  Future<void> initialize() async {
+    try {
+      print('Initializing notification provider...');
+      
+      // Load initial notifications
+      await loadNotifications();
+      
+      // Set up real-time subscription
+      startRealtimeSubscription();
+      
+      // Load notification stats
+      await loadStats();
+      
+      print('Notification provider initialized successfully');
+    } catch (e) {
+      print('Error initializing notification provider: $e');
+      state = state.copyWith(error: e.toString());
+    }
+  }
+
+  /// Hide notifications for a specific job
+  Future<void> hideJobNotifications(String jobId) async {
+    try {
+      print('Hiding notifications for job: $jobId');
+      
+      // Mark all notifications for this job as dismissed
+      await _notificationService.dismissJobNotifications(jobId);
+      
+      // Reload notifications to reflect changes
+      await loadNotifications();
+      
+      print('Job notifications hidden successfully');
+    } catch (e) {
+      print('Error hiding job notifications: $e');
+      state = state.copyWith(error: e.toString());
+    }
+  }
+}
+
+// Providers
+final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
+  return NotificationNotifier();
+});
+
+final notificationServiceProvider = Provider<NotificationService>((ref) {
+  return NotificationService();
+}); 

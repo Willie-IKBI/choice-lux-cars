@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/features/vouchers/providers/voucher_controller.d
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/status_pill.dart';
 
@@ -292,12 +293,52 @@ class JobCard extends ConsumerWidget {
   // Action row: Primary (Start Job), secondary (View)
   Widget _buildActionRow(BuildContext context, WidgetRef ref, bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
     final isAssignedDriver = _isAssignedDriver(ref);
-    final needsConfirmation = isAssignedDriver && job.driverConfirmation != true;
+    final isConfirmed = job.isConfirmed == true || job.driverConfirmation == true;
+    final needsConfirmation = isAssignedDriver && !isConfirmed;
     
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
       children: [
+        // Confirmation Status - Show for assigned driver
+        if (isAssignedDriver) ...[
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+            decoration: BoxDecoration(
+              color: isConfirmed 
+                  ? ChoiceLuxTheme.successColor.withValues(alpha: 0.1)
+                  : ChoiceLuxTheme.orange.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(4),
+              border: Border.all(
+                color: isConfirmed 
+                    ? ChoiceLuxTheme.successColor.withValues(alpha: 0.3)
+                    : ChoiceLuxTheme.orange.withValues(alpha: 0.3),
+                width: 0.5,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  isConfirmed ? Icons.check_circle : Icons.pending,
+                  size: iconSize * 0.7,
+                  color: isConfirmed ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.orange,
+                ),
+                SizedBox(width: 4),
+                Text(
+                  isConfirmed ? 'Job Confirmed' : 'Awaiting Confirmation',
+                  style: TextStyle(
+                    fontSize: fontSize - 1,
+                    color: isConfirmed ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.orange,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          SizedBox(height: 8),
+        ],
+        
         // Confirm Button - Show only for assigned driver who hasn't confirmed
         if (needsConfirmation) ...[
           ElevatedButton.icon(
@@ -547,8 +588,15 @@ class JobCard extends ConsumerWidget {
 
   // Handle driver confirmation with safe integer parsing
   Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref) async {
+    print('=== JOB CARD: _handleDriverConfirmation() called ===');
+    print('Job ID: ${job.id}');
+    print('Job Status: ${job.status}');
+    print('Is Confirmed: ${job.isConfirmed}');
+    print('Driver Confirmation: ${job.driverConfirmation}');
+    
     final jobId = int.tryParse(job.id);
     if (jobId == null) {
+      print('Invalid job ID: ${job.id}');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -561,37 +609,69 @@ class JobCard extends ConsumerWidget {
     }
     
     try {
-      final success = await DriverFlowApiService.confirmDriverAwareness(jobId);
-      
-      if (!context.mounted) return;
-      
-      if (success) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Job confirmed successfully!'),
-            backgroundColor: Colors.green,
-            duration: Duration(seconds: 2),
-          ),
-        );
-        
-        ref.invalidate(jobsProvider);
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Failed to confirm job. Please try again.'),
-            backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
-          ),
-        );
-      }
-    } catch (e) {
-      // Error handling driver confirmation
+      // Show loading state
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('An error occurred. Please try again.'),
-          backgroundColor: Colors.red,
+          content: Row(
+            children: [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+              ),
+              SizedBox(width: 12),
+              Text('Confirming job...'),
+            ],
+          ),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+      
+      print('Calling jobsProvider.confirmJob from job card...');
+      // Use the proper jobsProvider.confirmJob method
+      await ref.read(jobsProvider.notifier).confirmJob(job.id, ref: ref);
+      print('jobsProvider.confirmJob completed from job card');
+      
+      if (!context.mounted) return;
+      
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.check_circle, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('Job confirmed successfully!'),
+            ],
+          ),
+          backgroundColor: Colors.green,
           duration: Duration(seconds: 3),
+        ),
+      );
+      
+      // Refresh job data and notifications
+      await ref.read(jobsProvider.notifier).refreshJob(job.id);
+      ref.invalidate(notificationProvider);
+      
+      // Optional: Navigate to job progress after confirmation
+      // context.go('/jobs/${job.id}/progress');
+    } catch (e) {
+      print('Error in job card _handleDriverConfirmation: $e');
+      // Error handling driver confirmation
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              Icon(Icons.error, color: Colors.white, size: 20),
+              SizedBox(width: 8),
+              Text('An error occurred: ${e.toString()}'),
+            ],
+          ),
+          backgroundColor: Colors.red,
+          duration: Duration(seconds: 4),
         ),
       );
     }

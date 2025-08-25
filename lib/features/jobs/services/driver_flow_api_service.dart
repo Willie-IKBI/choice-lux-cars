@@ -478,6 +478,10 @@ class DriverFlowApiService {
   /// Confirm driver awareness of job
   static Future<bool> confirmDriverAwareness(int jobId) async {
     try {
+      print('=== CONFIRMING DRIVER AWARENESS ===');
+      print('Job ID: $jobId');
+      
+      // Step 1: Update job confirmation status
       final response = await _supabase
           .from('jobs')
           .update({
@@ -490,15 +494,37 @@ class DriverFlowApiService {
           .eq('id', jobId)
           .select();
 
-      if (response.isNotEmpty) {
-        print('Driver confirmation successful for job $jobId');
-        return true;
-      } else {
+      if (response.isEmpty) {
         print('No job found with ID $jobId');
         return false;
       }
+
+      print('Job confirmation updated successfully');
+
+      // Step 2: Mark job assignment notifications as read
+      try {
+        await _supabase
+            .from('notifications')
+            .update({
+              'is_read': true,
+              'read_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            })
+            .eq('job_id', jobId.toString())
+            .or('notification_type.eq.job_assignment,notification_type.eq.job_reassignment')
+            .eq('is_read', false);
+
+        print('Job assignment notifications marked as read');
+      } catch (e) {
+        print('Warning: Could not mark notifications as read: $e');
+        // Don't fail the confirmation if notification update fails
+      }
+
+      print('=== DRIVER CONFIRMATION COMPLETED ===');
+      return true;
     } catch (e) {
-      print('Error confirming driver awareness: $e');
+      print('=== ERROR CONFIRMING DRIVER AWARENESS ===');
+      print('Error: $e');
       return false;
     }
   }

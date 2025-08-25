@@ -153,9 +153,9 @@ class Job {
           ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
           : null,
       driverConfirmation: map['driver_confirm_ind'] == true,
-      isConfirmed: map['is_confirmed'] == true,
+      isConfirmed: map['is_confirmed'] == true || map['driver_confirm_ind'] == true,
       confirmedAt: map['confirmed_at'] != null 
-          ? DateTime.parse(map['confirmed_at']?.toString() ?? DateTime.now().toIso8601String()) 
+          ? DateTime.parse(map['confirmed_at'].toString()) 
           : null,
       confirmedBy: map['confirmed_by']?.toString(),
       jobNumber: map['job_number']?.toString(),

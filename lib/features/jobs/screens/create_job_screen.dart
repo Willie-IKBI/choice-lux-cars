@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
@@ -10,6 +11,8 @@ import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.da
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
+import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
@@ -237,20 +240,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         // Show appropriate message based on driver change
         if (mounted) {
           if (isDriverChanged) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Job updated and reassigned to new driver. Driver will be notified.'),
-                backgroundColor: ChoiceLuxTheme.successColor,
-                behavior: SnackBarBehavior.floating,
-              ),
+            SnackBarUtils.showSuccess(
+              context,
+              '✅ Job updated and reassigned to new driver. Driver will be notified.',
             );
           } else {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('✅ Job updated successfully!'),
-                backgroundColor: ChoiceLuxTheme.successColor,
-                behavior: SnackBarBehavior.floating,
-              ),
+            SnackBarUtils.showSuccess(
+              context,
+              '✅ Job updated successfully!',
             );
           }
           context.go('/jobs/${widget.jobId}/summary');
@@ -288,23 +285,26 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         final createdJob = await ref.read(jobsProvider.notifier).createJob(job);
         
         if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Job created successfully! Moving to transport details...'),
-              backgroundColor: ChoiceLuxTheme.successColor,
-            ),
+          // Show success message before navigation
+          SnackBarUtils.showSuccess(
+            context,
+            'Job created successfully! Moving to transport details...',
           );
-          // Navigate to trip management screen for Step 2
-          context.go('/jobs/${createdJob['id']}/trip-management');
+          
+          // Use a small delay to ensure SnackBar is shown before navigation
+          await Future.delayed(const Duration(milliseconds: 100));
+          
+          if (mounted) {
+            // Navigate to trip management screen for Step 2
+            context.go('/jobs/${createdJob['id']}/trip-management');
+          }
         }
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error creating job: $e'),
-            backgroundColor: ChoiceLuxTheme.errorColor,
-          ),
+        SnackBarUtils.showError(
+          context,
+          'Error creating job: $e',
         );
       }
     } finally {
