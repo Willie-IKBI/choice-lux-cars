@@ -252,87 +252,73 @@ class QuotePdfService {
     );
   }
 
-  // ---- SECTION CARDS --------------------------------------------------------
+  // ---- SECTIONS -------------------------------------------------------------
 
-  pw.Widget _sectionCard({
-    required String title,
-    required pw.Widget child,
-    pw.Widget? footer,
-  }) {
-    return pw.Container(
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: _grey300, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(_radius),
-        color: _grey100,
-      ),
-      child: pw.Column(
-        children: [
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            child: pw.Text(
-              title,
-              style: pw.TextStyle(
-                font: _fontBold,
-                fontSize: 16,
-                color: PdfColors.black,
-              ),
+  // Simple section header for long sections
+  pw.Widget _sectionHeader(String title) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: pw.BoxDecoration(
+            color: _grey100,
+            border: pw.Border.all(color: _grey300, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(_radius),
+          ),
+          child: pw.Text(
+            title,
+            style: pw.TextStyle(
+              font: _fontBold,
+              fontSize: 16,
+              color: PdfColors.black,
             ),
           ),
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: pw.BorderRadius.only(
-                bottomLeft: pw.Radius.circular(_radius - 1),
-                bottomRight: pw.Radius.circular(_radius - 1),
-              ),
-            ),
-            child: child,
-          ),
-          if (footer != null) footer,
-        ],
-      ),
+        ),
+        pw.SizedBox(height: 12),
+      ],
     );
   }
 
-  // ---- SECTIONS -------------------------------------------------------------
-
   pw.Widget _sectionQuoteSummary(Quote quote, DateFormat dateFormat) {
-    return _sectionCard(
-      title: 'QUOTE SUMMARY',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                if ((quote.quoteTitle ?? '').trim().isNotEmpty) ...[
-                  pw.Text(
-                    quote.quoteTitle!.trim(),
-                    style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
-                  ),
-                  pw.SizedBox(height: 6),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('QUOTE SUMMARY'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  if ((quote.quoteTitle ?? '').trim().isNotEmpty) ...[
+                    pw.Text(
+                      quote.quoteTitle!.trim(),
+                      style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
+                    ),
+                    pw.SizedBox(height: 6),
+                  ],
+                  if ((quote.quoteDescription ?? '').trim().isNotEmpty)
+                    pw.Text(
+                      quote.quoteDescription!.trim(),
+                      style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+                    ),
                 ],
-                if ((quote.quoteDescription ?? '').trim().isNotEmpty)
-                  pw.Text(
-                    quote.quoteDescription!.trim(),
-                    style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
-                  ),
+              ),
+            ),
+            pw.SizedBox(width: _s20),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
+              children: [
+                _kv('Quote Number', 'QN#${quote.id}'),
+                _kv('Date', dateFormat.format(quote.quoteDate)),
               ],
             ),
-          ),
-          pw.SizedBox(width: _s20),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              _kv('Quote Number', 'QN#${quote.id}'),
-              _kv('Date', dateFormat.format(quote.quoteDate)),
-            ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
@@ -344,67 +330,73 @@ class QuotePdfService {
     Map<String, dynamic>? driver,
     DateFormat dateFormat,
   ) {
-    return _sectionCard(
-      title: 'CLIENT & SERVICE INFORMATION',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Client
-          pw.Expanded(
-            child: pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: _innerBox(),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  _subTitle('Client Information'),
-                  pw.SizedBox(height: 12),
-                  _infoRow('Company', (client['company_name'] ?? 'Not specified').toString()),
-                  if (agent != null) _infoRow('Contact Person', (agent['agent_name'] ?? 'Not specified').toString()),
-                  _infoRow('Contact Number', (quote.passengerContact ?? 'Not specified')),
-                ],
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('CLIENT & SERVICE INFORMATION'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            // Client
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: _innerBox(),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _subTitle('Client Information'),
+                    pw.SizedBox(height: 12),
+                    _infoRow('Company', (client['company_name'] ?? 'Not specified').toString()),
+                    if (agent != null) _infoRow('Contact Person', (agent['agent_name'] ?? 'Not specified').toString()),
+                    _infoRow('Contact Number', (quote.passengerContact ?? 'Not specified')),
+                  ],
+                ),
               ),
             ),
-          ),
-          pw.SizedBox(width: _s16),
-          // Service
-          pw.Expanded(
-            child: pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: _innerBox(),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  _subTitle('Service Information'),
-                  pw.SizedBox(height: 12),
-                  _infoRow(
-                    'Vehicle',
-                    (vehicle?['make'] != null && vehicle?['model'] != null)
-                        ? '${vehicle!['make']} ${vehicle['model']}'
-                        : (quote.vehicleType ?? 'Not specified'),
-                  ),
-                  if (driver != null) _infoRow('Driver', (driver['display_name'] ?? 'Not specified').toString()),
-                  _infoRow('Job Date', dateFormat.format(quote.jobDate)),
-                  _infoRow('Location', (quote.location ?? 'Not specified')),
-                ],
+            pw.SizedBox(width: _s16),
+            // Service
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: _innerBox(),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _subTitle('Service Information'),
+                    pw.SizedBox(height: 12),
+                    _infoRow(
+                      'Vehicle',
+                      (vehicle?['make'] != null && vehicle?['model'] != null)
+                          ? '${vehicle!['make']} ${vehicle['model']}'
+                          : (quote.vehicleType ?? 'Not specified'),
+                    ),
+                    if (driver != null) _infoRow('Driver', (driver['display_name'] ?? 'Not specified').toString()),
+                    _infoRow('Job Date', dateFormat.format(quote.jobDate)),
+                    _infoRow('Location', (quote.location ?? 'Not specified')),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionPassenger(Quote quote) {
-    return _sectionCard(
-      title: 'PASSENGER INFORMATION',
-      child: pw.Column(
-        children: [
-          _infoRow('Name', quote.passengerName ?? 'Not specified'),
-          _infoRow('Passengers', quote.pasCount.toInt().toString()),
-          _infoRow('Luggage', quote.luggage),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('PASSENGER INFORMATION'),
+        pw.Column(
+          children: [
+            _infoRow('Name', quote.passengerName ?? 'Not specified'),
+            _infoRow('Passengers', quote.pasCount.toInt().toString()),
+            _infoRow('Luggage', quote.luggage),
+          ],
+        ),
+      ],
     );
   }
 
@@ -466,10 +458,13 @@ class QuotePdfService {
       ),
     );
 
-    return _sectionCard(
-      title: 'TRANSPORT DETAILS',
-      child: table,
-      footer: totalFooter,
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('TRANSPORT DETAILS'),
+        table,
+        totalFooter,
+      ],
     );
   }
 
@@ -503,78 +498,90 @@ class QuotePdfService {
       }
     }
 
-    return _sectionCard(
-      title: 'TRIP NOTES',
-      child: pw.Column(children: items),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('TRIP NOTES'),
+        pw.Column(children: items),
+      ],
     );
   }
 
   pw.Widget _sectionGeneralNotes(Quote quote) {
-    return _sectionCard(
-      title: 'GENERAL NOTES',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 4, right: 8),
-            width: 4,
-            height: 4,
-            decoration: pw.BoxDecoration(color: _grey600, shape: pw.BoxShape.circle),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              quote.notes!.trim(),
-              style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('GENERAL NOTES'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              margin: const pw.EdgeInsets.only(top: 4, right: 8),
+              width: 4,
+              height: 4,
+              decoration: pw.BoxDecoration(color: _grey600, shape: pw.BoxShape.circle),
             ),
-          ),
-        ],
-      ),
+            pw.Expanded(
+              child: pw.Text(
+                quote.notes!.trim(),
+                style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionTermsAndConditions() {
-    return _sectionCard(
-      title: 'TERMS & CONDITIONS',
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _numberedTerm(1, 'Quotes valid for 24 hours. Prices subject to availability.'),
-          _numberedTerm(2, 'Confirmation subject to vehicle/driver availability. Payment required for final confirmation.'),
-          _numberedTerm(3, 'Itinerary changes may affect pricing. Special requests subject to availability.'),
-          _numberedTerm(4, 'Cancellation policy: 24 hours notice required for full refund.'),
-          _numberedTerm(5, 'All prices include VAT and are quoted in South African Rands (ZAR).'),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('TERMS & CONDITIONS'),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            _numberedTerm(1, 'Quotes valid for 24 hours. Prices subject to availability.'),
+            _numberedTerm(2, 'Confirmation subject to vehicle/driver availability. Payment required for final confirmation.'),
+            _numberedTerm(3, 'Itinerary changes may affect pricing. Special requests subject to availability.'),
+            _numberedTerm(4, 'Cancellation policy: 24 hours notice required for full refund.'),
+            _numberedTerm(5, 'All prices include VAT and are quoted in South African Rands (ZAR).'),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionPaymentInfo() {
-    return _sectionCard(
-      title: 'PAYMENT INFORMATION',
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _subTitle('Banking Details'),
-          pw.SizedBox(height: _s12),
-          _infoRow('Bank', 'First Rand Bank'),
-          _infoRow('Account Name', 'Choice Lux Cars JHB'),
-          _infoRow('Account Number', '62808002802'),
-          _infoRow('Branch Code', '250655'),
-          pw.SizedBox(height: _s16),
-          pw.Container(
-            padding: const pw.EdgeInsets.all(12),
-            decoration: pw.BoxDecoration(
-              color: _gold50,
-              borderRadius: pw.BorderRadius.circular(6),
-              border: pw.Border.all(color: _gold400, width: 0.5),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('PAYMENT INFORMATION'),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            _subTitle('Banking Details'),
+            pw.SizedBox(height: _s12),
+            _infoRow('Bank', 'First Rand Bank'),
+            _infoRow('Account Name', 'Choice Lux Cars JHB'),
+            _infoRow('Account Number', '62808002802'),
+            _infoRow('Branch Code', '250655'),
+            pw.SizedBox(height: _s16),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: _gold50,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: _gold400, width: 0.5),
+              ),
+              child: pw.Text(
+                'Note: Please use Quote Number as payment reference',
+                style: pw.TextStyle(font: _fontBold, fontSize: 11, color: _gold700),
+              ),
             ),
-            child: pw.Text(
-              'Note: Please use Quote Number as payment reference',
-              style: pw.TextStyle(font: _fontBold, fontSize: 11, color: _gold700),
-            ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 

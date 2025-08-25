@@ -1,6 +1,7 @@
--- Create RPC function to fetch invoice data for PDF generation
--- This function returns all necessary data for generating an invoice PDF
+-- Fix the invoice RPC function and add missing column
+-- Run this in your Supabase SQL Editor
 
+-- 1. Fix the RPC function with correct column name
 CREATE OR REPLACE FUNCTION get_invoice_data_for_pdf(p_job_id int)
 RETURNS json
 LANGUAGE plpgsql
@@ -37,7 +38,7 @@ BEGIN
         j.pax as number_passengers,
         j.number_bags as luggage,
         p.display_name as driver_name,
-        p.number as driver_contact,
+        p.number as driver_contact,  -- Fixed: was p.phone, now p.number
         v.make || ' ' || v.model as vehicle_type,
         j.notes,
         j.amount as total_amount,
@@ -111,3 +112,22 @@ GRANT EXECUTE ON FUNCTION get_invoice_data_for_pdf(int) TO authenticated;
 
 -- Add comment for documentation
 COMMENT ON FUNCTION get_invoice_data_for_pdf(int) IS 'Fetches complete invoice data for PDF generation including job details, client info, agent details, passenger info, driver/vehicle info, transport details, and banking information';
+
+-- 2. Add invoice_pdf column to jobs table if it doesn't exist
+DO $$
+BEGIN
+    -- Check if invoice_pdf column exists, if not add it
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns 
+        WHERE table_name = 'jobs' 
+        AND column_name = 'invoice_pdf'
+    ) THEN
+        ALTER TABLE jobs ADD COLUMN invoice_pdf text;
+        
+        -- Add comment for documentation
+        COMMENT ON COLUMN jobs.invoice_pdf IS 'URL to the generated invoice PDF file stored in Supabase Storage';
+    END IF;
+END $$;
+
+-- Add index for better query performance when filtering by invoice_pdf
+CREATE INDEX IF NOT EXISTS idx_jobs_invoice_pdf ON jobs(invoice_pdf) WHERE invoice_pdf IS NOT NULL;

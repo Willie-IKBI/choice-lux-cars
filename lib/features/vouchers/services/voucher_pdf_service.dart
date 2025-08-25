@@ -225,144 +225,136 @@ class VoucherPdfService {
     );
   }
 
-  // ---- SECTION CARDS --------------------------------------------------------
+  // ---- SECTIONS -------------------------------------------------------------
 
-  pw.Widget _sectionCard({
-    required String title,
-    required pw.Widget child,
-    pw.Widget? footer,
-  }) {
-    return pw.Container(
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: _grey300, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(_radius),
-        color: _grey100,
-      ),
-      child: pw.Column(
-        children: [
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            child: pw.Text(
-              title,
-              style: pw.TextStyle(
-                font: _fontBold,
-                fontSize: 16,
-                color: PdfColors.black,
-              ),
+  // Simple section header for long sections
+  pw.Widget _sectionHeader(String title) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Container(
+          width: double.infinity,
+          padding: const pw.EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          decoration: pw.BoxDecoration(
+            color: _grey100,
+            border: pw.Border.all(color: _grey300, width: 0.5),
+            borderRadius: pw.BorderRadius.circular(_radius),
+          ),
+          child: pw.Text(
+            title,
+            style: pw.TextStyle(
+              font: _fontBold,
+              fontSize: 16,
+              color: PdfColors.black,
             ),
           ),
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: pw.BorderRadius.only(
-                bottomLeft: pw.Radius.circular(_radius - 1),
-                bottomRight: pw.Radius.circular(_radius - 1),
-              ),
-            ),
-            child: child,
-          ),
-          if (footer != null) footer,
-        ],
-      ),
+        ),
+        pw.SizedBox(height: 12),
+      ],
     );
   }
 
-  // ---- SECTIONS -------------------------------------------------------------
-
   pw.Widget _sectionVoucherSummary(VoucherData data, DateFormat dateFormat) {
-    return _sectionCard(
-      title: 'VOUCHER SUMMARY',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('VOUCHER SUMMARY'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Expanded(
+              child: pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  pw.Text(
+                    'Confirmation Voucher',
+                    style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
+                  ),
+                  pw.SizedBox(height: 6),
+                  pw.Text(
+                    'This voucher confirms your booking and related services.',
+                    style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+                  ),
+                ],
+              ),
+            ),
+            pw.SizedBox(width: _s20),
+            pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                pw.Text(
-                  'Confirmation Voucher',
-                  style: pw.TextStyle(font: _fontBold, fontSize: 14, color: _grey700),
-                ),
-                pw.SizedBox(height: 6),
-                pw.Text(
-                  'This voucher confirms your booking and related services.',
-                  style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
-                ),
+                _kv('Voucher Number', 'VN#${data.jobId}'),
+                if (data.quoteNo != null) _kv('Quote Number', data.quoteNo!),
+                _kv('Date', data.formattedQuoteDate),
               ],
             ),
-          ),
-          pw.SizedBox(width: _s20),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              _kv('Voucher Number', 'VN#${data.jobId}'),
-              if (data.quoteNo != null) _kv('Quote Number', data.quoteNo!),
-              _kv('Date', data.formattedQuoteDate),
-            ],
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionAgentPassenger(VoucherData data) {
-    return _sectionCard(
-      title: 'AGENT & PASSENGER INFORMATION',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          // Agent
-          pw.Expanded(
-            child: pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: _innerBox(),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  _subTitle('Agent Information'),
-                  pw.SizedBox(height: 12),
-                  _infoRow('Name', data.agentName),
-                  _infoRow('Contact', data.agentContact),
-                ],
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('AGENT & PASSENGER INFORMATION'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            // Agent
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: _innerBox(),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _subTitle('Agent Information'),
+                    pw.SizedBox(height: 12),
+                    _infoRow('Name', data.agentName),
+                    _infoRow('Contact', data.agentContact),
+                  ],
+                ),
               ),
             ),
-          ),
-          pw.SizedBox(width: _s16),
-          // Passenger
-          pw.Expanded(
-            child: pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: _innerBox(),
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                children: [
-                  _subTitle('Passenger Information'),
-                  pw.SizedBox(height: 12),
-                  _infoRow('Name', data.passengerName),
-                  _infoRow('Contact', data.passengerContact),
-                  _infoRow('Passengers', data.numberPassengers.toString()),
-                  _infoRow('Luggage', data.luggage),
-                ],
+            pw.SizedBox(width: _s16),
+            // Passenger
+            pw.Expanded(
+              child: pw.Container(
+                padding: const pw.EdgeInsets.all(12),
+                decoration: _innerBox(),
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    _subTitle('Passenger Information'),
+                    pw.SizedBox(height: 12),
+                    _infoRow('Name', data.passengerName),
+                    _infoRow('Contact', data.passengerContact),
+                    _infoRow('Passengers', data.numberPassengers.toString()),
+                    _infoRow('Luggage', data.luggage),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionDriverVehicle(VoucherData data) {
-    return _sectionCard(
-      title: 'DRIVER & VEHICLE INFORMATION',
-      child: pw.Column(
-        children: [
-          _infoRow('Driver Name', data.driverName),
-          _infoRow('Driver Contact', data.driverContact),
-          _infoRow('Vehicle Type', data.vehicleType),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('DRIVER & VEHICLE INFORMATION'),
+        pw.Column(
+          children: [
+            _infoRow('Driver Name', data.driverName),
+            _infoRow('Driver Contact', data.driverContact),
+            _infoRow('Vehicle Type', data.vehicleType),
+          ],
+        ),
+      ],
     );
   }
 
@@ -391,47 +383,56 @@ class VoucherPdfService {
       },
     );
 
-    return _sectionCard(
-      title: 'TRANSPORT DETAILS',
-      child: table,
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('TRANSPORT DETAILS'),
+        table,
+      ],
     );
   }
 
   pw.Widget _sectionNotes(VoucherData data) {
-    return _sectionCard(
-      title: 'NOTES',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 4, right: 8),
-            width: 4,
-            height: 4,
-            decoration: pw.BoxDecoration(color: _grey600, shape: pw.BoxShape.circle),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              data.notes,
-              style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('NOTES'),
+        pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.Container(
+              margin: const pw.EdgeInsets.only(top: 4, right: 8),
+              width: 4,
+              height: 4,
+              decoration: pw.BoxDecoration(color: _grey600, shape: pw.BoxShape.circle),
             ),
-          ),
-        ],
-      ),
+            pw.Expanded(
+              child: pw.Text(
+                data.notes,
+                style: pw.TextStyle(fontSize: 11, color: _grey700, lineSpacing: 2),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
   pw.Widget _sectionTermsAndConditions() {
-    return _sectionCard(
-      title: 'TERMS & CONDITIONS',
-      child: pw.Column(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          _numberedTerm(1, 'This voucher confirms your booking and related services.'),
-          _numberedTerm(2, 'Any changes must be made at least 24 hours in advance.'),
-          _numberedTerm(3, 'Errors in details are the responsibility of the client.'),
-          _numberedTerm(4, 'This document is subject to the operator\'s standard conditions.'),
-        ],
-      ),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('TERMS & CONDITIONS'),
+        pw.Column(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            _numberedTerm(1, 'This voucher confirms your booking and related services.'),
+            _numberedTerm(2, 'Any changes must be made at least 24 hours in advance.'),
+            _numberedTerm(3, 'Errors in details are the responsibility of the client.'),
+            _numberedTerm(4, 'This document is subject to the operator\'s standard conditions.'),
+          ],
+        ),
+      ],
     );
   }
 

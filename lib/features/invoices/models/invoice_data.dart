@@ -201,7 +201,7 @@ class BankingDetails {
   final String swiftCode;
   final String? reference;
 
-  BankingDetails({
+  const BankingDetails({
     required this.bankName,
     required this.accountName,
     required this.accountNumber,

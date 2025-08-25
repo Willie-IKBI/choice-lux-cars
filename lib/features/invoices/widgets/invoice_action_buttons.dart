@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/invoice_data.dart';
 import '../providers/invoice_controller.dart';
 import '../services/invoice_sharing_service.dart';
+import '../../jobs/providers/jobs_provider.dart';
 
 class InvoiceActionButtons extends ConsumerStatefulWidget {
   final String jobId;
@@ -48,6 +49,9 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
       await ref.read(invoiceControllerProvider.notifier).createInvoice(
         jobId: widget.jobId,
       );
+      
+      // Refresh jobs data to show updated invoice status
+      await ref.read(jobsProvider.notifier).refreshJobs();
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,6 +99,9 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
         await ref.read(invoiceControllerProvider.notifier).regenerateInvoice(
           jobId: widget.jobId,
         );
+        
+        // Refresh jobs data to show updated invoice status
+        await ref.read(jobsProvider.notifier).refreshJobs();
         
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -328,8 +335,9 @@ class InvoiceActionBar extends StatelessWidget {
   }
 
   Widget _buildCreateInvoiceButton(BuildContext context, bool isTight, double maxWidth) {
+    // Ensure constraints are valid - minWidth cannot exceed maxWidth
     final availableWidth = maxWidth;
-    final minWidth = isTight ? 120.0 : 140.0;
+    final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
     final effectiveMinWidth = minWidth < availableWidth ? minWidth : availableWidth * 0.8;
     
     return ConstrainedBox(
@@ -338,10 +346,10 @@ class InvoiceActionBar extends StatelessWidget {
         maxWidth: availableWidth,
       ),
       child: SizedBox(
-        width: double.infinity,
+        width: double.infinity, // Always use full available width
         child: ElevatedButton.icon(
           onPressed: invoiceState.isLoading ? null : onCreateInvoice,
-          icon: const Icon(Icons.receipt, size: 16),
+          icon: const Icon(Icons.receipt_long, size: 16),
           label: const Text('Create Invoice', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
             backgroundColor: Theme.of(context).colorScheme.primary,
@@ -394,77 +402,103 @@ class InvoiceActionBar extends StatelessWidget {
           ),
         ),
 
-        // Action buttons
-        if (!isTight) ...[
-          SizedBox(
-            height: 28,
-            child: OutlinedButton.icon(
-              onPressed: onOpenInvoice,
-              icon: const Icon(Icons.visibility, size: 14),
-              label: const Text('View', style: TextStyle(fontSize: 11)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        // Primary action button
+        ConstrainedBox(
+          constraints: BoxConstraints(
+            minWidth: isTight ? 100 : 120, // Reduced minimum width
+            maxWidth: maxWidth,
+          ),
+          child: SizedBox(
+            width: double.infinity, // Always use full available width
+            child: ElevatedButton.icon(
+              onPressed: invoiceState.isLoading ? null : onOpenInvoice,
+              icon: const Icon(Icons.open_in_new, size: 14),
+              label: const Text('Open Invoice', style: TextStyle(fontSize: 11)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
+                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(6),
+                ),
               ),
             ),
           ),
-          SizedBox(
-            height: 28,
-            child: OutlinedButton.icon(
-              onPressed: onShowShareOptions,
-              icon: const Icon(Icons.share, size: 14),
-              label: const Text('Share', style: TextStyle(fontSize: 11)),
-              style: OutlinedButton.styleFrom(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-              ),
-            ),
+        ),
+
+        // Secondary icon actions
+        _iconAction(
+          context,
+          Icons.share,
+          'Share Invoice',
+          onTap: invoiceState.isLoading ? null : onShowShareOptions,
+        ),
+
+        // Reload button (if user has permission)
+        if (canCreateInvoice)
+          _iconAction(
+            context,
+            Icons.refresh,
+            'Reload Invoice',
+            onTap: invoiceState.isLoading ? null : onRegenerateInvoice,
           ),
-        ] else ...[
-          // Compact version for tight spaces
-          IconButton(
-            onPressed: onOpenInvoice,
-            icon: const Icon(Icons.visibility, size: 16),
-            tooltip: 'View Invoice',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
-          IconButton(
-            onPressed: onShowShareOptions,
-            icon: const Icon(Icons.share, size: 16),
-            tooltip: 'Share Invoice',
-            padding: EdgeInsets.zero,
-            constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
-          ),
-        ],
       ],
+    );
+  }
+
+  Widget _iconAction(BuildContext context, IconData icon, String tooltip, {VoidCallback? onTap}) {
+    return Tooltip(
+      message: tooltip,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(999),
+        child: Container(
+          width: 32,
+          height: 32,
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+            borderRadius: BorderRadius.circular(999),
+            border: Border.all(
+              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+            ),
+          ),
+          child: Icon(
+            icon,
+            size: 16,
+            color: onTap == null 
+              ? Colors.grey 
+              : Theme.of(context).colorScheme.onSecondaryContainer,
+          ),
+        ),
+      ),
     );
   }
 
   Widget _buildNoPermissionMessage(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(color: Colors.grey.withValues(alpha: 0.2)),
+        color: Theme.of(context).colorScheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
             Icons.lock,
             size: 14,
-            color: Colors.grey[600],
+            color: Theme.of(context).colorScheme.onSurfaceVariant,
           ),
           const SizedBox(width: 6),
-          Text(
-            'No permission to create invoices',
-            style: TextStyle(
-              fontSize: 11,
-              color: Colors.grey[600],
+          Expanded(
+            child: Text(
+              'Insufficient permissions to create invoices',
+              style: TextStyle(
+                fontSize: 11,
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
         ],

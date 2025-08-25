@@ -67,6 +67,7 @@ dependencies:
   share_plus: ^7.2.1
   shared_preferences: ^2.3.2
   path: ^1.9.0
+  http: ^1.2.1
   
   # Typography
   google_fonts: ^6.2.1

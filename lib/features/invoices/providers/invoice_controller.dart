@@ -47,21 +47,24 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
 
   Future<void> createInvoice({required String jobId}) async {
     try {
-      state = state.copyWith(status: InvoiceControllerStatus.loading);
+      state = state.copyWith(
+        status: InvoiceControllerStatus.loading,
+        errorMessage: null,
+      );
 
-      // Fetch invoice data
+      // Step 1: Fetch invoice data
       final invoiceData = await _repository.fetchInvoiceData(jobId: jobId);
 
-      // Generate PDF
+      // Step 2: Generate PDF
       final pdfBytes = await _pdfService.buildInvoicePdf(invoiceData);
 
-      // Upload to storage
+      // Step 3: Upload to storage
       final storageUrl = await _repository.uploadInvoiceBytes(
         jobId: jobId,
         bytes: pdfBytes,
       );
 
-      // Link to job
+      // Step 4: Link to job
       await _repository.linkInvoiceUrlToJob(
         jobId: jobId,
         url: storageUrl,
@@ -70,11 +73,13 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
       state = state.copyWith(
         status: InvoiceControllerStatus.success,
         invoiceData: invoiceData,
+        errorMessage: null,
       );
     } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
       state = state.copyWith(
         status: InvoiceControllerStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: errorMessage,
       );
       rethrow;
     }
@@ -82,21 +87,24 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
 
   Future<void> regenerateInvoice({required String jobId}) async {
     try {
-      state = state.copyWith(status: InvoiceControllerStatus.loading);
+      state = state.copyWith(
+        status: InvoiceControllerStatus.loading,
+        errorMessage: null,
+      );
 
-      // Fetch updated invoice data
+      // Step 1: Fetch updated invoice data
       final invoiceData = await _repository.fetchInvoiceData(jobId: jobId);
 
-      // Generate new PDF
+      // Step 2: Generate new PDF
       final pdfBytes = await _pdfService.buildInvoicePdf(invoiceData);
 
-      // Upload to storage (overwrite existing)
+      // Step 3: Upload to storage (overwrite existing)
       final storageUrl = await _repository.uploadInvoiceBytes(
         jobId: jobId,
         bytes: pdfBytes,
       );
 
-      // Update job link
+      // Step 4: Update job link
       await _repository.linkInvoiceUrlToJob(
         jobId: jobId,
         url: storageUrl,
@@ -105,11 +113,13 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
       state = state.copyWith(
         status: InvoiceControllerStatus.success,
         invoiceData: invoiceData,
+        errorMessage: null,
       );
     } catch (e) {
+      final errorMessage = e.toString().replaceAll('Exception: ', '');
       state = state.copyWith(
         status: InvoiceControllerStatus.error,
-        errorMessage: e.toString(),
+        errorMessage: errorMessage,
       );
       rethrow;
     }
