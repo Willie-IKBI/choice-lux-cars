@@ -203,17 +203,13 @@ class _NotificationBellState extends State<NotificationBell>
         final notificationState = ref.watch(notificationProvider);
         final unreadCount = notificationState.unreadCount;
         
-        // Count recent notifications (within 24 hours, even if read or dismissed)
-        final recentCount = notificationState.notifications.where((n) {
-          final isRecent = DateTime.now().difference(n.createdAt).inHours < 24;
-          return isRecent; // Show all recent notifications regardless of dismissed status
-        }).length;
+        // Use the same logic as notifications screen - only count active, unread notifications
+        final activeUnreadCount = notificationState.notifications.where((n) => !n.isHidden && !n.isRead).length;
+        final displayCount = unreadCount > 0 ? unreadCount : activeUnreadCount;
         
         final hasHighPriority = notificationState.notifications.any((n) => n.isHighPriority && !n.isRead);
         final hasUrgent = notificationState.notifications.any((n) => n.isUrgent && !n.isRead);
 
-        // Use recent count for badge display, but unread count for animation
-        final displayCount = unreadCount > 0 ? unreadCount : recentCount;
         final shouldShowBadge = displayCount > 0;
 
         // Animate when count changes from 0 to > 0

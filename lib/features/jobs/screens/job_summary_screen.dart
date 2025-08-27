@@ -9,6 +9,8 @@ import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
+import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
@@ -25,6 +27,7 @@ class JobSummaryScreen extends ConsumerStatefulWidget {
 
 class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   bool _isLoading = true;
+  bool _isConfirming = false; // Prevent duplicate confirmation calls
   String? _errorMessage;
   Job? _job;
   List<Trip> _trips = []; // Changed from List<Trip> to List<dynamic>
@@ -653,8 +656,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
   
   Widget _buildStepTimelineCard() {
-    final steps = _getStepTimeline();
-    
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -665,39 +666,89 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           children: [
             _buildSectionHeader('Step Timeline', Icons.timeline),
             const SizedBox(height: 16),
-            if (steps.isEmpty)
-              Container(
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.grey.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.grey.withOpacity(0.3)),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.info_outline,
-                      color: Colors.grey[600],
-                      size: 20,
+            FutureBuilder<List<Map<String, dynamic>>>(
+              future: _getStepTimeline(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: CircularProgressIndicator(),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Text(
-                        'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
+                  );
+                }
+                
+                if (snapshot.hasError) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.error_outline,
+                          color: Colors.red[600],
+                          size: 20,
                         ),
-                      ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Error loading timeline: ${snapshot.error}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.red[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
-              )
-            else
-              ...steps.map((step) {
-                return _buildStepTimelineItem(step);
-              }).toList(),
+                  );
+                }
+                
+                final steps = snapshot.data ?? [];
+                
+                if (steps.isEmpty) {
+                  return Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.grey.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.info_outline,
+                          color: Colors.grey[600],
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Text(
+                            'Job not started yet. The timeline will show all steps including current progress once the job begins.',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+                
+                return Column(
+                  children: steps.map((step) {
+                    return _buildStepTimelineItem(step);
+                  }).toList(),
+                );
+              },
+            ),
           ],
         ),
       ),
@@ -706,6 +757,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   Widget _buildStepTimelineItem(Map<String, dynamic> step) {
     final isTotal = step['isTotal'] == true;
+    final status = step['status'] ?? 'completed'; // Default to completed for backward compatibility
+    final isCompleted = status == 'completed';
+    final isCurrent = status == 'current';
+    final isUpcoming = status == 'upcoming';
     
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
@@ -718,18 +773,32 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             decoration: BoxDecoration(
               color: isTotal 
                 ? Colors.indigo.withOpacity(0.2)
-                : step['color']!.withOpacity(0.1),
+                : isCurrent
+                  ? ChoiceLuxTheme.richGold.withOpacity(0.2)
+                  : isCompleted
+                    ? ChoiceLuxTheme.successColor.withOpacity(0.2)
+                    : Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isTotal 
                   ? Colors.indigo.withOpacity(0.5)
-                  : step['color']!.withOpacity(0.3),
-                width: isTotal ? 2 : 1,
+                  : isCurrent
+                    ? ChoiceLuxTheme.richGold.withOpacity(0.5)
+                    : isCompleted
+                      ? ChoiceLuxTheme.successColor.withOpacity(0.5)
+                      : Colors.grey.withOpacity(0.3),
+                width: isTotal || isCurrent ? 2 : 1,
               ),
             ),
             child: Icon(
               step['icon'],
-              color: step['color'],
+              color: isTotal 
+                ? Colors.indigo
+                : isCurrent
+                  ? ChoiceLuxTheme.richGold
+                  : isCompleted
+                    ? ChoiceLuxTheme.successColor
+                    : Colors.grey,
               size: 24,
             ),
           ),
@@ -738,21 +807,91 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  step['title'],
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: isTotal ? FontWeight.w700 : FontWeight.bold,
-                    color: isTotal ? Colors.indigo : null,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        step['title'],
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: isTotal ? FontWeight.w700 : FontWeight.bold,
+                          color: isTotal 
+                            ? Colors.indigo
+                            : isCurrent
+                              ? ChoiceLuxTheme.richGold
+                              : isCompleted
+                                ? Colors.black
+                                : Colors.grey,
+                        ),
+                      ),
+                    ),
+                    if (isCurrent) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: const Text(
+                          'In Progress',
+                          style: TextStyle(
+                            color: Colors.black,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
                 Text(
                   step['description'],
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontSize: 14,
-                    color: Colors.grey,
+                    color: isUpcoming ? Colors.grey.withOpacity(0.7) : Colors.grey,
                   ),
                 ),
+                if (step['address'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isCurrent
+                        ? ChoiceLuxTheme.richGold.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: isCurrent
+                          ? ChoiceLuxTheme.richGold.withOpacity(0.3)
+                          : Colors.blue.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          size: 12,
+                          color: isCurrent
+                            ? ChoiceLuxTheme.richGold
+                            : Colors.blue,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            step['address']!,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                              color: isCurrent
+                                ? ChoiceLuxTheme.richGold
+                                : Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 if (step['odometer'] != null)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
@@ -775,6 +914,43 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         fontWeight: FontWeight.w600,
                         color: isTotal ? Colors.indigo : Colors.grey[700],
                       ),
+                    ),
+                  ),
+                if (isCurrent && step['progressPercentage'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Progress',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: ChoiceLuxTheme.richGold,
+                              ),
+                            ),
+                            Text(
+                              '${step['progressPercentage'].toInt()}%',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: ChoiceLuxTheme.richGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        LinearProgressIndicator(
+                          value: step['progressPercentage'] / 100.0,
+                          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                          minHeight: 4,
+                        ),
+                      ],
                     ),
                   ),
                 if (step['completedAt'] != null)
@@ -812,43 +988,88 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
   
   Widget _buildStepTimelineContent() {
-    final steps = _getStepTimeline();
-    
-    if (steps.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.grey.withOpacity(0.1),
-          borderRadius: BorderRadius.circular(8),
-          border: Border.all(color: Colors.grey.withOpacity(0.3)),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.info_outline,
-              color: Colors.grey[600],
-              size: 20,
+    return FutureBuilder<List<Map<String, dynamic>>>(
+      future: _getStepTimeline(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(
+            child: Padding(
+              padding: EdgeInsets.all(16.0),
+              child: CircularProgressIndicator(),
             ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Text(
-                'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey[600],
-                  fontStyle: FontStyle.italic,
+          );
+        }
+        
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.red.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.red.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.error_outline,
+                  color: Colors.red[600],
+                  size: 20,
                 ),
-              ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Error loading timeline: ${snapshot.error}',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.red[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          ],
-        ),
-      );
-    }
-    
-    return Column(
-      children: steps.map((step) {
-        return _buildStepTimelineItem(step);
-      }).toList(),
+          );
+        }
+        
+        final steps = snapshot.data ?? [];
+        
+        if (steps.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.grey[600],
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey[600],
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+        return Column(
+          children: steps.map((step) {
+            return _buildStepTimelineItem(step);
+          }).toList(),
+        );
+      },
     );
   }
 
@@ -1042,9 +1263,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                const SizedBox(width: 16),
                Expanded(
                  child: ElevatedButton.icon(
-                   onPressed: _confirmJob,
-                   icon: const Icon(Icons.check_circle),
-                   label: const Text('Confirm Job'),
+                   onPressed: _isConfirming ? null : _confirmJob,
+                   icon: _isConfirming 
+                       ? const SizedBox(
+                           width: 16,
+                           height: 16,
+                           child: CircularProgressIndicator(
+                             strokeWidth: 2,
+                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                           ),
+                         )
+                       : const Icon(Icons.check_circle),
+                   label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
                    style: ElevatedButton.styleFrom(
                      backgroundColor: Colors.green,
                      foregroundColor: Colors.white,
@@ -1122,9 +1352,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
            SizedBox(
              width: double.infinity,
              child: ElevatedButton.icon(
-               onPressed: _confirmJob,
-               icon: const Icon(Icons.check_circle),
-               label: const Text('Confirm Job'),
+               onPressed: _isConfirming ? null : _confirmJob,
+               icon: _isConfirming 
+                   ? const SizedBox(
+                       width: 16,
+                       height: 16,
+                       child: CircularProgressIndicator(
+                         strokeWidth: 2,
+                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                       ),
+                     )
+                   : const Icon(Icons.check_circle),
+               label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
                style: ElevatedButton.styleFrom(
                  backgroundColor: Colors.green,
                  foregroundColor: Colors.white,
@@ -1161,6 +1400,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     print('Is Confirmed: ${_job!.isConfirmed}');
     print('Driver Confirmation: ${_job!.driverConfirmation}');
     
+    // Prevent duplicate calls
+    if (_isConfirming) {
+      print('Job confirmation already in progress, skipping duplicate call');
+      return;
+    }
+    
+    setState(() => _isConfirming = true);
+    
     try {
       // Show loading state
       if (!mounted) {
@@ -1169,7 +1416,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       }
       
       print('Calling jobsProvider.confirmJob...');
-      // Confirm the job
+      // Confirm the job using the single source of truth
       await ref.read(jobsProvider.notifier).confirmJob(_job!.id, ref: ref);
       print('jobsProvider.confirmJob completed successfully');
       
@@ -1207,6 +1454,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       }
       
       SnackBarUtils.showError(context, '❌ Failed to confirm job: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isConfirming = false);
+      }
     }
   }
 
@@ -1327,99 +1578,156 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
   }
 
-  List<Map<String, dynamic>> _getStepTimeline() {
+  Future<List<Map<String, dynamic>>> _getStepTimeline() async {
     final steps = <Map<String, dynamic>>[];
     
     // Get odometer readings
     final startOdo = _driverFlowData?['odo_start_reading'] ?? 0.0;
     final endOdo = _driverFlowData?['job_closed_odo'] ?? 0.0;
     final totalKm = endOdo - startOdo;
+    final progressPercentage = _driverFlowData?['progress_percentage'] ?? 0.0;
     
-    // Vehicle Collection - only show if completed
-    final vehicleCollectedAt = _driverFlowData?['vehicle_collected_at'];
-    if (vehicleCollectedAt != null) {
-      steps.add({
-        'title': 'Vehicle Collection',
-        'description': 'Vehicle collected and odometer recorded',
-        'completedAt': vehicleCollectedAt,
-        'icon': Icons.directions_car,
-        'color': ChoiceLuxTheme.richGold,
-        'odometer': startOdo > 0 ? 'Start: ${startOdo.toStringAsFixed(1)} km' : null,
-      });
+    // Define all possible steps in order
+    final allSteps = [
+      'vehicle_collection',
+      'pickup_arrival', 
+      'passenger_onboard',
+      'dropoff_arrival',
+      'trip_complete',
+      'vehicle_return'
+    ];
+    
+    // Get current step from driver flow data
+    final currentStepId = _driverFlowData?['current_step']?.toString() ?? 'vehicle_collection';
+    
+    // Load job addresses for pickup/dropoff steps
+    Map<String, String?> jobAddresses = {};
+    try {
+      jobAddresses = await DriverFlowApiService.getJobAddresses(int.parse(widget.jobId));
+    } catch (e) {
+      print('Could not load job addresses: $e');
     }
     
-    // Pickup Arrival - only show if completed
-    if (_tripProgressData.isNotEmpty) {
-      final pickupArrivedAt = _tripProgressData.first['pickup_arrived_at'];
-      if (pickupArrivedAt != null) {
-        steps.add({
-          'title': 'Arrive at Pickup',
-          'description': 'Arrived at passenger pickup location',
-          'completedAt': pickupArrivedAt,
-          'icon': Icons.location_on,
-          'color': Colors.blue,
-        });
+    // Process each step
+    for (final stepId in allSteps) {
+      final stepTitle = DriverFlowUtils.getStepTitle(stepId);
+      final stepDescription = DriverFlowUtils.getStepDescription(stepId);
+      final stepIcon = DriverFlowUtils.getStepIcon(stepId);
+      
+      // Determine step status
+      bool isCompleted = false;
+      bool isCurrent = stepId == currentStepId;
+      DateTime? completedAt;
+      
+      // Check completion status for each step
+      switch (stepId) {
+        case 'vehicle_collection':
+          isCompleted = _driverFlowData?['vehicle_collected'] == true;
+          completedAt = _driverFlowData?['vehicle_collected_at'];
+          break;
+        case 'pickup_arrival':
+          isCompleted = _tripProgressData.isNotEmpty && 
+                       _tripProgressData.first['pickup_arrived_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty ? 
+                       _tripProgressData.first['pickup_arrived_at'] : null;
+          break;
+        case 'passenger_onboard':
+          isCompleted = _tripProgressData.isNotEmpty && 
+                       _tripProgressData.first['passenger_onboard_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty ? 
+                       _tripProgressData.first['passenger_onboard_at'] : null;
+          break;
+        case 'dropoff_arrival':
+          isCompleted = _tripProgressData.isNotEmpty && 
+                       _tripProgressData.first['dropoff_arrived_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty ? 
+                       _tripProgressData.first['dropoff_arrived_at'] : null;
+          break;
+        case 'trip_complete':
+          isCompleted = _tripProgressData.isNotEmpty && 
+                       _tripProgressData.first['status'] == 'completed';
+          completedAt = _tripProgressData.isNotEmpty ? 
+                       _tripProgressData.first['updated_at'] : null;
+          break;
+        case 'vehicle_return':
+          isCompleted = _driverFlowData?['job_closed_time'] != null;
+          completedAt = _driverFlowData?['job_closed_time'];
+          break;
       }
       
-      // Passenger Onboard - only show if completed
-      final passengerOnboardAt = _tripProgressData.first['passenger_onboard_at'];
-      if (passengerOnboardAt != null) {
-        steps.add({
-          'title': 'Passenger Onboard',
-          'description': 'Passenger has boarded the vehicle',
-          'completedAt': passengerOnboardAt,
-          'icon': Icons.person_add,
-          'color': Colors.green,
-        });
-      }
-      
-      // Dropoff Arrival - only show if completed
-      final dropoffArrivedAt = _tripProgressData.first['dropoff_arrived_at'];
-      if (dropoffArrivedAt != null) {
-        steps.add({
-          'title': 'Arrive at Dropoff',
-          'description': 'Arrived at passenger dropoff location',
-          'completedAt': dropoffArrivedAt,
-          'icon': Icons.location_on,
-          'color': Colors.orange,
-        });
-      }
-      
-      // Trip Complete - only show if completed
-      final tripCompletedAt = _tripProgressData.first['updated_at'];
-      if (tripCompletedAt != null) {
-        steps.add({
-          'title': 'Trip Complete',
-          'description': 'Trip has been completed',
-          'completedAt': tripCompletedAt,
-          'icon': Icons.check_circle,
-          'color': Colors.purple,
-        });
+      // Add step to timeline with appropriate styling
+      if (isCompleted) {
+        // Completed step
+        final stepData = {
+          'title': stepTitle,
+          'description': stepDescription,
+          'completedAt': completedAt,
+          'icon': stepIcon,
+          'color': ChoiceLuxTheme.successColor,
+          'status': 'completed',
+        };
+        
+        // Add odometer info for vehicle steps
+        if (stepId == 'vehicle_collection' && startOdo > 0) {
+          stepData['odometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
+        } else if (stepId == 'vehicle_return' && endOdo > 0) {
+          stepData['odometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
+        }
+        
+        steps.add(stepData);
+      } else if (isCurrent) {
+        // Current step
+        final stepData = {
+          'title': DriverFlowUtils.getStepTitleWithAddress(stepId, jobAddresses['pickup']),
+          'description': stepDescription,
+          'completedAt': null,
+          'icon': stepIcon,
+          'color': ChoiceLuxTheme.richGold,
+          'status': 'current',
+          'progressPercentage': progressPercentage,
+        };
+        
+        // Add address info for location steps
+        if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
+          stepData['address'] = jobAddresses['pickup'];
+        } else if (stepId == 'dropoff_arrival' && jobAddresses['dropoff'] != null) {
+          stepData['address'] = jobAddresses['dropoff'];
+        }
+        
+        steps.add(stepData);
+      } else {
+        // Upcoming step
+        final stepData = {
+          'title': DriverFlowUtils.getStepTitleWithAddress(stepId, jobAddresses['pickup']),
+          'description': stepDescription,
+          'completedAt': null,
+          'icon': stepIcon,
+          'color': Colors.grey,
+          'status': 'upcoming',
+        };
+        
+        // Add address info for location steps
+        if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
+          stepData['address'] = jobAddresses['pickup'];
+        } else if (stepId == 'dropoff_arrival' && jobAddresses['dropoff'] != null) {
+          stepData['address'] = jobAddresses['dropoff'];
+        }
+        
+        steps.add(stepData);
       }
     }
     
-    // Vehicle Return - only show if completed
+    // Add total kilometers traveled if job is completed
     final vehicleReturnedAt = _driverFlowData?['job_closed_time'];
-    if (vehicleReturnedAt != null) {
-      steps.add({
-        'title': 'Vehicle Return',
-        'description': 'Vehicle returned and final odometer recorded',
-        'completedAt': vehicleReturnedAt,
-        'icon': Icons.home,
-        'color': ChoiceLuxTheme.successColor,
-        'odometer': endOdo > 0 ? 'End: ${endOdo.toStringAsFixed(1)} km' : null,
-      });
-    }
-    
-    // Add total kilometers traveled if we have both readings and job is completed
     if (startOdo > 0 && endOdo > 0 && totalKm > 0 && vehicleReturnedAt != null) {
       steps.add({
         'title': 'Total Distance Traveled',
         'description': 'Total kilometers covered during this job',
-        'completedAt': null, // This is calculated, not a completion time
+        'completedAt': null,
         'icon': Icons.speed,
         'color': Colors.indigo,
         'odometer': 'Total: ${totalKm.toStringAsFixed(1)} km',
+        'status': 'completed',
         'isTotal': true,
       });
     }

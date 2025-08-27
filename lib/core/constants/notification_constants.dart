@@ -17,25 +17,25 @@ class NotificationConstants {
   // Notification Messages
   static String getJobAssignmentMessage(String jobNumber, {bool isReassignment = false}) {
     if (isReassignment) {
-      return '🚗 Job $jobNumber has been reassigned to you. Please confirm your assignment.';
+      return 'Job $jobNumber has been reassigned to you. Please confirm your assignment.';
     }
-    return '🚗 New job $jobNumber has been assigned to you. Please confirm your assignment.';
+    return 'New job $jobNumber has been assigned to you. Please confirm your assignment.';
   }
 
   static String getJobStatusChangeMessage(String jobNumber, String oldStatus, String newStatus) {
-    return '📊 Job $jobNumber status changed from $oldStatus to $newStatus.';
+    return 'Job $jobNumber status changed from $oldStatus to $newStatus.';
   }
 
   static String getJobCancellationMessage(String jobNumber) {
-    return '❌ Job $jobNumber has been cancelled.';
+    return 'Job $jobNumber has been cancelled.';
   }
 
   static String getPaymentReminderMessage(String jobNumber, String amount) {
-    return '💰 Payment reminder for job $jobNumber: $amount';
+    return 'Payment reminder for job $jobNumber: $amount';
   }
 
   static String getSystemAlertMessage(String message) {
-    return '🔔 $message';
+    return message;
   }
 
   // Action Types

@@ -38,14 +38,17 @@ serve(async (req) => {
       )
     }
 
-    // Create notification
+    // Create notification in app_notifications table (not the old notifications table)
     const { data: notification, error } = await supabaseClient
-      .from('notifications')
+      .from('app_notifications')
       .insert({
         user_id: driver_id,
         job_id: job_id,
         message: message || 'New job assigned, click to confirm',
         notification_type: 'job_assignment',
+        priority: 'high',
+        is_read: false,
+        is_hidden: false,
       })
       .select()
       .single()

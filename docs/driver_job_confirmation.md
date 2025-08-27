@@ -157,8 +157,8 @@ serve(async (req) => {
 
         // Send FCM notification
         const message = notification.is_reassignment 
-          ? '🚗 Job reassigned to you. Please confirm your job in the app.'
-          : '🚗 New job assigned. Please confirm your job in the app.'
+          ? 'Job reassigned to you. Please confirm your job in the app.'
+          : 'New job assigned. Please confirm your job in the app.'
 
         const fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
           method: 'POST',
@@ -335,7 +335,7 @@ class FCMService {
     // Show snackbar or custom notification
     ScaffoldMessenger.of(ref.context).showSnackBar(
       SnackBar(
-        content: Text('🚗 New job assigned! Tap to view details.'),
+        content: Text('New job assigned! Tap to view details.'),
         action: SnackBarAction(
           label: 'View',
           onPressed: () => _navigateToJobDetail(jobId, ref),

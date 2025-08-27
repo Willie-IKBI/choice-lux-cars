@@ -662,4 +662,171 @@ class NotificationService {
       print('Error fixing notification job IDs: $e');
     }
   }
+
+  /// Send job start notification to administrators, managers, and driver managers
+  static Future<void> sendJobStartNotification({
+    required int jobId,
+    required String driverName,
+    required String clientName,
+    required String passengerName,
+    required String jobNumber,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get all administrators, managers, and driver managers
+      final usersResponse = await supabase
+          .from('profiles')
+          .select('id, role')
+          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .eq('status', 'active');
+      
+      final message = 'Job Started: $driverName is driving $passengerName ($clientName) - Job #$jobNumber';
+      
+      // Create notifications for all target users
+      for (final user in usersResponse) {
+        await supabase
+            .from('app_notifications')
+            .insert({
+              'user_id': user['id'],
+              'message': message,
+              'notification_type': 'job_start',
+              'job_id': jobId,
+              'priority': 'high',
+              'action_data': {
+                'route': '/jobs/$jobId/summary',
+                'job_id': jobId,
+                'driver_name': driverName,
+                'client_name': clientName,
+                'passenger_name': passengerName,
+                'job_number': jobNumber,
+              },
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+      }
+      
+      print('Sent job start notifications to ${usersResponse.length} users');
+    } catch (e) {
+      print('Error sending job start notification: $e');
+    }
+  }
+
+  /// Send step completion notification
+  static Future<void> sendStepCompletionNotification({
+    required int jobId,
+    required String stepName,
+    required String driverName,
+    required String jobNumber,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get all administrators, managers, and driver managers
+      final usersResponse = await supabase
+          .from('profiles')
+          .select('id, role')
+          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .eq('status', 'active');
+      
+      final stepDisplayName = _getStepDisplayName(stepName);
+      final message = 'Driver Update: $driverName completed $stepDisplayName - Job #$jobNumber';
+      
+      // Create notifications for all target users
+      for (final user in usersResponse) {
+        await supabase
+            .from('app_notifications')
+            .insert({
+              'user_id': user['id'],
+              'message': message,
+              'notification_type': 'step_completion',
+              'job_id': jobId,
+              'priority': 'normal',
+              'action_data': {
+                'route': '/jobs/$jobId/summary',
+                'job_id': jobId,
+                'driver_name': driverName,
+                'step_name': stepName,
+                'step_display_name': stepDisplayName,
+                'job_number': jobNumber,
+              },
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+      }
+      
+      print('Sent step completion notifications to ${usersResponse.length} users');
+    } catch (e) {
+      print('Error sending step completion notification: $e');
+    }
+  }
+
+  /// Send job completion notification
+  static Future<void> sendJobCompletionNotification({
+    required int jobId,
+    required String driverName,
+    required String clientName,
+    required String passengerName,
+    required String jobNumber,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      
+      // Get all administrators, managers, and driver managers
+      final usersResponse = await supabase
+          .from('profiles')
+          .select('id, role')
+          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .eq('status', 'active');
+      
+      final message = 'Job Completed: $driverName finished job for $passengerName ($clientName) - Job #$jobNumber';
+      
+      // Create notifications for all target users
+      for (final user in usersResponse) {
+        await supabase
+            .from('app_notifications')
+            .insert({
+              'user_id': user['id'],
+              'message': message,
+              'notification_type': 'job_completion',
+              'job_id': jobId,
+              'priority': 'high',
+              'action_data': {
+                'route': '/jobs/$jobId/summary',
+                'job_id': jobId,
+                'driver_name': driverName,
+                'client_name': clientName,
+                'passenger_name': passengerName,
+                'job_number': jobNumber,
+              },
+              'created_at': DateTime.now().toIso8601String(),
+              'updated_at': DateTime.now().toIso8601String(),
+            });
+      }
+      
+      print('Sent job completion notifications to ${usersResponse.length} users');
+    } catch (e) {
+      print('Error sending job completion notification: $e');
+    }
+  }
+
+  /// Get display name for step
+  static String _getStepDisplayName(String stepName) {
+    switch (stepName) {
+      case 'vehicle_collection':
+        return 'Vehicle Collection';
+      case 'pickup_arrival':
+        return 'Pickup Arrival';
+      case 'passenger_onboard':
+        return 'Passenger Onboard';
+      case 'dropoff_arrival':
+        return 'Dropoff Arrival';
+      case 'trip_complete':
+        return 'Trip Completion';
+      case 'vehicle_return':
+        return 'Vehicle Return';
+      default:
+        return stepName;
+    }
+  }
 } 

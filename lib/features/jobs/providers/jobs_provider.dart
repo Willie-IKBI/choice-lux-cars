@@ -30,6 +30,7 @@ final tripsProvider = StateNotifierProvider<TripsNotifier, List<Trip>>((ref) {
 
 class JobsNotifier extends StateNotifier<List<Job>> {
   dynamic currentUser;
+  bool _isConfirming = false; // Prevent duplicate confirmation calls
   
   JobsNotifier(this.currentUser) : super([]) {
     fetchJobs();
@@ -261,12 +262,20 @@ class JobsNotifier extends StateNotifier<List<Job>> {
     }
   }
 
-  // Confirm job assignment
+  // Confirm job assignment - SINGLE SOURCE OF TRUTH
   Future<void> confirmJob(String jobId, {required WidgetRef ref}) async {
     print('=== JOBS PROVIDER: confirmJob() called ===');
     print('Job ID: $jobId');
     print('Current User: ${currentUser?.id}');
     print('Current User Role: ${currentUser?.role}');
+    
+    // Prevent duplicate calls
+    if (_isConfirming) {
+      print('Job confirmation already in progress, skipping duplicate call');
+      return;
+    }
+    
+    _isConfirming = true;
     
     try {
       print('Updating job in database...');
@@ -274,7 +283,7 @@ class JobsNotifier extends StateNotifier<List<Job>> {
         jobId: jobId,
         data: {
           'is_confirmed': true,
-          'driver_confirm_ind': true, // Add this for backward compatibility
+          'driver_confirm_ind': true, // Backward compatibility
           'confirmed_at': DateTime.now().toIso8601String(),
           'confirmed_by': currentUser?.id,
           'updated_at': DateTime.now().toIso8601String(),
@@ -318,6 +327,8 @@ class JobsNotifier extends StateNotifier<List<Job>> {
     } catch (error) {
       print('Error confirming job: $error');
       rethrow;
+    } finally {
+      _isConfirming = false;
     }
   }
 

@@ -6,6 +6,19 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 }
 
+interface Profile {
+  fcm_token: string;
+  display_name: string;
+}
+
+interface PendingNotification {
+  id: string;
+  job_id: number;
+  driver_id: string;
+  is_reassignment: boolean;
+  profiles: Profile;
+}
+
 serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -50,21 +63,24 @@ serve(async (req) => {
 
     for (const notification of pendingNotifications) {
       try {
-        const profile = notification.profiles
+        // Handle the profiles array structure from Supabase
+        const profile = Array.isArray(notification.profiles) ? notification.profiles[0] : notification.profiles
         
-        // Create notification record in the notifications table (regardless of FCM token)
+        // Create notification record in the app_notifications table (not the old notifications table)
         const message = notification.is_reassignment 
           ? 'Job reassigned to you. Please confirm your job in the app.'
           : 'New job assigned. Please confirm your job in the app.'
 
         const { error: notificationError } = await supabase
-          .from('notifications')
+          .from('app_notifications')
           .insert({
             user_id: notification.driver_id,
             job_id: notification.job_id,
             message: message,
             notification_type: 'job_assignment',
+            priority: 'high',
             is_read: false,
+            is_hidden: false,
           })
 
         if (notificationError) {
@@ -86,10 +102,10 @@ serve(async (req) => {
           continue
         }
 
-        // Send FCM notification
+        // Send FCM notification (no emojis in messages)
         const fcmMessage = notification.is_reassignment 
-          ? '🚗 Job reassigned to you. Please confirm your job in the app.'
-          : '🚗 New job assigned. Please confirm your job in the app.'
+          ? 'Job reassigned to you. Please confirm your job in the app.'
+          : 'New job assigned. Please confirm your job in the app.'
 
         const fcmResponse = await fetch('https://fcm.googleapis.com/fcm/send', {
           method: 'POST',
@@ -140,7 +156,7 @@ serve(async (req) => {
         results.push({
           id: notification.id,
           status: 'error',
-          error: error.message
+          error: error instanceof Error ? error.message : 'Unknown error'
         })
       }
     }
@@ -155,7 +171,7 @@ serve(async (req) => {
 
   } catch (error) {
     console.error('Error in process-job-notifications:', error)
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: 500,
     })

@@ -8,6 +8,8 @@ class DriverFlowUtils {
   /// Get icon for driver flow based on job status
   static IconData getDriverFlowIcon(JobStatus status) {
     switch (status) {
+      case JobStatus.open:
+        return Icons.play_arrow;
       case JobStatus.assigned:
         return Icons.play_arrow;
       case JobStatus.started:
@@ -24,6 +26,8 @@ class DriverFlowUtils {
   /// Get text for driver flow button based on job status
   static String getDriverFlowText(JobStatus status) {
     switch (status) {
+      case JobStatus.open:
+        return 'Start Job';
       case JobStatus.assigned:
         return 'Start Job';
       case JobStatus.started:
@@ -74,6 +78,7 @@ class DriverFlowUtils {
     
     // Only show button if user is assigned driver and job status allows it
     return isAssignedDriver && (
+      jobStatus == JobStatus.open ||
       jobStatus == JobStatus.assigned || 
       jobStatus == JobStatus.started ||
       jobStatus == JobStatus.inProgress
@@ -127,6 +132,24 @@ class DriverFlowUtils {
         return 'Vehicle Return';
       default:
         return 'Unknown Step';
+    }
+  }
+
+  /// Get step title with address for driver flow
+  static String getStepTitleWithAddress(String stepId, String? address) {
+    final baseTitle = getStepTitle(stepId);
+    
+    if (address == null || address.trim().isEmpty) {
+      return baseTitle;
+    }
+    
+    switch (stepId) {
+      case 'pickup_arrival':
+        return '$baseTitle - $address';
+      case 'dropoff_arrival':
+        return '$baseTitle - $address';
+      default:
+        return baseTitle;
     }
   }
 

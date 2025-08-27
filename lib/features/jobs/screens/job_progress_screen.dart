@@ -12,6 +12,7 @@ import '../widgets/gps_capture_widget.dart';
 import '../widgets/odometer_capture_widget.dart';
 import '../widgets/vehicle_collection_modal.dart';
 import '../widgets/vehicle_return_modal.dart';
+import '../widgets/address_display_widget.dart';
 import '../models/job_step.dart';
 import '../providers/jobs_provider.dart';
 import '../../../app/theme.dart';
@@ -22,6 +23,7 @@ import '../../../shared/utils/status_color_utils.dart';
 import '../../../shared/utils/date_utils.dart';
 import '../../../shared/utils/driver_flow_utils.dart';
 import '../../../shared/widgets/luxury_button.dart';
+import '../../../shared/widgets/job_completion_dialog.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -45,6 +47,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   String _currentStep = 'vehicle_collection';
   int _currentTripIndex = 1;
   int _progressPercentage = 0;
+  Map<String, String?> _jobAddresses = {};
   
   // Store references to avoid ancestor lookup issues
   JobsNotifier? _jobsNotifier;
@@ -134,9 +137,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       print('=== LOADED TRIP PROGRESS ===');
       print('Trip data: $trips');
       
+      // Load job addresses
+      final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
+      print('=== LOADED JOB ADDRESSES ===');
+      print('Addresses: $addresses');
+      
       setState(() {
         _jobProgress = progress;
         _tripProgress = trips;
+        _jobAddresses = addresses;
         _currentTripIndex = progress['current_trip_index'] ?? 1;
         _progressPercentage = progress['progress_percentage'] ?? 0;
       });
@@ -236,6 +245,35 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       // Debug logging for step completion
       print('Step ${step.id}: isCompleted = $isCompleted');
+    }
+    
+    // Update step titles with addresses
+    _updateStepTitlesWithAddresses();
+  }
+
+  void _updateStepTitlesWithAddresses() {
+    for (int i = 0; i < _jobSteps.length; i++) {
+      final step = _jobSteps[i];
+      String newTitle = step.title;
+      
+      switch (step.id) {
+        case 'pickup_arrival':
+          final pickupAddress = _jobAddresses['pickup'];
+          if (pickupAddress != null && pickupAddress.isNotEmpty) {
+            newTitle = 'Arrive at Pickup - $pickupAddress';
+          }
+          break;
+        case 'dropoff_arrival':
+          final dropoffAddress = _jobAddresses['dropoff'];
+          if (dropoffAddress != null && dropoffAddress.isNotEmpty) {
+            newTitle = 'Arrive at Dropoff - $dropoffAddress';
+          }
+          break;
+      }
+      
+      if (newTitle != step.title) {
+        _jobSteps[i] = step.copyWith(title: newTitle);
+      }
     }
   }
 
@@ -465,6 +503,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
+        
+        // Auto-advance to next step after a short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _autoAdvanceToNextStep();
+          }
+        });
       }
     } catch (e) {
       print('=== ERROR IN PICKUP ARRIVAL ===');
@@ -494,6 +539,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
+        
+        // Auto-advance to next step after a short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _autoAdvanceToNextStep();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -525,6 +577,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
+        
+        // Auto-advance to next step after a short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _autoAdvanceToNextStep();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -551,6 +610,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Trip completed!');
+        
+        // Auto-advance to next step after a short delay
+        Future.delayed(const Duration(seconds: 2), () {
+          if (mounted) {
+            _autoAdvanceToNextStep();
+          }
+        });
       }
     } catch (e) {
       if (mounted) {
@@ -560,6 +626,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         setState(() => _isUpdating = false);
       }
+    }
+  }
+
+  void _autoAdvanceToNextStep() {
+    // This method will be called after step completion to automatically
+    // advance to the next step in the UI
+    print('=== AUTO-ADVANCING TO NEXT STEP ===');
+    
+    // Force a rebuild to show the next step
+    if (mounted) {
+      setState(() {
+        // This will trigger a rebuild and show the next step
+      });
     }
   }
 
@@ -612,20 +691,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 
                 // Show success message after modal is closed and widget is still mounted
                 if (mounted) {
-                  SnackBarUtils.showSuccess(context, 'Vehicle returned successfully!');
-                  
                   // Refresh jobs list to update job card status
                   ref.invalidate(jobsProvider);
                   
-                  // Navigate back to jobs management screen after a short delay
-                  Future.delayed(const Duration(seconds: 2), () {
-                    if (mounted) {
-                      Navigator.of(context).pushNamedAndRemoveUntil(
-                        '/jobs',
-                        (route) => false, // Remove all previous routes
-                      );
-                    }
-                  });
+                  // Show job completion dialog
+                  showJobCompletionDialog(
+                    context,
+                    jobNumber: widget.job.jobNumber ?? 'Unknown',
+                    passengerName: widget.job.passengerName,
+                  );
                 }
               }
             } catch (e) {
@@ -664,9 +738,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
       
       await _loadJobProgress();
-              SnackBarUtils.showSuccess(context, 'Job closed successfully!');
+      
+      // Refresh jobs list to update job card status
+      ref.invalidate(jobsProvider);
+      
+      // Show job completion dialog
+      showJobCompletionDialog(
+        context,
+        jobNumber: widget.job.jobNumber ?? 'Unknown',
+        passengerName: widget.job.passengerName,
+      );
     } catch (e) {
-              SnackBarUtils.showError(context, 'Failed to close job: $e');
+      SnackBarUtils.showError(context, 'Failed to close job: $e');
     } finally {
       setState(() => _isUpdating = false);
     }
@@ -1037,7 +1120,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             children: [
               // Back Button
               IconButton(
-                onPressed: () => Navigator.of(context).pushReplacementNamed('/jobs'),
+                onPressed: () {
+                  if (Navigator.of(context).canPop()) {
+                    Navigator.of(context).pop();
+                  } else {
+                    context.go('/jobs');
+                  }
+                },
                 icon: const Icon(
                   Icons.arrow_back_rounded,
                   color: ChoiceLuxTheme.richGold,

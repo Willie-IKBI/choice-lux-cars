@@ -283,15 +283,28 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     return Consumer(
       builder: (context, ref, child) {
         final notificationState = ref.watch(notificationProvider);
-        final notifications = notificationState.notifications;
         
-        // Filter out dismissed notifications for display
-        final activeNotifications = notifications.where((n) => !n.isHidden).toList();
+        // Use the provider's calculated stats instead of recalculating locally
+        final totalCount = notificationState.totalCount;
+        final unreadCount = notificationState.unreadCount;
+        final highPriorityCount = notificationState.highPriorityCount;
         
-        // Calculate stats from active notifications only
-        final totalCount = activeNotifications.length;
-        final unreadCount = activeNotifications.where((n) => !n.isRead).length;
-        final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+        // Fallback calculation if provider stats are 0 but we have notifications
+        final fallbackTotalCount = totalCount > 0 
+            ? totalCount 
+            : notificationState.notifications.where((n) => !n.isHidden).length;
+        final fallbackUnreadCount = unreadCount > 0 
+            ? unreadCount 
+            : notificationState.notifications.where((n) => !n.isHidden && !n.isRead).length;
+        final fallbackHighPriorityCount = highPriorityCount > 0 
+            ? highPriorityCount 
+            : notificationState.notifications.where((n) => !n.isHidden && n.isHighPriority).length;
+        
+        // Debug logging to help identify the issue
+        print('Notification stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+        print('Fallback stats - Total: $fallbackTotalCount, Unread: $fallbackUnreadCount, High Priority: $fallbackHighPriorityCount');
+        print('Total notifications in list: ${notificationState.notifications.length}');
+        print('Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}');
         
         return Container(
           margin: const EdgeInsets.all(16),
@@ -335,16 +348,16 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   Expanded(
                     child: _buildStatCard(
                       'Total',
-                      totalCount.toString(),
+                      fallbackTotalCount.toString(),
                       Icons.all_inbox,
-                      ChoiceLuxTheme.charcoalGray,
+                      ChoiceLuxTheme.richGold,
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildStatCard(
                       'Unread',
-                      unreadCount.toString(),
+                      fallbackUnreadCount.toString(),
                       Icons.mark_email_unread,
                       ChoiceLuxTheme.orange,
                     ),
@@ -353,7 +366,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   Expanded(
                     child: _buildStatCard(
                       'High Priority',
-                      highPriorityCount.toString(),
+                      fallbackHighPriorityCount.toString(),
                       Icons.priority_high,
                       ChoiceLuxTheme.errorColor,
                     ),

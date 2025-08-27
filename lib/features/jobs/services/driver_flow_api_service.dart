@@ -1,4 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../notifications/services/notification_service.dart';
 
 class DriverFlowApiService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -40,21 +41,59 @@ class DriverFlowApiService {
           })
           .eq('id', jobId);
       
-      // Step 3: Create driver_flow record
+      // Step 3: Create driver_flow record with vehicle collection completed
       await _supabase
           .from('driver_flow')
           .upsert({
             'job_id': jobId,
             'driver_user': driverId,
-            'current_step': 'vehicle_collection',
+            'current_step': 'pickup_arrival', // Advance to next step immediately
             'job_started_at': DateTime.now().toIso8601String(),
             'odo_start_reading': odoStartReading,
             'pdp_start_image': pdpStartImage,
+            'vehicle_collected': true, // Mark vehicle collection as completed
+            'vehicle_collected_at': DateTime.now().toIso8601String(),
+            'progress_percentage': 17, // 1/6 steps completed (rounded from 16.67)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           }, onConflict: 'job_id');
       
-      print('=== JOB STARTED SUCCESSFULLY ===');
+      print('=== JOB STARTED SUCCESSFULLY - VEHICLE COLLECTION COMPLETED ===');
+      print('Current step: pickup_arrival');
+      print('Progress percentage: 17%');
+      
+      // Send job start notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name')
+            .eq('id', jobId)
+            .single();
+        
+        final clientResponse = await _supabase
+            .from('clients')
+            .select('company_name')
+            .eq('id', jobResponse['client_id'])
+            .single();
+        
+        // Fetch driver's display name
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendJobStartNotification(
+          jobId: jobId,
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          clientName: clientResponse['company_name'] ?? 'Unknown Client',
+          passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send job start notification: $e');
+        // Don't fail the job start if notification fails
+      }
     } catch (e) {
       print('=== ERROR STARTING JOB ===');
       print('Error: $e');
@@ -90,6 +129,7 @@ class DriverFlowApiService {
             'vehicle_collected': true,
             'vehicle_collected_at': DateTime.now().toIso8601String(),
             'current_step': 'pickup_arrival',
+            'progress_percentage': 17, // 1/6 steps completed (rounded from 16.67)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -162,17 +202,43 @@ class DriverFlowApiService {
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
       
-      // Step 4: Update driver_flow to next step
+      // Step 4: Update driver_flow to next step with progress
       await _supabase
           .from('driver_flow')
           .update({
             'current_step': 'passenger_onboard',
+            'progress_percentage': 33, // 2/6 steps completed (rounded from 33.33)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('job_id', jobId);
       
       print('=== PICKUP ARRIVAL COMPLETED ===');
+      
+      // Send step completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name, job_number')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'pickup_arrival',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR IN ARRIVE AT PICKUP ===');
       print('Error: $e');
@@ -186,7 +252,16 @@ class DriverFlowApiService {
       print('=== PASSENGER ONBOARD - DIRECT DATABASE APPROACH ===');
       print('Job ID: $jobId, Trip Index: $tripIndex');
       
-      // Step 1: Update trip_progress with passenger onboard
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      
+      // Step 2: Update trip_progress with passenger onboard
       await _supabase
           .from('trip_progress')
           .update({
@@ -197,17 +272,43 @@ class DriverFlowApiService {
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
       
-      // Step 2: Update driver_flow to next step
+      // Step 2: Update driver_flow to next step with progress
       await _supabase
           .from('driver_flow')
           .update({
             'current_step': 'dropoff_arrival',
+            'progress_percentage': 50, // 3/6 steps completed (rounded from 50.00)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('job_id', jobId);
       
       print('=== PASSENGER ONBOARD COMPLETED ===');
+      
+      // Send step completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'passenger_onboard',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR IN PASSENGER ONBOARD ===');
       print('Error: $e');
@@ -237,7 +338,16 @@ class DriverFlowApiService {
         }
       }
       
-      // Step 1: Update trip_progress with dropoff arrival
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      
+      // Step 2: Update trip_progress with dropoff arrival
       await _supabase
           .from('trip_progress')
           .update({
@@ -251,17 +361,43 @@ class DriverFlowApiService {
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
       
-      // Step 2: Update driver_flow to next step
+      // Step 2: Update driver_flow to next step with progress
       await _supabase
           .from('driver_flow')
           .update({
             'current_step': 'trip_complete',
+            'progress_percentage': 67, // 4/6 steps completed (rounded from 66.67)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('job_id', jobId);
       
       print('=== DROPOFF ARRIVAL COMPLETED ===');
+      
+      // Send step completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'dropoff_arrival',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR IN ARRIVE AT DROPOFF ===');
       print('Error: $e');
@@ -277,7 +413,16 @@ class DriverFlowApiService {
       print('=== COMPLETE TRIP - DIRECT DATABASE APPROACH ===');
       print('Job ID: $jobId, Trip Index: $tripIndex');
       
-      // Step 1: Update trip_progress with trip completion
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      
+      // Step 2: Update trip_progress with trip completion
       await _supabase
           .from('trip_progress')
           .update({
@@ -288,17 +433,43 @@ class DriverFlowApiService {
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
       
-      // Step 2: Update driver_flow to next step
+      // Step 2: Update driver_flow to next step with progress
       await _supabase
           .from('driver_flow')
           .update({
             'current_step': 'vehicle_return',
+            'progress_percentage': 83, // 5/6 steps completed (rounded from 83.33)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
           .eq('job_id', jobId);
       
       print('=== TRIP COMPLETED ===');
+      
+      // Send step completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'trip_complete',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR IN COMPLETE TRIP ===');
       print('Error: $e');
@@ -332,7 +503,16 @@ class DriverFlowApiService {
         }
       }
       
-      // Step 1: Update driver_flow with return details
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      
+      // Step 2: Update driver_flow with return details
       await _supabase
           .from('driver_flow')
           .update({
@@ -340,6 +520,7 @@ class DriverFlowApiService {
             'job_closed_odo_img': pdpEndImage,
             'job_closed_time': DateTime.now().toIso8601String(),
             'current_step': 'completed',
+            'progress_percentage': 100, // 6/6 steps completed (rounded from 100.00)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -355,6 +536,38 @@ class DriverFlowApiService {
           .eq('id', jobId);
       
       print('=== VEHICLE RETURN COMPLETED ===');
+      
+      // Send job completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name, job_number, client_id')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        final clientResponse = await _supabase
+            .from('clients')
+            .select('company_name')
+            .eq('id', jobDetailsResponse['client_id'])
+            .single();
+        
+        await NotificationService.sendJobCompletionNotification(
+          jobId: jobId,
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          clientName: clientResponse['company_name'] ?? 'Unknown Client',
+          passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send job completion notification: $e');
+        // Don't fail the job completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR IN RETURN VEHICLE ===');
       print('Error: $e');
@@ -558,7 +771,16 @@ class DriverFlowApiService {
       print('=== CLOSING JOB ===');
       print('Job ID: $jobId');
       
-      // Update job status to completed
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      
+      // Step 2: Update job status to completed
       await _supabase
           .from('jobs')
           .update({
@@ -572,6 +794,7 @@ class DriverFlowApiService {
           .from('driver_flow')
           .update({
             'current_step': 'completed',
+            'progress_percentage': 100, // 6/6 steps completed (rounded from 100.00)
             'last_activity_at': DateTime.now().toIso8601String(),
             'updated_at': DateTime.now().toIso8601String(),
           })
@@ -579,10 +802,93 @@ class DriverFlowApiService {
       
       print('Job closed successfully');
       print('=== JOB CLOSED ===');
+      
+      // Send job completion notification
+      try {
+        final jobDetailsResponse = await _supabase
+            .from('jobs')
+            .select('passenger_name, job_number, client_id')
+            .eq('id', jobId)
+            .single();
+        
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        final clientResponse = await _supabase
+            .from('clients')
+            .select('company_name')
+            .eq('id', jobDetailsResponse['client_id'])
+            .single();
+        
+        await NotificationService.sendJobCompletionNotification(
+          jobId: jobId,
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          clientName: clientResponse['company_name'] ?? 'Unknown Client',
+          passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        print('Warning: Could not send job completion notification: $e');
+        // Don't fail the job completion if notification fails
+      }
     } catch (e) {
       print('=== ERROR CLOSING JOB ===');
       print('Error: $e');
       throw Exception('Failed to close job: $e');
+    }
+  }
+
+  /// Get job addresses for pickup and dropoff
+  static Future<Map<String, String?>> getJobAddresses(int jobId) async {
+    try {
+      print('=== GETTING JOB ADDRESSES ===');
+      print('Job ID: $jobId');
+      
+      // Get transport details for this job
+      final transportResponse = await _supabase
+          .from('transport')
+          .select('pickup_location, dropoff_location')
+          .eq('job_id', jobId)
+          .maybeSingle();
+      
+      String? pickupAddress;
+      String? dropoffAddress;
+      
+      if (transportResponse != null) {
+        pickupAddress = transportResponse['pickup_location']?.toString();
+        dropoffAddress = transportResponse['dropoff_location']?.toString();
+      }
+      
+      // Fallback to job location if no transport details
+      if (pickupAddress == null || pickupAddress.isEmpty) {
+        final jobResponse = await _supabase
+            .from('jobs')
+            .select('location')
+            .eq('id', jobId)
+            .maybeSingle();
+        
+        if (jobResponse != null) {
+          pickupAddress = jobResponse['location']?.toString();
+        }
+      }
+      
+      final addresses = {
+        'pickup': pickupAddress,
+        'dropoff': dropoffAddress,
+      };
+      
+      print('Job addresses: $addresses');
+      return addresses;
+    } catch (e) {
+      print('=== ERROR GETTING JOB ADDRESSES ===');
+      print('Error: $e');
+      return {
+        'pickup': null,
+        'dropoff': null,
+      };
     }
   }
 }

@@ -68,48 +68,15 @@ class JobAssignmentService {
     }
   }
 
-  /// Confirm a job assignment (mark notifications as read)
+  /// DEPRECATED: Use jobsProvider.confirmJob() instead
+  /// This method is kept for backward compatibility but should not be used
+  @Deprecated('Use jobsProvider.confirmJob() instead')
   static Future<void> confirmJobAssignment({
     required int jobId,
     required String driverId,
   }) async {
-    try {
-      print('=== CONFIRMING JOB ASSIGNMENT ===');
-      print('Job ID: $jobId');
-      print('Driver ID: $driverId');
-
-      // Step 1: Update job confirmation status
-      await _supabase
-          .from('jobs')
-          .update({
-            'driver_confirm_ind': true,
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('id', jobId)
-          .eq('driver_id', driverId);
-
-      print('Job confirmation status updated');
-
-      // Step 2: Mark notifications as read
-      await _supabase
-          .from('app_notifications')
-          .update({
-            'is_read': true,
-            'read_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
-          })
-          .eq('job_id', jobId)
-          .eq('user_id', driverId)
-          .eq('notification_type', NotificationConstants.jobAssignment);
-
-      print('Notifications marked as read');
-
-      print('=== JOB ASSIGNMENT CONFIRMED SUCCESSFULLY ===');
-    } catch (e) {
-      print('=== ERROR CONFIRMING JOB ASSIGNMENT ===');
-      print('Error: $e');
-      throw Exception('Failed to confirm job assignment: $e');
-    }
+    print('WARNING: confirmJobAssignment is deprecated. Use jobsProvider.confirmJob() instead.');
+    throw UnsupportedError('Use jobsProvider.confirmJob() instead of this deprecated method');
   }
 
   /// Get jobs assigned to a specific driver

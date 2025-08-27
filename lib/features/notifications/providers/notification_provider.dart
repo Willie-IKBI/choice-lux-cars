@@ -108,14 +108,17 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   /// Update stats based on loaded notifications
   Future<void> _updateStatsFromNotifications(List<app_notification.AppNotification> notifications) async {
     try {
-      final totalCount = notifications.length;
-      final unreadCount = notifications.where((n) => !n.isRead).length;
-      final readCount = notifications.where((n) => n.isRead).length;
+      // Calculate stats from active notifications only (not hidden)
+      final activeNotifications = notifications.where((n) => !n.isHidden).toList();
+      final totalCount = activeNotifications.length;
+      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
+      final readCount = activeNotifications.where((n) => n.isRead).length;
       final dismissedCount = notifications.where((n) => n.isDismissed).length;
+      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
       
       // Group by type
       final byType = <String, int>{};
-      for (final notification in notifications) {
+      for (final notification in activeNotifications) {
         byType[notification.notificationType] = (byType[notification.notificationType] ?? 0) + 1;
       }
 
@@ -124,11 +127,19 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         'unread_count': unreadCount,
         'read_count': readCount,
         'dismissed_count': dismissedCount,
+        'high_priority_count': highPriorityCount,
         'by_type': byType,
       };
 
-      state = state.copyWith(stats: stats);
+      state = state.copyWith(
+        stats: stats,
+        totalCount: totalCount,
+        unreadCount: unreadCount,
+        highPriorityCount: highPriorityCount,
+      );
+      
       print('Updated stats from notifications: $stats');
+      print('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
       print('Error updating stats from notifications: $e');
     }
@@ -138,10 +149,25 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> loadStats() async {
     try {
       final stats = await _notificationService.getNotificationStats();
-      state = state.copyWith(stats: stats);
+      
+      // Extract counts from stats and update state
+      final totalCount = stats['total_count'] ?? 0;
+      final unreadCount = stats['unread_count'] ?? 0;
+      final highPriorityCount = stats['high_priority_count'] ?? 0;
+      
+      state = state.copyWith(
+        stats: stats,
+        totalCount: totalCount,
+        unreadCount: unreadCount,
+        highPriorityCount: highPriorityCount,
+      );
+      
       print('Loaded notification stats: $stats');
+      print('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
       print('Error loading notification stats: $e');
+      // Fallback: calculate stats from current notifications
+      await _updateStatsFromNotifications(state.notifications);
     }
   }
 

@@ -1000,7 +1000,7 @@ INSERT INTO app_notifications (
     is_hidden
 ) VALUES (
     '2b48a98e-cdb9-4698-82fc-e8061bf925e6',
-    '🚗 New job JOB-2025-001 has been assigned to you. Please confirm your assignment.',
+    'New job JOB-2025-001 has been assigned to you. Please confirm your assignment.',
     'job_assignment',
     'high',
     '2025-001',
