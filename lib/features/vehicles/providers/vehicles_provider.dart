@@ -92,7 +92,7 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
         // Update local state optimistically
         final currentVehicles = state.value ?? [];
         final updatedVehicles = currentVehicles
-            .where((vehicle) => vehicle.id != vehicleId)
+            .where((vehicle) => vehicle.id?.toString() != vehicleId)
             .toList();
         state = AsyncValue.data(updatedVehicles);
         Log.d('Vehicle deleted successfully');

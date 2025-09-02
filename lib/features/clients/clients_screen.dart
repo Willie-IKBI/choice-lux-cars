@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
-import '../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {

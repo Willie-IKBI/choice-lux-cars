@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
-import '../../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 class AddEditAgentScreen extends ConsumerStatefulWidget {
   final String clientId;

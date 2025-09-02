@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'providers/users_provider.dart';
+import 'providers/users_provider.dart' as usersp;
 import 'widgets/user_card.dart';
 import 'models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import '../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -59,7 +59,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final userProfile = ref.watch(currentUserProfileProvider);
+    final userProfile = ref.watch(auth.currentUserProfileProvider);
     if (userProfile == null ||
         (userProfile.role?.toLowerCase() != 'administrator' &&
             userProfile.role?.toLowerCase() != 'manager')) {
@@ -79,8 +79,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     final isTablet = screenWidth >= 600 && screenWidth < 800;
     final isDesktop = screenWidth >= 800;
 
-    final users = ref.watch(usersProvider);
-    final usersNotifier = ref.read(usersProvider.notifier);
+    final users = ref.watch(usersp.usersProvider);
+    final usersNotifier = ref.read(usersp.usersProvider.notifier);
     final usersList = users.value ?? [];
     final isLoading = usersList.isEmpty;
     final filtered = usersList.where((u) {
@@ -119,7 +119,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 size: 20,
               ),
             ),
-            onPressed: () => usersNotifier.fetchUsers(),
+            onPressed: () => usersNotifier.refresh(),
             tooltip: 'Refresh',
           ),
         ],
@@ -157,7 +157,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                           child: filtered.isEmpty
                               ? _buildEmptyState(isMobile, isSmallMobile)
                               : RefreshIndicator(
-                                  onRefresh: () => usersNotifier.fetchUsers(),
+                                  onRefresh: () => usersNotifier.refresh(),
                                   color: ChoiceLuxTheme.richGold,
                                   backgroundColor: ChoiceLuxTheme.charcoalGray,
                                   child: ListView.separated(

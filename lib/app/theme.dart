@@ -157,9 +157,9 @@ class ChoiceLuxTheme {
         }),
         trackColor: MaterialStateProperty.resolveWith((states) {
           if (states.contains(MaterialState.selected)) {
-            return richGold.withOpacity(0.3);
+            return richGold.withValues(alpha: 0.3);
           }
-          return platinumSilver.withOpacity(0.3);
+          return platinumSilver.withValues(alpha: 0.3);
         }),
       ),
       checkboxTheme: CheckboxThemeData(
@@ -183,9 +183,9 @@ class ChoiceLuxTheme {
       ),
       sliderTheme: SliderThemeData(
         activeTrackColor: richGold,
-        inactiveTrackColor: platinumSilver.withOpacity(0.3),
+        inactiveTrackColor: platinumSilver.withValues(alpha: 0.3),
         thumbColor: richGold,
-        overlayColor: richGold.withOpacity(0.2),
+        overlayColor: richGold.withValues(alpha: 0.2),
         valueIndicatorColor: richGold,
         valueIndicatorTextStyle: const TextStyle(color: Colors.black),
       ),
@@ -203,7 +203,7 @@ class ChoiceLuxTheme {
       ),
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: charcoalGray,
-        indicatorColor: richGold.withOpacity(0.2),
+        indicatorColor: richGold.withValues(alpha: 0.2),
         labelTextStyle: MaterialStateProperty.all(
           const TextStyle(color: softWhite, fontSize: 12),
         ),
@@ -286,10 +286,10 @@ class ChoiceLuxTheme {
         yearBackgroundColor: MaterialStateProperty.all(Colors.transparent),
         todayForegroundColor: MaterialStateProperty.all(richGold),
         todayBackgroundColor: MaterialStateProperty.all(
-          richGold.withOpacity(0.2),
+          richGold.withValues(alpha: 0.2),
         ),
-        dayOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
-        yearOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
+        dayOverlayColor: MaterialStateProperty.all(richGold.withValues(alpha: 0.1)),
+        yearOverlayColor: MaterialStateProperty.all(richGold.withValues(alpha: 0.1)),
       ),
       extensions: [
         const AppTokens(

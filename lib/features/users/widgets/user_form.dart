@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
-import '../providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as usersp;
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class UserForm extends StatefulWidget {
@@ -94,7 +94,7 @@ class _UserFormState extends State<UserForm> {
     if (picked != null) {
       setState(() => _uploading = true);
       final url = await ref
-          .read(usersProvider.notifier)
+          .read(usersp.usersProvider.notifier)
           .uploadProfileImage(picked, userId);
       setState(() {
         profileImage = url;
@@ -107,7 +107,7 @@ class _UserFormState extends State<UserForm> {
   Widget build(BuildContext context) {
     return Consumer(
       builder: (context, ref, _) {
-        final userProfile = ref.watch(currentUserProfileProvider);
+        final userProfile = ref.watch(auth.currentUserProfileProvider);
         final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
         final isWide = MediaQuery.of(context).size.width > 900;
         // Error summary state
@@ -592,7 +592,7 @@ class _UserFormState extends State<UserForm> {
                                   if (picked != null) {
                                     setState(() => _uploading = true);
                                     final url = await ref
-                                        .read(usersProvider.notifier)
+                                        .read(usersp.usersProvider.notifier)
                                         .uploadDriverLicenseImage(
                                           picked,
                                           widget.user!.id,
@@ -635,7 +635,7 @@ class _UserFormState extends State<UserForm> {
                                   if (picked != null) {
                                     setState(() => _uploading = true);
                                     final url = await ref
-                                        .read(usersProvider.notifier)
+                                        .read(usersp.usersProvider.notifier)
                                         .uploadPdpImage(
                                           picked,
                                           widget.user!.id,

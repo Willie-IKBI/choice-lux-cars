@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/constants/notification_constants.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
-import '../providers/notification_provider.dart';
-import '../widgets/notification_card.dart';
-import '../services/notification_service.dart';
-import '../models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/widgets/notification_card.dart';
+import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
+import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class NotificationListScreen extends ConsumerStatefulWidget {

@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../models/notification.dart' as app_notification;
-import '../providers/notification_provider.dart';
-import '../../../app/theme.dart';
+import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 
 class NotificationCard extends ConsumerWidget {
   final app_notification.AppNotification notification;

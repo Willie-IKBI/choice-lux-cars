@@ -111,6 +111,11 @@ class AddressDisplayWidget extends StatelessWidget {
     );
   }
 
+  void _showSnack(BuildContext context, String msg) {
+    final m = ScaffoldMessenger.maybeOf(context);
+    if (m != null) m.showSnackBar(SnackBar(content: Text(msg)));
+  }
+
   Future<void> _openInMaps(BuildContext context) async {
     try {
       final encodedAddress = Uri.encodeComponent(address);
@@ -125,12 +130,7 @@ class AddressDisplayWidget extends StatelessWidget {
       Log.e('Error opening maps: $e');
       // Show error message to user
       if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error opening maps: $e'),
-            backgroundColor: Colors.red,
-          ),
-        );
+        _showSnack(context, 'Error opening maps: $e');
       }
     }
   }

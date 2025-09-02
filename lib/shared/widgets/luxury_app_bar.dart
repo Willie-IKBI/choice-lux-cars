@@ -341,13 +341,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     gradient: LinearGradient(
                       colors: [
                         ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.7),
+                        ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                       ],
                     ),
                   ),
                   child: CircleAvatar(
                     radius: 18,
-                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                     child: Text(
                       displayName.substring(0, 1).toUpperCase(),
                       style: TextStyle(

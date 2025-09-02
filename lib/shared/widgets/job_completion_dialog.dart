@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:async';
-import '../../app/theme.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 
 class JobCompletionDialog extends StatefulWidget {
   final String jobNumber;

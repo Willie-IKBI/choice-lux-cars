@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/job_step.dart';
+import 'package:choice_lux_cars/features/jobs/models/job_step.dart';
 
 class StepIndicator extends StatelessWidget {
   final List<JobStep> steps;

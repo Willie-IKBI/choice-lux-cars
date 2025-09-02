@@ -1,10 +1,10 @@
 import 'dart:typed_data';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/voucher_data.dart';
-import '../services/voucher_repository.dart';
-import '../services/voucher_pdf_service.dart';
-import '../../jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
+import 'package:choice_lux_cars/features/vouchers/services/voucher_repository.dart';
+import 'package:choice_lux_cars/features/vouchers/services/voucher_pdf_service.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 
 // Provider for VoucherRepository
 final voucherRepositoryProvider = Provider<VoucherRepository>((ref) {
@@ -126,7 +126,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
       // Refresh jobs list to update the UI
       if (_ref != null && mounted) {
         final jobsNotifier = _ref!.read(jobsProvider.notifier);
-        await jobsNotifier.fetchJobs();
+        await jobsNotifier.refreshJobs();
       }
     } catch (e) {
       state = state.copyWith(
@@ -150,7 +150,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
       // Refresh jobs list to update the UI
       if (_ref != null && mounted) {
         final jobsNotifier = _ref!.read(jobsProvider.notifier);
-        await jobsNotifier.fetchJobs();
+        await jobsNotifier.refreshJobs();
       }
     } catch (e) {
       state = state.copyWith(

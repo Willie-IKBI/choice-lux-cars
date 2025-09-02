@@ -106,16 +106,36 @@ class TripsRepository {
   }
 
   /// Delete a trip
-  Future<Result<void>> deleteTrip(String tripId) async {
+  Future<Result<void>> deleteTrip({required String tripId, String? jobId}) async {
     try {
       Log.d('Deleting trip: $tripId');
-
+      
       await _supabase.from('trips').delete().eq('id', tripId);
 
       Log.d('Trip deleted successfully');
       return const Result.success(null);
     } catch (error) {
       Log.e('Error deleting trip: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Find job ID by trip ID
+  Future<Result<String?>> findJobIdByTripId(String tripId) async {
+    try {
+      Log.d('Finding job ID for trip: $tripId');
+      
+      final response = await _supabase
+          .from('trips')
+          .select('job_id')
+          .eq('id', tripId)
+          .single();
+      
+      final jobId = response['job_id']?.toString();
+      Log.d('Found job ID: $jobId for trip: $tripId');
+      return Result.success(jobId);
+    } catch (error) {
+      Log.e('Error finding job ID for trip: $error');
       return _mapSupabaseError(error);
     }
   }

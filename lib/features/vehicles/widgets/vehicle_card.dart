@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../models/vehicle.dart';
+import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'license_status_badge.dart';
-import '../../../app/theme.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 
 class VehicleCard extends StatelessWidget {
   final Vehicle vehicle;

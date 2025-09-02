@@ -1,6 +1,6 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 

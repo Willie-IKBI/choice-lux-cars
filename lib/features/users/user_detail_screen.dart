@@ -2,10 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/users/widgets/user_form.dart';
-import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as usersp;
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class UserDetailScreen extends ConsumerWidget {
@@ -14,8 +14,8 @@ class UserDetailScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final users = ref.watch(usersProvider);
-    final usersNotifier = ref.read(usersProvider.notifier);
+    final users = ref.watch(usersp.usersProvider);
+    final usersNotifier = ref.read(usersp.usersProvider.notifier);
     final usersList = users.value ?? [];
     User? user;
     try {
@@ -61,7 +61,7 @@ class UserDetailScreen extends ConsumerWidget {
                         );
                         try {
                           await ref
-                              .read(usersProvider.notifier)
+                              .read(usersp.usersProvider.notifier)
                               .deactivateUser(user!.id);
                           Log.d('User deactivated successfully');
                           if (context.mounted) {

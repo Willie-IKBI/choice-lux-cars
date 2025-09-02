@@ -1,6 +1,6 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
-import '../models/voucher_data.dart';
+import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
 
 class VoucherSharingService {
   /// Open voucher URL in external browser

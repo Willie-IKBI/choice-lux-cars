@@ -1,6 +1,6 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/voucher_data.dart';
+import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
 
 class VoucherRepository {
   final SupabaseClient _supabase;

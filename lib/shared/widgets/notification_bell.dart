@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../features/notifications/providers/notification_provider.dart';
-import '../../features/notifications/screens/notification_list_screen.dart';
-import '../../features/notifications/screens/notification_preferences_screen.dart';
+import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
+import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
 
 class NotificationBell extends StatefulWidget {
   final Color? iconColor;

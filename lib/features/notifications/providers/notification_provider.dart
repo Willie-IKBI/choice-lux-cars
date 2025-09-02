@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
-import '../models/notification.dart' as app_notification;
-import '../services/notification_service.dart';
+import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 // Notification State

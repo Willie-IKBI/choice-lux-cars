@@ -2,7 +2,7 @@ import 'dart:io';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
-import '../models/invoice_data.dart';
+import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 
 class InvoiceSharingService {
   Future<void> openInvoiceUrl(String url) async {

@@ -9,7 +9,7 @@ import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart'
 import 'package:choice_lux_cars/features/clients/providers/client_stats_provider.dart';
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
-import '../../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;

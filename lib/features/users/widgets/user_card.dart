@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import '../models/user.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
 class UserCard extends StatefulWidget {

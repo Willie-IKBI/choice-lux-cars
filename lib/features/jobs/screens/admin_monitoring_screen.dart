@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
-import '../services/driver_flow_api_service.dart';
-import '../widgets/job_monitoring_card.dart';
-import '../widgets/driver_activity_card.dart';
-import '../widgets/active_jobs_summary.dart';
-import '../models/job.dart';
+import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/job_monitoring_card.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/driver_activity_card.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/active_jobs_summary.dart';
+import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'job_progress_screen.dart';
-import '../../../shared/widgets/luxury_app_bar.dart';
-import '../../../app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
-import '../../../features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 class AdminMonitoringScreen extends ConsumerStatefulWidget {

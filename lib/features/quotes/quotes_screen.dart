@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/luxury_app_bar.dart';
-import '../../app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 import 'providers/quotes_provider.dart';
 import 'widgets/quote_card.dart';
 import 'models/quote.dart';

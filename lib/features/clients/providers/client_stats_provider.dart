@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../../core/services/supabase_service.dart';
-import '../../jobs/models/job.dart';
-import '../../quotes/models/quote.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/features/jobs/models/job.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 
 // Provider for client jobs
 final clientJobsProvider = FutureProvider.family<List<Job>, String>((

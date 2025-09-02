@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/invoice_data.dart';
-import '../providers/invoice_controller.dart';
-import '../services/invoice_sharing_service.dart';
-import '../../jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
+import 'package:choice_lux_cars/features/invoices/providers/invoice_controller.dart';
+import 'package:choice_lux_cars/features/invoices/services/invoice_sharing_service.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 
 class InvoiceActionButtons extends ConsumerStatefulWidget {
   final String jobId;

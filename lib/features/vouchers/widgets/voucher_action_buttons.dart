@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../models/voucher_data.dart';
-import '../providers/voucher_controller.dart';
-import '../services/voucher_sharing_service.dart';
+import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
+import 'package:choice_lux_cars/features/vouchers/providers/voucher_controller.dart';
+import 'package:choice_lux_cars/features/vouchers/services/voucher_sharing_service.dart';
 
 class VoucherActionButtons extends ConsumerStatefulWidget {
   final String jobId;

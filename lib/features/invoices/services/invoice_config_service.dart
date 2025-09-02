@@ -1,4 +1,4 @@
-import '../models/invoice_data.dart';
+import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 
 class InvoiceConfigService {
   // Tax configuration

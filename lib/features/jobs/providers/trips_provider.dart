@@ -64,7 +64,7 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
 
       if (result.isSuccess) {
         // Refresh trips list
-        await fetchTripsForJob(trip.jobId.toString());
+        await refreshTripsForJob(trip.jobId.toString());
         Log.d('Trip created successfully');
         return result.data!;
       } else {
@@ -132,15 +132,22 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   }
 
   /// Delete a trip using the repository
-  Future<void> deleteTrip(String tripId, String jobId) async {
+  Future<void> deleteTrip(String tripId, {String? jobId}) async {
     try {
       Log.d('Deleting trip: $tripId');
 
-      final result = await _tripsRepository.deleteTrip(tripId);
+      // If jobId wasn't provided, derive it from tripId (best-effort), else use provided.
+      final effectiveJobId = jobId ?? await _findJobIdByTripId(tripId);
+      
+      final result = await _tripsRepository.deleteTrip(tripId: tripId, jobId: effectiveJobId);
 
       if (result.isSuccess) {
-        // Refresh trips for the job
-        await fetchTripsForJob(jobId.toString());
+        // Then refresh state
+        if (effectiveJobId != null) {
+          await refreshTripsForJob(effectiveJobId);
+        } else {
+          ref.invalidateSelf();
+        }
         Log.d('Trip deleted successfully');
       } else {
         Log.e('Error deleting trip: ${result.error!.message}');
@@ -150,6 +157,28 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
       Log.e('Error deleting trip: $error');
       rethrow;
     }
+  }
+
+  /// Helper method to find job ID by trip ID
+  Future<String?> _findJobIdByTripId(String tripId) async {
+    try {
+      final result = await _tripsRepository.findJobIdByTripId(tripId);
+      if (result.isSuccess) {
+        return result.data;
+      }
+      return null;
+    } catch (error) {
+      Log.e('Error finding job ID for trip: $error');
+      return null;
+    }
+  }
+
+  /// Refresh trips for a specific job
+  Future<void> refreshTripsForJob(String? jobId) async {
+    if (jobId != null) {
+      await fetchTripsForJob(jobId);
+    }
+    // If jobId is null, no-op
   }
 
   /// Get trips by status using the repository
@@ -209,26 +238,7 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     return createTrip(trip);
   }
 
-  /// Delete a trip
-  Future<void> deleteTrip(String tripId) async {
-    try {
-      Log.d('Deleting trip: $tripId');
 
-      final result = await _tripsRepository.deleteTrip(tripId);
-
-      if (result.isSuccess) {
-        // Refresh trips list
-        ref.invalidateSelf();
-        Log.d('Trip deleted successfully');
-      } else {
-        Log.e('Error deleting trip: ${result.error!.message}');
-        throw Exception(result.error!.message);
-      }
-    } catch (error) {
-      Log.e('Error deleting trip: $error');
-      rethrow;
-    }
-  }
 }
 
 /// Notifier for managing trips by job using FamilyAsyncNotifier
@@ -273,7 +283,7 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
 /// Provider for TripsNotifier using AsyncNotifierProvider
 final tripsProvider = AsyncNotifierProvider<TripsNotifier, List<Trip>>(TripsNotifier.new);
 
-/// Async provider for trips by job that exposes AsyncValue<List<Trip>>
+/// Async provider for trips by job that exposes AsyncValue<List&lt;Trip&gt;&gt;
 final tripsByJobProvider =
     AsyncNotifierProvider.family<TripsByJobNotifier, List<Trip>, String>(
       TripsByJobNotifier.new,

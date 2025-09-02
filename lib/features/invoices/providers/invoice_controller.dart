@@ -1,7 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/invoice_data.dart';
-import '../services/invoice_pdf_service.dart';
-import '../services/invoice_repository.dart';
+import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
+import 'package:choice_lux_cars/features/invoices/services/invoice_pdf_service.dart';
+import 'package:choice_lux_cars/features/invoices/services/invoice_repository.dart';
 
 enum InvoiceControllerStatus { idle, loading, success, error }
 
