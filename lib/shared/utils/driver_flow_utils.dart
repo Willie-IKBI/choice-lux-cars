@@ -72,14 +72,18 @@ class DriverFlowUtils {
     required String? currentUserId,
     required String? jobDriverId,
     required JobStatus jobStatus,
+    required bool isJobConfirmed,
   }) {
     // Check if current user is the assigned driver
     final isAssignedDriver = currentUserId == jobDriverId;
     
-    // Only show button if user is assigned driver and job status allows it
+    // For "Start Job" button (open/assigned status), only show if job is confirmed
+    if (jobStatus == JobStatus.open || jobStatus == JobStatus.assigned) {
+      return isAssignedDriver && isJobConfirmed;
+    }
+    
+    // For other statuses (started, inProgress), show regardless of confirmation
     return isAssignedDriver && (
-      jobStatus == JobStatus.open ||
-      jobStatus == JobStatus.assigned || 
       jobStatus == JobStatus.started ||
       jobStatus == JobStatus.inProgress
     );

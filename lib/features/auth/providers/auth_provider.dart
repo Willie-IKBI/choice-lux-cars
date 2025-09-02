@@ -4,6 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 // User Profile Model
 class UserProfile {
@@ -74,7 +75,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         final AuthChangeEvent event = data.event;
         final Session? session = data.session;
         
-        print('Auth state change: $event');
+        Log.d('Auth state change: $event');
         
         if (event == AuthChangeEvent.signedIn && session != null) {
           state = AsyncValue.data(session.user);
@@ -85,7 +86,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           state = const AsyncValue.data(null);
         } else if (event == AuthChangeEvent.passwordRecovery) {
           // Handle password recovery event - user clicked reset link
-          print('Password recovery event detected - user should be redirected to reset password screen');
+          Log.d('Password recovery event detected - user should be redirected to reset password screen');
           // The user is now authenticated with a recovery session
           if (session != null) {
             state = AsyncValue.data(session.user);
@@ -94,12 +95,12 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           }
         }
       }, onError: (error) {
-        print('Auth state change error: $error');
+        Log.e('Auth state change error: $error');
         // Set to not authenticated instead of error to allow app to continue
         state = const AsyncValue.data(null);
       });
     } catch (error) {
-      print('Error initializing auth: $error');
+      Log.e('Error initializing auth: $error');
       // Set to not authenticated instead of error to allow app to continue
       state = const AsyncValue.data(null);
     }
@@ -120,7 +121,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await _firebaseService!.updateFCMTokenInProfile(userId);
       }
     } catch (error) {
-      print('Error handling FCM token update: $error');
+      Log.e('Error handling FCM token update: $error');
       // Don't fail authentication if FCM token update fails
     }
   }
@@ -145,13 +146,13 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         _setErrorState('Login failed. Please check your credentials.');
       }
     } catch (error) {
-      print('Supabase signIn error: $error');
-      print('Error type: ${error.runtimeType}');
-      print('Error string: ${error.toString()}');
+      Log.e('Supabase signIn error: $error');
+      Log.d('Error type: ${error.runtimeType}');
+      Log.d('Error string: ${error.toString()}');
       
       // Use centralized error handling utility to convert to safe AuthError
       final authError = AuthErrorUtils.toAuthError(error);
-      print('Setting error state with message: ${authError.message}');
+      Log.d('Setting error state with message: ${authError.message}');
       _setErrorState(authError.message);
     }
   }
@@ -163,7 +164,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       final error = Exception(errorMessage);
       state = AsyncValue.error(error, StackTrace.empty);
     } catch (e) {
-      print('Error setting error state: $e');
+      Log.e('Error setting error state: $e');
       // Fallback to data state with null user
       state = const AsyncValue.data(null);
     }
@@ -233,10 +234,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       await _supabaseService.resetPassword(email: email);
       // Set password recovery flag when reset is requested
       setPasswordRecovery(true);
-      print('Password recovery requested for: $email');
+      Log.d('Password recovery requested for: $email');
       return true;
     } catch (error) {
-      print('Reset password error: $error');
+      Log.e('Reset password error: $error');
       final authError = AuthErrorUtils.toAuthError(error);
       _setErrorState(authError.message);
       return false;
@@ -248,7 +249,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       await _supabaseService.updatePassword(newPassword: newPassword);
       return true;
     } catch (error) {
-      print('Update password error: $error');
+      Log.e('Update password error: $error');
       final authError = AuthErrorUtils.toAuthError(error);
       _setErrorState(authError.message);
       return false;
@@ -310,7 +311,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
         state = AsyncValue.data(defaultProfile);
       }
     } catch (error) {
-      print('Error loading profile: $error');
+      Log.e('Error loading profile: $error');
       // Create a default profile on error
       final defaultProfile = UserProfile(
         id: userId,
@@ -334,7 +335,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
       // Reload profile after update
       await _loadProfile(currentProfile.id);
     } catch (error) {
-      print('Error updating profile: $error');
+      Log.e('Error updating profile: $error');
       // Use centralized error handling utility to convert to safe AuthError
       final authError = AuthErrorUtils.toAuthError(error);
       _setErrorState(authError.message);
@@ -351,7 +352,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
       final error = Exception(errorMessage);
       state = AsyncValue.error(error, StackTrace.empty);
     } catch (e) {
-      print('Error setting error state: $e');
+      Log.e('Error setting error state: $e');
       // Fallback to data state with null profile
       state = const AsyncValue.data(null);
     }
@@ -374,7 +375,7 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
     final authState = ref.watch(authProvider);
     return authState.value != null;
   } catch (e) {
-    print('Error in isAuthenticatedProvider: $e');
+    Log.e('Error in isAuthenticatedProvider: $e');
     return false;
   }
 });
@@ -384,7 +385,7 @@ final currentUserProvider = Provider<User?>((ref) {
     final authState = ref.watch(authProvider);
     return authState.value;
   } catch (e) {
-    print('Error in currentUserProvider: $e');
+    Log.e('Error in currentUserProvider: $e');
     return null;
   }
 });
@@ -394,7 +395,7 @@ final currentUserProfileProvider = Provider<UserProfile?>((ref) {
     final profileState = ref.watch(userProfileProvider);
     return profileState.value;
   } catch (e) {
-    print('Error in currentUserProfileProvider: $e');
+    Log.e('Error in currentUserProfileProvider: $e');
     return null;
   }
 }); 

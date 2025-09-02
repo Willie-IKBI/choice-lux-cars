@@ -92,6 +92,33 @@ lib/
    flutter run
    ```
 
+### Environment Configuration
+
+The app uses `--dart-define` flags to securely configure API keys and URLs. Run the app with these flags:
+
+```bash
+flutter run --dart-define=SUPABASE_URL=your_supabase_url \
+  --dart-define=SUPABASE_ANON_KEY=your_supabase_anon_key \
+  --dart-define=FIREBASE_API_KEY=your_firebase_api_key \
+  --dart-define=FIREBASE_PROJECT_ID=your_firebase_project_id \
+  --dart-define=FIREBASE_APP_ID=your_firebase_app_id \
+  --dart-define=FIREBASE_SENDER_ID=your_firebase_sender_id \
+  --dart-define=FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain \
+  --dart-define=FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
+```
+
+**Required Environment Variables:**
+- `SUPABASE_URL`: Your Supabase project URL
+- `SUPABASE_ANON_KEY`: Your Supabase anonymous/public key
+- `FIREBASE_API_KEY`: Your Firebase API key
+- `FIREBASE_PROJECT_ID`: Your Firebase project ID
+- `FIREBASE_APP_ID`: Your Firebase app ID
+- `FIREBASE_SENDER_ID`: Your Firebase messaging sender ID
+- `FIREBASE_AUTH_DOMAIN`: Your Firebase auth domain
+- `FIREBASE_STORAGE_BUCKET`: Your Firebase storage bucket
+
+> **Note**: Never commit API keys or sensitive configuration to version control. The app is configured to load these values from build-time flags.
+
 ## 🗄️ Database Schema
 
 ### Core Tables

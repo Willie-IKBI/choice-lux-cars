@@ -37,6 +37,7 @@ import 'package:choice_lux_cars/features/notifications/providers/notification_pr
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import '../shared/widgets/luxury_app_bar.dart';
 import '../core/services/fcm_service.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class ChoiceLuxCarsApp extends ConsumerStatefulWidget {
   const ChoiceLuxCarsApp({super.key});
@@ -121,7 +122,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
          if (authNotifier.isPasswordRecovery && isAuthenticated) {
            // If user is in password recovery and not on reset password page, redirect there
            if (!isResetPasswordRoute) {
-             print('Router - Redirecting to reset password due to password recovery state');
+             Log.d('Router - Redirecting to reset password due to password recovery state');
              return '/reset-password';
            }
            // Don't clear the recovery state here - let the reset password screen handle it

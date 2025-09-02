@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Centralized SnackBar utilities to eliminate duplicate functions
 class SnackBarUtils {
@@ -70,7 +71,7 @@ class SnackBarUtils {
         );
       } catch (e) {
         // Silently handle deactivated widget errors
-        print('SnackBar error (ignored): $e');
+        Log.e('SnackBar error (ignored): $e');
       }
     }
   }
@@ -90,7 +91,7 @@ class SnackBarUtils {
         );
       } catch (e) {
         // Silently handle deactivated widget errors
-        print('SnackBar error (ignored): $e');
+        Log.e('SnackBar error (ignored): $e');
       }
     }
   }

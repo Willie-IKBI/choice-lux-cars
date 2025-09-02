@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class NotificationService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -18,7 +20,7 @@ class NotificationService {
         throw Exception('User not authenticated');
       }
 
-      print('=== DEBUG: Fetching notifications for user: ${currentUser.id} ===');
+      Log.d('=== DEBUG: Fetching notifications for user: ${currentUser.id} ===');
 
       // Build query with all conditions
       var query = _supabase
@@ -39,14 +41,14 @@ class NotificationService {
         .order('created_at', ascending: false)
         .range(offset, offset + limit - 1);
 
-      print('Fetched ${response.length} notifications for user ${currentUser.id}');
+      Log.d('Fetched ${response.length} notifications for user ${currentUser.id}');
       if (response.isNotEmpty) {
-        print('Sample notification: ${response.first}');
+        Log.d('Sample notification: ${response.first}');
       }
 
       return response.map((json) => app_notification.AppNotification.fromJson(json)).toList();
     } catch (e) {
-      print('Error fetching notifications: $e');
+      Log.e('Error fetching notifications: $e');
       rethrow;
     }
   }
@@ -69,7 +71,7 @@ class NotificationService {
 
       return response;
     } catch (e) {
-      print('Error fetching notification stats: $e');
+      Log.e('Error fetching notification stats: $e');
       // Fallback to manual calculation
       return await _calculateNotificationStatsManually();
     }
@@ -104,7 +106,7 @@ class NotificationService {
         'by_type': byType,
       };
     } catch (e) {
-      print('Error calculating notification stats manually: $e');
+      Log.e('Error calculating notification stats manually: $e');
       return {
         'total_count': 0,
         'unread_count': 0,
@@ -122,14 +124,14 @@ class NotificationService {
         .from('app_notifications')
         .update({
           'is_read': true,
-          'read_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'read_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
         })
         .eq('id', notificationId);
 
-      print('Marked notification $notificationId as read');
+      Log.d('Marked notification $notificationId as read');
     } catch (e) {
-      print('Error marking notification as read: $e');
+      Log.e('Error marking notification as read: $e');
       rethrow;
     }
   }
@@ -140,9 +142,9 @@ class NotificationService {
       await _supabase
         .rpc('mark_notifications_as_read', params: {'notification_ids': notificationIds});
 
-      print('Marked ${notificationIds.length} notifications as read');
+      Log.d('Marked ${notificationIds.length} notifications as read');
     } catch (e) {
-      print('Error marking multiple notifications as read: $e');
+      Log.e('Error marking multiple notifications as read: $e');
       rethrow;
     }
   }
@@ -159,15 +161,15 @@ class NotificationService {
         .from('app_notifications')
         .update({
           'is_read': true,
-          'read_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'read_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
         })
         .eq('user_id', currentUser.id)
         .eq('is_read', false);
 
-      print('Marked all notifications as read');
+      Log.d('Marked all notifications as read');
     } catch (e) {
-      print('Error marking all notifications as read: $e');
+      Log.e('Error marking all notifications as read: $e');
       rethrow;
     }
   }
@@ -179,14 +181,14 @@ class NotificationService {
         .from('app_notifications')
         .update({
           'is_hidden': true,
-          'dismissed_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
         })
         .eq('id', notificationId);
 
-      print('Dismissed notification $notificationId');
+      Log.d('Dismissed notification $notificationId');
     } catch (e) {
-      print('Error dismissing notification: $e');
+      Log.e('Error dismissing notification: $e');
       rethrow;
     }
   }
@@ -199,9 +201,9 @@ class NotificationService {
         .delete()
         .eq('id', notificationId);
 
-      print('Deleted notification $notificationId');
+      Log.d('Deleted notification $notificationId');
     } catch (e) {
-      print('Error deleting notification: $e');
+      Log.e('Error deleting notification: $e');
       rethrow;
     }
   }
@@ -231,10 +233,10 @@ class NotificationService {
         .select()
         .single();
 
-      print('Created notification: ${response['id']}');
+      Log.d('Created notification: ${response['id']}');
       return app_notification.AppNotification.fromJson(response);
     } catch (e) {
-      print('Error creating notification: $e');
+      Log.e('Error creating notification: $e');
       rethrow;
     }
   }
@@ -267,10 +269,10 @@ class NotificationService {
         throw Exception('Failed to send push notification: ${response.data}');
       }
 
-      print('Push notification sent successfully: ${response.data}');
+      Log.d('Push notification sent successfully: ${response.data}');
       return response.data;
     } catch (e) {
-      print('Error sending push notification: $e');
+      Log.e('Error sending push notification: $e');
       rethrow;
     }
   }
@@ -318,9 +320,9 @@ class NotificationService {
         sound: true,
       );
 
-      print('Job assignment notification sent successfully');
+      Log.d('Job assignment notification sent successfully');
     } catch (e) {
-      print('Error sending job assignment notification: $e');
+      Log.e('Error sending job assignment notification: $e');
       rethrow;
     }
   }
@@ -363,9 +365,9 @@ class NotificationService {
         sound: true,
       );
 
-      print('Job cancellation notification sent successfully');
+      Log.d('Job cancellation notification sent successfully');
     } catch (e) {
-      print('Error sending job cancellation notification: $e');
+      Log.e('Error sending job cancellation notification: $e');
       rethrow;
     }
   }
@@ -431,9 +433,9 @@ class NotificationService {
         sound: true,
       );
 
-      print('Job status change notification sent successfully');
+      Log.d('Job status change notification sent successfully');
     } catch (e) {
-      print('Error sending job status change notification: $e');
+      Log.e('Error sending job status change notification: $e');
       rethrow;
     }
   }
@@ -481,9 +483,9 @@ class NotificationService {
         sound: true,
       );
 
-      print('Payment reminder notification sent successfully');
+      Log.d('Payment reminder notification sent successfully');
     } catch (e) {
-      print('Error sending payment reminder notification: $e');
+      Log.e('Error sending payment reminder notification: $e');
       rethrow;
     }
   }
@@ -521,9 +523,9 @@ class NotificationService {
         sound: priority == 'high' || priority == 'urgent',
       );
 
-      print('System alert notification sent successfully');
+      Log.d('System alert notification sent successfully');
     } catch (e) {
-      print('Error sending system alert notification: $e');
+      Log.e('Error sending system alert notification: $e');
       rethrow;
     }
   }
@@ -561,7 +563,7 @@ class NotificationService {
         return notifications;
       });
     } catch (e) {
-      print('Error setting up notifications stream: $e');
+      Log.e('Error setting up notifications stream: $e');
       rethrow;
     }
   }
@@ -570,9 +572,9 @@ class NotificationService {
   Future<void> cleanupExpiredNotifications() async {
     try {
       await _supabase.rpc('cleanup_expired_notifications');
-      print('Cleaned up expired notifications');
+      Log.d('Cleaned up expired notifications');
     } catch (e) {
-      print('Error cleaning up expired notifications: $e');
+      Log.e('Error cleaning up expired notifications: $e');
       rethrow;
     }
   }
@@ -583,14 +585,14 @@ class NotificationService {
       await _supabase
         .from('app_notifications')
         .update({
-          'dismissed_at': DateTime.now().toIso8601String(),
-          'updated_at': DateTime.now().toIso8601String(),
+          'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
         })
         .eq('job_id', jobId);
 
-      print('Dismissed notifications for job: $jobId');
+      Log.d('Dismissed notifications for job: $jobId');
     } catch (e) {
-      print('Error dismissing job notifications: $e');
+      Log.e('Error dismissing job notifications: $e');
       rethrow;
     }
   }
@@ -607,7 +609,7 @@ class NotificationService {
       
       return response['id'] as int?;
     } catch (e) {
-      print('Error finding job ID for job number $jobNumber: $e');
+      Log.e('Error finding job ID for job number $jobNumber: $e');
       return null;
     }
   }
@@ -635,11 +637,11 @@ class NotificationService {
                 .from('app_notifications')
                 .update({
                   'job_id': actualJobId,
-                  'updated_at': DateTime.now().toIso8601String(),
+                  'updated_at': SATimeUtils.getCurrentSATimeISO(),
                 })
                 .eq('id', notification['id']);
             
-            print('Fixed notification ${notification['id']}: $jobId -> $actualJobId');
+            Log.d('Fixed notification ${notification['id']}: $jobId -> $actualJobId');
           } else {
             // Couldn't find the job, mark it as problematic
             await supabase
@@ -650,16 +652,16 @@ class NotificationService {
                     ...notification['action_data'] ?? {},
                     'error': 'Job number not found: $jobId'
                   },
-                  'updated_at': DateTime.now().toIso8601String(),
+                  'updated_at': SATimeUtils.getCurrentSATimeISO(),
                 })
                 .eq('id', notification['id']);
             
-            print('Could not find job for notification ${notification['id']}: $jobId');
+            Log.e('Could not find job for notification ${notification['id']}: $jobId');
           }
         }
       }
     } catch (e) {
-      print('Error fixing notification job IDs: $e');
+      Log.e('Error fixing notification job IDs: $e');
     }
   }
 
@@ -701,14 +703,14 @@ class NotificationService {
                 'passenger_name': passengerName,
                 'job_number': jobNumber,
               },
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
+              'created_at': SATimeUtils.getCurrentSATimeISO(),
+              'updated_at': SATimeUtils.getCurrentSATimeISO(),
             });
       }
       
-      print('Sent job start notifications to ${usersResponse.length} users');
+      Log.d('Sent job start notifications to ${usersResponse.length} users');
     } catch (e) {
-      print('Error sending job start notification: $e');
+      Log.e('Error sending job start notification: $e');
     }
   }
 
@@ -750,14 +752,14 @@ class NotificationService {
                 'step_display_name': stepDisplayName,
                 'job_number': jobNumber,
               },
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
+              'created_at': SATimeUtils.getCurrentSATimeISO(),
+              'updated_at': SATimeUtils.getCurrentSATimeISO(),
             });
       }
       
-      print('Sent step completion notifications to ${usersResponse.length} users');
+      Log.d('Sent step completion notifications to ${usersResponse.length} users');
     } catch (e) {
-      print('Error sending step completion notification: $e');
+      Log.e('Error sending step completion notification: $e');
     }
   }
 
@@ -799,14 +801,14 @@ class NotificationService {
                 'passenger_name': passengerName,
                 'job_number': jobNumber,
               },
-              'created_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
+              'created_at': SATimeUtils.getCurrentSATimeISO(),
+              'updated_at': SATimeUtils.getCurrentSATimeISO(),
             });
       }
       
-      print('Sent job completion notifications to ${usersResponse.length} users');
+      Log.d('Sent job completion notifications to ${usersResponse.length} users');
     } catch (e) {
-      print('Error sending job completion notification: $e');
+      Log.e('Error sending job completion notification: $e');
     }
   }
 

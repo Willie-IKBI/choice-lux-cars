@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
@@ -13,12 +15,12 @@ class FCMService {
   /// Initialize FCM service
   static Future<bool> initialize(WidgetRef ref) async {
     if (_isInitialized) {
-      print('FCMService: Already initialized');
+      Log.d('FCMService: Already initialized');
       return true;
     }
 
     try {
-      print('FCMService: Initializing...');
+      Log.d('FCMService: Initializing...');
       
       // Request permission
       NotificationSettings settings = await _messaging.requestPermission(
@@ -30,7 +32,7 @@ class FCMService {
         announcement: true,
       );
 
-      print('FCMService: Permission status: ${settings.authorizationStatus}');
+      Log.d('FCMService: Permission status: ${settings.authorizationStatus}');
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
@@ -39,28 +41,28 @@ class FCMService {
         _currentToken = await _messaging.getToken();
         if (_currentToken != null) {
           await _saveFCMToken(_currentToken!);
-          print('FCMService: Token saved: ${_currentToken!.substring(0, 20)}...');
+          Log.d('FCMService: Token saved: ${_currentToken!.substring(0, 20)}...');
         }
 
         // Handle token refresh
         _messaging.onTokenRefresh.listen((token) async {
           _currentToken = token;
           await _saveFCMToken(token);
-          print('FCMService: Token refreshed: ${token.substring(0, 20)}...');
+          Log.d('FCMService: Token refreshed: ${token.substring(0, 20)}...');
         });
 
         // Set up message handlers
         _setupMessageHandlers(ref);
         
         _isInitialized = true;
-        print('FCMService: Initialization complete');
+        Log.d('FCMService: Initialization complete');
         return true;
       } else {
-        print('FCMService: Permission denied');
+        Log.d('FCMService: Permission denied');
         return false;
       }
     } catch (e) {
-      print('FCMService: Initialization failed: $e');
+      Log.e('FCMService: Initialization failed: $e');
       return false;
     }
   }
@@ -94,7 +96,7 @@ class FCMService {
       // Get current user ID
       final currentUser = SupabaseService.instance.currentUser;
       if (currentUser == null) {
-        print('FCMService: No current user found for FCM token save');
+        Log.d('FCMService: No current user found for FCM token save');
         return;
       }
       
@@ -103,18 +105,18 @@ class FCMService {
         userId: currentUser.id,
         data: {
           'fcm_token': token,
-          'fcm_token_updated_at': DateTime.now().toIso8601String(),
+          'fcm_token_updated_at': SATimeUtils.getCurrentSATimeISO(),
         },
       );
-      print('FCMService: FCM token saved successfully');
+      Log.d('FCMService: FCM token saved successfully');
     } catch (e) {
-      print('FCMService: Error saving FCM token: $e');
+      Log.e('FCMService: Error saving FCM token: $e');
     }
   }
 
   /// Handle foreground messages
   static void _handleForegroundMessage(RemoteMessage message, WidgetRef ref) {
-    print('FCMService: Foreground message received: ${message.data}');
+    Log.d('FCMService: Foreground message received: ${message.data}');
     
     final action = message.data['action'];
     final notificationType = message.data['notification_type'];
@@ -149,7 +151,7 @@ class FCMService {
 
   /// Handle notification taps
   static void _handleNotificationTap(RemoteMessage message, WidgetRef ref) {
-    print('FCMService: Notification tapped: ${message.data}');
+    Log.d('FCMService: Notification tapped: ${message.data}');
     
     final action = message.data['action'];
     final jobId = message.data['job_id'];
@@ -275,9 +277,9 @@ class FCMService {
     
     try {
       context.go(route);
-      print('FCMService: Navigated to route: $route');
+      Log.d('FCMService: Navigated to route: $route');
     } catch (e) {
-      print('FCMService: Navigation error: $e');
+      Log.e('FCMService: Navigation error: $e');
       // Fallback to notifications screen
       _navigateToNotifications(ref);
     }
@@ -290,9 +292,9 @@ class FCMService {
     
     try {
       context.go('/jobs/$jobId/summary');
-      print('FCMService: Navigated to job: $jobId');
+      Log.d('FCMService: Navigated to job: $jobId');
     } catch (e) {
-      print('FCMService: Job navigation error: $e');
+      Log.e('FCMService: Job navigation error: $e');
       _navigateToNotifications(ref);
     }
   }
@@ -304,9 +306,9 @@ class FCMService {
     
     try {
       context.go('/notifications');
-      print('FCMService: Navigated to notifications');
+      Log.d('FCMService: Navigated to notifications');
     } catch (e) {
-      print('FCMService: Notifications navigation error: $e');
+      Log.e('FCMService: Notifications navigation error: $e');
     }
   }
 
@@ -325,7 +327,7 @@ class FCMService {
       }
       return _currentToken;
     } catch (e) {
-      print('FCMService: Error refreshing token: $e');
+      Log.e('FCMService: Error refreshing token: $e');
       return null;
     }
   }
@@ -335,9 +337,9 @@ class FCMService {
     try {
       await _messaging.deleteToken();
       _currentToken = null;
-      print('FCMService: Token deleted');
+      Log.d('FCMService: Token deleted');
     } catch (e) {
-      print('FCMService: Error deleting token: $e');
+      Log.e('FCMService: Error deleting token: $e');
     }
   }
 
@@ -345,9 +347,9 @@ class FCMService {
   static Future<void> subscribeToTopic(String topic) async {
     try {
       await _messaging.subscribeToTopic(topic);
-      print('FCMService: Subscribed to topic: $topic');
+      Log.d('FCMService: Subscribed to topic: $topic');
     } catch (e) {
-      print('FCMService: Error subscribing to topic: $e');
+      Log.e('FCMService: Error subscribing to topic: $e');
     }
   }
 
@@ -355,9 +357,9 @@ class FCMService {
   static Future<void> unsubscribeFromTopic(String topic) async {
     try {
       await _messaging.unsubscribeFromTopic(topic);
-      print('FCMService: Unsubscribed from topic: $topic');
+      Log.d('FCMService: Unsubscribed from topic: $topic');
     } catch (e) {
-      print('FCMService: Error unsubscribing from topic: $e');
+      Log.e('FCMService: Error unsubscribing from topic: $e');
     }
   }
 }
@@ -365,7 +367,7 @@ class FCMService {
 // Background message handler
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  print('FCMService: Background message received: ${message.data}');
+  Log.d('FCMService: Background message received: ${message.data}');
   
   // Handle different notification types in background
   final action = message.data['action'];
@@ -374,22 +376,22 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   switch (action) {
     case 'new_job_assigned':
     case 'job_reassigned':
-      print('FCMService: Background job assignment notification');
+      Log.d('FCMService: Background job assignment notification');
       break;
     case 'job_cancelled':
-      print('FCMService: Background job cancellation notification');
+      Log.d('FCMService: Background job cancellation notification');
       break;
     case 'job_status_changed':
-      print('FCMService: Background job status change notification');
+      Log.d('FCMService: Background job status change notification');
       break;
     case 'payment_reminder':
-      print('FCMService: Background payment reminder notification');
+      Log.d('FCMService: Background payment reminder notification');
       break;
     case 'system_alert':
-      print('FCMService: Background system alert notification');
+      Log.d('FCMService: Background system alert notification');
       break;
     default:
-      print('FCMService: Background generic notification');
+      Log.d('FCMService: Background generic notification');
   }
   
   // You could show a local notification here if needed

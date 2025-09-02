@@ -874,7 +874,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
                   ),
                 ),
-                SizedBox(width: isSmallMobile ? 8 : 12),
+                const SizedBox(width: isSmallMobile ? 8 : 12),
                 Text(
                   'Loading agents...',
                   style: TextStyle(
@@ -902,7 +902,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   color: ChoiceLuxTheme.errorColor,
                   size: isSmallMobile ? 18 : isMobile ? 20 : 24,
                 ),
-                SizedBox(width: isSmallMobile ? 8 : 12),
+                const SizedBox(width: isSmallMobile ? 8 : 12),
                 Expanded(
                   child: Text(
                     'Error loading agents',
@@ -933,7 +933,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        const SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
         _buildResponsiveDropdown(
           value: _selectedVehicleId,
           hintText: 'Select a vehicle',
@@ -1433,7 +1433,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               minimumSize: Size(0, isSmallMobile ? 44 : isMobile ? 48 : 52),
             ),
             child: _isSubmitting
-                ? SizedBox(
+                ? const SizedBox(
                     height: isSmallMobile ? 18 : isMobile ? 20 : 22,
                     width: isSmallMobile ? 18 : isMobile ? 20 : 22,
                     child: CircularProgressIndicator(

@@ -1,5 +1,7 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../notifications/services/notification_service.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class DriverFlowApiService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -12,12 +14,11 @@ class DriverFlowApiService {
     required double gpsLng,
     double? gpsAccuracy,
   }) async {
-    try {
-      print('=== STARTING JOB - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId');
-      print('Odometer: $odoStartReading');
-      print('Image: $pdpStartImage');
-      print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+    Log.d('=== STARTING JOB - DIRECT DATABASE APPROACH ===');
+    Log.d('Job ID: $jobId');
+    Log.d('Odometer: $odoStartReading');
+    Log.d('Image: $pdpStartImage');
+    Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
       
       // Step 1: Get the driver for this job
       final jobResponse = await _supabase
@@ -36,8 +37,8 @@ class DriverFlowApiService {
           .from('jobs')
           .update({
             'job_status': 'started',
-            'job_start_date': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'job_start_date': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
       
@@ -48,19 +49,19 @@ class DriverFlowApiService {
             'job_id': jobId,
             'driver_user': driverId,
             'current_step': 'pickup_arrival', // Advance to next step immediately
-            'job_started_at': DateTime.now().toIso8601String(),
+            'job_started_at': SATimeUtils.getCurrentSATimeISO(),
             'odo_start_reading': odoStartReading,
             'pdp_start_image': pdpStartImage,
             'vehicle_collected': true, // Mark vehicle collection as completed
-            'vehicle_collected_at': DateTime.now().toIso8601String(),
+            'vehicle_collected_at': SATimeUtils.getCurrentSATimeISO(),
             'progress_percentage': 17, // 1/6 steps completed (rounded from 16.67)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           }, onConflict: 'job_id');
       
-      print('=== JOB STARTED SUCCESSFULLY - VEHICLE COLLECTION COMPLETED ===');
-      print('Current step: pickup_arrival');
-      print('Progress percentage: 17%');
+      Log.d('=== JOB STARTED SUCCESSFULLY - VEHICLE COLLECTION COMPLETED ===');
+      Log.d('Current step: pickup_arrival');
+      Log.d('Progress percentage: 17%');
       
       // Send job start notification
       try {
@@ -91,12 +92,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send job start notification: $e');
+        Log.e('Warning: Could not send job start notification: $e');
         // Don't fail the job start if notification fails
       }
     } catch (e) {
-      print('=== ERROR STARTING JOB ===');
-      print('Error: $e');
+      Log.e('=== ERROR STARTING JOB ===');
+      Log.e('Error: $e');
       throw Exception('Failed to start job: $e');
     }
   }
@@ -108,16 +109,28 @@ class DriverFlowApiService {
     double? gpsAccuracy,
   }) async {
     try {
-      print('=== COLLECTING VEHICLE - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId');
-      print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+      Log.d('=== COLLECTING VEHICLE - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId');
+      Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+      
+      // Step 1: Get the driver for this job
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+      
+      final driverId = jobResponse['driver_id'];
+      if (driverId == null) {
+        throw Exception('No driver assigned to job $jobId');
+      }
       
       // Fix GPS accuracy overflow - round to reasonable value
       double? safeGpsAccuracy;
       if (gpsAccuracy != null) {
         if (gpsAccuracy > 999.99) {
           safeGpsAccuracy = 999.99; // Max value for precision 5, scale 2
-          print('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
+          Log.d('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
         } else {
           safeGpsAccuracy = double.parse(gpsAccuracy.toStringAsFixed(2));
         }
@@ -127,18 +140,37 @@ class DriverFlowApiService {
           .from('driver_flow')
           .update({
             'vehicle_collected': true,
-            'vehicle_collected_at': DateTime.now().toIso8601String(),
+            'vehicle_collected_at': SATimeUtils.getCurrentSATimeISO(),
             'current_step': 'pickup_arrival',
             'progress_percentage': 17, // 1/6 steps completed (rounded from 16.67)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('=== VEHICLE COLLECTION RECORDED ===');
+      Log.d('=== VEHICLE COLLECTION RECORDED ===');
+      
+      // Send step completion notification for vehicle collection
+      try {
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'vehicle_collection',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        Log.e('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
     } catch (e) {
-      print('=== ERROR COLLECTING VEHICLE ===');
-      print('Error: $e');
+      Log.e('=== ERROR COLLECTING VEHICLE ===');
+      Log.e('Error: $e');
       throw Exception('Failed to record vehicle collection: $e');
     }
   }
@@ -150,16 +182,16 @@ class DriverFlowApiService {
     double? gpsAccuracy,
   }) async {
     try {
-      print('=== ARRIVE AT PICKUP - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId, Trip Index: $tripIndex');
-      print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+      Log.d('=== ARRIVE AT PICKUP - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
       
       // Fix GPS accuracy overflow - round to reasonable value
       double? safeGpsAccuracy;
       if (gpsAccuracy != null) {
         if (gpsAccuracy > 999.99) {
           safeGpsAccuracy = 999.99; // Max value for precision 5, scale 2
-          print('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
+          Log.d('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
         } else {
           safeGpsAccuracy = double.parse(gpsAccuracy.toStringAsFixed(2));
         }
@@ -184,20 +216,20 @@ class DriverFlowApiService {
             'job_id': jobId,
             'trip_index': tripIndex,
             'status': 'pending',
-            'created_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'created_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           }, onConflict: 'job_id,trip_index');
       
       // Step 3: Update trip_progress with pickup arrival
       await _supabase
           .from('trip_progress')
           .update({
-            'pickup_arrived_at': DateTime.now().toIso8601String(),
+            'pickup_arrived_at': SATimeUtils.getCurrentSATimeISO(),
             'pickup_gps_lat': gpsLat,
             'pickup_gps_lng': gpsLng,
             'pickup_gps_accuracy': safeGpsAccuracy,
             'status': 'pickup_arrived',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
@@ -208,12 +240,12 @@ class DriverFlowApiService {
           .update({
             'current_step': 'passenger_onboard',
             'progress_percentage': 33, // 2/6 steps completed (rounded from 33.33)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('=== PICKUP ARRIVAL COMPLETED ===');
+      Log.d('=== PICKUP ARRIVAL COMPLETED ===');
       
       // Send step completion notification
       try {
@@ -236,12 +268,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send step completion notification: $e');
+        Log.e('Warning: Could not send step completion notification: $e');
         // Don't fail the step completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR IN ARRIVE AT PICKUP ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN ARRIVE AT PICKUP ===');
+      Log.e('Error: $e');
       throw Exception('Failed to record pickup arrival: $e');
     }
   }
@@ -249,8 +281,8 @@ class DriverFlowApiService {
   /// Record passenger onboard for a specific trip
   static Future<void> passengerOnboard(int jobId, int tripIndex) async {
     try {
-      print('=== PASSENGER ONBOARD - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('=== PASSENGER ONBOARD - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId, Trip Index: $tripIndex');
       
       // Step 1: Get the driver for this job
       final jobResponse = await _supabase
@@ -265,9 +297,9 @@ class DriverFlowApiService {
       await _supabase
           .from('trip_progress')
           .update({
-            'passenger_onboard_at': DateTime.now().toIso8601String(),
+            'passenger_onboard_at': SATimeUtils.getCurrentSATimeISO(),
             'status': 'onboard',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
@@ -278,12 +310,12 @@ class DriverFlowApiService {
           .update({
             'current_step': 'dropoff_arrival',
             'progress_percentage': 50, // 3/6 steps completed (rounded from 50.00)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('=== PASSENGER ONBOARD COMPLETED ===');
+      Log.d('=== PASSENGER ONBOARD COMPLETED ===');
       
       // Send step completion notification
       try {
@@ -306,12 +338,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send step completion notification: $e');
+        Log.e('Warning: Could not send step completion notification: $e');
         // Don't fail the step completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR IN PASSENGER ONBOARD ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN PASSENGER ONBOARD ===');
+      Log.e('Error: $e');
       throw Exception('Failed to record passenger onboard: $e');
     }
   }
@@ -323,16 +355,16 @@ class DriverFlowApiService {
     double? gpsAccuracy,
   }) async {
     try {
-      print('=== ARRIVE AT DROPOFF - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId, Trip Index: $tripIndex');
-      print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+      Log.d('=== ARRIVE AT DROPOFF - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
       
       // Fix GPS accuracy overflow - round to reasonable value
       double? safeGpsAccuracy;
       if (gpsAccuracy != null) {
         if (gpsAccuracy > 999.99) {
           safeGpsAccuracy = 999.99; // Max value for precision 5, scale 2
-          print('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
+          Log.d('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
         } else {
           safeGpsAccuracy = double.parse(gpsAccuracy.toStringAsFixed(2));
         }
@@ -351,12 +383,12 @@ class DriverFlowApiService {
       await _supabase
           .from('trip_progress')
           .update({
-            'dropoff_arrived_at': DateTime.now().toIso8601String(),
+            'dropoff_arrived_at': SATimeUtils.getCurrentSATimeISO(),
             'dropoff_gps_lat': gpsLat,
             'dropoff_gps_lng': gpsLng,
             'dropoff_gps_accuracy': safeGpsAccuracy,
             'status': 'dropoff_arrived',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
@@ -367,12 +399,12 @@ class DriverFlowApiService {
           .update({
             'current_step': 'trip_complete',
             'progress_percentage': 67, // 4/6 steps completed (rounded from 66.67)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('=== DROPOFF ARRIVAL COMPLETED ===');
+      Log.d('=== DROPOFF ARRIVAL COMPLETED ===');
       
       // Send step completion notification
       try {
@@ -395,12 +427,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send step completion notification: $e');
+        Log.e('Warning: Could not send step completion notification: $e');
         // Don't fail the step completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR IN ARRIVE AT DROPOFF ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN ARRIVE AT DROPOFF ===');
+      Log.e('Error: $e');
       throw Exception('Failed to record dropoff arrival: $e');
     }
   }
@@ -410,8 +442,8 @@ class DriverFlowApiService {
     String? notes,
   }) async {
     try {
-      print('=== COMPLETE TRIP - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('=== COMPLETE TRIP - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId, Trip Index: $tripIndex');
       
       // Step 1: Get the driver for this job
       final jobResponse = await _supabase
@@ -428,7 +460,7 @@ class DriverFlowApiService {
           .update({
             'status': 'completed',
             'notes': notes,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId)
           .eq('trip_index', tripIndex);
@@ -439,12 +471,12 @@ class DriverFlowApiService {
           .update({
             'current_step': 'vehicle_return',
             'progress_percentage': 83, // 5/6 steps completed (rounded from 83.33)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('=== TRIP COMPLETED ===');
+      Log.d('=== TRIP COMPLETED ===');
       
       // Send step completion notification
       try {
@@ -467,12 +499,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send step completion notification: $e');
+        Log.e('Warning: Could not send step completion notification: $e');
         // Don't fail the step completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR IN COMPLETE TRIP ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN COMPLETE TRIP ===');
+      Log.e('Error: $e');
       throw Exception('Failed to complete trip: $e');
     }
   }
@@ -486,18 +518,18 @@ class DriverFlowApiService {
     double? gpsAccuracy,
   }) async {
     try {
-      print('=== RETURN VEHICLE - DIRECT DATABASE APPROACH ===');
-      print('Job ID: $jobId');
-      print('Odometer: $odoEndReading');
-      print('Image: $pdpEndImage');
-      print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+      Log.d('=== RETURN VEHICLE - DIRECT DATABASE APPROACH ===');
+      Log.d('Job ID: $jobId');
+      Log.d('Odometer: $odoEndReading');
+      Log.d('Image: $pdpEndImage');
+      Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
       
       // Fix GPS accuracy overflow - round to reasonable value
       double? safeGpsAccuracy;
       if (gpsAccuracy != null) {
         if (gpsAccuracy > 999.99) {
           safeGpsAccuracy = 999.99; // Max value for precision 5, scale 2
-          print('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
+          Log.d('GPS accuracy too large ($gpsAccuracy), using max value: $safeGpsAccuracy');
         } else {
           safeGpsAccuracy = double.parse(gpsAccuracy.toStringAsFixed(2));
         }
@@ -518,11 +550,11 @@ class DriverFlowApiService {
           .update({
             'job_closed_odo': odoEndReading,
             'job_closed_odo_img': pdpEndImage,
-            'job_closed_time': DateTime.now().toIso8601String(),
+            'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
             'current_step': 'completed',
             'progress_percentage': 100, // 6/6 steps completed (rounded from 100.00)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
@@ -531,11 +563,30 @@ class DriverFlowApiService {
           .from('jobs')
           .update({
             'job_status': 'completed',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
       
-      print('=== VEHICLE RETURN COMPLETED ===');
+      Log.d('=== VEHICLE RETURN COMPLETED ===');
+      
+      // Send step completion notification for vehicle return
+      try {
+        final driverResponse = await _supabase
+            .from('profiles')
+            .select('display_name')
+            .eq('id', driverId)
+            .single();
+        
+        await NotificationService.sendStepCompletionNotification(
+          jobId: jobId,
+          stepName: 'vehicle_return',
+          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+          jobNumber: 'JOB-$jobId',
+        );
+      } catch (e) {
+        Log.e('Warning: Could not send step completion notification: $e');
+        // Don't fail the step completion if notification fails
+      }
       
       // Send job completion notification
       try {
@@ -565,12 +616,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send job completion notification: $e');
+        Log.e('Warning: Could not send job completion notification: $e');
         // Don't fail the job completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR IN RETURN VEHICLE ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN RETURN VEHICLE ===');
+      Log.e('Error: $e');
       throw Exception('Failed to record vehicle return: $e');
     }
   }
@@ -600,7 +651,7 @@ class DriverFlowApiService {
           'job_id': jobId,
           'job_status': jobResponse['job_status'],
           'driver_id': driverFlowResponse['driver_user'],
-          'current_step': driverFlowResponse['current_step'] ?? 'vehicle_collection',
+          'current_step': driverFlowResponse['current_step'],
           'current_trip_index': driverFlowResponse['current_trip_index'] ?? 1,
           'progress_percentage': driverFlowResponse['progress_percentage'] ?? 0,
           'last_activity_at': driverFlowResponse['last_activity_at'],
@@ -614,12 +665,12 @@ class DriverFlowApiService {
           'calculated_status': (driverFlowResponse['vehicle_collected'] == true) ? 'in_progress' : 'assigned',
         };
       } else {
-        // No driver flow record yet - create default response
+        // No driver flow record yet - create default response for unstarted jobs
         combinedData = {
           'job_id': jobId,
           'job_status': jobResponse['job_status'],
           'driver_id': jobResponse['driver_id'],
-          'current_step': 'vehicle_collection',
+          'current_step': null, // Changed: null means job hasn't started
           'current_trip_index': 1,
           'progress_percentage': 0,
           'last_activity_at': null,
@@ -663,8 +714,8 @@ class DriverFlowApiService {
           .update({
             'current_step': step,
             'current_trip_index': tripIndex,
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
     } catch (e) {
@@ -679,8 +730,8 @@ class DriverFlowApiService {
           .from('driver_flow')
           .update({
             'payment_collected_ind': collected,
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
     } catch (e) {
@@ -691,8 +742,8 @@ class DriverFlowApiService {
   /// Confirm driver awareness of job
   static Future<bool> confirmDriverAwareness(int jobId) async {
     try {
-      print('=== CONFIRMING DRIVER AWARENESS ===');
-      print('Job ID: $jobId');
+      Log.d('=== CONFIRMING DRIVER AWARENESS ===');
+      Log.d('Job ID: $jobId');
       
       // Step 1: Update job confirmation status
       final response = await _supabase
@@ -700,19 +751,19 @@ class DriverFlowApiService {
           .update({
             'driver_confirm_ind': true,
             'is_confirmed': true,
-            'confirmed_at': DateTime.now().toIso8601String(),
+            'confirmed_at': SATimeUtils.getCurrentSATimeISO(),
             'confirmed_by': _supabase.auth.currentUser?.id,
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId)
           .select();
 
       if (response.isEmpty) {
-        print('No job found with ID $jobId');
+        Log.d('No job found with ID $jobId');
         return false;
       }
 
-      print('Job confirmation updated successfully');
+      Log.d('Job confirmation updated successfully');
 
       // Step 2: Mark job assignment notifications as read
       try {
@@ -720,24 +771,24 @@ class DriverFlowApiService {
             .from('notifications')
             .update({
               'is_read': true,
-              'read_at': DateTime.now().toIso8601String(),
-              'updated_at': DateTime.now().toIso8601String(),
+              'read_at': SATimeUtils.getCurrentSATimeISO(),
+              'updated_at': SATimeUtils.getCurrentSATimeISO(),
             })
             .eq('job_id', jobId.toString())
             .or('notification_type.eq.job_assignment,notification_type.eq.job_reassignment')
             .eq('is_read', false);
 
-        print('Job assignment notifications marked as read');
+        Log.d('Job assignment notifications marked as read');
       } catch (e) {
-        print('Warning: Could not mark notifications as read: $e');
+        Log.e('Warning: Could not mark notifications as read: $e');
         // Don't fail the confirmation if notification update fails
       }
 
-      print('=== DRIVER CONFIRMATION COMPLETED ===');
+      Log.d('=== DRIVER CONFIRMATION COMPLETED ===');
       return true;
     } catch (e) {
-      print('=== ERROR CONFIRMING DRIVER AWARENESS ===');
-      print('Error: $e');
+      Log.e('=== ERROR CONFIRMING DRIVER AWARENESS ===');
+      Log.e('Error: $e');
       return false;
     }
   }
@@ -745,22 +796,22 @@ class DriverFlowApiService {
   /// Update job status to completed
   static Future<void> updateJobStatusToCompleted(int jobId) async {
     try {
-      print('=== UPDATING JOB STATUS TO COMPLETED ===');
-      print('Job ID: $jobId');
+      Log.d('=== UPDATING JOB STATUS TO COMPLETED ===');
+      Log.d('Job ID: $jobId');
       
       await _supabase
           .from('jobs')
           .update({
             'job_status': 'completed',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
       
-      print('Job status updated to completed');
-      print('=== JOB STATUS UPDATE COMPLETED ===');
+      Log.d('Job status updated to completed');
+      Log.d('=== JOB STATUS UPDATE COMPLETED ===');
     } catch (e) {
-      print('=== ERROR UPDATING JOB STATUS ===');
-      print('Error: $e');
+      Log.e('=== ERROR UPDATING JOB STATUS ===');
+      Log.e('Error: $e');
       throw Exception('Failed to update job status: $e');
     }
   }
@@ -768,8 +819,8 @@ class DriverFlowApiService {
   /// Close a job
   static Future<void> closeJob(int jobId) async {
     try {
-      print('=== CLOSING JOB ===');
-      print('Job ID: $jobId');
+      Log.d('=== CLOSING JOB ===');
+      Log.d('Job ID: $jobId');
       
       // Step 1: Get the driver for this job
       final jobResponse = await _supabase
@@ -785,7 +836,7 @@ class DriverFlowApiService {
           .from('jobs')
           .update({
             'job_status': 'completed',
-            'updated_at': DateTime.now().toIso8601String(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
       
@@ -795,13 +846,13 @@ class DriverFlowApiService {
           .update({
             'current_step': 'completed',
             'progress_percentage': 100, // 6/6 steps completed (rounded from 100.00)
-            'last_activity_at': DateTime.now().toIso8601String(),
-            'updated_at': DateTime.now().toIso8601String(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
       
-      print('Job closed successfully');
-      print('=== JOB CLOSED ===');
+      Log.d('Job closed successfully');
+      Log.d('=== JOB CLOSED ===');
       
       // Send job completion notification
       try {
@@ -831,12 +882,12 @@ class DriverFlowApiService {
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
-        print('Warning: Could not send job completion notification: $e');
+        Log.e('Warning: Could not send job completion notification: $e');
         // Don't fail the job completion if notification fails
       }
     } catch (e) {
-      print('=== ERROR CLOSING JOB ===');
-      print('Error: $e');
+      Log.e('=== ERROR CLOSING JOB ===');
+      Log.e('Error: $e');
       throw Exception('Failed to close job: $e');
     }
   }
@@ -844,8 +895,8 @@ class DriverFlowApiService {
   /// Get job addresses for pickup and dropoff
   static Future<Map<String, String?>> getJobAddresses(int jobId) async {
     try {
-      print('=== GETTING JOB ADDRESSES ===');
-      print('Job ID: $jobId');
+      Log.d('=== GETTING JOB ADDRESSES ===');
+      Log.d('Job ID: $jobId');
       
       // Get transport details for this job
       final transportResponse = await _supabase
@@ -880,11 +931,11 @@ class DriverFlowApiService {
         'dropoff': dropoffAddress,
       };
       
-      print('Job addresses: $addresses');
+      Log.d('Job addresses: $addresses');
       return addresses;
     } catch (e) {
-      print('=== ERROR GETTING JOB ADDRESSES ===');
-      print('Error: $e');
+      Log.e('=== ERROR GETTING JOB ADDRESSES ===');
+      Log.e('Error: $e');
       return {
         'pickup': null,
         'dropoff': null,

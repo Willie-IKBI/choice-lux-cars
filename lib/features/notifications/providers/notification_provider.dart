@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../models/notification.dart' as app_notification;
 import '../services/notification_service.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 // Notification State
 class NotificationState {
@@ -91,17 +92,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         isLoading: false,
       );
 
-      print('Loaded ${notifications.length} notifications, ${unreadCount} unread');
-      print('Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d('Loaded ${notifications.length} notifications, ${unreadCount} unread');
+      Log.d('Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
       
       // Also update stats based on loaded notifications
       await _updateStatsFromNotifications(notifications);
     } catch (e) {
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
-      print('Error loading notifications: $e');
+      Log.e('Error loading notifications: $e');
+      state = AsyncValue.error(e, StackTrace.current);
     }
   }
 
@@ -138,10 +136,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         highPriorityCount: highPriorityCount,
       );
       
-      print('Updated stats from notifications: $stats');
-      print('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d('Updated stats from notifications: $stats');
+      Log.d('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      print('Error updating stats from notifications: $e');
+      Log.e('Error updating stats from notifications: $e');
     }
   }
 
@@ -162,10 +160,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         highPriorityCount: highPriorityCount,
       );
       
-      print('Loaded notification stats: $stats');
-      print('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d('Loaded notification stats: $stats');
+      Log.d('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      print('Error loading notification stats: $e');
+      Log.e('Error loading notification stats: $e');
       // Fallback: calculate stats from current notifications
       await _updateStatsFromNotifications(state.notifications);
     }
@@ -200,11 +198,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         highPriorityCount: highPriorityCount,
       );
 
-      print('Marked notification $notificationId as read');
-      print('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d('Marked notification $notificationId as read');
+      Log.d('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      print('Error marking notification as read: $e');
+      Log.e('Error marking notification as read: $e');
     }
   }
 
@@ -231,10 +228,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         unreadCount: unreadCount,
       );
 
-      print('Marked ${notificationIds.length} notifications as read');
+      Log.d('Marked ${notificationIds.length} notifications as read');
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      print('Error marking multiple notifications as read: $e');
+      Log.e('Error marking multiple notifications as read: $e');
     }
   }
 
@@ -263,11 +259,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         highPriorityCount: highPriorityCount,
       );
 
-      print('Marked all notifications as read');
-      print('Updated stats - Total: $totalCount, Unread: 0, High Priority: $highPriorityCount');
+      Log.d('Marked all notifications as read');
+      Log.d('Updated stats - Total: $totalCount, Unread: 0, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      print('Error marking all notifications as read: $e');
+      Log.e('Error marking all notifications as read: $e');
     }
   }
 
@@ -300,11 +295,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         highPriorityCount: highPriorityCount,
       );
 
-      print('Dismissed notification $notificationId');
-      print('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d('Dismissed notification $notificationId');
+      Log.d('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      print('Error dismissing notification: $e');
+      Log.e('Error dismissing notification: $e');
     }
   }
 
@@ -325,10 +319,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         unreadCount: unreadCount,
       );
 
-      print('Deleted notification $notificationId');
+      Log.d('Deleted notification $notificationId');
     } catch (e) {
-      state = state.copyWith(error: e.toString());
-      print('Error deleting notification: $e');
+      Log.e('Error deleting notification: $e');
     }
   }
 
@@ -342,7 +335,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       unreadCount: unreadCount,
     );
 
-    print('Added new notification: ${notification.id}');
+    Log.d('Added new notification: ${notification.id}');
   }
 
   /// Update notification in state (for real-time updates)
@@ -361,7 +354,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       unreadCount: unreadCount,
     );
 
-    print('Updated notification: ${notification.id}');
+    Log.d('Updated notification: ${notification.id}');
   }
 
   /// Remove notification from state (for real-time updates)
@@ -377,7 +370,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       unreadCount: unreadCount,
     );
 
-    print('Removed notification: $notificationId');
+    Log.d('Removed notification: $notificationId');
   }
 
   /// Update unread count (for FCM updates)
@@ -398,17 +391,17 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
             notifications: notifications,
             unreadCount: unreadCount,
           );
-          print('Real-time update: ${notifications.length} notifications');
+          Log.d('Real-time update: ${notifications.length} notifications');
         },
         onError: (error) {
-          print('Real-time subscription error: $error');
+          Log.e('Real-time subscription error: $error');
           state = state.copyWith(error: error.toString());
         },
       );
 
-      print('Started real-time notification subscription');
+      Log.d('Started real-time notification subscription');
     } catch (e) {
-      print('Error starting real-time subscription: $e');
+      Log.e('Error starting real-time subscription: $e');
     }
   }
 
@@ -416,7 +409,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   void stopRealtimeSubscription() {
     _subscription?.cancel();
     _subscription = null;
-    print('Stopped real-time notification subscription');
+    Log.d('Stopped real-time notification subscription');
   }
 
   /// Dispose the provider and clean up resources
@@ -440,9 +433,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         jobNumber: jobNumber,
         isReassignment: isReassignment,
       );
-      print('Job assignment notification sent');
+      Log.d('Job assignment notification sent');
     } catch (e) {
-      print('Error sending job assignment notification: $e');
+      Log.e('Error sending job assignment notification: $e');
       rethrow;
     }
   }
@@ -459,9 +452,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         jobId: jobId,
         jobNumber: jobNumber,
       );
-      print('Job cancellation notification sent');
+      Log.d('Job cancellation notification sent');
     } catch (e) {
-      print('Error sending job cancellation notification: $e');
+      Log.e('Error sending job cancellation notification: $e');
       rethrow;
     }
   }
@@ -482,9 +475,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         oldStatus: oldStatus,
         newStatus: newStatus,
       );
-      print('Job status change notification sent');
+      Log.d('Job status change notification sent');
     } catch (e) {
-      print('Error sending job status change notification: $e');
+      Log.e('Error sending job status change notification: $e');
       rethrow;
     }
   }
@@ -503,9 +496,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         jobNumber: jobNumber,
         amount: amount,
       );
-      print('Payment reminder notification sent');
+      Log.d('Payment reminder notification sent');
     } catch (e) {
-      print('Error sending payment reminder notification: $e');
+      Log.e('Error sending payment reminder notification: $e');
       rethrow;
     }
   }
@@ -526,9 +519,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         priority: priority,
         actionData: actionData,
       );
-      print('System alert notification sent');
+      Log.d('System alert notification sent');
     } catch (e) {
-      print('Error sending system alert notification: $e');
+      Log.e('Error sending system alert notification: $e');
       rethrow;
     }
   }
@@ -541,7 +534,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   /// Initialize the notification provider
   Future<void> initialize() async {
     try {
-      print('Initializing notification provider...');
+      Log.d('Initializing notification provider...');
       
       // Load initial notifications
       await loadNotifications();
@@ -552,9 +545,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       // Load notification stats
       await loadStats();
       
-      print('Notification provider initialized successfully');
+      Log.d('Notification provider initialized successfully');
     } catch (e) {
-      print('Error initializing notification provider: $e');
+      Log.e('Error initializing notification provider: $e');
       state = state.copyWith(error: e.toString());
     }
   }
@@ -562,7 +555,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   /// Hide notifications for a specific job
   Future<void> hideJobNotifications(String jobId) async {
     try {
-      print('Hiding notifications for job: $jobId');
+      Log.d('Hiding notifications for job: $jobId');
       
       // Mark all notifications for this job as dismissed
       await _notificationService.dismissJobNotifications(jobId);
@@ -570,9 +563,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       // Reload notifications to reflect changes
       await loadNotifications();
       
-      print('Job notifications hidden successfully');
+      Log.d('Job notifications hidden successfully');
     } catch (e) {
-      print('Error hiding job notifications: $e');
+      Log.e('Error hiding job notifications: $e');
       state = state.copyWith(error: e.toString());
     }
   }

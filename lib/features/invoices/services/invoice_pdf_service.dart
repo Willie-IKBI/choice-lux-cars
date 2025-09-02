@@ -4,10 +4,10 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import '../models/invoice_data.dart';
+import 'package:choice_lux_cars/core/config/env.dart';
 
 class InvoicePdfService {
-  static const String _logoUrl =
-      'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
+  static const String logoUrl = '${Env.supabaseUrl}/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
 
   // ---- THEME / TOKENS -------------------------------------------------------
 
@@ -40,7 +40,7 @@ class InvoicePdfService {
       // Load logo (graceful fallback)
       pw.MemoryImage? logoImage;
       try {
-        final response = await http.get(Uri.parse(_logoUrl));
+        final response = await http.get(Uri.parse(logoUrl));
         if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
           logoImage = pw.MemoryImage(response.bodyBytes);
         }

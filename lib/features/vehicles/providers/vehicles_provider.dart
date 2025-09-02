@@ -1,70 +1,155 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/vehicle.dart';
-import '../../../core/services/supabase_service.dart';
+import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
+import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
-class VehiclesState {
-  final List<Vehicle> vehicles;
-  final bool isLoading;
-  final String? error;
+/// Notifier for managing vehicles state using AsyncNotifier
+class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
+  late final VehiclesRepository _vehiclesRepository;
 
-  VehiclesState({
-    this.vehicles = const [],
-    this.isLoading = false,
-    this.error,
-  });
-
-  VehiclesState copyWith({
-    List<Vehicle>? vehicles,
-    bool? isLoading,
-    String? error,
-  }) {
-    return VehiclesState(
-      vehicles: vehicles ?? this.vehicles,
-      isLoading: isLoading ?? this.isLoading,
-      error: error,
-    );
-  }
-}
-
-class VehiclesNotifier extends StateNotifier<VehiclesState> {
-  VehiclesNotifier() : super(VehiclesState()) {
-    fetchVehicles(); // Auto-fetch vehicles on initialization
+  @override
+  Future<List<Vehicle>> build() async {
+    _vehiclesRepository = ref.watch(vehiclesRepositoryProvider);
+    return _fetchVehicles();
   }
 
-  Future<void> fetchVehicles() async {
-    state = state.copyWith(isLoading: true, error: null);
+  /// Fetch all vehicles from the repository
+  Future<List<Vehicle>> _fetchVehicles() async {
     try {
-      final vehicles = await SupabaseService.getVehicles();
-      state = state.copyWith(vehicles: vehicles, isLoading: false);
-    } catch (e) {
-
-      state = state.copyWith(error: e.toString(), isLoading: false);
-    }
-  }
-
-  Future<void> addVehicle(Vehicle vehicle) async {
-    state = state.copyWith(isLoading: true, error: null);
-    try {
-      final newVehicle = await SupabaseService.createVehicle(vehicle);
-      final updatedVehicles = <Vehicle>[...state.vehicles, newVehicle];
-      state = state.copyWith(vehicles: updatedVehicles, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      Log.d('Fetching vehicles...');
+      
+      final result = await _vehiclesRepository.fetchVehicles();
+      
+      if (result.isSuccess) {
+        final vehicles = result.data!;
+        Log.d('Fetched ${vehicles.length} vehicles successfully');
+        return vehicles;
+      } else {
+        Log.e('Error fetching vehicles: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching vehicles: $error');
       rethrow;
     }
   }
 
+  /// Create a new vehicle using the repository
+  Future<Map<String, dynamic>> createVehicle(Vehicle vehicle) async {
+    try {
+      Log.d('Creating vehicle: ${vehicle.make} ${vehicle.model}');
+      
+      final result = await _vehiclesRepository.createVehicle(vehicle);
+      
+      if (result.isSuccess) {
+        // Refresh vehicles list
+        ref.invalidateSelf();
+        Log.d('Vehicle created successfully');
+        return result.data!;
+      } else {
+        Log.e('Error creating vehicle: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error creating vehicle: $error');
+      rethrow;
+    }
+  }
+
+  /// Update an existing vehicle using the repository
   Future<void> updateVehicle(Vehicle vehicle) async {
-    state = state.copyWith(isLoading: true, error: null);
     try {
-      final updatedVehicle = await SupabaseService.updateVehicle(vehicle);
-      final updatedVehicles = state.vehicles.map((v) => v.id == vehicle.id ? updatedVehicle : v).toList();
-      state = state.copyWith(vehicles: updatedVehicles, isLoading: false);
-    } catch (e) {
-      state = state.copyWith(error: e.toString(), isLoading: false);
+      Log.d('Updating vehicle: ${vehicle.id}');
+      
+      final result = await _vehiclesRepository.updateVehicle(vehicle);
+      
+      if (result.isSuccess) {
+        // Update local state optimistically
+        final currentVehicles = state.value ?? [];
+        final updatedVehicles = currentVehicles.map((v) => v.id == vehicle.id ? vehicle : v).toList();
+        state = AsyncValue.data(updatedVehicles);
+        Log.d('Vehicle updated successfully');
+      } else {
+        Log.e('Error updating vehicle: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error updating vehicle: $error');
       rethrow;
     }
   }
+
+  /// Delete a vehicle using the repository
+  Future<void> deleteVehicle(String vehicleId) async {
+    try {
+      Log.d('Deleting vehicle: $vehicleId');
+      
+      final result = await _vehiclesRepository.deleteVehicle(vehicleId);
+      
+      if (result.isSuccess) {
+        // Update local state optimistically
+        final currentVehicles = state.value ?? [];
+        final updatedVehicles = currentVehicles.where((vehicle) => vehicle.id != vehicleId).toList();
+        state = AsyncValue.data(updatedVehicles);
+        Log.d('Vehicle deleted successfully');
+      } else {
+        Log.e('Error deleting vehicle: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error deleting vehicle: $error');
+      rethrow;
+    }
+  }
+
+  /// Get vehicle by ID using the repository
+  Future<Vehicle?> getVehicleById(String vehicleId) async {
+    try {
+      Log.d('Getting vehicle by ID: $vehicleId');
+      
+      final result = await _vehiclesRepository.getVehicleById(vehicleId);
+      
+      if (result.isSuccess) {
+        return result.data;
+      } else {
+        Log.e('Error getting vehicle by ID: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error getting vehicle by ID: $error');
+      rethrow;
+    }
+  }
+
+  /// Get available vehicles using the repository
+  Future<List<Vehicle>> getAvailableVehicles() async {
+    try {
+      Log.d('Getting available vehicles');
+      
+      final result = await _vehiclesRepository.getAvailableVehicles();
+      
+      if (result.isSuccess) {
+        return result.data!;
+      } else {
+        Log.e('Error getting available vehicles: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error getting available vehicles: $error');
+      rethrow;
+    }
+  }
+
+  /// Add a new vehicle (alias for createVehicle for consistency)
+  Future<Map<String, dynamic>> addVehicle(Vehicle vehicle) async {
+    return createVehicle(vehicle);
+  }
+
+  /// Refresh vehicles data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 }
 
-final vehiclesProvider = StateNotifierProvider<VehiclesNotifier, VehiclesState>((ref) => VehiclesNotifier()); 
+/// Provider for VehiclesNotifier using AsyncNotifierProvider
+final vehiclesProvider = AsyncNotifierProvider<VehiclesNotifier, List<Vehicle>>(() => VehiclesNotifier()); 

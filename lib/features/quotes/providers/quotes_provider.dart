@@ -2,34 +2,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../models/quote.dart';
 import '../models/quote_transport_detail.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/services/supabase_service.dart';
+import '../data/quotes_repository.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/types/result.dart';
 
-final quotesProvider = StateNotifierProvider<QuotesNotifier, List<Quote>>((ref) {
-  final currentUser = ref.watch(currentUserProfileProvider);
-  return QuotesNotifier(currentUser);
-});
+/// Notifier for managing quotes state using AsyncNotifier
+class QuotesNotifier extends AsyncNotifier<List<Quote>> {
+  late final QuotesRepository _quotesRepository;
+  late final dynamic currentUser;
 
-final quoteTransportDetailsProvider = StateNotifierProvider.family<QuoteTransportDetailsNotifier, List<QuoteTransportDetail>, String>((ref, quoteId) {
-  return QuoteTransportDetailsNotifier(quoteId);
-});
-
-class QuotesNotifier extends StateNotifier<List<Quote>> {
-  final currentUser;
-  
-  QuotesNotifier(this.currentUser) : super([]) {
+  @override
+  Future<List<Quote>> build() async {
+    _quotesRepository = ref.watch(quotesRepositoryProvider);
+    currentUser = ref.watch(currentUserProfileProvider);
+    
     if (currentUser != null) {
-      fetchQuotes();
+      return _fetchQuotes();
     }
+    return [];
   }
 
   // Fetch quotes based on user role
-  Future<void> fetchQuotes() async {
+  Future<List<Quote>> _fetchQuotes() async {
     try {
-      List<Map<String, dynamic>> quoteMaps;
+      List<Quote> quotes;
       
       if (currentUser == null) {
-        state = [];
-        return;
+        return [];
       }
 
       final userRole = currentUser.role?.toLowerCase();
@@ -37,42 +37,53 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
 
       if (userRole == 'administrator' || userRole == 'manager') {
         // Admins and managers see all quotes
-        quoteMaps = await SupabaseService.instance.getQuotes();
+        final result = await _quotesRepository.fetchQuotes();
+        if (result.isSuccess) {
+          quotes = result.data!;
+        } else {
+          Log.e('Error fetching quotes: ${result.error!.message}');
+          throw Exception(result.error!.message);
+        }
       } else if (userRole == 'driver_manager') {
         // Driver managers see quotes they created
-        quoteMaps = await SupabaseService.instance.getQuotesByUser(userId);
+        final result = await _quotesRepository.fetchQuotesByUser(userId);
+        if (result.isSuccess) {
+          quotes = result.data!;
+        } else {
+          Log.e('Error fetching quotes by user: ${result.error!.message}');
+          throw Exception(result.error!.message);
+        }
       } else {
         // Other roles see no quotes
-        if (!mounted) return;
-        state = [];
-        return;
+        return [];
       }
 
-      if (!mounted) return;
-      state = quoteMaps.map((map) => Quote.fromMap(map)).toList();
+      return quotes;
     } catch (error) {
-      print('Error fetching quotes: $error');
-      if (!mounted) return;
-      state = [];
+      Log.e('Error fetching quotes: $error');
+      rethrow;
     }
   }
 
   // Get quotes by status
-  List<Quote> get openQuotes => state.where((quote) => quote.isOpen).toList();
-  List<Quote> get acceptedQuotes => state.where((quote) => quote.isAccepted).toList();
-  List<Quote> get expiredQuotes => state.where((quote) => quote.isExpired).toList();
-  List<Quote> get closedQuotes => state.where((quote) => quote.isClosed).toList();
+  List<Quote> get openQuotes => (state.value ?? []).where((quote) => quote.isOpen).toList();
+  List<Quote> get acceptedQuotes => (state.value ?? []).where((quote) => quote.isAccepted).toList();
+  List<Quote> get expiredQuotes => (state.value ?? []).where((quote) => quote.isExpired).toList();
+  List<Quote> get closedQuotes => (state.value ?? []).where((quote) => quote.isClosed).toList();
 
   // Create new quote
   Future<Map<String, dynamic>> createQuote(Quote quote) async {
     try {
-      final createdQuote = await SupabaseService.instance.createQuote(quote.toMap());
-      if (mounted) {
-        await fetchQuotes();
+      final result = await _quotesRepository.createQuote(quote);
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+        return result.data!;
+      } else {
+        Log.e('Error creating quote: ${result.error!.message}');
+        throw Exception(result.error!.message);
       }
-      return createdQuote;
     } catch (error) {
-      print('Error creating quote: $error');
+      Log.e('Error creating quote: $error');
       rethrow;
     }
   }
@@ -80,13 +91,15 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
   // Get single quote
   Future<Quote?> getQuote(String quoteId) async {
     try {
-      final data = await SupabaseService.instance.getQuote(quoteId);
-      if (data != null) {
-        return Quote.fromMap(data);
+      final result = await _quotesRepository.fetchQuoteById(quoteId);
+      if (result.isSuccess) {
+        return result.data;
+      } else {
+        Log.e('Error getting quote: ${result.error!.message}');
+        return null;
       }
-      return null;
     } catch (error) {
-      print('Error getting quote: $error');
+      Log.e('Error getting quote: $error');
       return null;
     }
   }
@@ -94,15 +107,15 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
   // Update quote
   Future<void> updateQuote(Quote quote) async {
     try {
-      await SupabaseService.instance.updateQuote(
-        quoteId: quote.id, 
-        data: quote.toMap()
-      );
-      if (mounted) {
-        await fetchQuotes();
+      final result = await _quotesRepository.updateQuote(quote);
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error updating quote: ${result.error!.message}');
+        throw Exception(result.error!.message);
       }
     } catch (error) {
-      print('Error updating quote: $error');
+      Log.e('Error updating quote: $error');
       rethrow;
     }
   }
@@ -110,18 +123,15 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
   // Update quote status
   Future<void> updateQuoteStatus(String quoteId, String status) async {
     try {
-      await SupabaseService.instance.updateQuote(
-        quoteId: quoteId, 
-        data: {
-          'quote_status': status,
-          'updated_at': DateTime.now().toIso8601String(),
-        }
-      );
-      if (mounted) {
-        await fetchQuotes();
+      final result = await _quotesRepository.updateQuoteStatus(quoteId, status);
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error updating quote status: ${result.error!.message}');
+        throw Exception(result.error!.message);
       }
     } catch (error) {
-      print('Error updating quote status: $error');
+      Log.e('Error updating quote status: $error');
       rethrow;
     }
   }
@@ -129,12 +139,15 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
   // Delete quote
   Future<void> deleteQuote(String quoteId) async {
     try {
-      await SupabaseService.instance.deleteQuote(quoteId);
-      if (mounted) {
-        await fetchQuotes();
+      final result = await _quotesRepository.deleteQuote(quoteId);
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error deleting quote: ${result.error!.message}');
+        throw Exception(result.error!.message);
       }
     } catch (error) {
-      print('Error deleting quote: $error');
+      Log.e('Error deleting quote: $error');
       rethrow;
     }
   }
@@ -152,42 +165,68 @@ class QuotesNotifier extends StateNotifier<List<Quote>> {
   // Get transport details for a quote
   Future<List<QuoteTransportDetail>> getQuoteTransportDetails(String quoteId) async {
     try {
-      final transportMaps = await SupabaseService.instance.getQuoteTransportDetails(quoteId);
-      return transportMaps.map((map) => QuoteTransportDetail.fromMap(map)).toList();
+      final result = await _quotesRepository.fetchQuoteTransportDetails(quoteId);
+      if (result.isSuccess) {
+        // Convert Map<String, dynamic> to QuoteTransportDetail objects
+        return result.data!.map((json) => QuoteTransportDetail.fromMap(json)).toList();
+      } else {
+        Log.e('Error getting quote transport details: ${result.error!.message}');
+        return [];
+      }
     } catch (error) {
-      print('Error getting quote transport details: $error');
+      Log.e('Error getting quote transport details: $error');
       return [];
     }
   }
+
+  /// Refresh quotes data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 }
 
-class QuoteTransportDetailsNotifier extends StateNotifier<List<QuoteTransportDetail>> {
-  final String quoteId;
-  
-  QuoteTransportDetailsNotifier(this.quoteId) : super([]) {
-    fetchTransportDetails();
+/// Notifier for managing quote transport details using AsyncNotifier
+class QuoteTransportDetailsNotifier extends AsyncNotifier<List<QuoteTransportDetail>> {
+  late final QuotesRepository _quotesRepository;
+  late final String quoteId;
+
+  @override
+  Future<List<QuoteTransportDetail>> build() async {
+    _quotesRepository = ref.watch(quotesRepositoryProvider);
+    quoteId = ref.arg;
+    return _fetchTransportDetails();
   }
 
   // Fetch transport details for a specific quote
-  Future<void> fetchTransportDetails() async {
+  Future<List<QuoteTransportDetail>> _fetchTransportDetails() async {
     try {
-      final transportMaps = await SupabaseService.instance.getQuoteTransportDetails(quoteId);
-      if (!mounted) return;
-      state = transportMaps.map((map) => QuoteTransportDetail.fromMap(map)).toList();
+      final result = await _quotesRepository.fetchQuoteTransportDetails(quoteId);
+      if (result.isSuccess) {
+        // Convert Map<String, dynamic> to QuoteTransportDetail objects
+        final transportDetails = result.data!.map((json) => QuoteTransportDetail.fromMap(json)).toList();
+        return transportDetails;
+      } else {
+        Log.e('Error fetching quote transport details: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
     } catch (error) {
-      print('Error fetching quote transport details: $error');
-      if (!mounted) return;
-      state = [];
+      Log.e('Error fetching quote transport details: $error');
+      rethrow;
     }
   }
 
   // Add transport detail to quote
   Future<void> addTransportDetail(QuoteTransportDetail transportDetail) async {
     try {
-      await SupabaseService.instance.createQuoteTransportDetail(transportDetail.toMap());
-      await fetchTransportDetails();
+      final result = await _quotesRepository.createQuoteTransportDetail(transportDetail.toMap());
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error adding quote transport detail: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
     } catch (error) {
-      print('Error adding quote transport detail: $error');
+      Log.e('Error adding quote transport detail: $error');
       rethrow;
     }
   }
@@ -195,13 +234,15 @@ class QuoteTransportDetailsNotifier extends StateNotifier<List<QuoteTransportDet
   // Update transport detail
   Future<void> updateTransportDetail(QuoteTransportDetail transportDetail) async {
     try {
-      await SupabaseService.instance.updateQuoteTransportDetail(
-        transportDetailId: transportDetail.id, 
-        data: transportDetail.toMap()
-      );
-      await fetchTransportDetails();
+      final result = await _quotesRepository.updateQuoteTransportDetail(transportDetail.toMap());
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error updating quote transport detail: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
     } catch (error) {
-      print('Error updating quote transport detail: $error');
+      Log.e('Error updating quote transport detail: $error');
       rethrow;
     }
   }
@@ -209,16 +250,32 @@ class QuoteTransportDetailsNotifier extends StateNotifier<List<QuoteTransportDet
   // Delete transport detail
   Future<void> deleteTransportDetail(String transportDetailId) async {
     try {
-      await SupabaseService.instance.deleteQuoteTransportDetail(transportDetailId);
-      await fetchTransportDetails();
+      final result = await _quotesRepository.deleteQuoteTransportDetail(transportDetailId);
+      if (result.isSuccess) {
+        ref.invalidateSelf();
+      } else {
+        Log.e('Error deleting quote transport detail: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
     } catch (error) {
-      print('Error deleting quote transport detail: $error');
+      Log.e('Error deleting quote transport detail: $error');
       rethrow;
     }
   }
 
   // Calculate total amount
   double get totalAmount {
-    return state.fold(0.0, (sum, transport) => sum + transport.amount);
+    return (state.value ?? []).fold(0.0, (sum, transport) => sum + transport.amount);
+  }
+
+  /// Refresh transport details data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
   }
 }
+
+/// Provider for QuotesNotifier using AsyncNotifierProvider
+final quotesProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(() => QuotesNotifier());
+
+/// Provider for QuoteTransportDetailsNotifier using AsyncNotifierProvider.family
+final quoteTransportDetailsProvider = AsyncNotifierProvider.family<QuoteTransportDetailsNotifier, List<QuoteTransportDetail>, String>((quoteId) => QuoteTransportDetailsNotifier());

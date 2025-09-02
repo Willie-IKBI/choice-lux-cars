@@ -1,112 +1,162 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/features/clients/data/agents_repository.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
-import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
-// Provider for agents by client
-final agentsByClientProvider = FutureProvider.family<List<Agent>, String>((ref, clientId) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final agentsData = await supabaseService.getAgentsByClient(clientId);
-  return agentsData.map((json) => Agent.fromJson(json)).toList();
-});
+/// Notifier for managing agents by client using AsyncNotifier
+class AgentsByClientNotifier extends AsyncNotifier<List<Agent>> {
+  late final AgentsRepository _agentsRepository;
+  late final String clientId;
 
-// Provider for single agent
-final agentProvider = FutureProvider.family<Agent?, String>((ref, agentId) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final agentData = await supabaseService.getAgent(agentId);
-  return agentData != null ? Agent.fromJson(agentData) : null;
-});
-
-// Notifier for agent operations
-class AgentsNotifier extends StateNotifier<AsyncValue<List<Agent>>> {
-  final SupabaseService _supabaseService;
-  final String _clientId;
-
-  AgentsNotifier(this._supabaseService, this._clientId) : super(const AsyncValue.loading()) {
-    _loadAgents();
+  @override
+  Future<List<Agent>> build() async {
+    _agentsRepository = ref.watch(agentsRepositoryProvider);
+    clientId = ref.arg;
+    return _fetchAgentsByClient();
   }
 
-  Future<void> _loadAgents() async {
+  /// Fetch agents by client from the repository
+  Future<List<Agent>> _fetchAgentsByClient() async {
     try {
-      state = const AsyncValue.loading();
-      final agentsData = await _supabaseService.getAgentsByClient(_clientId);
-      final agents = agentsData.map((json) => Agent.fromJson(json)).toList();
-      print('Agents loaded: ${agents.map((a) => '${a.agentName} (ID: ${a.id})').join(', ')}');
-      state = AsyncValue.data(agents);
-    } catch (error, stackTrace) {
-      print('Error loading agents: $error');
-      state = AsyncValue.error(error, stackTrace);
+      Log.d('Fetching agents for client: $clientId');
+      
+      final result = await _agentsRepository.fetchAgentsByClient(clientId);
+      
+      if (result.isSuccess) {
+        final agents = result.data!;
+        Log.d('Fetched ${agents.length} agents for client: $clientId');
+        return agents;
+      } else {
+        Log.e('Error fetching agents by client: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching agents by client: $error');
+      rethrow;
     }
   }
 
+  /// Add a new agent
   Future<void> addAgent(Agent agent) async {
     try {
-      print('addAgent called with agent: ${agent.agentName}, id: ${agent.id}');
-      final createdAgentData = await _supabaseService.createAgent(agent.toJson());
-      print('addAgent - created agent data: $createdAgentData');
+      Log.d('addAgent called with agent: ${agent.agentName}, id: ${agent.id}');
       
-      // Create a new agent object with the database-assigned ID
-      final createdAgent = Agent.fromJson(createdAgentData);
-      print('addAgent - created agent object: ${createdAgent.agentName}, id: ${createdAgent.id}');
+      final result = await _agentsRepository.createAgent(agent);
       
-      // Update the current state to include the new agent
-      final currentAgents = state.value ?? [];
-      final updatedAgents = [createdAgent, ...currentAgents];
-      state = AsyncValue.data(updatedAgents);
-    } catch (error, stackTrace) {
-      print('addAgent error: $error');
-      state = AsyncValue.error(error, stackTrace);
+      if (result.isSuccess) {
+        final createdAgent = result.data!;
+        Log.d('addAgent - created agent object: ${createdAgent.agentName}, id: ${createdAgent.id}');
+        
+        // Update the current state to include the new agent
+        final currentAgents = state.value ?? [];
+        final updatedAgents = [createdAgent, ...currentAgents];
+        state = AsyncValue.data(updatedAgents);
+      } else {
+        Log.e('addAgent error: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('addAgent error: $error');
+      rethrow;
     }
   }
 
+  /// Update an existing agent
   Future<void> updateAgent(Agent agent) async {
     try {
-      print('updateAgent called with agent: ${agent.agentName}, id: ${agent.id}');
-      final updatedAgentData = await _supabaseService.updateAgent(
-        agentId: agent.id.toString(),
-        data: agent.toJson(),
-      );
-      print('updateAgent - updated agent data: $updatedAgentData');
+      Log.d('updateAgent called with agent: ${agent.agentName}, id: ${agent.id}');
       
-      // Create an updated agent object
-      final updatedAgent = Agent.fromJson(updatedAgentData);
-      print('updateAgent - updated agent object: ${updatedAgent.agentName}, id: ${updatedAgent.id}');
+      final result = await _agentsRepository.updateAgent(agent);
       
-      // Update the current state to replace the old agent with the updated one
-      final currentAgents = state.value ?? [];
-      final updatedAgents = currentAgents.map((a) => a.id == agent.id ? updatedAgent : a).toList();
-      state = AsyncValue.data(updatedAgents);
-    } catch (error, stackTrace) {
-      print('updateAgent error: $error');
-      state = AsyncValue.error(error, stackTrace);
+      if (result.isSuccess) {
+        final updatedAgent = result.data!;
+        Log.d('updateAgent - updated agent object: ${updatedAgent.agentName}, id: ${updatedAgent.id}');
+        
+        // Update the current state to replace the old agent with the updated one
+        final currentAgents = state.value ?? [];
+        final updatedAgents = currentAgents.map((a) => a.id == agent.id ? updatedAgent : a).toList();
+        state = AsyncValue.data(updatedAgents);
+      } else {
+        Log.e('updateAgent error: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('updateAgent error: $error');
+      rethrow;
     }
   }
 
+  /// Delete an agent
   Future<void> deleteAgent(String agentId) async {
     try {
-      print('deleteAgent called with agentId: $agentId');
-      await _supabaseService.deleteAgent(agentId);
+      Log.d('deleteAgent called with agentId: $agentId');
       
-      // Update the current state to remove the soft-deleted agent
-      final currentAgents = state.value ?? [];
-      final updatedAgents = currentAgents.where((a) => a.id.toString() != agentId).toList();
-      print('deleteAgent - updated agents list: ${updatedAgents.map((a) => '${a.agentName} (ID: ${a.id})').join(', ')}');
-      state = AsyncValue.data(updatedAgents);
-    } catch (error, stackTrace) {
-      print('deleteAgent error: $error');
+      final result = await _agentsRepository.deleteAgent(agentId);
+      
+      if (result.isSuccess) {
+        // Update the current state to remove the soft-deleted agent
+        final currentAgents = state.value ?? [];
+        final updatedAgents = currentAgents.where((a) => a.id.toString() != agentId).toList();
+        Log.d('deleteAgent - updated agents list: ${updatedAgents.map((a) => '${a.agentName} (ID: ${a.id})').join(', ')}');
+        state = AsyncValue.data(updatedAgents);
+      } else {
+        Log.e('deleteAgent error: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('deleteAgent error: $error');
       // Don't update the state on error - keep the current agent list
       // The error will be handled by the UI layer (e.g., showing a snackbar)
       rethrow; // Re-throw the error so the UI can handle it
     }
   }
 
+  /// Refresh agents data
   Future<void> refresh() async {
-    await _loadAgents();
+    ref.invalidateSelf();
   }
 }
 
-// Provider for agents notifier
-final agentsNotifierProvider = StateNotifierProvider.family<AgentsNotifier, AsyncValue<List<Agent>>, String>((ref, clientId) {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  return AgentsNotifier(supabaseService, clientId);
-}); 
+/// Notifier for managing single agent using AsyncNotifier
+class SingleAgentNotifier extends AsyncNotifier<Agent?> {
+  late final AgentsRepository _agentsRepository;
+  late final String agentId;
+
+  @override
+  Future<Agent?> build() async {
+    _agentsRepository = ref.watch(agentsRepositoryProvider);
+    agentId = ref.arg;
+    return _fetchAgentById();
+  }
+
+  /// Fetch agent by ID
+  Future<Agent?> _fetchAgentById() async {
+    try {
+      Log.d('Fetching agent by ID: $agentId');
+      
+      final result = await _agentsRepository.fetchAgentById(agentId);
+      
+      if (result.isSuccess) {
+        Log.d('Fetched agent successfully: ${result.data?.agentName}');
+        return result.data;
+      } else {
+        Log.e('Error fetching agent by ID: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching agent by ID: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh agent data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Provider for agents by client using AsyncNotifierProvider.family
+final agentsByClientProvider = AsyncNotifierProvider.family<AgentsByClientNotifier, List<Agent>, String>((clientId) => AgentsByClientNotifier());
+
+/// Provider for single agent using AsyncNotifierProvider.family
+final agentProvider = AsyncNotifierProvider.family<SingleAgentNotifier, Agent?, String>((agentId) => SingleAgentNotifier()); 

@@ -6,6 +6,7 @@ import 'dart:io';
 import '../providers/users_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class UserForm extends StatefulWidget {
   final User? user;
@@ -187,7 +188,7 @@ class _UserFormState extends State<UserForm> {
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
                             onPressed: () {
-                              print('Deactivate button pressed in UserForm');
+                              Log.d('Deactivate button pressed in UserForm');
                               widget.onDeactivate?.call();
                             },
                           ),
@@ -244,9 +245,9 @@ class _UserFormState extends State<UserForm> {
                                 foregroundColor: Theme.of(context).colorScheme.error,
                               ),
                               onPressed: () {
-                              print('Deactivate button pressed in UserForm (desktop)');
-                              widget.onDeactivate?.call();
-                            },
+                                Log.d('Deactivate button pressed in UserForm (desktop)');
+                                widget.onDeactivate?.call();
+                              },
                             ),
                           ),
                         FilledButton(

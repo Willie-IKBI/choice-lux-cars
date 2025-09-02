@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class AddressDisplayWidget extends StatelessWidget {
   final String address;
@@ -119,8 +120,16 @@ class AddressDisplayWidget extends StatelessWidget {
         throw Exception('Could not launch maps');
       }
     } catch (e) {
-      print('Error opening maps: $e');
-      // Could show a snackbar here if needed
+      Log.e('Error opening maps: $e');
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening maps: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

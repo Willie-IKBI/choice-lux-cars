@@ -1,3 +1,5 @@
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+
 class Quote {
   final String id;
   final String clientId;
@@ -54,7 +56,7 @@ class Quote {
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString(),
       driverId: map['driver_id']?.toString(),
-      jobDate: DateTime.parse(map['job_date']?.toString() ?? DateTime.now().toIso8601String()),
+      jobDate: DateTime.parse(map['job_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       vehicleType: map['vehicle_type']?.toString(),
       quoteStatus: map['quote_status']?.toString() ?? 'draft',
       pasCount: (map['pax'] is num) ? (map['pax'] as num).toDouble() : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
@@ -63,18 +65,20 @@ class Quote {
       passengerContact: map['passenger_contact']?.toString(),
       notes: map['notes']?.toString(),
       quotePdf: map['quote_pdf']?.toString(),
-      quoteDate: DateTime.parse(map['quote_date']?.toString() ?? DateTime.now().toIso8601String()),
+      quoteDate: DateTime.parse(map['quote_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       quoteAmount: (map['quote_amount'] is num) ? (map['quote_amount'] as num).toDouble() : double.tryParse(map['quote_amount']?.toString() ?? ''),
       quoteTitle: map['quote_title']?.toString(),
       quoteDescription: map['quote_description']?.toString(),
       location: map['location']?.toString(),
       createdBy: null, // Remove created_by field as it doesn't exist in database
-      createdAt: DateTime.parse(map['created_at']?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
+          ? DateTime.parse(map['updated_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()) 
           : null,
     );
   }
+
+  factory Quote.fromJson(Map<String, dynamic> json) => Quote.fromMap(json);
 
   Map<String, dynamic> toMap() {
     return {
@@ -99,9 +103,11 @@ class Quote {
       'location': location,
       // 'created_by': createdBy, // Remove created_by field as it doesn't exist in database
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 
   Quote copyWith({
     String? id,

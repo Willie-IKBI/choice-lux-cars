@@ -8,6 +8,7 @@ import '../providers/notification_provider.dart';
 import '../widgets/notification_card.dart';
 import '../services/notification_service.dart';
 import '../models/notification.dart' as app_notification;
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class NotificationListScreen extends ConsumerStatefulWidget {
   const NotificationListScreen({super.key});
@@ -301,10 +302,10 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
             : notificationState.notifications.where((n) => !n.isHidden && n.isHighPriority).length;
         
         // Debug logging to help identify the issue
-        print('Notification stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
-        print('Fallback stats - Total: $fallbackTotalCount, Unread: $fallbackUnreadCount, High Priority: $fallbackHighPriorityCount');
-        print('Total notifications in list: ${notificationState.notifications.length}');
-        print('Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}');
+        Log.d('Notification stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+        Log.d('Fallback stats - Total: $fallbackTotalCount, Unread: $fallbackUnreadCount, High Priority: $fallbackHighPriorityCount');
+        Log.d('Total notifications in list: ${notificationState.notifications.length}');
+        Log.d('Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}');
         
         return Container(
           margin: const EdgeInsets.all(16),
@@ -599,7 +600,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           // If it's a job number (like "2025-002"), try to find the actual job ID
           if (jobIdToUse.contains('-')) {
             // This is a job number, we need to find the actual job ID
-            print('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
+            Log.d('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
             SnackBarUtils.showWarning(context, 'Job number detected, navigating to jobs list');
             // For now, navigate to jobs list and let user find the job
             context.go('/jobs');
@@ -610,7 +611,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           try {
             context.go(NotificationConstants.getJobSummaryRoute(int.parse(jobIdToUse)));
           } catch (e) {
-            print('Error navigating to job: $e');
+            Log.e('Error navigating to job: $e');
             SnackBarUtils.showError(context, 'Failed to navigate to job details');
             // Fallback to jobs list
             context.go('/jobs');
@@ -625,7 +626,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           // If it's a job number (like "2025-002"), try to find the actual job ID
           if (jobIdToUse.contains('-')) {
             // This is a job number, we need to find the actual job ID
-            print('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
+            Log.d('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
             SnackBarUtils.showWarning(context, 'Job number detected, navigating to jobs list');
             // For now, navigate to jobs list and let user find the job
             context.go('/jobs');
@@ -636,7 +637,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           try {
             context.go(NotificationConstants.getJobPaymentRoute(int.parse(jobIdToUse)));
           } catch (e) {
-            print('Error navigating to job payment: $e');
+            Log.e('Error navigating to job payment: $e');
             SnackBarUtils.showError(context, 'Failed to navigate to job payment');
             // Fallback to jobs list
             context.go('/jobs');

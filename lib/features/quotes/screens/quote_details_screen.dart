@@ -2,14 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/theme.dart';
-import '../../../shared/widgets/luxury_app_bar.dart';
-import '../models/quote.dart';
-import '../providers/quotes_provider.dart';
-import '../services/quote_pdf_service.dart';
-import '../../auth/providers/auth_provider.dart';
-
-import '../../../core/services/supabase_service.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote.dart';
+import 'package:choice_lux_cars/features/quotes/providers/quotes_provider.dart';
+import 'package:choice_lux_cars/features/quotes/services/quote_pdf_service.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 

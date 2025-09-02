@@ -1,6 +1,8 @@
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+
 class Trip {
   final String id;
-  final String jobId;
+  final int jobId;
   final DateTime pickupDate;
   final String pickupLocation;
   final String dropoffLocation;
@@ -26,15 +28,15 @@ class Trip {
   factory Trip.fromMap(Map<String, dynamic> map) {
     return Trip(
       id: map['id']?.toString() ?? '',
-      jobId: map['job_id']?.toString() ?? '',
-      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? DateTime.now().toIso8601String()),
+      jobId: int.tryParse(map['job_id']?.toString() ?? '0') ?? 0,
+      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       pickupLocation: map['pickup_location']?.toString() ?? '',
       dropoffLocation: map['dropoff_location']?.toString() ?? '',
       clientPickupTime: map['client_pickup_time'] != null 
-          ? DateTime.parse(map['client_pickup_time']?.toString() ?? DateTime.now().toIso8601String())
+          ? DateTime.parse(map['client_pickup_time']?.toString() ?? SATimeUtils.getCurrentSATimeISO())
           : null,
       clientDropoffTime: map['client_dropoff_time'] != null 
-          ? DateTime.parse(map['client_dropoff_time']?.toString() ?? DateTime.now().toIso8601String())
+          ? DateTime.parse(map['client_dropoff_time']?.toString() ?? SATimeUtils.getCurrentSATimeISO())
           : null,
       notes: map['notes']?.toString(),
       amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
@@ -42,9 +44,11 @@ class Trip {
     );
   }
 
+  factory Trip.fromJson(Map<String, dynamic> json) => Trip.fromMap(json);
+
   Map<String, dynamic> toMap() {
     final map = <String, dynamic>{
-      'job_id': int.tryParse(jobId) ?? jobId,
+      'job_id': jobId,
       'pickup_date': pickupDate.toIso8601String(),
       'pickup_location': pickupLocation,
       'dropoff_location': dropoffLocation,
@@ -63,9 +67,11 @@ class Trip {
     return map;
   }
 
+  Map<String, dynamic> toJson() => toMap();
+
   Trip copyWith({
     String? id,
-    String? jobId,
+    int? jobId,
     DateTime? pickupDate,
     String? pickupLocation,
     String? dropoffLocation,

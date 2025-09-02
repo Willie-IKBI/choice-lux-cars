@@ -51,6 +51,8 @@ class User {
     );
   }
 
+  factory User.fromJson(Map<String, dynamic> json) => User.fromMap(json);
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
@@ -69,4 +71,6 @@ class User {
       'status': status,
     };
   }
+
+  Map<String, dynamic> toJson() => toMap();
 } 

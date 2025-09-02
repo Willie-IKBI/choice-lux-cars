@@ -388,11 +388,12 @@ class JobListCard extends ConsumerWidget {
         Row(
           children: [
             // Driver Flow Button (if applicable)
-                         if (DriverFlowUtils.shouldShowDriverFlowButton(
-               currentUserId: ref.read(currentUserProfileProvider)?.id,
-               jobDriverId: job.driverId,
-               jobStatus: job.statusEnum,
-             ))
+            if (DriverFlowUtils.shouldShowDriverFlowButton(
+              currentUserId: ref.read(currentUserProfileProvider)?.id,
+              jobDriverId: job.driverId,
+              jobStatus: job.statusEnum,
+              isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
+            ))
                Expanded(
                  child: ElevatedButton.icon(
                    onPressed: () => _handleDriverFlow(context, ref),
@@ -421,6 +422,7 @@ class JobListCard extends ConsumerWidget {
                currentUserId: ref.read(currentUserProfileProvider)?.id,
                jobDriverId: job.driverId,
                jobStatus: job.statusEnum,
+               isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
              )) SizedBox(width: spacing),
                Expanded(
                  child: _buildVoucherSection(context, spacing),
@@ -433,6 +435,7 @@ class JobListCard extends ConsumerWidget {
                   currentUserId: ref.read(currentUserProfileProvider)?.id,
                   jobDriverId: job.driverId,
                   jobStatus: job.statusEnum,
+                  isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
                 ) || canCreateVoucher) SizedBox(width: spacing),
                Expanded(
                  child: _buildInvoiceSection(context, spacing),
@@ -464,7 +467,7 @@ class JobListCard extends ConsumerWidget {
           
           // Voucher Actions
           VoucherActionButtons(
-            jobId: job.id,
+            jobId: job.id.toString(),
             voucherPdfUrl: job.voucherPdf,
             voucherData: null,
             canCreateVoucher: canCreateVoucher,
@@ -507,7 +510,7 @@ class JobListCard extends ConsumerWidget {
           
           // Invoice Actions
           InvoiceActionButtons(
-            jobId: job.id,
+            jobId: job.id.toString(),
             invoicePdfUrl: job.invoicePdf,
             invoiceData: null,
             canCreateInvoice: canCreateInvoice,

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 import 'package:choice_lux_cars/shared/widgets/notification_bell.dart';
 import 'package:go_router/go_router.dart';
@@ -164,17 +165,17 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           size: 20,
         ),
         onPressed: onBackPressed ?? () {
-          debugPrint('Back button pressed - attempting to pop context');
+          Log.d('Back button pressed - attempting to pop context');
           try {
             if (Navigator.of(context).canPop()) {
               context.pop();
-              debugPrint('Context pop successful');
+              Log.d('Context pop successful');
             } else {
-              debugPrint('Cannot pop - navigating to dashboard');
+              Log.d('Cannot pop - navigating to dashboard');
               context.go('/dashboard');
             }
           } catch (e) {
-            debugPrint('Error popping context: $e');
+            Log.d('Error popping context: $e');
             // Fallback to go to dashboard
             context.go('/dashboard');
           }
@@ -397,7 +398,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           icon: Icons.settings_outlined,
           title: 'Settings',
           onTap: () {
-            print('Navigate to Settings');
+            Log.d('Navigate to Settings');
+            context.push('/settings');
           },
         ),
         const PopupMenuDivider(height: 1),
@@ -560,7 +562,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           icon: Icons.settings_outlined,
           title: 'Settings',
           onTap: () {
-            print('Navigate to Settings');
+            Log.d('Navigate to Settings');
+            context.push('/settings');
           },
         ),
         const PopupMenuDivider(height: 1),

@@ -1,3 +1,5 @@
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+
 class QuoteTransportDetail {
   final String id;
   final String quoteId;
@@ -21,7 +23,7 @@ class QuoteTransportDetail {
     return QuoteTransportDetail(
       id: map['id']?.toString() ?? '',
       quoteId: map['quote_id']?.toString() ?? '',
-      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? DateTime.now().toIso8601String()),
+      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       pickupLocation: map['pickup_location']?.toString() ?? '',
       dropoffLocation: map['dropoff_location']?.toString() ?? '',
       amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,

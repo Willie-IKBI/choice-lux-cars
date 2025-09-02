@@ -1,3 +1,5 @@
+import 'package:choice_lux_cars/core/config/env.dart';
+
 // User roles
 enum UserRole {
   admin,
@@ -41,16 +43,16 @@ class AppConstants {
   // API endpoints
   // Production Supabase instance
   // For local development, use: http://127.0.0.1:54321 and local anon key
-  static const String supabaseUrl = 'https://hgqrbekphumdlsifuamq.supabase.co';
-  static const String supabaseAnonKey = 'sb_publishable_bGWh1bK234YwSEU8YLWu5g_gfqxDQAH';
+  static const String supabaseUrl = Env.supabaseUrl;
+  static const String supabaseAnonKey = Env.supabaseAnonKey;
   
   // Firebase Configuration
-  static const String firebaseApiKey = 'AIzaSyDHtTfl-FLRmImEmizLaauW-NMc6rVp_AM';
-  static const String firebaseAuthDomain = 'choice-lux-cars-8d510.firebaseapp.com';
-  static const String firebaseProjectId = 'choice-lux-cars-8d510';
-  static const String firebaseStorageBucket = 'choice-lux-cars-8d510.firebasestorage.app';
-  static const String firebaseMessagingSenderId = '522491134348';
-  static const String firebaseAppId = '1:522491134348:web:3ac424d68338b3ddb7d6a9';
+  static const String firebaseApiKey = Env.firebaseApiKey;
+  static const String firebaseAuthDomain = Env.firebaseAuthDomain;
+  static const String firebaseProjectId = Env.firebaseProjectId;
+  static const String firebaseStorageBucket = Env.firebaseStorageBucket;
+  static const String firebaseMessagingSenderId = Env.firebaseSenderId;
+  static const String firebaseAppId = Env.firebaseAppId;
   
   // Storage buckets
   static const String quotesBucket = 'quotes';

@@ -1,84 +1,113 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../models/user.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
-import 'package:choice_lux_cars/core/services/upload_service.dart';
-import 'package:image_picker/image_picker.dart';
-import 'dart:typed_data';
+import 'package:choice_lux_cars/features/users/models/user.dart';
+import 'package:choice_lux_cars/features/users/data/users_repository.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
-final usersProvider = StateNotifierProvider<UsersNotifier, List<User>>((ref) => UsersNotifier());
+/// Notifier for managing users state using AsyncNotifier
+class UsersNotifier extends AsyncNotifier<List<User>> {
+  late final UsersRepository _usersRepository;
 
-class UsersNotifier extends StateNotifier<List<User>> {
-  UsersNotifier() : super([]) {
-    fetchUsers();
+  @override
+  Future<List<User>> build() async {
+    _usersRepository = ref.watch(usersRepositoryProvider);
+    return _fetchUsers();
   }
 
-  // Fetch all users from Supabase
-  Future<void> fetchUsers() async {
-    final userMaps = await SupabaseService.instance.getUsers();
-    state = userMaps.map((map) => User.fromMap(map)).toList();
-  }
-
-  Future<void> updateUser(User user) async {
-    await SupabaseService.instance.updateUser(userId: user.id, data: user.toMap());
-    await fetchUsers();
-  }
-
-  Future<void> deactivateUser(String userId) async {
-    print('UsersNotifier.deactivateUser called for userId: $userId');
+  /// Fetch all users from the repository
+  Future<List<User>> _fetchUsers() async {
     try {
-      await SupabaseService.instance.deactivateUser(userId);
-      print('Supabase deactivateUser completed');
-      await fetchUsers();
-      print('fetchUsers completed after deactivation');
+      Log.d('Fetching users...');
+      
+      final result = await _usersRepository.fetchUsers();
+      
+      if (result.isSuccess) {
+        final users = result.data!;
+        Log.d('Fetched ${users.length} users successfully');
+        return users;
+      } else {
+        Log.e('Error fetching users: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
     } catch (error) {
-      print('Error in UsersNotifier.deactivateUser: $error');
+      Log.e('Error fetching users: $error');
       rethrow;
     }
   }
 
-  Future<void> reactivateUser(String userId) async {
-    await SupabaseService.instance.reactivateUser(userId);
-    await fetchUsers();
+  /// Get drivers from the repository
+  Future<List<User>> getDrivers() async {
+    try {
+      Log.d('Getting drivers...');
+      
+      final result = await _usersRepository.getDrivers();
+      
+      if (result.isSuccess) {
+        final drivers = result.data!;
+        Log.d('Fetched ${drivers.length} drivers successfully');
+        return drivers;
+      } else {
+        Log.e('Error getting drivers: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error getting drivers: $error');
+      rethrow;
+    }
   }
 
-  Future<String?> uploadProfileImage(XFile imageFile, String userId) async {
-    // Upload to Supabase Storage under /profiles/{userId}/profile.jpg
-    final bytes = await imageFile.readAsBytes();
-    final url = await UploadService.uploadImageBytes(
-      bytes,
-      'clc_images',
-      'profiles',
-      '$userId/profile.jpg',
-    );
-    // Update user profileImage field
-    await SupabaseService.instance.updateUser(userId: userId, data: {'profile_image': url});
-    await fetchUsers();
-    return url;
+  /// Get users by role from the repository
+  Future<List<User>> getUsersByRole(String role) async {
+    try {
+      Log.d('Getting users by role: $role');
+      
+      final result = await _usersRepository.getUsersByRole(role);
+      
+      if (result.isSuccess) {
+        final users = result.data!;
+        Log.d('Fetched ${users.length} users with role $role successfully');
+        return users;
+      } else {
+        Log.e('Error getting users by role: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error getting users by role: $error');
+      rethrow;
+    }
   }
 
-  Future<String?> uploadDriverLicenseImage(XFile xfile, String userId) async {
-    final bytes = await xfile.readAsBytes();
-    final url = await UploadService.uploadImageBytes(
-      bytes,
-      'clc_images',
-      'driver_lic',
-      '$userId/license.jpg',
-    );
-    await SupabaseService.instance.updateUser(userId: userId, data: {'driver_licence': url});
-    await fetchUsers();
-    return url;
+  /// Refresh users data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Notifier for managing current user profile using AsyncNotifier
+class CurrentUserProfileNotifier extends AsyncNotifier<User?> {
+  late final UsersRepository _usersRepository;
+
+  @override
+  Future<User?> build() async {
+    _usersRepository = ref.watch(usersRepositoryProvider);
+    // This would need to be updated to get the current user ID from auth
+    // For now, returning null as placeholder
+    return null;
   }
 
-  Future<String?> uploadPdpImage(XFile xfile, String userId) async {
-    final bytes = await xfile.readAsBytes();
-    final url = await UploadService.uploadImageBytes(
-      bytes,
-      'clc_images',
-      'pdp_lic',
-      '$userId/pdp.jpg',
-    );
-    await SupabaseService.instance.updateUser(userId: userId, data: {'pdp': url});
-    await fetchUsers();
-    return url;
+  /// Refresh current user profile data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
   }
-} 
+}
+
+/// Provider for UsersNotifier using AsyncNotifierProvider
+final usersProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(() => UsersNotifier());
+
+/// Provider for current user profile using AsyncNotifierProvider
+final currentUserProfileProvider = AsyncNotifierProvider<CurrentUserProfileNotifier, User?>((ref) => CurrentUserProfileNotifier());
+
+/// Provider for drivers using AsyncNotifierProvider
+final driversProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(() => UsersNotifier());
+
+/// Provider for users by role using AsyncNotifierProvider.family
+final usersByRoleProvider = AsyncNotifierProvider.family<UsersNotifier, List<User>, String>((role) => UsersNotifier()); 

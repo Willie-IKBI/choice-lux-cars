@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 
 // Job status enum for type-safe status handling
 enum JobStatus {
@@ -55,7 +56,7 @@ extension JobStatusX on JobStatus {
 }
 
 class Job {
-  final String id;
+  final int id;
   final String clientId;
   final String? agentId;
   final String vehicleId;
@@ -127,13 +128,13 @@ class Job {
 
   factory Job.fromMap(Map<String, dynamic> map) {
     return Job(
-      id: map['id']?.toString() ?? '',
+      id: int.tryParse(map['id']?.toString() ?? '') ?? 0,
       clientId: map['client_id']?.toString() ?? '',
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString() ?? '',
       driverId: map['driver_id']?.toString() ?? '',
-      jobStartDate: DateTime.parse(map['job_start_date']?.toString() ?? DateTime.now().toIso8601String()),
-      orderDate: DateTime.parse(map['order_date']?.toString() ?? DateTime.now().toIso8601String()),
+      jobStartDate: DateTime.parse(map['job_start_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
+      orderDate: DateTime.parse(map['order_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       passengerName: map['passenger_name']?.toString(),
       passengerContact: map['passenger_contact']?.toString(),
       pasCount: (map['pax'] is num) ? (map['pax'] as num).toDouble() : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
@@ -148,9 +149,9 @@ class Job {
       cancelReason: map['cancel_reason']?.toString(),
       location: map['location']?.toString(),
       createdBy: map['created_by']?.toString() ?? '',
-      createdAt: DateTime.parse(map['created_at']?.toString() ?? DateTime.now().toIso8601String()),
+      createdAt: DateTime.parse(map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
       updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at']?.toString() ?? DateTime.now().toIso8601String()) 
+          ? DateTime.parse(map['updated_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()) 
           : null,
       driverConfirmation: map['driver_confirm_ind'] == true,
       isConfirmed: map['is_confirmed'] == true || map['driver_confirm_ind'] == true,
@@ -162,10 +163,12 @@ class Job {
     );
   }
 
+  factory Job.fromJson(Map<String, dynamic> json) => Job.fromMap(json);
+
   Map<String, dynamic> toMap() {
     return {
       // Don't include id if it's empty (let database auto-generate)
-      if (id.isNotEmpty) 'id': int.tryParse(id) ?? id,
+      if (id != 0) 'id': id,
       'client_id': int.tryParse(clientId) ?? clientId,
       if (agentId != null) 'agent_id': int.tryParse(agentId!) ?? agentId,
       'vehicle_id': int.tryParse(vehicleId) ?? vehicleId,
@@ -187,7 +190,7 @@ class Job {
       'location': location,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String() ?? DateTime.now().toIso8601String(),
+      'updated_at': updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
       'driver_confirm_ind': driverConfirmation,
       'is_confirmed': isConfirmed,
       if (confirmedAt != null) 'confirmed_at': confirmedAt!.toIso8601String(),
@@ -196,8 +199,10 @@ class Job {
     };
   }
 
+  Map<String, dynamic> toJson() => toMap();
+
   Job copyWith({
-    String? id,
+    int? id,
     String? clientId,
     String? agentId,
     String? vehicleId,

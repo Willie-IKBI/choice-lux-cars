@@ -6,8 +6,7 @@ import 'dart:io';
 import '../services/driver_flow_api_service.dart';
 import '../models/job.dart';
 import '../models/trip.dart';
-import '../widgets/step_indicator.dart';
-import '../widgets/progress_bar.dart';
+
 import '../widgets/gps_capture_widget.dart';
 import '../widgets/odometer_capture_widget.dart';
 import '../widgets/vehicle_collection_modal.dart';
@@ -24,6 +23,7 @@ import '../../../shared/utils/date_utils.dart';
 import '../../../shared/utils/driver_flow_utils.dart';
 import '../../../shared/widgets/luxury_button.dart';
 import '../../../shared/widgets/job_completion_dialog.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -44,7 +44,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   bool _isUpdating = false;
   Map<String, dynamic>? _jobProgress;
   List<Map<String, dynamic>>? _tripProgress;
-  String _currentStep = 'vehicle_collection';
+  String _currentStep = 'not_started';
   int _currentTripIndex = 1;
   int _progressPercentage = 0;
   Map<String, String?> _jobAddresses = {};
@@ -53,6 +53,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   JobsNotifier? _jobsNotifier;
 
   final List<JobStep> _jobSteps = [
+    JobStep(
+      id: 'not_started',
+      title: 'Job Not Started',
+      description: 'Job is assigned but not yet started by driver',
+      icon: Icons.schedule,
+      isCompleted: false,
+    ),
     JobStep(
       id: 'vehicle_collection',
       title: 'Vehicle Collection',
@@ -126,21 +133,21 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       // Load job progress
       final progress = await DriverFlowApiService.getJobProgress(jobIdInt);
-      print('=== LOADED JOB PROGRESS ===');
-      print('Progress data: $progress');
-      print('Vehicle collected: ${progress['vehicle_collected']}');
-      print('Current step from DB: ${progress['current_step']}');
-      print('Job status: ${progress['job_status']}');
+      Log.d('=== LOADED JOB PROGRESS ===');
+      Log.d('Progress data: $progress');
+      Log.d('Vehicle collected: ${progress['vehicle_collected']}');
+      Log.d('Current step from DB: ${progress['current_step']}');
+      Log.d('Job status: ${progress['job_status']}');
       
       // Load trip progress
       final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
-      print('=== LOADED TRIP PROGRESS ===');
-      print('Trip data: $trips');
+      Log.d('=== LOADED TRIP PROGRESS ===');
+      Log.d('Trip data: $trips');
       
       // Load job addresses
       final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
-      print('=== LOADED JOB ADDRESSES ===');
-      print('Addresses: $addresses');
+      Log.d('=== LOADED JOB ADDRESSES ===');
+      Log.d('Addresses: $addresses');
       
       setState(() {
         _jobProgress = progress;
@@ -160,13 +167,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (_jobSteps.every((s) => s.isCompleted) && 
           _jobProgress != null && 
           _jobProgress!['job_status'] != 'completed') {
-        print('=== AUTO-UPDATING JOB STATUS TO COMPLETED ===');
+        Log.d('=== AUTO-UPDATING JOB STATUS TO COMPLETED ===');
         try {
           await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
           // Refresh jobs list to update job card
           ref.invalidate(jobsProvider);
         } catch (e) {
-          print('Error auto-updating job status: $e');
+          Log.e('Error auto-updating job status: $e');
         }
       }
       
@@ -193,7 +200,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         });
       }
     } catch (e) {
-      print('ERROR in _loadJobProgress: $e');
+      Log.e('ERROR in _loadJobProgress: $e');
       if (mounted) {
         setState(() => _isLoading = false);
         SnackBarUtils.showError(context, 'Failed to load job progress: $e');
@@ -210,33 +217,47 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       bool isCompleted = false;
 
       switch (step.id) {
+        case 'not_started':
+          // Not started step is completed when job actually starts
+          isCompleted = _jobProgress!['vehicle_collected'] == true;
+          break;
         case 'vehicle_collection':
           // Vehicle collection is completed only if vehicle_collected is true
+          // Once completed, it cannot be undone
           isCompleted = _jobProgress!['vehicle_collected'] == true;
           break;
         case 'pickup_arrival':
           // Pickup arrival is completed if any trip has pickup_arrived_at
+          // Once completed, it cannot be undone
           isCompleted = _tripProgress?.any((trip) => 
             trip['pickup_arrived_at'] != null) ?? false;
           break;
         case 'passenger_onboard':
           // Passenger onboard is completed if any trip has passenger_onboard_at
+          // Once completed, it cannot be undone
           isCompleted = _tripProgress?.any((trip) => 
             trip['passenger_onboard_at'] != null) ?? false;
           break;
         case 'dropoff_arrival':
           // Dropoff arrival is completed if any trip has dropoff_arrived_at
+          // Once completed, it cannot be undone
           isCompleted = _tripProgress?.any((trip) => 
             trip['dropoff_arrived_at'] != null) ?? false;
           break;
         case 'trip_complete':
           // Trip complete is completed if any trip has status 'completed'
+          // Once completed, it cannot be undone
           isCompleted = _tripProgress?.any((trip) => 
             trip['status'] == 'completed') ?? false;
           break;
         case 'vehicle_return':
           // Vehicle return is completed if job_closed_time is set
+          // Once completed, it cannot be undone
           isCompleted = _jobProgress!['job_closed_time'] != null;
+          break;
+        case 'completed':
+          // Job completion step is always completed when reached
+          isCompleted = true;
           break;
       }
 
@@ -244,7 +265,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       _jobSteps[i] = step.copyWith(isCompleted: isCompleted);
       
       // Debug logging for step completion
-      print('Step ${step.id}: isCompleted = $isCompleted');
+      Log.d('Step ${step.id}: isCompleted = $isCompleted');
     }
     
     // Update step titles with addresses
@@ -281,59 +302,65 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     if (_jobProgress == null) return;
 
     // Debug logging
-    print('=== DETERMINING CURRENT STEP ===');
-    print('Vehicle collected: ${_jobProgress!['vehicle_collected']}');
-    print('Current step from DB: ${_jobProgress!['current_step']}');
-    print('Trip progress: $_tripProgress');
-    print('Job closed time: ${_jobProgress!['job_closed_time']}');
+    Log.d('=== DETERMINING CURRENT STEP ===');
+    Log.d('Vehicle collected: ${_jobProgress!['vehicle_collected']}');
+    Log.d('Current step from DB: ${_jobProgress!['current_step']}');
+    Log.d('Trip progress: $_tripProgress');
+    Log.d('Job closed time: ${_jobProgress!['job_closed_time']}');
 
-    String newCurrentStep = 'vehicle_collection'; // Default
+    String newCurrentStep = 'not_started'; // Default to not started
 
-    // Priority 1: Trust the database current_step if it exists and is valid
-    if (_jobProgress!['current_step'] != null && 
+    // Priority 1: Check if job has actually started
+    if (_jobProgress!['vehicle_collected'] == false && 
+        _jobProgress!['current_step'] == null) {
+      newCurrentStep = 'not_started';
+      Log.d('Job has not started yet - showing as not started');
+    }
+    // Priority 2: Trust the database current_step if it exists and is valid
+    else if (_jobProgress!['current_step'] != null && 
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
         _jobProgress!['current_step'].toString() != 'completed') {
       newCurrentStep = _jobProgress!['current_step'].toString();
-      print('Using current step from DB: $newCurrentStep');
+      Log.d('Using current step from DB: $newCurrentStep');
     } else {
-      // Priority 2: Determine step based on completion status
-      print('No valid current_step in DB, using completion-based logic');
+      // Priority 3: Determine step based on completion status
+      Log.d('No valid current_step in DB, using completion-based logic');
       
       if (_jobProgress!['job_closed_time'] != null) {
         newCurrentStep = 'completed';
-        print('Job is completed');
+        Log.d('Job is completed');
       } else if (_tripProgress?.any((trip) => trip['status'] == 'completed') == true) {
         newCurrentStep = 'vehicle_return';
-        print('Trip completed, moving to vehicle return');
+        Log.d('Trip completed, moving to vehicle return');
       } else if (_tripProgress?.any((trip) => trip['dropoff_arrived_at'] != null) == true) {
         newCurrentStep = 'trip_complete';
-        print('Dropoff arrived, moving to trip complete');
+        Log.d('Dropoff arrived, moving to trip complete');
       } else if (_tripProgress?.any((trip) => trip['passenger_onboard_at'] != null) == true) {
         newCurrentStep = 'dropoff_arrival';
-        print('Passenger onboard, moving to dropoff arrival');
+        Log.d('Passenger onboard, moving to dropoff arrival');
       } else if (_tripProgress?.any((trip) => trip['pickup_arrived_at'] != null) == true) {
         newCurrentStep = 'passenger_onboard';
-        print('Pickup arrived, moving to passenger onboard');
+        Log.d('Pickup arrived, moving to passenger onboard');
       } else if (_jobProgress!['vehicle_collected'] == true) {
         newCurrentStep = 'pickup_arrival';
-        print('Vehicle collected, moving to pickup arrival');
+        Log.d('Vehicle collected, moving to pickup arrival');
       } else {
-        newCurrentStep = 'vehicle_collection';
-        print('Starting at vehicle collection');
+        newCurrentStep = 'not_started';
+        Log.d('Job has not started yet');
       }
     }
 
-    print('Final current step: $newCurrentStep');
+    Log.d('Final current step: $newCurrentStep');
     
     // Update the current step if it changed
     if (_currentStep != newCurrentStep) {
-      print('Step changed from $_currentStep to $newCurrentStep');
+      Log.d('Step changed from $_currentStep to $newCurrentStep');
       setState(() {
         _currentStep = newCurrentStep;
       });
     } else {
-      print('Step unchanged: $_currentStep');
+      Log.d('Step unchanged: $_currentStep');
     }
     
     // Force a rebuild of the step status to ensure UI updates
@@ -362,11 +389,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             try {
               setState(() => _isUpdating = true);
               
-              print('=== STARTING JOB ===');
-              print('Job ID: ${widget.jobId}');
-              print('Odometer: $odometerReading');
-              print('Image URL: $odometerImageUrl');
-              print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+              Log.d('=== STARTING JOB ===');
+              Log.d('Job ID: ${widget.jobId}');
+              Log.d('Odometer: $odometerReading');
+              Log.d('Image URL: $odometerImageUrl');
+              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
                
               await DriverFlowApiService.startJob(
                 int.parse(widget.jobId),
@@ -377,16 +404,16 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 gpsAccuracy: gpsAccuracy,
               );
               
-              print('=== JOB STARTED SUCCESSFULLY ===');
-              print('Now loading job progress...');
+              Log.d('=== JOB STARTED SUCCESSFULLY ===');
+              Log.d('Now loading job progress...');
               
               // Add a longer delay to ensure database update is reflected
               await Future.delayed(const Duration(milliseconds: 1000));
                
               if (mounted) {
                 await _loadJobProgress();
-                print('=== JOB PROGRESS LOADED ===');
-                print('Current step after reload: $_currentStep');
+                Log.d('=== JOB PROGRESS LOADED ===');
+                Log.d('Current step after reload: $_currentStep');
                 
                 // Force a UI rebuild to ensure step progression is visible
                 if (mounted) {
@@ -403,8 +430,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 // Force another reload to ensure we have the latest data
                 if (mounted) {
                   await _loadJobProgress();
-                  print('=== SECOND RELOAD COMPLETE ===');
-                  print('Final current step: $_currentStep');
+                  Log.d('=== SECOND RELOAD COMPLETE ===');
+                  Log.d('Final current step: $_currentStep');
                 }
                 
                 // Close the modal using the stored context
@@ -418,8 +445,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 }
               }
             } catch (e) {
-              print('=== ERROR STARTING JOB ===');
-              print('Error: $e');
+              Log.d('=== ERROR STARTING JOB ===');
+              Log.e('Error: $e');
               
               // Close the modal using the stored context
               if (modalContext.mounted) {
@@ -485,10 +512,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       // Get current location
       final position = await _getCurrentLocation();
       
-      print('=== ARRIVING AT PICKUP ===');
-      print('Job ID: ${widget.jobId}');
-      print('Trip Index: $_currentTripIndex');
-      print('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
+      Log.d('=== ARRIVING AT PICKUP ===');
+      Log.d('Job ID: ${widget.jobId}');
+      Log.d('Trip Index: $_currentTripIndex');
+      Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
       
       await DriverFlowApiService.arriveAtPickup(
         int.parse(widget.jobId),
@@ -498,22 +525,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         gpsAccuracy: position.accuracy,
       );
       
-      print('=== PICKUP ARRIVAL COMPLETED ===');
+      Log.d('=== PICKUP ARRIVAL COMPLETED ===');
       
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
         
-        // Auto-advance to next step after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _autoAdvanceToNextStep();
-          }
-        });
+        // Step completed - user must manually proceed to next step
+        // No automatic advancement - user controls progression
       }
     } catch (e) {
-      print('=== ERROR IN PICKUP ARRIVAL ===');
-      print('Error: $e');
+      Log.e('=== ERROR IN PICKUP ARRIVAL ===');
+      Log.e('Error: $e');
       
       if (mounted) {
         SnackBarUtils.showError(context, 'Failed to record pickup arrival: $e');
@@ -540,12 +563,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
         
-        // Auto-advance to next step after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _autoAdvanceToNextStep();
-          }
-        });
+        // Step completed - user must manually proceed to next step
+        // No automatic advancement - user controls progression
       }
     } catch (e) {
       if (mounted) {
@@ -578,12 +597,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
         
-        // Auto-advance to next step after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _autoAdvanceToNextStep();
-          }
-        });
+        // Step completed - user must manually proceed to next step
+        // No automatic advancement - user controls progression
       }
     } catch (e) {
       if (mounted) {
@@ -611,12 +626,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Trip completed!');
         
-        // Auto-advance to next step after a short delay
-        Future.delayed(const Duration(seconds: 2), () {
-          if (mounted) {
-            _autoAdvanceToNextStep();
-          }
-        });
+        // Step completed - user must manually proceed to next step
+        // No automatic advancement - user controls progression
       }
     } catch (e) {
       if (mounted) {
@@ -629,18 +640,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 
-  void _autoAdvanceToNextStep() {
-    // This method will be called after step completion to automatically
-    // advance to the next step in the UI
-    print('=== AUTO-ADVANCING TO NEXT STEP ===');
-    
-    // Force a rebuild to show the next step
-    if (mounted) {
-      setState(() {
-        // This will trigger a rebuild and show the next step
-      });
-    }
-  }
+
 
   Future<void> _returnVehicle() async {
     if (!mounted) return;
@@ -664,11 +664,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             try {
               setState(() => _isUpdating = true);
               
-              print('=== RETURNING VEHICLE ===');
-              print('Job ID: ${widget.jobId}');
-              print('Odometer: $odoEndReading');
-              print('Image: $pdpEndImage');
-              print('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+              Log.d('=== RETURNING VEHICLE ===');
+              Log.d('Job ID: ${widget.jobId}');
+              Log.d('Odometer: $odoEndReading');
+              Log.d('Image: $pdpEndImage');
+              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
               
               await DriverFlowApiService.returnVehicle(
                 int.parse(widget.jobId),
@@ -679,7 +679,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 gpsAccuracy: gpsAccuracy,
               );
               
-              print('=== VEHICLE RETURN COMPLETED ===');
+              Log.d('=== VEHICLE RETURN COMPLETED ===');
               
               if (mounted) {
                 await _loadJobProgress();
@@ -703,8 +703,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 }
               }
             } catch (e) {
-              print('=== ERROR IN VEHICLE RETURN ===');
-              print('Error: $e');
+              Log.e('=== ERROR IN VEHICLE RETURN ===');
+              Log.e('Error: $e');
               
               // Close the modal using the stored context
               if (modalContext.mounted) {
@@ -784,26 +784,26 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
 
   Future<void> _debugCurrentState() async {
-    print('=== DEBUG CURRENT STATE ===');
-    print('Current step: $_currentStep');
-    print('Job progress: $_jobProgress');
-    print('Trip progress: $_tripProgress');
-    print('Vehicle collected: ${_jobProgress?['vehicle_collected']}');
-    print('Current step from DB: ${_jobProgress?['current_step']}');
+    Log.d('=== DEBUG CURRENT STATE ===');
+    Log.d('Current step: $_currentStep');
+    Log.d('Job progress: $_jobProgress');
+    Log.d('Trip progress: $_tripProgress');
+    Log.d('Vehicle collected: ${_jobProgress?['vehicle_collected']}');
+    Log.d('Current step from DB: ${_jobProgress?['current_step']}');
     
     for (int i = 0; i < _jobSteps.length; i++) {
       final step = _jobSteps[i];
-      print('Step ${i + 1}: ${step.id} - Completed: ${step.isCompleted}');
+      Log.d('Step ${i + 1}: ${step.id} - Completed: ${step.isCompleted}');
     }
-    print('=== END DEBUG ===');
+    Log.d('=== END DEBUG ===');
   }
 
   Future<void> _checkAndUpdateJobStatus() async {
     if (_jobSteps.every((s) => s.isCompleted)) {
       try {
-        print('=== CHECKING JOB STATUS UPDATE ===');
-        print('All steps completed, updating job status to completed');
-        print('Current job status: ${_jobProgress?['job_status']}');
+        Log.d('=== CHECKING JOB STATUS UPDATE ===');
+        Log.d('All steps completed, updating job status to completed');
+        Log.d('Current job status: ${_jobProgress?['job_status']}');
         
         await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
         
@@ -813,17 +813,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Refresh jobs list to update job card
         ref.invalidate(jobsProvider);
         
-        print('=== JOB STATUS UPDATE COMPLETED ===');
+        Log.d('=== JOB STATUS UPDATE COMPLETED ===');
       } catch (e) {
-        print('=== ERROR UPDATING JOB STATUS ===');
-        print('Error: $e');
+        Log.e('=== ERROR UPDATING JOB STATUS ===');
+        Log.e('Error: $e');
       }
     }
   }
 
   Future<void> _forceUpdateJobStatus() async {
     try {
-      print('=== FORCE UPDATING JOB STATUS TO COMPLETED ===');
+      Log.d('=== FORCE UPDATING JOB STATUS TO COMPLETED ===');
       
       await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
       
@@ -840,10 +840,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         ),
       );
       
-      print('=== FORCE JOB STATUS UPDATE COMPLETED ===');
+      Log.d('=== FORCE JOB STATUS UPDATE COMPLETED ===');
     } catch (e) {
-      print('=== ERROR FORCE UPDATING JOB STATUS ===');
-      print('Error: $e');
+      Log.e('=== ERROR FORCE UPDATING JOB STATUS ===');
+      Log.e('Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Error updating job status: $e'),
@@ -938,69 +938,200 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
 
     switch (step.id) {
-      case 'vehicle_collection':
-        if (!step.isCompleted) {
+      case 'not_started':
+        // Check if job is confirmed before allowing start
+        if (widget.job.isConfirmed == true) {
           return _buildLuxuryButton(
             onPressed: _startJob,
             icon: Icons.play_arrow_rounded,
             label: 'Start Job',
             isPrimary: true,
           );
+        } else {
+          // Job not confirmed - show message to confirm first
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  ChoiceLuxTheme.richGold.withOpacity(0.05),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline_rounded,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 24,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Job Not Confirmed',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.richGold,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Please confirm the job before starting',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+        
+      case 'vehicle_collection':
+        if (!step.isCompleted) {
+          // Check if job is confirmed before allowing start
+          if (widget.job.isConfirmed == true) {
+            return _buildLuxuryButton(
+              onPressed: _startJob,
+              icon: Icons.play_arrow_rounded,
+              label: 'Start Job',
+              isPrimary: true,
+            );
+          } else {
+            // Job not confirmed - show message to confirm first
+            return Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    ChoiceLuxTheme.richGold.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.info_outline_rounded,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Job Not Confirmed',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.richGold,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Please confirm the job before starting',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }
         }
         break;
         
       case 'pickup_arrival':
-        if (!step.isCompleted) {
+        // Only show button if previous step (vehicle_collection) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('vehicle_collection')) {
           return _buildLuxuryButton(
             onPressed: _arriveAtPickup,
             icon: Icons.location_on_rounded,
             label: 'Arrive at Pickup',
             isPrimary: false,
           );
+        } else if (!_isPreviousStepCompleted('vehicle_collection')) {
+          return _buildStepLockedMessage('Complete vehicle collection first');
         }
         break;
         
       case 'passenger_onboard':
-        if (!step.isCompleted) {
+        // Only show button if previous step (pickup_arrival) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival')) {
           return _buildLuxuryButton(
             onPressed: _passengerOnboard,
             icon: Icons.person_add_rounded,
             label: 'Passenger Onboard',
             isPrimary: false,
           );
+        } else if (!_isPreviousStepCompleted('pickup_arrival')) {
+          return _buildStepLockedMessage('Arrive at pickup location first');
         }
         break;
         
       case 'dropoff_arrival':
-        if (!step.isCompleted) {
+        // Only show button if previous step (passenger_onboard) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('passenger_onboard')) {
           return _buildLuxuryButton(
             onPressed: _arriveAtDropoff,
             icon: Icons.location_on_rounded,
             label: 'Arrive at Dropoff',
             isPrimary: false,
           );
+        } else if (!_isPreviousStepCompleted('passenger_onboard')) {
+          return _buildStepLockedMessage('Complete passenger onboarding first');
         }
         break;
         
       case 'trip_complete':
-        if (!step.isCompleted) {
+        // Only show button if previous step (dropoff_arrival) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('dropoff_arrival')) {
           return _buildLuxuryButton(
             onPressed: _completeTrip,
             icon: Icons.check_circle_rounded,
             label: 'Complete Trip',
             isPrimary: false,
           );
+        } else if (!_isPreviousStepCompleted('dropoff_arrival')) {
+          return _buildStepLockedMessage('Arrive at dropoff location first');
         }
         break;
         
       case 'vehicle_return':
-        if (!step.isCompleted) {
+        // Only show button if previous step (trip_complete) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('trip_complete')) {
           return _buildLuxuryButton(
             onPressed: _returnVehicle,
             icon: Icons.home_rounded,
             label: 'Return Vehicle',
             isPrimary: false,
           );
+        } else if (!_isPreviousStepCompleted('trip_complete')) {
+          return _buildStepLockedMessage('Complete trip first');
         } else {
           return _buildLuxuryButton(
             onPressed: _closeJob,
@@ -1009,9 +1140,92 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             isPrimary: true,
           );
         }
+        
+      case 'completed':
+        // Job is completed, show completion message
+        return _buildStepCompletedMessage('Job completed successfully!');
     }
 
     return const SizedBox.shrink();
+  }
+
+  /// Check if a previous step is completed
+  bool _isPreviousStepCompleted(String stepId) {
+    final stepIndex = _jobSteps.indexWhere((step) => step.id == stepId);
+    if (stepIndex == -1) return false;
+    
+    // Check if the step is completed
+    return _jobSteps[stepIndex].isCompleted;
+  }
+
+  /// Build a message indicating the step is locked
+  Widget _buildStepLockedMessage(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.lock_rounded,
+            color: ChoiceLuxTheme.platinumSilver,
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 12,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build a message indicating the step is completed
+  Widget _buildStepCompletedMessage(String message) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.successColor.withOpacity(0.5),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.check_circle_rounded,
+            color: ChoiceLuxTheme.successColor,
+            size: 16,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: TextStyle(
+                color: ChoiceLuxTheme.successColor,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildLuxuryButton({
@@ -1377,7 +1591,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       PopupMenuItem<String>(
                         value: 'settings',
                         onTap: () {
-                          print('Navigate to Settings');
+                          Log.d('Navigate to Settings');
                         },
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 4),
@@ -1505,9 +1719,28 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               ],
             ),
             const SizedBox(height: 20),
-            ProgressBar(
-              progress: _progressPercentage,
+            Container(
+              width: double.infinity,
               height: 8,
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: FractionallySizedBox(
+                alignment: Alignment.centerLeft,
+                widthFactor: _progressPercentage / 100,
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        ChoiceLuxTheme.richGold,
+                        ChoiceLuxTheme.richGold.withOpacity(0.8),
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             Text(
@@ -1582,27 +1815,36 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                         height: 40,
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                                                     gradient: isCurrentStep
-                               ? LinearGradient(
-                                   colors: [
-                                     ChoiceLuxTheme.richGold,
-                                     ChoiceLuxTheme.richGold.withOpacity(0.8),
-                                   ],
-                                 )
-                               : isCompleted
-                                   ? LinearGradient(
-                                       colors: [
-                                         ChoiceLuxTheme.successColor,
-                                         ChoiceLuxTheme.successColor.withOpacity(0.8),
-                                       ],
-                                     )
-                                   : null,
+                          gradient: isCurrentStep
+                              ? (step.id == 'not_started'
+                                  ? LinearGradient(
+                                      colors: [
+                                        ChoiceLuxTheme.infoColor,
+                                        ChoiceLuxTheme.infoColor.withOpacity(0.8),
+                                      ],
+                                    )
+                                  : LinearGradient(
+                                      colors: [
+                                        ChoiceLuxTheme.richGold,
+                                        ChoiceLuxTheme.richGold.withOpacity(0.8),
+                                      ],
+                                    ))
+                              : isCompleted
+                                  ? LinearGradient(
+                                      colors: [
+                                        ChoiceLuxTheme.successColor,
+                                        ChoiceLuxTheme.successColor.withOpacity(0.8),
+                                      ],
+                                    )
+                                  : null,
                           color: isCurrentStep || isCompleted
                               ? null
                               : ChoiceLuxTheme.charcoalGray,
                           border: Border.all(
                             color: isCurrentStep
-                                ? ChoiceLuxTheme.richGold
+                                ? (step.id == 'not_started' 
+                                    ? ChoiceLuxTheme.infoColor 
+                                    : ChoiceLuxTheme.richGold)
                                 : isCompleted
                                     ? ChoiceLuxTheme.successColor
                                     : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
@@ -1613,9 +1855,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                           isCompleted
                               ? Icons.check_rounded
                               : step.icon,
-                          color: isCurrentStep || isCompleted
+                          color: isCompleted
                               ? Colors.black
-                              : ChoiceLuxTheme.platinumSilver,
+                              : isCurrentStep
+                                  ? (step.id == 'not_started' ? Colors.white : Colors.black)
+                                  : ChoiceLuxTheme.platinumSilver,
                           size: 20,
                         ),
                       ),
@@ -1632,7 +1876,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                   step.title,
                                   style: TextStyle(
                                     color: isCurrentStep
-                                        ? ChoiceLuxTheme.richGold
+                                        ? (step.id == 'not_started' 
+                                            ? ChoiceLuxTheme.infoColor 
+                                            : ChoiceLuxTheme.richGold)
                                         : isCompleted
                                             ? ChoiceLuxTheme.successColor
                                             : ChoiceLuxTheme.softWhite,
@@ -1648,12 +1894,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: ChoiceLuxTheme.richGold,
+                                      color: step.id == 'not_started' 
+                                          ? ChoiceLuxTheme.infoColor
+                                          : ChoiceLuxTheme.richGold,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
-                                    child: const Text(
-                                      'Current',
-                                      style: TextStyle(
+                                    child: Text(
+                                      step.id == 'not_started' ? 'Not Started' : 'Current',
+                                      style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 10,
                                         fontWeight: FontWeight.w600,
@@ -1807,6 +2055,112 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       (step) => step.id == _currentStep,
       orElse: () => _jobSteps.first,
     );
+
+    // Special handling for not started jobs
+    if (_currentStep == 'not_started') {
+      return Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              ChoiceLuxTheme.infoColor.withOpacity(0.1),
+              ChoiceLuxTheme.infoColor.withOpacity(0.05),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: ChoiceLuxTheme.infoColor.withOpacity(0.3),
+            width: 1,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: ChoiceLuxTheme.infoColor.withOpacity(0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  const Icon(
+                    Icons.schedule_rounded,
+                    color: ChoiceLuxTheme.infoColor,
+                    size: 24,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Job Status',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.3,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          ChoiceLuxTheme.infoColor,
+                          ChoiceLuxTheme.infoColor.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.schedule,
+                      color: Colors.black,
+                      size: 24,
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.job.isConfirmed == true 
+                              ? 'Job Ready to Start'
+                              : 'Job Not Confirmed',
+                          style: const TextStyle(
+                            color: ChoiceLuxTheme.infoColor,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          widget.job.isConfirmed == true
+                              ? 'Driver has confirmed the job and can now start'
+                              : 'Driver must confirm the job before starting',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 16),
+                  _buildActionButton(currentStep),
+                ],
+              ),
+            ],
+          ),
+        ),
+      );
+    }
 
     return Container(
       decoration: BoxDecoration(

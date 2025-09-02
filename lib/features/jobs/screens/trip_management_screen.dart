@@ -56,7 +56,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   Future<void> _loadTrips() async {
     setState(() => _isLoading = true);
     try {
-      await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
+      await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).fetchTripsForJob(widget.jobId.toString());
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -152,9 +152,9 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
       );
       
       if (_editingTrip != null) {
-        await ref.read(tripsProvider.notifier).updateTrip(trip);
+        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).updateTrip(trip);
       } else {
-        await ref.read(tripsProvider.notifier).addTrip(trip);
+        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).addTrip(trip);
       }
       
       if (mounted) {
@@ -212,7 +212,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     
     if (confirmed == true) {
       try {
-        await ref.read(tripsProvider.notifier).deleteTrip(trip.id, widget.jobId);
+        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).deleteTrip(trip.id, widget.jobId.toString());
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -243,7 +243,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   }
   
   Future<void> _confirmTrips() async {
-    final trips = ref.read(tripsProvider);
+    final trips = ref.watch(tripsProvider(int.parse(widget.jobId)));
     if (trips.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -467,8 +467,8 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   
   @override
   Widget build(BuildContext context) {
-    final trips = ref.watch(tripsProvider);
-    final totalAmount = ref.watch(tripsProvider.notifier).totalAmount;
+    final trips = ref.watch(tripsProvider(int.parse(widget.jobId)));
+    final totalAmount = ref.watch(tripsProvider(int.parse(widget.jobId)).notifier).totalAmount;
     final isMobile = MediaQuery.of(context).size.width < 768;
     
     // Calculate completion percentage based on trips

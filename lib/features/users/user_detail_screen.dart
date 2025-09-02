@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class UserDetailScreen extends ConsumerWidget {
   final String userId;
@@ -56,21 +57,25 @@ class UserDetailScreen extends ConsumerWidget {
                 canDeactivate: canDeactivate,
                 onDeactivate: canDeactivate
                     ? () async {
-                        print('Deactivate button clicked for user: ${user!.id}');
+                        Log.d('Deactivate button clicked for user: ${user!.id}');
                         try {
-                          await usersNotifier.deactivateUser(user!.id);
-                          print('User deactivated successfully');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('User deactivated')),
-                          );
+                          await ref.read(usersProvider.notifier).deactivateUser(user!.id);
+                          Log.d('User deactivated successfully');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('User deactivated successfully')),
+                            );
+                          }
                         } catch (error) {
-                          print('Error deactivating user: $error');
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text('Error deactivating user: $error'),
-                              backgroundColor: Colors.red,
-                            ),
-                          );
+                          Log.e('Error deactivating user: $error');
+                          if (context.mounted) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Error deactivating user: $error'),
+                                backgroundColor: Colors.red,
+                              ),
+                            );
+                          }
                         }
                       }
                     : null,

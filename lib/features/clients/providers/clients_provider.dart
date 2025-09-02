@@ -1,131 +1,294 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
-// Provider for SupabaseService
-final supabaseServiceProvider = Provider<SupabaseService>((ref) {
-  return SupabaseService.instance;
-});
+/// Notifier for managing clients state using AsyncNotifier
+class ClientsNotifier extends AsyncNotifier<List<Client>> {
+  late final ClientsRepository _clientsRepository;
 
-// Provider for clients list (active only)
-final clientsProvider = FutureProvider<List<Client>>((ref) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final clientsData = await supabaseService.getActiveClients();
-  return clientsData.map((json) => Client.fromJson(json)).toList();
-});
-
-// Provider for inactive clients
-final inactiveClientsProvider = FutureProvider<List<Client>>((ref) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final clientsData = await supabaseService.getInactiveClients();
-  return clientsData.map((json) => Client.fromJson(json)).toList();
-});
-
-// Provider for client search (active only)
-final clientSearchProvider = FutureProvider.family<List<Client>, String>((ref, query) async {
-  if (query.isEmpty) {
-    return ref.read(clientsProvider).value ?? [];
-  }
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final clientsData = await supabaseService.searchClients(query);
-  // Filter out inactive clients from search results
-  final activeClients = clientsData
-      .where((json) => json['status'] != 'inactive')
-      .map((json) => Client.fromJson(json))
-      .toList();
-  return activeClients;
-});
-
-// Provider for single client
-final clientProvider = FutureProvider.family<Client?, String>((ref, clientId) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  final clientData = await supabaseService.getClient(clientId);
-  return clientData != null ? Client.fromJson(clientData) : null;
-});
-
-// Provider for client with agents
-final clientWithAgentsProvider = FutureProvider.family<Map<String, dynamic>?, String>((ref, clientId) async {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  return await supabaseService.getClientWithAgents(clientId);
-});
-
-// Notifier for client operations
-class ClientsNotifier extends StateNotifier<AsyncValue<List<Client>>> {
-  final SupabaseService _supabaseService;
-
-  ClientsNotifier(this._supabaseService) : super(const AsyncValue.loading()) {
-    _loadClients();
+  @override
+  Future<List<Client>> build() async {
+    _clientsRepository = ref.watch(clientsRepositoryProvider);
+    return _fetchClients();
   }
 
-  Future<void> _loadClients() async {
+  /// Fetch all clients from the repository
+  Future<List<Client>> _fetchClients() async {
     try {
-      state = const AsyncValue.loading();
-      final clientsData = await _supabaseService.getActiveClients();
-      final clients = clientsData.map((json) => Client.fromJson(json)).toList();
-      state = AsyncValue.data(clients);
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      Log.d('Fetching clients...');
+      
+      final result = await _clientsRepository.fetchClients();
+      
+      if (result.isSuccess) {
+        final clients = result.data!;
+        Log.d('Fetched ${clients.length} clients successfully');
+        return clients;
+      } else {
+        Log.e('Error fetching clients: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching clients: $error');
+      rethrow;
     }
   }
 
+  /// Add a new client
   Future<void> addClient(Client client) async {
     try {
-      await _supabaseService.createClient(client.toJson());
-      await _loadClients(); // Refresh the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      final result = await _clientsRepository.createClient(client);
+      if (result.isSuccess) {
+        ref.invalidateSelf(); // Refresh the list
+      } else {
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error adding client: $error');
+      rethrow;
     }
   }
 
+  /// Update an existing client
   Future<void> updateClient(Client client) async {
     try {
-      await _supabaseService.updateClient(
-        clientId: client.id.toString(),
-        data: client.toJson(),
-      );
-      await _loadClients(); // Refresh the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      final result = await _clientsRepository.updateClient(client);
+      if (result.isSuccess) {
+        ref.invalidateSelf(); // Refresh the list
+      } else {
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error updating client: $error');
+      rethrow;
     }
   }
 
-  // Soft delete: Move client to inactive status
+  /// Soft delete: Move client to inactive status
   Future<void> deleteClient(String clientId) async {
     try {
-      await _supabaseService.deleteClient(clientId); // This now does soft delete
-      await _loadClients(); // Refresh the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      final result = await _clientsRepository.deleteClient(clientId);
+      if (result.isSuccess) {
+        ref.invalidateSelf(); // Refresh the list
+      } else {
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error deleting client: $error');
+      rethrow;
     }
   }
 
-  // Restore inactive client
+  /// Restore inactive client
   Future<void> restoreClient(String clientId) async {
     try {
-      await _supabaseService.restoreClient(clientId);
-      await _loadClients(); // Refresh the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      final result = await _clientsRepository.restoreClient(clientId);
+      if (result.isSuccess) {
+        ref.invalidateSelf(); // Refresh the list
+      } else {
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error restoring client: $error');
+      rethrow;
     }
   }
 
-  // Permanently delete (use with extreme caution)
+  /// Permanently delete (use with extreme caution)
   Future<void> permanentlyDeleteClient(String clientId) async {
     try {
-      await _supabaseService.permanentlyDeleteClient(clientId);
-      await _loadClients(); // Refresh the list
-    } catch (error, stackTrace) {
-      state = AsyncValue.error(error, stackTrace);
+      final result = await _clientsRepository.permanentlyDeleteClient(clientId);
+      if (result.isSuccess) {
+        ref.invalidateSelf(); // Refresh the list
+      } else {
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error permanently deleting client: $error');
+      rethrow;
     }
   }
 
+  /// Refresh clients data
   Future<void> refresh() async {
-    await _loadClients();
+    ref.invalidateSelf();
   }
 }
 
-// Provider for clients notifier
-final clientsNotifierProvider = StateNotifierProvider<ClientsNotifier, AsyncValue<List<Client>>>((ref) {
-  final supabaseService = ref.read(supabaseServiceProvider);
-  return ClientsNotifier(supabaseService);
+/// Notifier for managing inactive clients using AsyncNotifier
+class InactiveClientsNotifier extends AsyncNotifier<List<Client>> {
+  late final ClientsRepository _clientsRepository;
+
+  @override
+  Future<List<Client>> build() async {
+    _clientsRepository = ref.watch(clientsRepositoryProvider);
+    return _fetchInactiveClients();
+  }
+
+  /// Fetch inactive clients from the repository
+  Future<List<Client>> _fetchInactiveClients() async {
+    try {
+      Log.d('Fetching inactive clients...');
+      
+      final result = await _clientsRepository.fetchInactiveClients();
+      
+      if (result.isSuccess) {
+        final clients = result.data!;
+        Log.d('Fetched ${clients.length} inactive clients successfully');
+        return clients;
+      } else {
+        Log.e('Error fetching inactive clients: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching inactive clients: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh inactive clients data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Notifier for managing client search using AsyncNotifier
+class ClientSearchNotifier extends AsyncNotifier<List<Client>> {
+  late final ClientsRepository _clientsRepository;
+  late final String query;
+
+  @override
+  Future<List<Client>> build() async {
+    _clientsRepository = ref.watch(clientsRepositoryProvider);
+    query = ref.arg;
+    
+    if (query.isEmpty) {
+      // If query is empty, return all active clients
+      final clientsNotifier = ref.read(clientsProvider.notifier);
+      return clientsNotifier.state.value ?? [];
+    }
+    
+    return _searchClients();
+  }
+
+  /// Search clients by query
+  Future<List<Client>> _searchClients() async {
+    try {
+      Log.d('Searching clients with query: $query');
+      
+      final result = await _clientsRepository.searchClients(query);
+      
+      if (result.isSuccess) {
+        // Filter out inactive clients from search results
+        final activeClients = result.data!
+            .where((client) => client.status != 'inactive')
+            .toList();
+        Log.d('Found ${activeClients.length} active clients for query: $query');
+        return activeClients;
+      } else {
+        Log.e('Error searching clients: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error searching clients: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh search results
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Notifier for managing single client using AsyncNotifier
+class SingleClientNotifier extends AsyncNotifier<Client?> {
+  late final ClientsRepository _clientsRepository;
+  late final String clientId;
+
+  @override
+  Future<Client?> build() async {
+    _clientsRepository = ref.watch(clientsRepositoryProvider);
+    clientId = ref.arg;
+    return _fetchClientById();
+  }
+
+  /// Fetch client by ID
+  Future<Client?> _fetchClientById() async {
+    try {
+      Log.d('Fetching client by ID: $clientId');
+      
+      final result = await _clientsRepository.fetchClientById(clientId);
+      
+      if (result.isSuccess) {
+        Log.d('Fetched client successfully: ${result.data?.companyName}');
+        return result.data;
+      } else {
+        Log.e('Error fetching client by ID: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching client by ID: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh client data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Notifier for managing client with agents using AsyncNotifier
+class ClientWithAgentsNotifier extends AsyncNotifier<Map<String, dynamic>?> {
+  late final ClientsRepository _clientsRepository;
+  late final String clientId;
+
+  @override
+  Future<Map<String, dynamic>?> build() async {
+    _clientsRepository = ref.watch(clientsRepositoryProvider);
+    clientId = ref.arg;
+    return _fetchClientWithAgents();
+  }
+
+  /// Fetch client with agents
+  Future<Map<String, dynamic>?> _fetchClientWithAgents() async {
+    try {
+      Log.d('Fetching client with agents: $clientId');
+      
+      final result = await _clientsRepository.fetchClientWithAgents(clientId);
+      
+      if (result.isSuccess) {
+        Log.d('Fetched client with agents successfully');
+        return result.data;
+      } else {
+        Log.e('Error fetching client with agents: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching client with agents: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh client with agents data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+}
+
+/// Provider for ClientsNotifier using AsyncNotifierProvider
+final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(() => ClientsNotifier());
+
+/// Provider for inactive clients using AsyncNotifierProvider
+final inactiveClientsProvider = AsyncNotifierProvider<InactiveClientsNotifier, List<Client>>(() => InactiveClientsNotifier());
+
+/// Provider for client search using AsyncNotifierProvider.family
+final clientSearchProvider = AsyncNotifierProvider.family<ClientSearchNotifier, List<Client>, String>((query) => ClientSearchNotifier());
+
+/// Provider for single client using AsyncNotifierProvider.family
+final clientProvider = AsyncNotifierProvider.family<SingleClientNotifier, Client?, String>((clientId) => SingleClientNotifier());
+
+/// Provider for client with agents using AsyncNotifierProvider.family
+final clientWithAgentsProvider = AsyncNotifierProvider.family<ClientWithAgentsNotifier, Map<String, dynamic>?, String>((clientId) => ClientWithAgentsNotifier()); 
 }); 

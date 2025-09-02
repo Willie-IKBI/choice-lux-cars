@@ -15,6 +15,7 @@ import 'package:choice_lux_cars/features/notifications/providers/notification_pr
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/status_pill.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Centralized constants for JobCard widget to eliminate magic numbers
 class JobCardConstants {
@@ -650,8 +651,13 @@ class JobCard extends ConsumerWidget {
         // Action buttons row
         Row(
           children: [
-            // Driver Flow Button - Show only for assigned driver
-            if (isAssignedDriver) ...[
+            // Driver Flow Button - Show only for assigned driver and when appropriate
+            if (DriverFlowUtils.shouldShowDriverFlowButton(
+              currentUserId: ref.read(currentUserProfileProvider)?.id,
+              jobDriverId: job.driverId,
+              jobStatus: job.statusEnum,
+              isJobConfirmed: isConfirmed,
+            )) ...[
               Expanded(
                 child: ElevatedButton.icon(
                   key: Key('driverFlowBtn_${job.id}'),
@@ -906,15 +912,15 @@ class JobCard extends ConsumerWidget {
 
   // Handle driver confirmation with safe integer parsing and proper error handling
   Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref) async {
-    print('=== JOB CARD: _handleDriverConfirmation() called ===');
-    print('Job ID: ${job.id}');
-    print('Job Status: ${job.status}');
-    print('Is Confirmed: ${job.isConfirmed}');
-    print('Driver Confirmation: ${job.driverConfirmation}');
+    Log.d('=== JOB CARD: _handleDriverConfirmation() called ===');
+    Log.d('Job ID: ${job.id}');
+    Log.d('Job Status: ${job.status}');
+    Log.d('Is Confirmed: ${job.isConfirmed}');
+    Log.d('Driver Confirmation: ${job.driverConfirmation}');
     
     final jobId = int.tryParse(job.id);
     if (jobId == null) {
-      print('Invalid job ID: ${job.id}');
+      Log.d('Invalid job ID: ${job.id}');
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -947,10 +953,10 @@ class JobCard extends ConsumerWidget {
         ),
       );
       
-      print('Calling jobsProvider.confirmJob from job card...');
+      Log.d('Calling jobsProvider.confirmJob from job card...');
       // Use the proper jobsProvider.confirmJob method
       await ref.read(jobsProvider.notifier).confirmJob(job.id, ref: ref);
-      print('jobsProvider.confirmJob completed from job card');
+      Log.d('jobsProvider.confirmJob completed from job card');
       
       if (!context.mounted) return;
       
@@ -973,10 +979,13 @@ class JobCard extends ConsumerWidget {
       await ref.read(jobsProvider.notifier).refreshJob(job.id);
       ref.invalidate(notificationProvider);
       
+      // Also refresh all jobs to help with state synchronization
+      await ref.read(jobsProvider.notifier).fetchJobs();
+      
       // Optional: Navigate to job progress after confirmation
       // context.go('/jobs/${job.id}/progress');
     } catch (e) {
-      print('Error in job card _handleDriverConfirmation: $e');
+      Log.e('Error in job card _handleDriverConfirmation: $e');
       // Error handling driver confirmation
       if (!context.mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(

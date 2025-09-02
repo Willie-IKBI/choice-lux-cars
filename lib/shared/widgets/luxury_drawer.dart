@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class LuxuryDrawer extends ConsumerStatefulWidget {
   const LuxuryDrawer({super.key});
@@ -93,7 +94,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.settings_outlined,
                           title: 'Settings',
                           onTap: () {
-                            debugPrint('Navigate to Settings');
+                            Log.d('Navigate to Settings');
+                            Navigator.pop(context);
+                            context.push('/settings');
                           },
                         ),
                       ],
@@ -107,14 +110,18 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.business_outlined,
                           title: 'About Choice Lux Cars',
                           onTap: () {
-                            debugPrint('Navigate to About');
+                            Log.d('Navigate to About');
+                            Navigator.pop(context);
+                            context.push('/about');
                           },
                         ),
                                               _buildMobileMenuItem(
                           icon: Icons.contact_support_outlined,
                           title: 'Contact Information',
                           onTap: () {
-                            debugPrint('Navigate to Contact');
+                            Log.d('Navigate to Contact');
+                            Navigator.pop(context);
+                            context.push('/contact');
                           },
                         ),
                     ],
@@ -130,21 +137,27 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         icon: Icons.privacy_tip_outlined,
                         title: 'Privacy Policy',
                         onTap: () {
-                          print('Navigate to Privacy Policy');
+                          Log.d('Navigate to Privacy Policy');
+                          Navigator.pop(context);
+                          context.push('/privacy-policy');
                         },
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.description_outlined,
                         title: 'Terms of Service',
                         onTap: () {
-                          print('Navigate to Terms of Service');
+                          Log.d('Navigate to Terms of Service');
+                          Navigator.pop(context);
+                          context.push('/terms-of-service');
                         },
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
                         onTap: () {
-                          print('Navigate to Help & Support');
+                          Log.d('Navigate to Help & Support');
+                          Navigator.pop(context);
+                          context.push('/help-support');
                         },
                       ),
                     ],
@@ -166,14 +179,18 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.admin_panel_settings_outlined,
                           title: 'System Settings',
                           onTap: () {
-                            print('Navigate to System Settings');
+                            Log.d('Navigate to System Settings');
+                            Navigator.pop(context);
+                            context.push('/system-settings');
                           },
                         ),
                         _buildMobileMenuItem(
                           icon: Icons.analytics_outlined,
                           title: 'Reports & Analytics',
                           onTap: () {
-                            print('Navigate to Reports & Analytics');
+                            Log.d('Navigate to Reports & Analytics');
+                            Navigator.pop(context);
+                            context.push('/reports-analytics');
                           },
                         ),
                       ],
@@ -191,14 +208,16 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         title: 'App Version',
                         subtitle: 'Version 1.0.0',
                         onTap: () {
-                          print('Show App Version Info');
+                          Log.d('Show App Version Info');
+                          _showVersionInfo(context);
                         },
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.update_outlined,
                         title: 'Check for Updates',
                         onTap: () {
-                          print('Check for Updates');
+                          Log.d('Check for Updates');
+                          _checkForUpdates(context);
                         },
                       ),
                     ],
@@ -259,7 +278,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Settings',
                             subtitle: 'App preferences and notifications',
                             onTap: () {
-                              print('Navigate to Settings');
+                              Log.d('Navigate to Settings');
+                              Navigator.pop(context);
+                              context.push('/settings');
                             },
                           ),
                         ],
@@ -274,7 +295,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'About Choice Lux Cars',
                             subtitle: 'Learn about our company',
                             onTap: () {
-                              print('Navigate to About');
+                              Log.d('Navigate to About');
+                              Navigator.pop(context);
+                              context.push('/about');
                             },
                           ),
                           _buildMenuItem(
@@ -282,7 +305,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Contact Information',
                             subtitle: 'Get in touch with us',
                             onTap: () {
-                              print('Navigate to Contact');
+                              Log.d('Navigate to Contact');
+                              Navigator.pop(context);
+                              context.push('/contact');
                             },
                           ),
                         ],
@@ -297,7 +322,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Privacy Policy',
                             subtitle: 'How we protect your data',
                             onTap: () {
-                              print('Navigate to Privacy Policy');
+                              Log.d('Navigate to Privacy Policy');
+                              Navigator.pop(context);
+                              context.push('/privacy-policy');
                             },
                           ),
                           _buildMenuItem(
@@ -305,7 +332,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Terms of Service',
                             subtitle: 'Our terms and conditions',
                             onTap: () {
-                              print('Navigate to Terms of Service');
+                              Log.d('Navigate to Terms of Service');
+                              Navigator.pop(context);
+                              context.push('/terms-of-service');
                             },
                           ),
                           _buildMenuItem(
@@ -313,7 +342,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Help & Support',
                             subtitle: 'Get help and support',
                             onTap: () {
-                              print('Navigate to Help & Support');
+                              Log.d('Navigate to Help & Support');
+                              Navigator.pop(context);
+                              context.push('/help-support');
                             },
                           ),
                         ],
@@ -337,7 +368,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'System Settings',
                             subtitle: 'Configure system options',
                             onTap: () {
-                              print('Navigate to System Settings');
+                              Log.d('Navigate to System Settings');
+                              Navigator.pop(context);
+                              context.push('/system-settings');
                             },
                           ),
                           _buildMenuItem(
@@ -345,7 +378,9 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             title: 'Reports & Analytics',
                             subtitle: 'View business insights',
                             onTap: () {
-                              print('Navigate to Reports & Analytics');
+                              Log.d('Navigate to Reports & Analytics');
+                              Navigator.pop(context);
+                              context.push('/reports-analytics');
                             },
                           ),
                         ],
@@ -361,7 +396,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           title: 'App Information',
                           subtitle: 'Version 1.0.0',
                           onTap: () {
-                            print('Show App Version Info');
+                            Log.d('Show App Version Info');
+                            _showVersionInfo(context);
                           },
                         ),
                         _buildMenuItem(
@@ -369,7 +405,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           title: 'Check for Updates',
                           subtitle: 'Update the application',
                           onTap: () {
-                            print('Check for Updates');
+                            Log.d('Check for Updates');
+                            _checkForUpdates(context);
                           },
                         ),
                       ],
@@ -1005,5 +1042,104 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     }
   }
 
+  void _showVersionInfo(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: ChoiceLuxTheme.charcoalGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.info_outline,
+                color: ChoiceLuxTheme.richGold,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'App Version',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Version 1.0.0',
+            style: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.richGold,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _checkForUpdates(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: ChoiceLuxTheme.charcoalGray,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Icon(
+                Icons.update_outlined,
+                color: ChoiceLuxTheme.richGold,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Check for Updates',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          content: Text(
+            'Checking for updates...',
+            style: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver,
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(
+                'OK',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.richGold,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
 } 

@@ -1,4 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class NotificationPreferencesService {
   final SupabaseClient _supabase = Supabase.instance.client;
@@ -19,7 +21,7 @@ class NotificationPreferencesService {
 
       return response ?? _getDefaultPreferences();
     } catch (e) {
-      print('Error fetching notification preferences: $e');
+      Log.e('Error fetching notification preferences: $e');
       return _getDefaultPreferences();
     }
   }
@@ -37,13 +39,13 @@ class NotificationPreferencesService {
         .upsert({
           'user_id': currentUser.id,
           ...preferences,
-          'updated_at': DateTime.now().toIso8601String(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
         });
 
-      print('Notification preferences saved successfully');
+      Log.d('Notification preferences saved successfully');
     } catch (e) {
-      print('Error saving notification preferences: $e');
-      rethrow;
+      Log.e('Error saving notification preferences: $e');
+      throw e;
     }
   }
 
@@ -69,10 +71,10 @@ class NotificationPreferencesService {
           },
         });
 
-      print('Test notification sent successfully');
+      Log.d('Test notification sent successfully');
     } catch (e) {
-      print('Error sending test notification: $e');
-      rethrow;
+      Log.e('Error sending test notification: $e');
+      throw e;
     }
   }
 
@@ -89,10 +91,10 @@ class NotificationPreferencesService {
         .delete()
         .eq('user_id', currentUser.id);
 
-      print('All notifications cleared successfully');
+      Log.d('All notifications cleared successfully');
     } catch (e) {
-      print('Error clearing notifications: $e');
-      rethrow;
+      Log.e('Error clearing notifications: $e');
+      throw e;
     }
   }
 

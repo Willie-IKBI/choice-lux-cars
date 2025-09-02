@@ -1,71 +1,52 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'dart:ui';
-
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/app/app.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
-
-import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/constants.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Set up comprehensive global error handling
-  FlutterError.onError = (FlutterErrorDetails details) {
-    // Log error without showing red screen
-    debugPrint('Flutter Error: ${details.exception}');
-    debugPrint('Stack trace: ${details.stack}');
-  };
-  
-  // Handle errors that occur during async operations
-  PlatformDispatcher.instance.onError = (error, stack) {
-    // Log error without showing red screen
-    debugPrint('Platform Error: $error');
-    debugPrint('Stack trace: $stack');
-    return true;
-  };
-  
   try {
+    Log.d('Initializing Choice Lux Cars app...');
+    
     // Initialize Supabase
-    await SupabaseService.initialize();
-    debugPrint('Supabase initialized successfully');
-  } catch (error) {
-    debugPrint('Error initializing Supabase: $error');
-    debugPrint('Continuing with app initialization...');
-    // Continue with app initialization even if Supabase fails
-  }
-
-  bool firebaseInitialized = false;
-  try {
-    // Initialize Firebase
-    await FirebaseService.initialize();
-    debugPrint('Firebase initialized successfully');
-    firebaseInitialized = true;
-  } catch (error) {
-    debugPrint('Error initializing Firebase: $error');
-    debugPrint('Continuing with app initialization without Firebase...');
-    // Continue with app initialization even if Firebase fails
-  }
-
-  // Only set up Firebase messaging if Firebase was successfully initialized
-  if (firebaseInitialized) {
+    await Supabase.initialize(
+      url: AppConstants.supabaseUrl,
+      anonKey: AppConstants.supabaseAnonKey,
+    );
+    Log.d('Supabase initialized successfully');
+    
+    // Initialize Firebase (optional, won't crash if fails)
     try {
-      // Set up background message handler
-      FirebaseMessaging.onBackgroundMessage(FirebaseService.firebaseMessagingBackgroundHandler);
-      
-      // Set up Firebase service listeners
-      FirebaseService.instance.setupTokenRefreshListener();
-      FirebaseService.instance.setupForegroundMessageHandler();
+      await FirebaseService.initialize();
+      Log.d('Firebase initialized successfully');
     } catch (error) {
-      debugPrint('Error setting up Firebase messaging: $error');
-      debugPrint('Continuing without Firebase messaging...');
+      Log.e('Firebase initialization failed: $error');
+      Log.d('Continuing without Firebase...');
     }
+    
+    Log.d('App initialization completed successfully');
+    
+    runApp(
+      const ProviderScope(
+        child: ChoiceLuxCarsApp(),
+      ),
+    );
+  } catch (error) {
+    Log.e('Failed to initialize app: $error');
+    // Show error screen or fallback
+    runApp(
+      MaterialApp(
+        home: Scaffold(
+          body: Center(
+            child: Text('Failed to initialize app: $error'),
+          ),
+        ),
+      ),
+    );
   }
-  
-  runApp(
-    const ProviderScope(
-      child: ChoiceLuxCarsApp(),
-    ),
-  );
 }

@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -97,9 +98,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           password: _passwordController.text,
         );
       } catch (e) {
-        print('Unexpected sign in error in UI: $e');
-        // Ensure the error is properly handled by the auth provider
-        // The auth provider should have already set the error state
+        Log.e('Unexpected sign in error in UI: $e');
+        // Show a generic error message
+        _showErrorSnackBar('An unexpected error occurred. Please try again.');
       }
     }
   }
@@ -194,23 +195,20 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
 
     // Handle authentication state changes with error protection
     ref.listen(authProvider, (previous, next) {
-      try {
-        print('Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}');
-        print('Next error: ${next.error}');
+      if (next.hasError) {
+        Log.d('Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}');
+        Log.d('Next error: ${next.error}');
         
-        // Navigate to dashboard if authenticated
-        if (next.hasValue && next.value != null) {
-          context.go('/');
-        }
+        // Clear any existing error messages
+        _clearErrorMessages();
         
-        // Trigger shake animation on error
-        if (next.hasError && (previous == null || !previous.hasError)) {
-          _triggerShakeAnimation();
+        // Show error message
+        if (next.error != null) {
+          _showErrorSnackBar(next.error.toString());
         }
-      } catch (e) {
-        print('Error in auth state listener: $e');
-        // Don't let the error propagate
       }
+    }, onError: (error, stackTrace) {
+      Log.e('Error in auth state listener: $error');
     });
 
     return Scaffold(

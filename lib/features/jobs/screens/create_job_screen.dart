@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart'
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
@@ -76,7 +77,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   @override
   void initState() {
     super.initState();
-    print('CreateJobScreen initialized');
+    Log.d('CreateJobScreen initialized');
     _loadData();
     
     // If editing, load the job data
@@ -255,7 +256,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       } else {
         // Create new job
         final job = Job(
-          id: '', // Let database auto-generate the ID
+          id: 0, // Let database auto-generate the ID
           clientId: _selectedClientId!,
           agentId: _selectedAgentId,
           vehicleId: _selectedVehicleId!,

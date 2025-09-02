@@ -3,6 +3,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class FirebaseService {
   static FirebaseService? _instance;
@@ -29,22 +30,22 @@ class FirebaseService {
           appId: AppConstants.firebaseAppId,
         );
       } else {
-        // Mobile configuration (Android/iOS)
-        options = const FirebaseOptions(
-          apiKey: 'AIzaSyDYZG-hSZIbfhktZmErbpIXWqNrFC_lLyY',
-          appId: '1:522491134348:android:3035a4d8b64c22d4b7d6a9',
-          messagingSenderId: '522491134348',
-          projectId: 'choice-lux-cars-8d510',
-          storageBucket: 'choice-lux-cars-8d510.firebasestorage.app',
-        );
+                  // Mobile configuration (Android/iOS)
+          options = const FirebaseOptions(
+            apiKey: AppConstants.firebaseApiKey,
+            appId: AppConstants.firebaseAppId,
+            messagingSenderId: AppConstants.firebaseMessagingSenderId,
+            projectId: AppConstants.firebaseProjectId,
+            storageBucket: AppConstants.firebaseStorageBucket,
+          );
       }
 
       await Firebase.initializeApp(options: options);
-      print('Firebase initialized successfully for ${kIsWeb ? 'Web' : 'Mobile'}');
+      Log.d('Firebase initialized successfully for ${kIsWeb ? 'Web' : 'Mobile'}');
     } catch (error) {
-      print('Failed to initialize Firebase: $error');
+      Log.e('Failed to initialize Firebase: $error');
       // Don't rethrow Firebase initialization errors to prevent app crashes
-      print('Continuing without Firebase...');
+      Log.d('Continuing without Firebase...');
     }
   }
 
@@ -53,7 +54,7 @@ class FirebaseService {
     try {
       // Skip FCM on web during development
       if (kIsWeb) {
-        print('Skipping FCM permissions on web');
+        Log.d('Skipping FCM permissions on web');
         return false;
       }
 
@@ -67,10 +68,10 @@ class FirebaseService {
         sound: true,
       );
 
-      print('User granted permission: ${settings.authorizationStatus}');
+      Log.d('User granted permission: ${settings.authorizationStatus}');
       return settings.authorizationStatus == AuthorizationStatus.authorized;
     } catch (error) {
-      print('Error requesting notification permissions: $error');
+      Log.e('Error requesting notification permissions: $error');
       return false;
     }
   }
@@ -80,15 +81,15 @@ class FirebaseService {
     try {
       // Skip FCM on web during development
       if (kIsWeb) {
-        print('Skipping FCM token on web');
+        Log.d('Skipping FCM token on web');
         return null;
       }
 
       String? token = await _messaging.getToken();
-      print('FCM Token: $token');
+      Log.d('FCM Token: $token');
       return token;
     } catch (error) {
-      print('Error getting FCM token: $error');
+      Log.e('Error getting FCM token: $error');
       return null;
     }
   }
@@ -98,7 +99,7 @@ class FirebaseService {
     try {
       // Skip FCM on web during development
       if (kIsWeb) {
-        print('Skipping FCM token update on web');
+        Log.d('Skipping FCM token update on web');
         return;
       }
 
@@ -110,10 +111,10 @@ class FirebaseService {
             'fcm_token': token,
           },
         );
-        print('FCM token updated in profile for user: $userId');
+        Log.d('FCM token updated in profile for user: $userId');
       }
     } catch (error) {
-      print('Error updating FCM token in profile: $error');
+      Log.e('Error updating FCM token in profile: $error');
     }
   }
 
@@ -137,7 +138,7 @@ class FirebaseService {
       String? storedToken = profile['fcm_token'];
       return storedToken != currentToken;
     } catch (error) {
-      print('Error checking FCM token: $error');
+      Log.e('Error checking FCM token: $error');
       return false;
     }
   }
@@ -146,12 +147,12 @@ class FirebaseService {
   void setupTokenRefreshListener() {
     // Skip FCM on web during development
     if (kIsWeb) {
-      print('Skipping FCM token refresh listener on web');
+      Log.d('Skipping FCM token refresh listener on web');
       return;
     }
 
     _messaging.onTokenRefresh.listen((token) {
-      print('FCM token refreshed: $token');
+      Log.d('FCM token refreshed: $token');
       // Update token in profile if user is authenticated
       final currentUser = _supabaseService.currentUser;
       if (currentUser != null) {
@@ -164,16 +165,16 @@ class FirebaseService {
   void setupForegroundMessageHandler() {
     // Skip FCM on web during development
     if (kIsWeb) {
-      print('Skipping FCM foreground message handler on web');
+      Log.d('Skipping FCM foreground message handler on web');
       return;
     }
 
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      print('Got a message whilst in the foreground!');
-      print('Message data: ${message.data}');
+      Log.d('Got a message whilst in the foreground!');
+      Log.d('Message data: ${message.data}');
 
       if (message.notification != null) {
-        print('Message also contained a notification: ${message.notification}');
+        Log.d('Message also contained a notification: ${message.notification}');
       }
     });
   }
@@ -181,6 +182,6 @@ class FirebaseService {
   // Setup background message handler
   static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     await Firebase.initializeApp();
-    print('Handling a background message: ${message.messageId}');
+    Log.d('Handling a background message: ${message.messageId}');
   }
 } 

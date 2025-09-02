@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import '../../../app/theme.dart';
 import '../models/quote.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class QuoteCard extends StatelessWidget {
   final Quote quote;
@@ -447,8 +448,16 @@ class QuoteCard extends StatelessWidget {
       final cacheBustedUrl = '$url?cb=${DateTime.now().millisecondsSinceEpoch}';
       await launchUrlString(cacheBustedUrl);
     } catch (e) {
-      // Handle error silently or show a snackbar
-      print('Error opening PDF: $e');
+      Log.e('Error opening PDF: $e');
+      // Show error message to user
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening PDF: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 }

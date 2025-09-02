@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -289,8 +290,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
     
-    // Debug: Print screen dimensions
-    print('Screen dimensions: ${screenWidth}x${screenHeight}');
+    // Debug logging for screen dimensions
+    Log.d('Screen dimensions: ${screenWidth}x${screenHeight}');
     
     // TEMPORARY: Force 2 columns for mobile testing
     int crossAxisCount;
@@ -298,34 +299,33 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     double childAspectRatio;
     EdgeInsets outerPadding;
     
-    if (screenWidth > 1200) {
-      crossAxisCount = 4; // Large desktop
+    if (screenWidth >= 1200) {
+      // Large Desktop - 4 columns
+      Log.d('Layout: Large Desktop (4 columns)');
+      crossAxisCount = 4;
+      spacing = 24.0;
+      childAspectRatio = 1.2;
+    } else if (screenWidth >= 900) {
+      // Desktop - 3 columns
+      Log.d('Layout: Desktop (3 columns)');
+      crossAxisCount = 3;
       spacing = 20.0;
       childAspectRatio = 1.1;
-      outerPadding = const EdgeInsets.all(24.0);
-      print('Layout: Large Desktop (4 columns)');
-    } else if (screenWidth > 800) {
-      crossAxisCount = 3; // Desktop
-      spacing = 18.0;
-      childAspectRatio = 1.0;
-      outerPadding = const EdgeInsets.all(20.0);
-      print('Layout: Desktop (3 columns)');
-    } else if (screenWidth > 600) {
-      crossAxisCount = 2; // Tablet
+    } else if (screenWidth >= 600) {
+      // Tablet - 2 columns
+      Log.d('Layout: Tablet (2 columns)');
+      crossAxisCount = 2;
       spacing = 16.0;
       childAspectRatio = 1.0;
-      outerPadding = const EdgeInsets.all(16.0);
-      print('Layout: Tablet (2 columns)');
     } else {
-      // FORCE 2 columns for all mobile devices for testing
-      crossAxisCount = 2; // Mobile phones - 2 cards per row
+      // Mobile - 2 columns (forced for testing)
+      Log.d('Layout: Mobile (2 columns) - FORCED for testing');
+      crossAxisCount = 2;
       spacing = 12.0;
-      childAspectRatio = 1.0;
-      outerPadding = const EdgeInsets.all(12.0);
-      print('Layout: Mobile (2 columns) - FORCED for testing');
+      childAspectRatio = 0.9;
     }
 
-    print('Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio');
+    Log.d('Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio');
 
     return Padding(
       padding: outerPadding,

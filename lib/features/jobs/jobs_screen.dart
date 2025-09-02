@@ -18,6 +18,7 @@ import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
 import 'package:choice_lux_cars/features/jobs/widgets/job_list_card.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -71,12 +72,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     final clientsAsync = ref.watch(clientsProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
-    // Debug logging
-    print('=== JOBS SCREEN DEBUG ===');
-    print('Current user: ${userProfile?.id} (${userProfile?.role})');
-    print('Total jobs in provider: ${jobs.length}');
+    // Debug information
+    Log.d('=== JOBS SCREEN DEBUG ===');
+    Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
+    Log.d('Total jobs in provider: ${jobs.length}');
     if (jobs.isNotEmpty) {
-      print('Sample job: ${jobs.first.id} - ${jobs.first.status} - ${jobs.first.passengerName}');
+      Log.d('Sample job: ${jobs.first.id} - ${jobs.first.status} - ${jobs.first.passengerName}');
     }
     
     // Check if user can create vouchers based on role
@@ -90,21 +91,21 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     // Check if user can create invoices (same permissions as vouchers for now)
     final canCreateInvoice = canCreateVoucher;
 
-    // Filter jobs based on current filter
+    // Apply filters
     List<Job> filteredJobs = _filterJobs(jobs);
-    print('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+    Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
     
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filteredJobs = filteredJobs.where((job) {
-        final passengerName = job.passengerName?.toLowerCase() ?? '';
-        final clientName = job.clientId.toLowerCase(); // You might want to get actual client name
-        final searchLower = _searchQuery.toLowerCase();
-        return passengerName.contains(searchLower) || 
-               clientName.contains(searchLower) ||
-               job.id.toLowerCase().contains(searchLower);
-      }).toList();
-    }
+            // Apply search filter
+        if (_searchQuery.isNotEmpty) {
+          filteredJobs = filteredJobs.where((job) {
+            final passengerName = job.passengerName?.toLowerCase() ?? '';
+            final clientName = job.clientId.toString().toLowerCase(); // Convert int to string
+            final searchLower = _searchQuery.toLowerCase();
+            return passengerName.contains(searchLower) || 
+                   clientName.contains(searchLower) ||
+                   job.id.toString().toLowerCase().contains(searchLower);
+          }).toList();
+        }
 
     // Pagination
     final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
@@ -124,10 +125,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
         actions: [
           // Refresh button
           IconButton(
-            onPressed: () {
-              print('Manual refresh triggered');
-              ref.read(jobsProvider.notifier).fetchJobs();
-            },
+            onPressed: _manualRefresh,
             icon: const Icon(Icons.refresh),
             tooltip: 'Refresh jobs',
           ),
@@ -531,5 +529,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
       default:
         return jobs;
     }
+  }
+
+  void _manualRefresh() {
+    ref.read(jobsProvider.notifier).fetchJobs();
   }
 } 

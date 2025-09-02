@@ -2,11 +2,10 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
-
 import 'package:intl/intl.dart';
-
-import '../models/quote.dart';
-import '../models/quote_transport_detail.dart';
+import 'package:choice_lux_cars/core/config/env.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.dart';
 
 class QuotePdfService {
   static const String _logoUrl =

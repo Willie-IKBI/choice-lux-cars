@@ -12,6 +12,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -66,15 +67,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       try {
         job = jobs.firstWhere((job) => job.id == widget.jobId);
-        print('Found job ${widget.jobId} in local state');
+        Log.d('Found job ${widget.jobId} in local state');
       } catch (e) {
-        print('Job ${widget.jobId} not found in local state, fetching from database...');
+        Log.d('Job ${widget.jobId} not found in local state, fetching from database...');
         // If not found locally, fetch from database
-        job = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId);
-        if (job != null) {
-          print('Successfully fetched job ${widget.jobId} from database');
+        final fetchedJob = await ref.read(jobsProvider.notifier).fetchJobById(int.parse(widget.jobId));
+        if (fetchedJob != null) {
+          Log.d('Successfully fetched job ${widget.jobId} from database');
         } else {
-          print('Job ${widget.jobId} not found in database');
+          Log.d('Job ${widget.jobId} not found in database');
           _errorMessage = 'Job not found';
           setState(() => _isLoading = false);
           return;
@@ -84,11 +85,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       _job = job;
       
       // Load trips for this job using the tripsProvider
-      print('Loading trips for job ${widget.jobId}...');
-      await ref.read(tripsProvider.notifier).fetchTripsForJob(widget.jobId);
+      Log.d('Loading trips for job ${widget.jobId}...');
+      await ref.read(tripsProvider.notifier).fetchTripsForJob(int.parse(widget.jobId));
       final trips = ref.read(tripsProvider);
       _trips = trips;
-      print('Loaded ${trips.length} trips for job ${widget.jobId}');
+      Log.d('Loaded ${trips.length} trips for job ${widget.jobId}');
       
       // Load step completion times
       await _loadStepCompletionData();
@@ -97,7 +98,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       await _loadRelatedEntities();
       
     } catch (e) {
-      print('Error loading job data: $e');
+      Log.e('Error loading job data: $e');
       // Store error to show in build method
       _errorMessage = 'Error loading job data: $e';
     } finally {
@@ -137,12 +138,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         _driver = driverResponse;
       }
       
-      print('Loaded related entities:');
-      print('Client: ${_client != null ? 'Found' : 'Not found'}');
-      print('Vehicle: ${_vehicle != null ? 'Found' : 'Not found'}');
-      print('Driver: ${_driver != null ? 'Found' : 'Not found'}');
+      Log.d('Loaded related entities:');
+      Log.d('Client: ${_client != null ? 'Found' : 'Not found'}');
+      Log.d('Vehicle: ${_vehicle != null ? 'Found' : 'Not found'}');
+      Log.d('Driver: ${_driver != null ? 'Found' : 'Not found'}');
     } catch (e) {
-      print('Error loading related entities: $e');
+      Log.e('Error loading related entities: $e');
       // Don't fail the entire load if this fails
     }
   }
@@ -167,11 +168,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       _tripProgressData = List<Map<String, dynamic>>.from(tripProgressResponse);
       
-      print('Loaded step completion data:');
-      print('Driver flow: $_driverFlowData');
-      print('Trip progress: $_tripProgressData');
+      Log.d('Loaded step completion data:');
+      Log.d('Driver flow: $_driverFlowData');
+      Log.d('Trip progress: $_tripProgressData');
     } catch (e) {
-      print('Error loading step completion data: $e');
+      Log.e('Error loading step completion data: $e');
       // Don't fail the entire load if this fails
     }
   }
@@ -830,11 +831,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                         decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold,
+                          color: step['status'] == 'not_started' 
+                              ? ChoiceLuxTheme.infoColor 
+                              : ChoiceLuxTheme.richGold,
                           borderRadius: BorderRadius.circular(12),
                         ),
-                        child: const Text(
-                          'In Progress',
+                        child: Text(
+                          step['status'] == 'not_started' ? 'Not Started' : 'In Progress',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 10,
@@ -1394,15 +1397,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
    }
 
   Future<void> _confirmJob() async {
-    print('=== JOB SUMMARY SCREEN: _confirmJob() called ===');
-    print('Job ID: ${_job!.id}');
-    print('Job Status: ${_job!.status}');
-    print('Is Confirmed: ${_job!.isConfirmed}');
-    print('Driver Confirmation: ${_job!.driverConfirmation}');
+    Log.d('=== JOB SUMMARY SCREEN: _confirmJob() called ===');
+    Log.d('Job ID: ${_job!.id}');
+    Log.d('Job Status: ${_job!.status}');
+    Log.d('Is Confirmed: ${_job!.isConfirmed}');
+    Log.d('Driver Confirmation: ${_job!.driverConfirmation}');
     
     // Prevent duplicate calls
     if (_isConfirming) {
-      print('Job confirmation already in progress, skipping duplicate call');
+      Log.d('Job confirmation already in progress, skipping duplicate call');
       return;
     }
     
@@ -1411,45 +1414,49 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     try {
       // Show loading state
       if (!mounted) {
-        print('Widget not mounted, returning early');
+        Log.d('Widget not mounted, returning early');
         return;
       }
       
-      print('Calling jobsProvider.confirmJob...');
+      Log.d('Calling jobsProvider.confirmJob...');
       // Confirm the job using the single source of truth
-      await ref.read(jobsProvider.notifier).confirmJob(_job!.id, ref: ref);
-      print('jobsProvider.confirmJob completed successfully');
+      await ref.read(jobsProvider.notifier).confirmJob(int.parse(widget.jobId), ref);
+      Log.d('jobsProvider.confirmJob completed successfully');
+      
+      // Refresh all jobs to help with state synchronization
+      await ref.read(jobsProvider.notifier).fetchJobs();
+      Log.d('Jobs list refreshed after confirmation');
       
       // Check if widget is still mounted before showing success message and navigating
       if (!mounted) {
-        print('Widget not mounted after confirmation, returning early');
+        Log.d('Widget not mounted after confirmation, returning early');
         return;
       }
       
-      print('Showing success message...');
+      Log.d('Showing success message...');
       // Show success message
       SnackBarUtils.showSuccess(context, '✅ Job confirmed successfully!');
       
-      print('Waiting 500ms before navigation...');
+      Log.d('Waiting 500ms before navigation...');
       // Wait a moment for the SnackBar to show, then navigate
       await Future.delayed(const Duration(milliseconds: 500));
       
       // Check again if widget is still mounted before navigating
       if (!mounted) {
-        print('Widget not mounted before navigation, returning early');
+        Log.d('Widget not mounted before navigation, returning early');
         return;
       }
       
-      print('Navigating to /jobs...');
+      Log.d('Navigating to /jobs...');
       // Navigate back to jobs management after confirmation
       context.go('/jobs');
-      print('Navigation completed');
+      Log.d('Navigation completed');
       
     } catch (e) {
-      print('Error in _confirmJob: $e');
+      Log.e('Error in _confirmJob: $e');
       // Check if widget is still mounted before showing error
       if (!mounted) {
-        print('Widget not mounted for error display, returning early');
+        Log.d('Widget not mounted for error display, returning early');
         return;
       }
       
@@ -1598,14 +1605,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     ];
     
     // Get current step from driver flow data
-    final currentStepId = _driverFlowData?['current_step']?.toString() ?? 'vehicle_collection';
+    final currentStepId = _driverFlowData?['current_step']?.toString();
     
     // Load job addresses for pickup/dropoff steps
     Map<String, String?> jobAddresses = {};
     try {
       jobAddresses = await DriverFlowApiService.getJobAddresses(int.parse(widget.jobId));
     } catch (e) {
-      print('Could not load job addresses: $e');
+      Log.e('Could not load job addresses: $e');
     }
     
     // Process each step
@@ -1616,8 +1623,16 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       // Determine step status
       bool isCompleted = false;
-      bool isCurrent = stepId == currentStepId;
+      bool isCurrent = false;
       DateTime? completedAt;
+      
+      // Check if this is the current step
+      if (currentStepId != null && currentStepId.isNotEmpty) {
+        isCurrent = stepId == currentStepId;
+      } else {
+        // No current step means job hasn't started - first step (vehicle_collection) is current
+        isCurrent = stepId == 'vehicle_collection';
+      }
       
       // Check completion status for each step
       switch (stepId) {
@@ -1682,8 +1697,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           'description': stepDescription,
           'completedAt': null,
           'icon': stepIcon,
-          'color': ChoiceLuxTheme.richGold,
-          'status': 'current',
+          'color': currentStepId == null ? ChoiceLuxTheme.infoColor : ChoiceLuxTheme.richGold,
+          'status': currentStepId == null ? 'not_started' : 'current',
           'progressPercentage': progressPercentage,
         };
         

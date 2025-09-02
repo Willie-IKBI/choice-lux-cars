@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/theme.dart';
-import '../../../shared/widgets/luxury_app_bar.dart';
-import '../models/quote_transport_detail.dart';
-import '../providers/quotes_provider.dart';
-import '../models/quote.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.dart';
+import 'package:choice_lux_cars/features/quotes/providers/quotes_provider.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 
 class QuoteTransportDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;

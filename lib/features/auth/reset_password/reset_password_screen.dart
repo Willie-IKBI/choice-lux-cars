@@ -4,6 +4,8 @@ import 'package:go_router/go_router.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/services/supabase_service.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -30,15 +32,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     });
   }
 
-  void _checkResetSession() {
+  void _checkResetSession() async {
     // Check if user has a valid session for password reset
-    if (mounted) {
-      try {
-        final session = Supabase.instance.client.auth.currentSession;
-        print('Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}');
-        
-        if (session == null) {
-          print('Reset Password Screen - No session found, redirecting to forgot password');
+    try {
+      final session = await SupabaseService.instance.supabase.auth.currentSession;
+      Log.d('Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}');
+      
+      if (session == null) {
+        Log.d('Reset Password Screen - No session found, redirecting to forgot password');
+        if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: const Text('Invalid or expired reset link. Please request a new password reset.'),
@@ -46,11 +48,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
             ),
           );
           context.go('/forgot-password');
-        } else {
-          print('Reset Password Screen - Session found, user can reset password');
         }
-      } catch (error) {
-        print('Reset Password Screen - Error checking session: $error');
+      } else {
+        Log.d('Reset Password Screen - Session found, user can reset password');
+      }
+    } catch (error) {
+      Log.e('Reset Password Screen - Error checking session: $error');
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: const Text('Error validating reset session. Please try again.'),
