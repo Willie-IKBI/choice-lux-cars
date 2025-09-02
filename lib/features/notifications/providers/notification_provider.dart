@@ -99,7 +99,10 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       await _updateStatsFromNotifications(notifications);
     } catch (e) {
       Log.e('Error loading notifications: $e');
-      state = AsyncValue.error(e, StackTrace.current);
+      state = state.copyWith(
+        isLoading: false,
+        error: e.toString(),
+      );
     }
   }
 

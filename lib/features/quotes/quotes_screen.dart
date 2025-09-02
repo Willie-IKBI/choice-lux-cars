@@ -24,26 +24,26 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final canCreateQuotes = ref.read(quotesProvider.notifier).canCreateQuotes;
 
     // Filter quotes based on selected status
-    List<dynamic> filteredQuotes = quotes;
+    List<Quote> filteredQuotes = (quotes.value ?? []);
     if (_selectedStatus != 'all') {
       switch (_selectedStatus) {
         case 'draft':
-          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'draft').toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'draft').toList();
           break;
         case 'open':
-          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'open').toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'open').toList();
           break;
         case 'accepted':
-          filteredQuotes = quotes.where((quote) => quote.isAccepted).toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.isAccepted).toList();
           break;
         case 'expired':
-          filteredQuotes = quotes.where((quote) => quote.isExpired).toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.isExpired).toList();
           break;
         case 'closed':
-          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'closed').toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'closed').toList();
           break;
         case 'rejected':
-          filteredQuotes = quotes.where((quote) => quote.quoteStatus.toLowerCase() == 'rejected').toList();
+          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'rejected').toList();
           break;
       }
     }
@@ -79,7 +79,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           child: Column(
             children: [
               // Header Section with Stats
-              _buildHeaderSection(filteredQuotes.length, quotes.length),
+              _buildHeaderSection(filteredQuotes.length, (quotes.value ?? []).length),
               
               // Search and Filter Section
               _buildSearchAndFilterSection(isMobile),
@@ -456,9 +456,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             mainAxisSpacing: 20,
             childAspectRatio: 1.2,
           ),
-          itemCount: quotes.length,
+          itemCount: (quotes.value ?? []).length,
           itemBuilder: (context, index) {
-            final quote = quotes[index];
+            final quote = (quotes.value ?? [])[index];
             return QuoteCard(
               quote: quote,
               onTap: () => context.go('/quotes/${quote.id}'),
@@ -477,9 +477,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             horizontal: horizontalPadding,
             vertical: 8,
           ),
-          itemCount: quotes.length,
+          itemCount: (quotes.value ?? []).length,
           itemBuilder: (context, index) {
-            final quote = quotes[index];
+            final quote = (quotes.value ?? [])[index];
             return QuoteCard(
               quote: quote,
               onTap: () => context.go('/quotes/${quote.id}'),

@@ -52,11 +52,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isDriverManager = userRole == 'driver_manager';
     
     // Count today's jobs based on role
-    final todayJobsCount = _getTodayJobsCount(jobs, userProfile, isDriver);
+    final todayJobsCount = _getTodayJobsCount(jobs.value ?? [], userProfile, isDriver);
     
     // Count unassigned users for admin notification
     final unassignedUsersCount = isAdmin 
-        ? users.where((user) => user.role == null || user.role == 'unassigned').length 
+        ? (users.value ?? []).where((user) => user.role == null || user.role == 'unassigned').length 
         : 0;
     
     // Responsive padding - provide minimal padding for mobile
@@ -297,7 +297,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int crossAxisCount;
     double spacing;
     double childAspectRatio;
-    EdgeInsets outerPadding;
+    EdgeInsets outerPadding = const EdgeInsets.all(16);
     
     if (screenWidth >= 1200) {
       // Large Desktop - 4 columns

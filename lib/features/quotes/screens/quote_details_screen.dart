@@ -98,7 +98,8 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   double get _transportTotal {
     try {
       final transportDetails = ref.read(quoteTransportDetailsProvider(widget.quoteId));
-      return transportDetails.fold(0.0, (sum, transport) => sum + transport.amount);
+      final list = transportDetails.value ?? [];
+      return list.fold(0.0, (sum, transport) => sum + transport.amount);
     } catch (e) {
       return 0.0;
     }

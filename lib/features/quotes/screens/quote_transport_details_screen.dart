@@ -68,7 +68,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
       
       // Get the updated state
       final transportDetails = ref.read(quoteTransportDetailsProvider(widget.quoteId));
-      setState(() => _transportDetails = transportDetails);
+      setState(() => _transportDetails = transportDetails.value ?? []);
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

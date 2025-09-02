@@ -67,8 +67,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     
     final users = ref.watch(usersProvider);
     final usersNotifier = ref.read(usersProvider.notifier);
-    final isLoading = users.isEmpty;
-    final filtered = users.where((u) {
+    final usersList = users.value ?? [];
+    final isLoading = usersList.isEmpty;
+    final filtered = usersList.where((u) {
       final matchesSearch = _search.isEmpty ||
         u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
         u.userEmail.toLowerCase().contains(_search.toLowerCase());

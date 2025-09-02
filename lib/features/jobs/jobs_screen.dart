@@ -75,9 +75,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     // Debug information
     Log.d('=== JOBS SCREEN DEBUG ===');
     Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
-    Log.d('Total jobs in provider: ${jobs.length}');
-    if (jobs.isNotEmpty) {
-      Log.d('Sample job: ${jobs.first.id} - ${jobs.first.status} - ${jobs.first.passengerName}');
+    Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
+    if ((jobs.value ?? []).isNotEmpty) {
+      Log.d('Sample job: ${(jobs.value ?? []).first.id} - ${(jobs.value ?? []).first.status} - ${(jobs.value ?? []).first.passengerName}');
     }
     
     // Check if user can create vouchers based on role
@@ -92,7 +92,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     final canCreateInvoice = canCreateVoucher;
 
     // Apply filters
-    List<Job> filteredJobs = _filterJobs(jobs);
+    List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
     Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
     
             // Apply search filter
@@ -169,8 +169,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                       data: (clients) => _buildJobsList(
                         paginatedJobs, 
                         clients, 
-                        vehiclesState.vehicles, 
-                        users,
+                        (vehiclesState.value ?? []), 
+                        (users.value ?? []),
                         isSmallMobile,
                         isMobile,
                         isTablet,

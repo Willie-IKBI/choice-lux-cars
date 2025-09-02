@@ -16,13 +16,14 @@ class UserDetailScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final users = ref.watch(usersProvider);
     final usersNotifier = ref.read(usersProvider.notifier);
+    final usersList = users.value ?? [];
     User? user;
     try {
-      user = users.firstWhere((u) => u.id == userId);
+      user = usersList.firstWhere((u) => u.id == userId);
     } catch (_) {
       user = null;
     }
-    if (users.isEmpty) {
+    if (usersList.isEmpty) {
       return const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       );
