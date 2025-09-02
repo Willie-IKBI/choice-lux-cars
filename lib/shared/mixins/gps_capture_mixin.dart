@@ -57,7 +57,7 @@ mixin GpsCaptureMixin<T extends StatefulWidget> on State<T> {
   /// Get safe GPS accuracy value (prevents overflow)
   double? getSafeGpsAccuracy(double? gpsAccuracy) {
     if (gpsAccuracy == null) return null;
-    
+
     if (gpsAccuracy > 999.99) {
       return 999.99; // Max value for precision 5, scale 2
     } else {

@@ -51,29 +51,17 @@ class _NotificationBellState extends State<NotificationBell>
       vsync: this,
     );
 
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.2,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.2).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
 
-    _pulseAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.1,
-    ).animate(CurvedAnimation(
-      parent: _pulseController,
-      curve: Curves.easeInOut,
-    ));
+    _pulseAnimation = Tween<double>(begin: 1.0, end: 1.1).animate(
+      CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
+    );
 
-    _shakeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _shakeController,
-      curve: Curves.elasticOut,
-    ));
+    _shakeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _shakeController, curve: Curves.elasticOut),
+    );
   }
 
   @override
@@ -96,11 +84,15 @@ class _NotificationBellState extends State<NotificationBell>
 
   void _showNotificationMenu() {
     final RenderBox button = context.findRenderObject() as RenderBox;
-    final RenderBox overlay = Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
+    final RenderBox overlay =
+        Navigator.of(context).overlay!.context.findRenderObject() as RenderBox;
     final RelativeRect position = RelativeRect.fromRect(
       Rect.fromPoints(
         button.localToGlobal(Offset.zero, ancestor: overlay),
-        button.localToGlobal(button.size.bottomRight(Offset.zero), ancestor: overlay),
+        button.localToGlobal(
+          button.size.bottomRight(Offset.zero),
+          ancestor: overlay,
+        ),
       ),
       Offset.zero & overlay.size,
     );
@@ -118,11 +110,16 @@ class _NotificationBellState extends State<NotificationBell>
               const Text('Notifications'),
               Consumer(
                 builder: (context, ref, child) {
-                  final unreadCount = ref.watch(notificationProvider).unreadCount;
+                  final unreadCount = ref
+                      .watch(notificationProvider)
+                      .unreadCount;
                   if (unreadCount > 0) {
                     return Container(
                       margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(10),
@@ -168,9 +165,7 @@ class _NotificationBellState extends State<NotificationBell>
 
   void _showNotificationList() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const NotificationListScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const NotificationListScreen()),
     );
   }
 
@@ -202,13 +197,19 @@ class _NotificationBellState extends State<NotificationBell>
       builder: (context, ref, child) {
         final notificationState = ref.watch(notificationProvider);
         final unreadCount = notificationState.unreadCount;
-        
+
         // Use the same logic as notifications screen - only count active, unread notifications
-        final activeUnreadCount = notificationState.notifications.where((n) => !n.isHidden && !n.isRead).length;
+        final activeUnreadCount = notificationState.notifications
+            .where((n) => !n.isHidden && !n.isRead)
+            .length;
         final displayCount = unreadCount > 0 ? unreadCount : activeUnreadCount;
-        
-        final hasHighPriority = notificationState.notifications.any((n) => n.isHighPriority && !n.isRead);
-        final hasUrgent = notificationState.notifications.any((n) => n.isUrgent && !n.isRead);
+
+        final hasHighPriority = notificationState.notifications.any(
+          (n) => n.isHighPriority && !n.isRead,
+        );
+        final hasUrgent = notificationState.notifications.any(
+          (n) => n.isUrgent && !n.isRead,
+        );
 
         final shouldShowBadge = displayCount > 0;
 
@@ -232,12 +233,16 @@ class _NotificationBellState extends State<NotificationBell>
               children: [
                 // Bell icon with shake animation
                 AnimatedBuilder(
-                  animation: Listenable.merge([_scaleAnimation, _shakeAnimation]),
+                  animation: Listenable.merge([
+                    _scaleAnimation,
+                    _shakeAnimation,
+                  ]),
                   builder: (context, child) {
                     return Transform.scale(
                       scale: _scaleAnimation.value,
                       child: Transform.rotate(
-                        angle: _shakeAnimation.value * 0.1 * (hasUrgent ? 2 : 1),
+                        angle:
+                            _shakeAnimation.value * 0.1 * (hasUrgent ? 2 : 1),
                         child: Icon(
                           Icons.notifications_outlined,
                           color: _getIconColor(hasUrgent, hasHighPriority),
@@ -247,7 +252,7 @@ class _NotificationBellState extends State<NotificationBell>
                     );
                   },
                 ),
-                
+
                 // Badge - Show for recent notifications (read or unread)
                 if (shouldShowBadge && widget.showCount)
                   Positioned(
@@ -261,20 +266,32 @@ class _NotificationBellState extends State<NotificationBell>
                           child: Container(
                             width: displayCount == 1 ? 8 : null,
                             height: displayCount == 1 ? 8 : 16,
-                            padding: displayCount == 1 
-                                ? EdgeInsets.zero 
-                                : const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                            padding: displayCount == 1
+                                ? EdgeInsets.zero
+                                : const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 1,
+                                  ),
                             decoration: BoxDecoration(
                               color: _getBadgeColor(hasUrgent, hasHighPriority),
-                              shape: displayCount == 1 ? BoxShape.circle : BoxShape.rectangle,
-                              borderRadius: displayCount == 1 ? null : BorderRadius.circular(8),
+                              shape: displayCount == 1
+                                  ? BoxShape.circle
+                                  : BoxShape.rectangle,
+                              borderRadius: displayCount == 1
+                                  ? null
+                                  : BorderRadius.circular(8),
                               border: Border.all(
-                                color: Theme.of(context).scaffoldBackgroundColor,
+                                color: Theme.of(
+                                  context,
+                                ).scaffoldBackgroundColor,
                                 width: 1.5,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: _getBadgeColor(hasUrgent, hasHighPriority).withOpacity(0.3),
+                                  color: _getBadgeColor(
+                                    hasUrgent,
+                                    hasHighPriority,
+                                  ).withOpacity(0.3),
                                   blurRadius: 3,
                                   offset: const Offset(0, 1),
                                 ),
@@ -283,7 +300,9 @@ class _NotificationBellState extends State<NotificationBell>
                             child: displayCount == 1
                                 ? null // Just show the dot
                                 : Text(
-                                    displayCount > 99 ? '99+' : displayCount.toString(),
+                                    displayCount > 99
+                                        ? '99+'
+                                        : displayCount.toString(),
                                     style: const TextStyle(
                                       color: Colors.white,
                                       fontSize: 10,
@@ -322,4 +341,4 @@ class _NotificationBellState extends State<NotificationBell>
     }
     return const Color(0xFFD32F2F); // Default dark red
   }
-} 
+}

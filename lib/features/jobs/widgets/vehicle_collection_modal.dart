@@ -13,7 +13,8 @@ class VehicleCollectionModal extends StatefulWidget {
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
-  }) onConfirm;
+  })
+  onConfirm;
 
   final VoidCallback onCancel;
 
@@ -30,14 +31,14 @@ class VehicleCollectionModal extends StatefulWidget {
 class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
   final TextEditingController _odometerController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  
+
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   bool _isLoading = false;
   bool _isCapturingLocation = false;
   Position? _currentPosition;
   String? _locationError;
-  
+
   @override
   void initState() {
     super.initState();
@@ -213,147 +214,147 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 500,
-        ),
+        constraints: BoxConstraints(maxWidth: 500),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
-        decoration: BoxDecoration(
-          gradient: ChoiceLuxTheme.cardGradient,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withOpacity(0.3),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
+          decoration: BoxDecoration(
+            gradient: ChoiceLuxTheme.cardGradient,
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              width: 1,
             ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Header
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    ChoiceLuxTheme.richGold.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: const BorderRadius.only(
-                  topLeft: Radius.circular(20),
-                  topRight: Radius.circular(20),
-                ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.3),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
               ),
-              child: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          ChoiceLuxTheme.richGold,
-                          ChoiceLuxTheme.richGold.withOpacity(0.8),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Header
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      ChoiceLuxTheme.richGold.withOpacity(0.05),
+                    ],
+                  ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(20),
+                    topRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            ChoiceLuxTheme.richGold,
+                            ChoiceLuxTheme.richGold.withOpacity(0.8),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(
+                        Icons.directions_car_rounded,
+                        color: Colors.black,
+                        size: 24,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Vehicle Collection',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.softWhite,
+                              fontSize: 20,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Capture odometer reading and location',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
                         ],
                       ),
-                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(
-                      Icons.directions_car_rounded,
-                      color: Colors.black,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Vehicle Collection',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.softWhite,
-                            fontSize: 20,
-                            fontWeight: FontWeight.w700,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Capture odometer reading and location',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(24),
-              child: Column(
-                children: [
-                  // Odometer Image Section
-                  _buildImageSection(),
-                  const SizedBox(height: 24),
-
-                  // Odometer Reading Section
-                  _buildOdometerInputSection(),
-                  const SizedBox(height: 24),
-
-                  // GPS Status Section
-                  _buildGpsStatusSection(),
-                ],
-              ),
-            ),
-
-            // Action Buttons
-            Container(
-              padding: const EdgeInsets.all(24),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
-                borderRadius: const BorderRadius.only(
-                  bottomLeft: Radius.circular(20),
-                  bottomRight: Radius.circular(20),
+                  ],
                 ),
               ),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: _buildLuxuryButton(
-                      onPressed: widget.onCancel,
-                      label: 'Cancel',
-                      isPrimary: false,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildLuxuryButton(
-                      onPressed: _isLoading ? null : _confirmVehicleCollection,
-                      label: _isLoading ? 'Processing...' : 'Start Job',
-                      isPrimary: true,
-                    ),
-                  ),
-                ],
+
+              // Content
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    // Odometer Image Section
+                    _buildImageSection(),
+                    const SizedBox(height: 24),
+
+                    // Odometer Reading Section
+                    _buildOdometerInputSection(),
+                    const SizedBox(height: 24),
+
+                    // GPS Status Section
+                    _buildGpsStatusSection(),
+                  ],
+                ),
               ),
-            ),
-                     ],
-         ),
-       ),
-       ),
-     );
+
+              // Action Buttons
+              Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                  borderRadius: const BorderRadius.only(
+                    bottomLeft: Radius.circular(20),
+                    bottomRight: Radius.circular(20),
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: _buildLuxuryButton(
+                        onPressed: widget.onCancel,
+                        label: 'Cancel',
+                        isPrimary: false,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: _buildLuxuryButton(
+                        onPressed: _isLoading
+                            ? null
+                            : _confirmVehicleCollection,
+                        label: _isLoading ? 'Processing...' : 'Start Job',
+                        isPrimary: true,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Widget _buildImageSection() {
@@ -459,7 +460,9 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           width: double.infinity,
           child: _buildLuxuryButton(
             onPressed: _pickImage,
-            label: (_selectedImage != null || _selectedImageBytes != null) ? 'Retake Photo' : 'Capture Photo',
+            label: (_selectedImage != null || _selectedImageBytes != null)
+                ? 'Retake Photo'
+                : 'Capture Photo',
             isPrimary: false,
           ),
         ),
@@ -522,12 +525,12 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.richGold,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],
@@ -575,7 +578,9 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 )
               else if (_currentPosition != null)
@@ -599,14 +604,14 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                       _isCapturingLocation
                           ? 'Capturing location...'
                           : _currentPosition != null
-                              ? 'Location captured successfully'
-                              : 'Location capture failed',
+                          ? 'Location captured successfully'
+                          : 'Location capture failed',
                       style: TextStyle(
                         color: _isCapturingLocation
                             ? ChoiceLuxTheme.platinumSilver
                             : _currentPosition != null
-                                ? ChoiceLuxTheme.successColor
-                                : ChoiceLuxTheme.errorColor,
+                            ? ChoiceLuxTheme.successColor
+                            : ChoiceLuxTheme.errorColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

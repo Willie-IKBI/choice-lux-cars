@@ -17,11 +17,8 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
-  
-  const JobSummaryScreen({
-    super.key,
-    required this.jobId,
-  });
+
+  const JobSummaryScreen({super.key, required this.jobId});
 
   @override
   ConsumerState<JobSummaryScreen> createState() => _JobSummaryScreenState();
@@ -37,11 +34,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   dynamic _agent;
   dynamic _vehicle;
   dynamic _driver;
-  
+
   // Step completion times
   Map<String, dynamic>? _driverFlowData;
   List<Map<String, dynamic>> _tripProgressData = [];
-  
+
   // Mobile accordion state
   final Map<String, bool> _expandedSections = {
     'jobDetails': true,
@@ -51,21 +48,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     'trips': true,
     'stepTimeline': true, // New section for step timeline
   };
-  
+
   @override
   void initState() {
     super.initState();
     _loadJobData();
   }
-  
+
   Future<void> _loadJobData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       // Try to find job in local state first
       final jobsState = ref.read(jobsProvider);
       Job? job;
-      
+
       if (jobsState.hasValue) {
         try {
           job = jobsState.value!.firstWhere((job) => job.id == widget.jobId);
@@ -74,11 +71,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           Log.d('Job ${widget.jobId} not found in local state');
         }
       }
-      
+
       if (job == null) {
-        Log.d('Job ${widget.jobId} not found in local state, fetching from database...');
+        Log.d(
+          'Job ${widget.jobId} not found in local state, fetching from database...',
+        );
         // If not found locally, fetch from database
-        final fetchedJob = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId);
+        final fetchedJob = await ref
+            .read(jobsProvider.notifier)
+            .fetchJobById(widget.jobId);
         if (fetchedJob != null) {
           job = fetchedJob;
           Log.d('Successfully fetched job ${widget.jobId} from database');
@@ -89,13 +90,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           return;
         }
       }
-      
+
       _job = job;
-      
+
       // Load trips for this job using the tripsByJobProvider
       Log.d('Loading trips for job ${widget.jobId}...');
       try {
-        final tripsNotifier = ref.read(tripsByJobProvider(widget.jobId).notifier);
+        final tripsNotifier = ref.read(
+          tripsByJobProvider(widget.jobId).notifier,
+        );
         await tripsNotifier.refresh();
         final tripsState = ref.read(tripsByJobProvider(widget.jobId));
         if (tripsState.hasValue) {
@@ -109,13 +112,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         Log.e('Error loading trips: $e');
         _trips = [];
       }
-      
+
       // Load step completion times
       await _loadStepCompletionData();
-      
+
       // Load related entities from database directly
       await _loadRelatedEntities();
-      
     } catch (e) {
       Log.e('Error loading job data: $e');
       // Store error to show in build method
@@ -124,7 +126,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       setState(() => _isLoading = false);
     }
   }
-  
+
   Future<void> _loadRelatedEntities() async {
     try {
       // Load client data
@@ -136,7 +138,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             .maybeSingle();
         _client = clientResponse;
       }
-      
+
       // Load vehicle data
       if (_job!.vehicleId.isNotEmpty) {
         final vehicleResponse = await Supabase.instance.client
@@ -146,7 +148,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             .maybeSingle();
         _vehicle = vehicleResponse;
       }
-      
+
       // Load driver data
       if (_job!.driverId.isNotEmpty) {
         final driverResponse = await Supabase.instance.client
@@ -156,7 +158,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             .maybeSingle();
         _driver = driverResponse;
       }
-      
+
       Log.d('Loaded related entities:');
       Log.d('Client: ${_client != null ? 'Found' : 'Not found'}');
       Log.d('Vehicle: ${_vehicle != null ? 'Found' : 'Not found'}');
@@ -166,7 +168,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       // Don't fail the entire load if this fails
     }
   }
-  
+
   Future<void> _loadStepCompletionData() async {
     try {
       // Load driver flow data
@@ -175,18 +177,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           .select('*')
           .eq('job_id', int.parse(widget.jobId))
           .maybeSingle();
-      
+
       _driverFlowData = driverFlowResponse;
-      
+
       // Load trip progress data
       final tripProgressResponse = await Supabase.instance.client
           .from('trip_progress')
           .select('*')
           .eq('job_id', int.parse(widget.jobId))
           .order('trip_index');
-      
+
       _tripProgressData = List<Map<String, dynamic>>.from(tripProgressResponse);
-      
+
       Log.d('Loaded step completion data:');
       Log.d('Driver flow: $_driverFlowData');
       Log.d('Trip progress: $_tripProgressData');
@@ -195,15 +197,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       // Don't fail the entire load if this fails
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     if (_isLoading) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
-    
+
     if (_errorMessage != null) {
       return Scaffold(
         appBar: LuxuryAppBar(
@@ -238,7 +238,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         ),
       );
     }
-    
+
     if (_job == null) {
       return Scaffold(
         appBar: LuxuryAppBar(
@@ -246,16 +246,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           showBackButton: true,
           onBackPressed: () => context.go('/jobs'),
         ),
-        body: const Center(
-          child: Text('Job not found'),
-        ),
+        body: const Center(child: Text('Job not found')),
       );
     }
-    
+
     // Calculate total amount from job payment amount since trips are not implemented
     final totalAmount = _job!.paymentAmount ?? 0.0;
     final isDesktop = MediaQuery.of(context).size.width > 768;
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: 'Job Summary',
@@ -275,10 +273,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ],
       ),
-      body: isDesktop ? _buildDesktopLayout(totalAmount) : _buildMobileLayout(totalAmount),
+      body: isDesktop
+          ? _buildDesktopLayout(totalAmount)
+          : _buildMobileLayout(totalAmount),
     );
   }
-  
+
   Widget _buildDesktopLayout(double totalAmount) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -309,7 +309,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ),
         ),
-        
+
         // Right Column - Trips Summary and Details
         Expanded(
           flex: 1,
@@ -329,7 +329,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ],
     );
   }
-  
+
   Widget _buildMobileLayout(double totalAmount) {
     return SingleChildScrollView(
       padding: const EdgeInsets.all(16),
@@ -381,21 +381,26 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ],
           const SizedBox(height: 16),
-                     _buildAccordionSection(
-             'Trips Summary',
-             'trips',
-             _buildTripsContent(totalAmount),
-             Icons.route,
-           ),
-           const SizedBox(height: 24),
-           _buildMobileActionButtons(),
-           const SizedBox(height: 24),
+          _buildAccordionSection(
+            'Trips Summary',
+            'trips',
+            _buildTripsContent(totalAmount),
+            Icons.route,
+          ),
+          const SizedBox(height: 24),
+          _buildMobileActionButtons(),
+          const SizedBox(height: 24),
         ],
       ),
     );
   }
-  
-  Widget _buildAccordionSection(String title, String key, Widget content, IconData icon) {
+
+  Widget _buildAccordionSection(
+    String title,
+    String key,
+    Widget content,
+    IconData icon,
+  ) {
     return Card(
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -410,10 +415,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         leading: Icon(icon, color: ChoiceLuxTheme.richGold),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.bold,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
         ),
         children: [
           Padding(
@@ -424,7 +426,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildStatusCard() {
     return Card(
       elevation: 4,
@@ -451,11 +453,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 color: _getStatusColor(),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(
-                Icons.work,
-                color: Colors.white,
-                size: 28,
-              ),
+              child: Icon(Icons.work, color: Colors.white, size: 28),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -508,7 +506,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildJobDetailsCard() {
     return Card(
       elevation: 2,
@@ -526,19 +524,31 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildJobDetailsContent() {
     return Column(
       children: [
         _buildDetailRow('Job ID', _job!.id.toString(), Icons.tag),
         _buildDetailRow('Status', _getStatusText(_job!.status), Icons.info),
-        _buildDetailRow('Job Start Date', _formatDate(_job!.jobStartDate), Icons.calendar_today),
-        _buildDetailRow('Order Date', _formatDate(_job!.orderDate), Icons.schedule),
-        _buildDetailRow('Days Until Start', _job!.daysUntilStartText, Icons.timer),
+        _buildDetailRow(
+          'Job Start Date',
+          _formatDate(_job!.jobStartDate),
+          Icons.calendar_today,
+        ),
+        _buildDetailRow(
+          'Order Date',
+          _formatDate(_job!.orderDate),
+          Icons.schedule,
+        ),
+        _buildDetailRow(
+          'Days Until Start',
+          _job!.daysUntilStartText,
+          Icons.timer,
+        ),
       ],
     );
   }
-  
+
   Widget _buildClientAgentCard() {
     return Card(
       elevation: 2,
@@ -556,15 +566,31 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildClientAgentContent() {
     return Column(
       children: [
-        _buildDetailRow('Client', _client?['company_name'] ?? 'Unknown', Icons.business),
+        _buildDetailRow(
+          'Client',
+          _client?['company_name'] ?? 'Unknown',
+          Icons.business,
+        ),
         if (_agent != null)
-          _buildDetailRow('Agent', _agent['agent_name'] ?? 'Unknown', Icons.person_outline),
-        _buildDetailRow('Passenger Name', _job!.passengerName ?? 'Not provided', Icons.person),
-        _buildDetailRow('Contact Number', _job!.passengerContact ?? 'Not provided', Icons.phone),
+          _buildDetailRow(
+            'Agent',
+            _agent['agent_name'] ?? 'Unknown',
+            Icons.person_outline,
+          ),
+        _buildDetailRow(
+          'Passenger Name',
+          _job!.passengerName ?? 'Not provided',
+          Icons.person,
+        ),
+        _buildDetailRow(
+          'Contact Number',
+          _job!.passengerContact ?? 'Not provided',
+          Icons.phone,
+        ),
         if (!_job!.hasCompletePassengerDetails)
           Container(
             margin: const EdgeInsets.only(top: 12),
@@ -572,7 +598,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: ChoiceLuxTheme.errorColor.withOpacity(0.3)),
+              border: Border.all(
+                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+              ),
             ),
             child: Row(
               children: [
@@ -594,7 +622,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ],
     );
   }
-  
+
   Widget _buildVehicleDriverCard() {
     return Card(
       elevation: 2,
@@ -612,19 +640,43 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildVehicleDriverContent() {
     return Column(
       children: [
-        _buildDetailRow('Vehicle', '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'.trim().isEmpty ? 'Unknown' : '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'.trim(), Icons.directions_car),
-        _buildDetailRow('Registration', _vehicle?['reg_plate'] ?? 'Unknown', Icons.confirmation_number),
-        _buildDetailRow('Driver', _driver?['display_name'] ?? 'Unknown', Icons.person),
-        _buildDetailRow('Passengers', _formatPassengerCount(_job!.pasCount), Icons.people),
-        _buildDetailRow('Luggage', _formatLuggageCount(_job!.luggageCount), Icons.work),
+        _buildDetailRow(
+          'Vehicle',
+          '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'
+                  .trim()
+                  .isEmpty
+              ? 'Unknown'
+              : '${_vehicle?['make'] ?? ''} ${_vehicle?['model'] ?? ''}'.trim(),
+          Icons.directions_car,
+        ),
+        _buildDetailRow(
+          'Registration',
+          _vehicle?['reg_plate'] ?? 'Unknown',
+          Icons.confirmation_number,
+        ),
+        _buildDetailRow(
+          'Driver',
+          _driver?['display_name'] ?? 'Unknown',
+          Icons.person,
+        ),
+        _buildDetailRow(
+          'Passengers',
+          _formatPassengerCount(_job!.pasCount),
+          Icons.people,
+        ),
+        _buildDetailRow(
+          'Luggage',
+          _formatLuggageCount(_job!.luggageCount),
+          Icons.work,
+        ),
       ],
     );
   }
-  
+
   Widget _buildPaymentCard() {
     return Card(
       elevation: 2,
@@ -642,11 +694,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildPaymentContent() {
     return Column(
       children: [
-        _buildDetailRow('Collect Payment', _job!.collectPayment ? 'Yes' : 'No', Icons.payment),
+        _buildDetailRow(
+          'Collect Payment',
+          _job!.collectPayment ? 'Yes' : 'No',
+          Icons.payment,
+        ),
         if (_job!.collectPayment && _job!.paymentAmount != null)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -654,11 +710,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.richGold.withOpacity(0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              ),
             ),
             child: Row(
               children: [
-                Icon(Icons.attach_money, color: ChoiceLuxTheme.richGold, size: 20),
+                Icon(
+                  Icons.attach_money,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 20,
+                ),
                 const SizedBox(width: 8),
                 Text(
                   'Amount to Collect: R${_job!.paymentAmount!.toStringAsFixed(2)}',
@@ -674,7 +736,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ],
     );
   }
-  
+
   Widget _buildStepTimelineCard() {
     return Card(
       elevation: 2,
@@ -697,7 +759,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   );
                 }
-                
+
                 if (snapshot.hasError) {
                   return Container(
                     padding: const EdgeInsets.all(16),
@@ -728,9 +790,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   );
                 }
-                
+
                 final steps = snapshot.data ?? [];
-                
+
                 if (steps.isEmpty) {
                   return Container(
                     padding: const EdgeInsets.all(16),
@@ -761,7 +823,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   );
                 }
-                
+
                 return Column(
                   children: steps.map((step) {
                     return _buildStepTimelineItem(step);
@@ -777,11 +839,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   Widget _buildStepTimelineItem(Map<String, dynamic> step) {
     final isTotal = step['isTotal'] == true;
-    final status = step['status'] ?? 'completed'; // Default to completed for backward compatibility
+    final status =
+        step['status'] ??
+        'completed'; // Default to completed for backward compatibility
     final isCompleted = status == 'completed';
     final isCurrent = status == 'current';
     final isUpcoming = status == 'upcoming';
-    
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 12),
       child: Row(
@@ -791,34 +855,34 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             width: 40,
             height: 40,
             decoration: BoxDecoration(
-              color: isTotal 
-                ? Colors.indigo.withOpacity(0.2)
-                : isCurrent
+              color: isTotal
+                  ? Colors.indigo.withOpacity(0.2)
+                  : isCurrent
                   ? ChoiceLuxTheme.richGold.withOpacity(0.2)
                   : isCompleted
-                    ? ChoiceLuxTheme.successColor.withOpacity(0.2)
-                    : Colors.grey.withOpacity(0.1),
+                  ? ChoiceLuxTheme.successColor.withOpacity(0.2)
+                  : Colors.grey.withOpacity(0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: isTotal 
-                  ? Colors.indigo.withOpacity(0.5)
-                  : isCurrent
+                color: isTotal
+                    ? Colors.indigo.withOpacity(0.5)
+                    : isCurrent
                     ? ChoiceLuxTheme.richGold.withOpacity(0.5)
                     : isCompleted
-                      ? ChoiceLuxTheme.successColor.withOpacity(0.5)
-                      : Colors.grey.withOpacity(0.3),
+                    ? ChoiceLuxTheme.successColor.withOpacity(0.5)
+                    : Colors.grey.withOpacity(0.3),
                 width: isTotal || isCurrent ? 2 : 1,
               ),
             ),
             child: Icon(
               step['icon'],
-              color: isTotal 
-                ? Colors.indigo
-                : isCurrent
+              color: isTotal
+                  ? Colors.indigo
+                  : isCurrent
                   ? ChoiceLuxTheme.richGold
                   : isCompleted
-                    ? ChoiceLuxTheme.successColor
-                    : Colors.grey,
+                  ? ChoiceLuxTheme.successColor
+                  : Colors.grey,
               size: 24,
             ),
           ),
@@ -834,29 +898,36 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         step['title'],
                         style: TextStyle(
                           fontSize: 16,
-                          fontWeight: isTotal ? FontWeight.w700 : FontWeight.bold,
-                          color: isTotal 
-                            ? Colors.indigo
-                            : isCurrent
+                          fontWeight: isTotal
+                              ? FontWeight.w700
+                              : FontWeight.bold,
+                          color: isTotal
+                              ? Colors.indigo
+                              : isCurrent
                               ? ChoiceLuxTheme.richGold
                               : isCompleted
-                                ? Colors.black
-                                : Colors.grey,
+                              ? Colors.black
+                              : Colors.grey,
                         ),
                       ),
                     ),
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: step['status'] == 'not_started' 
-                              ? ChoiceLuxTheme.infoColor 
+                          color: step['status'] == 'not_started'
+                              ? ChoiceLuxTheme.infoColor
                               : ChoiceLuxTheme.richGold,
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          step['status'] == 'not_started' ? 'Not Started' : 'In Progress',
+                          step['status'] == 'not_started'
+                              ? 'Not Started'
+                              : 'In Progress',
                           style: TextStyle(
                             color: Colors.black,
                             fontSize: 10,
@@ -871,22 +942,27 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   step['description'],
                   style: TextStyle(
                     fontSize: 14,
-                    color: isUpcoming ? Colors.grey.withOpacity(0.7) : Colors.grey,
+                    color: isUpcoming
+                        ? Colors.grey.withOpacity(0.7)
+                        : Colors.grey,
                   ),
                 ),
                 if (step['address'] != null)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: isCurrent
-                        ? ChoiceLuxTheme.richGold.withOpacity(0.1)
-                        : Colors.blue.withOpacity(0.1),
+                          ? ChoiceLuxTheme.richGold.withOpacity(0.1)
+                          : Colors.blue.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: isCurrent
-                          ? ChoiceLuxTheme.richGold.withOpacity(0.3)
-                          : Colors.blue.withOpacity(0.3),
+                            ? ChoiceLuxTheme.richGold.withOpacity(0.3)
+                            : Colors.blue.withOpacity(0.3),
                       ),
                     ),
                     child: Row(
@@ -895,8 +971,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                           Icons.location_on,
                           size: 12,
                           color: isCurrent
-                            ? ChoiceLuxTheme.richGold
-                            : Colors.blue,
+                              ? ChoiceLuxTheme.richGold
+                              : Colors.blue,
                         ),
                         const SizedBox(width: 4),
                         Expanded(
@@ -906,8 +982,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               fontSize: 12,
                               fontWeight: FontWeight.w500,
                               color: isCurrent
-                                ? ChoiceLuxTheme.richGold
-                                : Colors.blue,
+                                  ? ChoiceLuxTheme.richGold
+                                  : Colors.blue,
                             ),
                           ),
                         ),
@@ -917,16 +993,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 if (step['odometer'] != null)
                   Container(
                     margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
-                      color: isTotal 
-                        ? Colors.indigo.withOpacity(0.1)
-                        : Colors.grey.withOpacity(0.1),
+                      color: isTotal
+                          ? Colors.indigo.withOpacity(0.1)
+                          : Colors.grey.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: isTotal 
-                          ? Colors.indigo.withOpacity(0.3)
-                          : Colors.grey.withOpacity(0.3),
+                        color: isTotal
+                            ? Colors.indigo.withOpacity(0.3)
+                            : Colors.grey.withOpacity(0.3),
                       ),
                     ),
                     child: Text(
@@ -968,8 +1047,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         const SizedBox(height: 4),
                         LinearProgressIndicator(
                           value: step['progressPercentage'] / 100.0,
-                          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                          valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(
+                            0.2,
+                          ),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            ChoiceLuxTheme.richGold,
+                          ),
                           minHeight: 4,
                         ),
                       ],
@@ -978,10 +1061,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 if (step['completedAt'] != null)
                   Text(
                     'Completed on: ${_formatDateTime(step['completedAt'])}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Colors.green,
-                    ),
+                    style: const TextStyle(fontSize: 12, color: Colors.green),
                   ),
               ],
             ),
@@ -990,7 +1070,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildNotesCard() {
     return Card(
       elevation: 2,
@@ -1008,7 +1088,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildStepTimelineContent() {
     return FutureBuilder<List<Map<String, dynamic>>>(
       future: _getStepTimeline(),
@@ -1021,7 +1101,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           );
         }
-        
+
         if (snapshot.hasError) {
           return Container(
             padding: const EdgeInsets.all(16),
@@ -1032,11 +1112,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.error_outline,
-                  color: Colors.red[600],
-                  size: 20,
-                ),
+                Icon(Icons.error_outline, color: Colors.red[600], size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1052,9 +1128,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           );
         }
-        
+
         final steps = snapshot.data ?? [];
-        
+
         if (steps.isEmpty) {
           return Container(
             padding: const EdgeInsets.all(16),
@@ -1065,11 +1141,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  Icons.info_outline,
-                  color: Colors.grey[600],
-                  size: 20,
-                ),
+                Icon(Icons.info_outline, color: Colors.grey[600], size: 20),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
@@ -1085,7 +1157,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           );
         }
-        
+
         return Column(
           children: steps.map((step) {
             return _buildStepTimelineItem(step);
@@ -1105,14 +1177,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
       child: Text(
         _job!.notes!,
-        style: const TextStyle(
-          fontSize: 14,
-          height: 1.5,
-        ),
+        style: const TextStyle(fontSize: 14, height: 1.5),
       ),
     );
   }
-  
+
   Widget _buildTripsSummaryCard(double totalAmount) {
     return Card(
       elevation: 2,
@@ -1130,7 +1199,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildTripsContent(double totalAmount) {
     return Column(
       children: [
@@ -1145,7 +1214,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
           child: Row(
             children: [
-              Icon(Icons.attach_money, color: ChoiceLuxTheme.richGold, size: 24),
+              Icon(
+                Icons.attach_money,
+                color: ChoiceLuxTheme.richGold,
+                size: 24,
+              ),
               const SizedBox(width: 12),
               Text(
                 'Total Amount: R${totalAmount.toStringAsFixed(2)}',
@@ -1161,7 +1234,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ],
     );
   }
-  
+
   Widget _buildTripsListCard() {
     return Card(
       elevation: 2,
@@ -1183,7 +1256,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
+
   Widget _buildTripCard(Trip trip, int index) {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1200,7 +1273,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.richGold,
                     borderRadius: BorderRadius.circular(16),
@@ -1216,11 +1292,16 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 ),
                 const Spacer(),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    ),
                   ),
                   child: Text(
                     'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
@@ -1245,9 +1326,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               ],
             ),
             const SizedBox(height: 12),
-            _buildDetailRow('Date & Time', trip.formattedDateTime ?? 'Not set', Icons.access_time),
-            _buildDetailRow('Pick-up', trip.pickupLocation ?? 'Not set', Icons.location_on),
-            _buildDetailRow('Drop-off', trip.dropoffLocation ?? 'Not set', Icons.location_off),
+            _buildDetailRow(
+              'Date & Time',
+              trip.formattedDateTime ?? 'Not set',
+              Icons.access_time,
+            ),
+            _buildDetailRow(
+              'Pick-up',
+              trip.pickupLocation ?? 'Not set',
+              Icons.location_on,
+            ),
+            _buildDetailRow(
+              'Drop-off',
+              trip.dropoffLocation ?? 'Not set',
+              Icons.location_off,
+            ),
             if (trip.notes != null && trip.notes!.isNotEmpty)
               _buildDetailRow('Notes', trip.notes!, Icons.note),
           ],
@@ -1255,165 +1348,185 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-  
-     Widget _buildActionButtons() {
-     final currentUser = ref.read(currentUserProfileProvider);
-     final isAssignedDriver = _job?.driverId == currentUser?.id;
-     final isConfirmed = _job?.isConfirmed == true || _job?.driverConfirmation == true;
-     final needsConfirmation = isAssignedDriver && !isConfirmed;
-     final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
-                    currentUser?.role?.toLowerCase() == 'manager';
-     
-     return Column(
-       children: [
-         Row(
-           children: [
-             Expanded(
-               child: ElevatedButton.icon(
-                 onPressed: () => context.go('/jobs'),
-                 icon: const Icon(Icons.list),
-                 label: const Text('Back to Jobs'),
-                 style: ElevatedButton.styleFrom(
-                   backgroundColor: Colors.grey,
-                   foregroundColor: Colors.white,
-                   padding: const EdgeInsets.symmetric(vertical: 16),
-                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                 ),
-               ),
-             ),
-             if (needsConfirmation) ...[
-               const SizedBox(width: 16),
-               Expanded(
-                 child: ElevatedButton.icon(
-                   onPressed: _isConfirming ? null : _confirmJob,
-                   icon: _isConfirming 
-                       ? const SizedBox(
-                           width: 16,
-                           height: 16,
-                           child: CircularProgressIndicator(
-                             strokeWidth: 2,
-                             valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                           ),
-                         )
-                       : const Icon(Icons.check_circle),
-                   label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
-                   style: ElevatedButton.styleFrom(
-                     backgroundColor: Colors.green,
-                     foregroundColor: Colors.white,
-                     padding: const EdgeInsets.symmetric(vertical: 16),
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                   ),
-                 ),
-               ),
-             ] else if (canEdit) ...[
-               const SizedBox(width: 16),
-               Expanded(
-                 child: ElevatedButton.icon(
-                   onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
-                   icon: const Icon(Icons.edit),
-                   label: const Text('Edit Job'),
-                   style: ElevatedButton.styleFrom(
-                     backgroundColor: ChoiceLuxTheme.richGold,
-                     foregroundColor: Colors.white,
-                     padding: const EdgeInsets.symmetric(vertical: 16),
-                     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                   ),
-                 ),
-               ),
-             ],
-           ],
-         ),
-         // Add Another Trip Button
-         if (canEdit) ...[
-           const SizedBox(height: 12),
-           SizedBox(
-             width: double.infinity,
-             child: ElevatedButton.icon(
-               onPressed: _showAddTripModal,
-               icon: const Icon(Icons.add),
-               label: const Text('Add Another Trip'),
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: ChoiceLuxTheme.infoColor,
-                 foregroundColor: Colors.white,
-                 padding: const EdgeInsets.symmetric(vertical: 16),
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-               ),
-             ),
-           ),
-         ],
-       ],
-     );
-   }
 
-   Widget _buildMobileActionButtons() {
-     final currentUser = ref.read(currentUserProfileProvider);
-     final isAssignedDriver = _job?.driverId == currentUser?.id;
-     final isConfirmed = _job?.isConfirmed == true || _job?.driverConfirmation == true;
-     final needsConfirmation = isAssignedDriver && !isConfirmed;
-     final canEdit = currentUser?.role?.toLowerCase() == 'administrator' || 
-                    currentUser?.role?.toLowerCase() == 'manager';
-     
-     return Column(
-       children: [
-         SizedBox(
-           width: double.infinity,
-           child: ElevatedButton.icon(
-             onPressed: () => context.go('/jobs'),
-             icon: const Icon(Icons.list),
-             label: const Text('Back to Jobs'),
-             style: ElevatedButton.styleFrom(
-               backgroundColor: Colors.grey,
-               foregroundColor: Colors.white,
-               padding: const EdgeInsets.symmetric(vertical: 16),
-               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-             ),
-           ),
-         ),
-         if (needsConfirmation) ...[
-           const SizedBox(height: 12),
-           SizedBox(
-             width: double.infinity,
-             child: ElevatedButton.icon(
-               onPressed: _isConfirming ? null : _confirmJob,
-               icon: _isConfirming 
-                   ? const SizedBox(
-                       width: 16,
-                       height: 16,
-                       child: CircularProgressIndicator(
-                         strokeWidth: 2,
-                         valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                       ),
-                     )
-                   : const Icon(Icons.check_circle),
-               label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: Colors.green,
-                 foregroundColor: Colors.white,
-                 padding: const EdgeInsets.symmetric(vertical: 16),
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-               ),
-             ),
-           ),
-         ] else if (canEdit) ...[
-           const SizedBox(height: 12),
-           SizedBox(
-             width: double.infinity,
-             child: ElevatedButton.icon(
-               onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
-               icon: const Icon(Icons.edit),
-               label: const Text('Edit Job'),
-               style: ElevatedButton.styleFrom(
-                 backgroundColor: ChoiceLuxTheme.richGold,
-                 foregroundColor: Colors.white,
-                 padding: const EdgeInsets.symmetric(vertical: 16),
-                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-               ),
-             ),
-           ),
-         ],
-       ],
-     );
-   }
+  Widget _buildActionButtons() {
+    final currentUser = ref.read(currentUserProfileProvider);
+    final isAssignedDriver = _job?.driverId == currentUser?.id;
+    final isConfirmed =
+        _job?.isConfirmed == true || _job?.driverConfirmation == true;
+    final needsConfirmation = isAssignedDriver && !isConfirmed;
+    final canEdit =
+        currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'manager';
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: () => context.go('/jobs'),
+                icon: const Icon(Icons.list),
+                label: const Text('Back to Jobs'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+              ),
+            ),
+            if (needsConfirmation) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isConfirming ? null : _confirmJob,
+                  icon: _isConfirming
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
+                          ),
+                        )
+                      : const Icon(Icons.check_circle),
+                  label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ] else if (canEdit) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
+                  icon: const Icon(Icons.edit),
+                  label: const Text('Edit Job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+        // Add Another Trip Button
+        if (canEdit) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showAddTripModal,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Another Trip'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.infoColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildMobileActionButtons() {
+    final currentUser = ref.read(currentUserProfileProvider);
+    final isAssignedDriver = _job?.driverId == currentUser?.id;
+    final isConfirmed =
+        _job?.isConfirmed == true || _job?.driverConfirmation == true;
+    final needsConfirmation = isAssignedDriver && !isConfirmed;
+    final canEdit =
+        currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'manager';
+
+    return Column(
+      children: [
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.go('/jobs'),
+            icon: const Icon(Icons.list),
+            label: const Text('Back to Jobs'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.grey,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
+          ),
+        ),
+        if (needsConfirmation) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isConfirming ? null : _confirmJob,
+              icon: _isConfirming
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.check_circle),
+              label: Text(_isConfirming ? 'Confirming...' : 'Confirm Job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ] else if (canEdit) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/jobs/${widget.jobId}/edit'),
+              icon: const Icon(Icons.edit),
+              label: const Text('Edit Job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
 
   Future<void> _confirmJob() async {
     Log.d('=== JOB SUMMARY SCREEN: _confirmJob() called ===');
@@ -1421,56 +1534,55 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     Log.d('Job Status: ${_job!.status}');
     Log.d('Is Confirmed: ${_job!.isConfirmed}');
     Log.d('Driver Confirmation: ${_job!.driverConfirmation}');
-    
+
     // Prevent duplicate calls
     if (_isConfirming) {
       Log.d('Job confirmation already in progress, skipping duplicate call');
       return;
     }
-    
+
     setState(() => _isConfirming = true);
-    
+
     try {
       // Show loading state
       if (!mounted) {
         Log.d('Widget not mounted, returning early');
         return;
       }
-      
+
       Log.d('Calling jobsProvider.confirmJob...');
       // Confirm the job using the single source of truth
       await ref.read(jobsProvider.notifier).confirmJob(widget.jobId);
       Log.d('jobsProvider.confirmJob completed successfully');
-      
+
       // Refresh all jobs to help with state synchronization
       await ref.read(jobsProvider.notifier).fetchJobs();
       Log.d('Jobs list refreshed after confirmation');
-      
+
       // Check if widget is still mounted before showing success message and navigating
       if (!mounted) {
         Log.d('Widget not mounted after confirmation, returning early');
         return;
       }
-      
+
       Log.d('Showing success message...');
       // Show success message
       SnackBarUtils.showSuccess(context, '✅ Job confirmed successfully!');
-      
+
       Log.d('Waiting 500ms before navigation...');
       // Wait a moment for the SnackBar to show, then navigate
       await Future.delayed(const Duration(milliseconds: 500));
-      
+
       // Check again if widget is still mounted before navigating
       if (!mounted) {
         Log.d('Widget not mounted before navigation, returning early');
         return;
       }
-      
+
       Log.d('Navigating to /jobs...');
       // Navigate back to jobs management after confirmation
       context.go('/jobs');
       Log.d('Navigation completed');
-      
     } catch (e) {
       Log.e('Error in _confirmJob: $e');
       // Check if widget is still mounted before showing error
@@ -1478,7 +1590,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         Log.d('Widget not mounted for error display, returning early');
         return;
       }
-      
+
       SnackBarUtils.showError(context, '❌ Failed to confirm job: $e');
     } finally {
       if (mounted) {
@@ -1503,7 +1615,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ],
     );
   }
-  
+
   Widget _buildDetailRow(String label, String value, IconData icon) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -1526,17 +1638,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 14,
-              ),
+              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
             ),
           ),
         ],
       ),
     );
   }
-  
+
   Color _getStatusColor() {
     switch (_job!.status) {
       case 'assigned':
@@ -1555,7 +1664,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         return ChoiceLuxTheme.platinumSilver;
     }
   }
-  
+
   String _getStatusText(String status) {
     switch (status) {
       case 'assigned':
@@ -1574,20 +1683,30 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         return status.toUpperCase();
     }
   }
-  
+
   String _formatDate(DateTime date) {
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return '${date.day.toString().padLeft(2, '0')} ${months[date.month - 1]} ${date.year}';
   }
-  
+
   String _formatPassengerCount(dynamic count) {
     final intCount = int.tryParse(count.toString()) ?? 0;
     return '$intCount Passenger${intCount == 1 ? '' : 's'}';
   }
-  
+
   String _formatLuggageCount(dynamic count) {
     final intCount = int.tryParse(count.toString()) ?? 0;
     return '$intCount Bag${intCount == 1 ? '' : 's'}';
@@ -1595,7 +1714,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   String _formatDateTime(String? dateTimeString) {
     if (dateTimeString == null) return 'Not completed';
-    
+
     try {
       final dateTime = DateTime.parse(dateTimeString);
       return '${dateTime.day}/${dateTime.month}/${dateTime.year} at ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
@@ -1606,45 +1725,47 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   Future<List<Map<String, dynamic>>> _getStepTimeline() async {
     final steps = <Map<String, dynamic>>[];
-    
+
     // Get odometer readings
     final startOdo = _driverFlowData?['odo_start_reading'] ?? 0.0;
     final endOdo = _driverFlowData?['job_closed_odo'] ?? 0.0;
     final totalKm = endOdo - startOdo;
     final progressPercentage = _driverFlowData?['progress_percentage'] ?? 0.0;
-    
+
     // Define all possible steps in order
     final allSteps = [
       'vehicle_collection',
-      'pickup_arrival', 
+      'pickup_arrival',
       'passenger_onboard',
       'dropoff_arrival',
       'trip_complete',
-      'vehicle_return'
+      'vehicle_return',
     ];
-    
+
     // Get current step from driver flow data
     final currentStepId = _driverFlowData?['current_step']?.toString();
-    
+
     // Load job addresses for pickup/dropoff steps
     Map<String, String?> jobAddresses = {};
     try {
-      jobAddresses = await DriverFlowApiService.getJobAddresses(int.parse(widget.jobId));
+      jobAddresses = await DriverFlowApiService.getJobAddresses(
+        int.parse(widget.jobId),
+      );
     } catch (e) {
       Log.e('Could not load job addresses: $e');
     }
-    
+
     // Process each step
     for (final stepId in allSteps) {
       final stepTitle = DriverFlowUtils.getStepTitle(stepId);
       final stepDescription = DriverFlowUtils.getStepDescription(stepId);
       final stepIcon = DriverFlowUtils.getStepIcon(stepId);
-      
+
       // Determine step status
       bool isCompleted = false;
       bool isCurrent = false;
       DateTime? completedAt;
-      
+
       // Check if this is the current step
       if (currentStepId != null && currentStepId.isNotEmpty) {
         isCurrent = stepId == currentStepId;
@@ -1652,7 +1773,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // No current step means job hasn't started - first step (vehicle_collection) is current
         isCurrent = stepId == 'vehicle_collection';
       }
-      
+
       // Check completion status for each step
       switch (stepId) {
         case 'vehicle_collection':
@@ -1660,35 +1781,43 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           completedAt = _driverFlowData?['vehicle_collected_at'];
           break;
         case 'pickup_arrival':
-          isCompleted = _tripProgressData.isNotEmpty && 
-                       _tripProgressData.first['pickup_arrived_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty ? 
-                       _tripProgressData.first['pickup_arrived_at'] : null;
+          isCompleted =
+              _tripProgressData.isNotEmpty &&
+              _tripProgressData.first['pickup_arrived_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty
+              ? _tripProgressData.first['pickup_arrived_at']
+              : null;
           break;
         case 'passenger_onboard':
-          isCompleted = _tripProgressData.isNotEmpty && 
-                       _tripProgressData.first['passenger_onboard_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty ? 
-                       _tripProgressData.first['passenger_onboard_at'] : null;
+          isCompleted =
+              _tripProgressData.isNotEmpty &&
+              _tripProgressData.first['passenger_onboard_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty
+              ? _tripProgressData.first['passenger_onboard_at']
+              : null;
           break;
         case 'dropoff_arrival':
-          isCompleted = _tripProgressData.isNotEmpty && 
-                       _tripProgressData.first['dropoff_arrived_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty ? 
-                       _tripProgressData.first['dropoff_arrived_at'] : null;
+          isCompleted =
+              _tripProgressData.isNotEmpty &&
+              _tripProgressData.first['dropoff_arrived_at'] != null;
+          completedAt = _tripProgressData.isNotEmpty
+              ? _tripProgressData.first['dropoff_arrived_at']
+              : null;
           break;
         case 'trip_complete':
-          isCompleted = _tripProgressData.isNotEmpty && 
-                       _tripProgressData.first['status'] == 'completed';
-          completedAt = _tripProgressData.isNotEmpty ? 
-                       _tripProgressData.first['updated_at'] : null;
+          isCompleted =
+              _tripProgressData.isNotEmpty &&
+              _tripProgressData.first['status'] == 'completed';
+          completedAt = _tripProgressData.isNotEmpty
+              ? _tripProgressData.first['updated_at']
+              : null;
           break;
         case 'vehicle_return':
           isCompleted = _driverFlowData?['job_closed_time'] != null;
           completedAt = _driverFlowData?['job_closed_time'];
           break;
       }
-      
+
       // Add step to timeline with appropriate styling
       if (isCompleted) {
         // Completed step
@@ -1700,60 +1829,73 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           'color': ChoiceLuxTheme.successColor,
           'status': 'completed',
         };
-        
+
         // Add odometer info for vehicle steps
         if (stepId == 'vehicle_collection' && startOdo > 0) {
           stepData['odometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
         } else if (stepId == 'vehicle_return' && endOdo > 0) {
           stepData['odometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
         }
-        
+
         steps.add(stepData);
       } else if (isCurrent) {
         // Current step
         final stepData = {
-          'title': DriverFlowUtils.getStepTitleWithAddress(stepId, jobAddresses['pickup']),
+          'title': DriverFlowUtils.getStepTitleWithAddress(
+            stepId,
+            jobAddresses['pickup'],
+          ),
           'description': stepDescription,
           'completedAt': null,
           'icon': stepIcon,
-          'color': currentStepId == null ? ChoiceLuxTheme.infoColor : ChoiceLuxTheme.richGold,
+          'color': currentStepId == null
+              ? ChoiceLuxTheme.infoColor
+              : ChoiceLuxTheme.richGold,
           'status': currentStepId == null ? 'not_started' : 'current',
           'progressPercentage': progressPercentage,
         };
-        
+
         // Add address info for location steps
         if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
           stepData['address'] = jobAddresses['pickup'];
-        } else if (stepId == 'dropoff_arrival' && jobAddresses['dropoff'] != null) {
+        } else if (stepId == 'dropoff_arrival' &&
+            jobAddresses['dropoff'] != null) {
           stepData['address'] = jobAddresses['dropoff'];
         }
-        
+
         steps.add(stepData);
       } else {
         // Upcoming step
         final stepData = {
-          'title': DriverFlowUtils.getStepTitleWithAddress(stepId, jobAddresses['pickup']),
+          'title': DriverFlowUtils.getStepTitleWithAddress(
+            stepId,
+            jobAddresses['pickup'],
+          ),
           'description': stepDescription,
           'completedAt': null,
           'icon': stepIcon,
           'color': Colors.grey,
           'status': 'upcoming',
         };
-        
+
         // Add address info for location steps
         if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
           stepData['address'] = jobAddresses['pickup'];
-        } else if (stepId == 'dropoff_arrival' && jobAddresses['dropoff'] != null) {
+        } else if (stepId == 'dropoff_arrival' &&
+            jobAddresses['dropoff'] != null) {
           stepData['address'] = jobAddresses['dropoff'];
         }
-        
+
         steps.add(stepData);
       }
     }
-    
+
     // Add total kilometers traveled if job is completed
     final vehicleReturnedAt = _driverFlowData?['job_closed_time'];
-    if (startOdo > 0 && endOdo > 0 && totalKm > 0 && vehicleReturnedAt != null) {
+    if (startOdo > 0 &&
+        endOdo > 0 &&
+        totalKm > 0 &&
+        vehicleReturnedAt != null) {
       steps.add({
         'title': 'Total Distance Traveled',
         'description': 'Total kilometers covered during this job',
@@ -1765,17 +1907,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         'isTotal': true,
       });
     }
-    
+
     return steps;
   }
-  
+
   void _printJobSummary() {
     // TODO: Implement print functionality
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Print functionality coming soon')),
     );
   }
-  
+
   void _shareJobSummary() {
     // TODO: Implement share functionality
     ScaffoldMessenger.of(context).showSnackBar(
@@ -1788,7 +1930,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Edit Trip'),
-        content: const Text('Trip editing functionality is not yet implemented.'),
+        content: const Text(
+          'Trip editing functionality is not yet implemented.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1804,7 +1948,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Add Trip'),
-        content: const Text('Trip creation functionality is not yet implemented.'),
+        content: const Text(
+          'Trip creation functionality is not yet implemented.',
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
@@ -1814,4 +1960,4 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
     );
   }
-} 
+}

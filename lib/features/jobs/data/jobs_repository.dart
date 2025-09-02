@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 
 /// Repository for job-related data operations
-/// 
+///
 /// Encapsulates all Supabase queries and returns domain models.
 /// This layer separates data access from business logic.
 class JobsRepository {
@@ -19,14 +19,14 @@ class JobsRepository {
   Future<Result<List<Job>>> fetchJobs() async {
     try {
       Log.d('Fetching jobs from database');
-      
+
       final response = await _supabase
           .from('jobs')
           .select()
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} jobs from database');
-      
+
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
     } catch (error) {
@@ -39,7 +39,7 @@ class JobsRepository {
   Future<Result<Map<String, dynamic>>> createJob(Job job) async {
     try {
       Log.d('Creating job: ${job.passengerName}');
-      
+
       final response = await _supabase
           .from('jobs')
           .insert(job.toJson())
@@ -58,11 +58,8 @@ class JobsRepository {
   Future<Result<void>> updateJob(Job job) async {
     try {
       Log.d('Updating job: ${job.id}');
-      
-      await _supabase
-          .from('jobs')
-          .update(job.toJson())
-          .eq('id', job.id);
+
+      await _supabase.from('jobs').update(job.toJson()).eq('id', job.id);
 
       Log.d('Job updated successfully');
       return const Result.success(null);
@@ -76,11 +73,8 @@ class JobsRepository {
   Future<Result<void>> updateJobStatus(String jobId, String status) async {
     try {
       Log.d('Updating job status: $jobId to $status');
-      
-      await _supabase
-          .from('jobs')
-          .update({'status': status})
-          .eq('id', jobId);
+
+      await _supabase.from('jobs').update({'status': status}).eq('id', jobId);
 
       Log.d('Job status updated successfully');
       return const Result.success(null);
@@ -91,10 +85,13 @@ class JobsRepository {
   }
 
   /// Update job payment amount
-  Future<Result<void>> updateJobPaymentAmount(String jobId, double amount) async {
+  Future<Result<void>> updateJobPaymentAmount(
+    String jobId,
+    double amount,
+  ) async {
     try {
       Log.d('Updating job payment amount: $jobId to $amount');
-      
+
       await _supabase
           .from('jobs')
           .update({'payment_amount': amount})
@@ -112,11 +109,8 @@ class JobsRepository {
   Future<Result<void>> deleteJob(String jobId) async {
     try {
       Log.d('Deleting job: $jobId');
-      
-      await _supabase
-          .from('jobs')
-          .delete()
-          .eq('id', jobId);
+
+      await _supabase.from('jobs').delete().eq('id', jobId);
 
       Log.d('Job deleted successfully');
       return const Result.success(null);
@@ -130,7 +124,7 @@ class JobsRepository {
   Future<Result<List<Job>>> getJobsByStatus(String status) async {
     try {
       Log.d('Fetching jobs with status: $status');
-      
+
       final response = await _supabase
           .from('jobs')
           .select()
@@ -138,7 +132,7 @@ class JobsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} jobs with status: $status');
-      
+
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
     } catch (error) {
@@ -151,7 +145,7 @@ class JobsRepository {
   Future<Result<List<Job>>> getJobsByDriver(String driverId) async {
     try {
       Log.d('Fetching jobs for driver: $driverId');
-      
+
       final response = await _supabase
           .from('jobs')
           .select('*')
@@ -159,7 +153,7 @@ class JobsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} jobs for driver: $driverId');
-      
+
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
     } catch (error) {
@@ -172,7 +166,7 @@ class JobsRepository {
   Future<Result<List<Job>>> getJobsByClient(String clientId) async {
     try {
       Log.d('Fetching jobs for client: $clientId');
-      
+
       final response = await _supabase
           .from('jobs')
           .select('*')
@@ -180,7 +174,7 @@ class JobsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} jobs for client: $clientId');
-      
+
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
     } catch (error) {
@@ -193,7 +187,7 @@ class JobsRepository {
   Future<Result<List<Job>>> getCompletedJobsByClient(String clientId) async {
     try {
       Log.d('Fetching completed jobs for client: $clientId');
-      
+
       final response = await _supabase
           .from('jobs')
           .select('*')
@@ -202,7 +196,7 @@ class JobsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} completed jobs for client: $clientId');
-      
+
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
     } catch (error) {
@@ -212,10 +206,12 @@ class JobsRepository {
   }
 
   /// Get completed jobs revenue by client
-  Future<Result<double>> getCompletedJobsRevenueByClient(String clientId) async {
+  Future<Result<double>> getCompletedJobsRevenueByClient(
+    String clientId,
+  ) async {
     try {
       Log.d('Fetching completed jobs revenue for client: $clientId');
-      
+
       final response = await _supabase
           .from('jobs')
           .select('amount')
@@ -223,8 +219,10 @@ class JobsRepository {
           .eq('job_status', 'completed')
           .not('amount', 'is', null);
 
-      Log.d('Fetched ${response.length} completed jobs with revenue for client: $clientId');
-      
+      Log.d(
+        'Fetched ${response.length} completed jobs with revenue for client: $clientId',
+      );
+
       double totalRevenue = 0.0;
       for (final row in response) {
         final amount = row['amount'];
@@ -249,7 +247,7 @@ class JobsRepository {
   Future<Result<Job?>> fetchJobById(String jobId) async {
     try {
       Log.d('Fetching job by ID: $jobId');
-      
+
       final response = await _supabase
           .from('jobs')
           .select()
@@ -275,20 +273,20 @@ class JobsRepository {
       return Result.failure(AuthException(error.message));
     } else if (error is PostgrestException) {
       // Check if it's a network-related error
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout') ||
           error.message.contains('connection')) {
         return Result.failure(NetworkException(error.message));
       }
       // Check if it's an auth-related error
-      if (error.message.contains('JWT') || 
+      if (error.message.contains('JWT') ||
           error.message.contains('unauthorized') ||
           error.message.contains('forbidden')) {
         return Result.failure(AuthException(error.message));
       }
       return Result.failure(UnknownException(error.message));
     } else if (error is StorageException) {
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout')) {
         return Result.failure(NetworkException(error.message));
       }

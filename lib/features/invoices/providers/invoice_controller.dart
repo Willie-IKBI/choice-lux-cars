@@ -3,12 +3,7 @@ import '../models/invoice_data.dart';
 import '../services/invoice_pdf_service.dart';
 import '../services/invoice_repository.dart';
 
-enum InvoiceControllerStatus {
-  idle,
-  loading,
-  success,
-  error,
-}
+enum InvoiceControllerStatus { idle, loading, success, error }
 
 class InvoiceControllerState {
   final InvoiceControllerStatus status;
@@ -43,7 +38,7 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
   final InvoicePdfService _pdfService;
 
   InvoiceController(this._repository, this._pdfService)
-      : super(const InvoiceControllerState());
+    : super(const InvoiceControllerState());
 
   Future<void> createInvoice({required String jobId}) async {
     try {
@@ -65,10 +60,7 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
       );
 
       // Step 4: Link to job
-      await _repository.linkInvoiceUrlToJob(
-        jobId: jobId,
-        url: storageUrl,
-      );
+      await _repository.linkInvoiceUrlToJob(jobId: jobId, url: storageUrl);
 
       state = state.copyWith(
         status: InvoiceControllerStatus.success,
@@ -105,10 +97,7 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
       );
 
       // Step 4: Update job link
-      await _repository.linkInvoiceUrlToJob(
-        jobId: jobId,
-        url: storageUrl,
-      );
+      await _repository.linkInvoiceUrlToJob(jobId: jobId, url: storageUrl);
 
       state = state.copyWith(
         status: InvoiceControllerStatus.success,
@@ -132,10 +121,10 @@ class InvoiceController extends StateNotifier<InvoiceControllerState> {
 
 final invoiceControllerProvider =
     StateNotifierProvider<InvoiceController, InvoiceControllerState>((ref) {
-  final repository = ref.watch(invoiceRepositoryProvider);
-  final pdfService = ref.watch(invoicePdfServiceProvider);
-  return InvoiceController(repository, pdfService);
-});
+      final repository = ref.watch(invoiceRepositoryProvider);
+      final pdfService = ref.watch(invoicePdfServiceProvider);
+      return InvoiceController(repository, pdfService);
+    });
 
 final invoiceRepositoryProvider = Provider<InvoiceRepository>((ref) {
   return InvoiceRepository();

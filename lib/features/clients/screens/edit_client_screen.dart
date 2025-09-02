@@ -7,10 +7,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 class EditClientScreen extends ConsumerWidget {
   final String clientId;
 
-  const EditClientScreen({
-    super.key,
-    required this.clientId,
-  });
+  const EditClientScreen({super.key, required this.clientId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -50,7 +47,7 @@ class EditClientScreen extends ConsumerWidget {
             ),
           );
         }
-        
+
         return AddEditClientScreen(client: client);
       },
       loading: () => Scaffold(
@@ -60,9 +57,7 @@ class EditClientScreen extends ConsumerWidget {
           ),
           child: const SafeArea(
             child: Center(
-              child: CircularProgressIndicator(
-                color: ChoiceLuxTheme.richGold,
-              ),
+              child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
             ),
           ),
         ),
@@ -108,4 +103,4 @@ class EditClientScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

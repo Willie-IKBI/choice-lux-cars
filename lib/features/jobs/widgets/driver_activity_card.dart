@@ -4,11 +4,8 @@ class DriverActivityCard extends StatelessWidget {
   final Map<String, dynamic> driver;
   final VoidCallback? onTap;
 
-  const DriverActivityCard({
-    Key? key,
-    required this.driver,
-    this.onTap,
-  }) : super(key: key);
+  const DriverActivityCard({Key? key, required this.driver, this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -67,9 +64,9 @@ class DriverActivityCard extends StatelessWidget {
                   _buildStatusChip(driverStatus),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Job statistics
               Row(
                 children: [
@@ -107,33 +104,31 @@ class DriverActivityCard extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Activity info
               Row(
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     'Last activity: ${_formatTimestamp(lastActivity)}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const Spacer(),
                   if (activeJobs > 0)
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        border: Border.all(
+                          color: Colors.green.withOpacity(0.3),
+                        ),
                       ),
                       child: Text(
                         '$activeJobs active',
@@ -168,10 +163,7 @@ class DriverActivityCard extends StatelessWidget {
         ),
         Text(
           label,
-          style: TextStyle(
-            color: Colors.grey[600],
-            fontSize: 11,
-          ),
+          style: TextStyle(color: Colors.grey[600], fontSize: 11),
           textAlign: TextAlign.center,
         ),
       ],
@@ -181,7 +173,7 @@ class DriverActivityCard extends StatelessWidget {
   Widget _buildStatusChip(String status) {
     Color chipColor;
     String chipText;
-    
+
     switch (status) {
       case 'active':
         chipColor = Colors.green;
@@ -246,7 +238,7 @@ class DriverActivityCard extends StatelessWidget {
 
   String _formatTimestamp(String? timestamp) {
     if (timestamp == null) return 'Unknown';
-    
+
     try {
       final dateTime = DateTime.parse(timestamp);
       final now = DateTime.now();

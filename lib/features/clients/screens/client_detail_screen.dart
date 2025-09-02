@@ -14,10 +14,7 @@ import '../../../shared/widgets/luxury_app_bar.dart';
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
 
-  const ClientDetailScreen({
-    super.key,
-    required this.clientId,
-  });
+  const ClientDetailScreen({super.key, required this.clientId});
 
   @override
   ConsumerState<ClientDetailScreen> createState() => _ClientDetailScreenState();
@@ -32,7 +29,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 3, vsync: this);
-    
+
     // Check if we should open to a specific tab
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final uri = GoRouterState.of(context).uri;
@@ -69,21 +66,22 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              
+
               return Column(
                 children: [
                   // Client Info Header
                   clientAsync.when(
-                    data: (client) => client != null 
+                    data: (client) => client != null
                         ? _buildClientHeader(client, isMobile)
                         : _buildErrorState('Client not found'),
                     loading: () => _buildLoadingHeader(),
-                    error: (error, stackTrace) => _buildErrorState(error.toString()),
+                    error: (error, stackTrace) =>
+                        _buildErrorState(error.toString()),
                   ),
-                  
+
                   // Tab Bar
                   _buildTabBar(isMobile),
-                  
+
                   // Tab Content
                   Expanded(
                     child: TabBarView(
@@ -103,8 +101,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       ),
     );
   }
-
-
 
   Widget _buildClientHeader(Client client, bool isMobile) {
     return Container(
@@ -144,9 +140,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   )
                 : _buildLogoPlaceholder(),
           ),
-          
+
           const SizedBox(width: 20),
-          
+
           // Client Info
           Expanded(
             child: Column(
@@ -218,17 +214,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   }
 
   Widget _buildLogoPlaceholder() {
-    return Icon(
-      Icons.business,
-      color: ChoiceLuxTheme.richGold,
-      size: 32,
-    );
+    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 32);
   }
 
   // Helper method to format currency with comma separators
   String _formatCurrency(dynamic amount) {
     if (amount == null) return 'R0';
-    
+
     double value;
     if (amount is int) {
       value = amount.toDouble();
@@ -237,13 +229,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     } else {
       value = double.tryParse(amount.toString()) ?? 0.0;
     }
-    
+
     // Format with comma separators and no decimals
-    final formatted = value.toStringAsFixed(0).replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (Match match) => '${match[1]},',
-    );
-    
+    final formatted = value
+        .toStringAsFixed(0)
+        .replaceAllMapped(
+          RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+          (Match match) => '${match[1]},',
+        );
+
     return 'R$formatted';
   }
 
@@ -251,9 +245,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     return Container(
       padding: const EdgeInsets.all(24),
       child: const Center(
-        child: CircularProgressIndicator(
-          color: ChoiceLuxTheme.richGold,
-        ),
+        child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
       ),
     );
   }
@@ -375,10 +367,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       child: Row(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            icon,
-            size: isMobile ? 15 : 18,
-          ),
+          Icon(icon, size: isMobile ? 15 : 18),
           SizedBox(width: isMobile ? 4 : 6),
           Text(text),
         ],
@@ -398,9 +387,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         children: [
           // Quick Stats
           _buildQuickStats(clientAsync, agentsAsync, isMobile),
-          
+
           const SizedBox(height: 32),
-          
+
           // Recent Activity
           _buildRecentActivity(isMobile),
         ],
@@ -415,7 +404,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   ) {
     // Get client stats using the new provider
     final clientStatsAsync = ref.watch(clientStatsProvider(widget.clientId));
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -429,12 +418,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           ),
         ),
         const SizedBox(height: 20),
-        
+
         LayoutBuilder(
           builder: (context, constraints) {
             final isSmallMobile = constraints.maxWidth < 400;
             final crossAxisCount = isSmallMobile ? 1 : 2;
-            
+
             return GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
@@ -491,7 +480,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, bool isMobile) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    bool isMobile,
+  ) {
     return Container(
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
@@ -572,7 +566,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           ),
         ),
         const SizedBox(height: 20),
-        
+
         Container(
           decoration: BoxDecoration(
             gradient: ChoiceLuxTheme.cardGradient,
@@ -636,14 +630,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           Container(
             padding: EdgeInsets.all(isMobile ? 8 : 10),
             decoration: BoxDecoration(
-              color: isPlaceholder 
+              color: isPlaceholder
                   ? ChoiceLuxTheme.platinumSilver.withOpacity(0.1)
                   : ChoiceLuxTheme.richGold.withOpacity(0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
-              color: isPlaceholder 
+              color: isPlaceholder
                   ? ChoiceLuxTheme.platinumSilver.withOpacity(0.5)
                   : ChoiceLuxTheme.richGold,
               size: isMobile ? 18 : 20,
@@ -659,7 +653,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   style: TextStyle(
                     fontSize: isMobile ? 15 : 17,
                     fontWeight: FontWeight.w600,
-                    color: isPlaceholder 
+                    color: isPlaceholder
                         ? ChoiceLuxTheme.platinumSilver.withOpacity(0.5)
                         : ChoiceLuxTheme.softWhite,
                     letterSpacing: 0.2,
@@ -717,14 +711,17 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ChoiceLuxTheme.richGold,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           agentsAsync.when(
             data: (agents) {
               if (agents.isEmpty) {
@@ -733,9 +730,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               return _buildAgentsList(agents, isMobile);
             },
             loading: () => const Center(
-              child: CircularProgressIndicator(
-                color: ChoiceLuxTheme.richGold,
-              ),
+              child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
             ),
             error: (error, stackTrace) => Center(
               child: Column(
@@ -851,7 +846,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             if (agent.id == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
-                  content: Text('Error: Agent ID is null. Cannot edit this agent.'),
+                  content: Text(
+                    'Error: Agent ID is null. Cannot edit this agent.',
+                  ),
                   backgroundColor: Colors.red,
                 ),
               );
@@ -860,10 +857,8 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AddEditAgentScreen(
-                  clientId: widget.clientId,
-                  agent: agent,
-                ),
+                builder: (context) =>
+                    AddEditAgentScreen(clientId: widget.clientId, agent: agent),
               ),
             );
           },
@@ -888,9 +883,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               letterSpacing: 1.2,
             ),
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           Container(
             decoration: BoxDecoration(
               gradient: ChoiceLuxTheme.cardGradient,
@@ -978,12 +973,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               Navigator.of(context).pop();
               try {
                 // Delete the agent and wait for the operation to complete
-                await ref.read(agentsNotifierProvider(widget.clientId).notifier)
+                await ref
+                    .read(agentsNotifierProvider(widget.clientId).notifier)
                     .deleteAgent(agent.id.toString());
-                
+
                 // Force a rebuild by refreshing the agents list
-                await ref.read(agentsNotifierProvider(widget.clientId).notifier).refresh();
-                
+                await ref
+                    .read(agentsNotifierProvider(widget.clientId).notifier)
+                    .refresh();
+
                 if (mounted) {
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
@@ -996,7 +994,9 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                 if (mounted) {
                   scaffoldMessenger.showSnackBar(
                     SnackBar(
-                      content: Text('Failed to delete ${agent.agentName}: ${error.toString()}'),
+                      content: Text(
+                        'Failed to delete ${agent.agentName}: ${error.toString()}',
+                      ),
                       backgroundColor: ChoiceLuxTheme.errorColor,
                     ),
                   );
@@ -1013,4 +1013,4 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       ),
     );
   }
-} 
+}

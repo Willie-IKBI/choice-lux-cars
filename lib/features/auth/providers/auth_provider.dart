@@ -44,9 +44,8 @@ class UserProfile {
     );
   }
 
-  String get displayNameOrEmail => displayName?.isNotEmpty == true 
-      ? displayName! 
-      : 'User';
+  String get displayNameOrEmail =>
+      displayName?.isNotEmpty == true ? displayName! : 'User';
 }
 
 // Auth state notifier
@@ -71,34 +70,39 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       // Listen to auth state changes
-      _supabaseService.authStateChanges.listen((data) {
-        final AuthChangeEvent event = data.event;
-        final Session? session = data.session;
-        
-        Log.d('Auth state change: $event');
-        
-        if (event == AuthChangeEvent.signedIn && session != null) {
-          state = AsyncValue.data(session.user);
-          
-          // Handle FCM token update for newly signed in user
-          _handleFCMTokenUpdate(session.user.id);
-        } else if (event == AuthChangeEvent.signedOut) {
-          state = const AsyncValue.data(null);
-        } else if (event == AuthChangeEvent.passwordRecovery) {
-          // Handle password recovery event - user clicked reset link
-          Log.d('Password recovery event detected - user should be redirected to reset password screen');
-          // The user is now authenticated with a recovery session
-          if (session != null) {
+      _supabaseService.authStateChanges.listen(
+        (data) {
+          final AuthChangeEvent event = data.event;
+          final Session? session = data.session;
+
+          Log.d('Auth state change: $event');
+
+          if (event == AuthChangeEvent.signedIn && session != null) {
             state = AsyncValue.data(session.user);
-            // Set password recovery state
-            setPasswordRecovery(true);
+
+            // Handle FCM token update for newly signed in user
+            _handleFCMTokenUpdate(session.user.id);
+          } else if (event == AuthChangeEvent.signedOut) {
+            state = const AsyncValue.data(null);
+          } else if (event == AuthChangeEvent.passwordRecovery) {
+            // Handle password recovery event - user clicked reset link
+            Log.d(
+              'Password recovery event detected - user should be redirected to reset password screen',
+            );
+            // The user is now authenticated with a recovery session
+            if (session != null) {
+              state = AsyncValue.data(session.user);
+              // Set password recovery state
+              setPasswordRecovery(true);
+            }
           }
-        }
-      }, onError: (error) {
-        Log.e('Auth state change error: $error');
-        // Set to not authenticated instead of error to allow app to continue
-        state = const AsyncValue.data(null);
-      });
+        },
+        onError: (error) {
+          Log.e('Auth state change error: $error');
+          // Set to not authenticated instead of error to allow app to continue
+          state = const AsyncValue.data(null);
+        },
+      );
     } catch (error) {
       Log.e('Error initializing auth: $error');
       // Set to not authenticated instead of error to allow app to continue
@@ -111,10 +115,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     try {
       // Try to get Firebase service instance
       _firebaseService ??= FirebaseService.instance;
-      
+
       // Request notification permissions
       await _firebaseService!.requestNotificationPermissions();
-      
+
       // Check if FCM token needs updating
       bool shouldUpdate = await _firebaseService!.shouldUpdateFCMToken(userId);
       if (shouldUpdate) {
@@ -136,8 +140,11 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     state = const AsyncValue.loading();
 
     try {
-      final response = await _supabaseService.signIn(email: email, password: password);
-      
+      final response = await _supabaseService.signIn(
+        email: email,
+        password: password,
+      );
+
       if (response.user != null) {
         state = AsyncValue.data(response.user);
         // Handle FCM token update after successful sign in
@@ -149,7 +156,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       Log.e('Supabase signIn error: $error');
       Log.d('Error type: ${error.runtimeType}');
       Log.d('Error string: ${error.toString()}');
-      
+
       // Use centralized error handling utility to convert to safe AuthError
       final authError = AuthErrorUtils.toAuthError(error);
       Log.d('Setting error state with message: ${authError.message}');
@@ -185,7 +192,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           'role': 'unassigned', // New users are unassigned by default
         },
       );
-      
+
       if (response.user != null) {
         // Create profile record
         await _supabaseService.updateProfile(
@@ -197,7 +204,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             'status': 'unassigned',
           },
         );
-        
+
         state = AsyncValue.data(response.user);
         // Handle FCM token update after successful sign up
         _handleFCMTokenUpdate(response.user!.id);
@@ -268,8 +275,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   void setPasswordRecovery(bool isRecovery) {
     _isPasswordRecovery = isRecovery;
   }
-
-
 }
 
 // User Profile Notifier
@@ -297,7 +302,7 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
     try {
       state = const AsyncValue.loading();
       final profileData = await _supabaseService.getProfile(userId);
-      
+
       if (profileData != null) {
         final profile = UserProfile.fromMap(profileData);
         state = AsyncValue.data(profile);
@@ -365,9 +370,10 @@ final authProvider = StateNotifierProvider<AuthNotifier, AsyncValue<User?>>(
 );
 
 // User Profile provider
-final userProfileProvider = StateNotifierProvider<UserProfileNotifier, AsyncValue<UserProfile?>>(
-  (ref) => UserProfileNotifier(ref.read(authProvider.notifier)),
-);
+final userProfileProvider =
+    StateNotifierProvider<UserProfileNotifier, AsyncValue<UserProfile?>>(
+      (ref) => UserProfileNotifier(ref.read(authProvider.notifier)),
+    );
 
 // Convenience providers
 final isAuthenticatedProvider = Provider<bool>((ref) {
@@ -398,4 +404,4 @@ final currentUserProfileProvider = Provider<UserProfile?>((ref) {
     Log.e('Error in currentUserProfileProvider: $e');
     return null;
   }
-}); 
+});

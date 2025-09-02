@@ -58,18 +58,19 @@ class PendingApprovalScreen extends ConsumerWidget {
                         ),
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Title
                       Text(
                         'Account Pending Approval',
-                        style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                          color: ChoiceLuxTheme.softWhite,
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.headlineMedium
+                            ?.copyWith(
+                              color: ChoiceLuxTheme.softWhite,
+                              fontWeight: FontWeight.bold,
+                            ),
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 16),
-                      
+
                       // Subtitle
                       Text(
                         'Welcome, $displayName!',
@@ -80,7 +81,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 24),
-                      
+
                       // Message
                       Text(
                         'Your account has been created successfully, but it requires administrator approval before you can access the system.',
@@ -91,7 +92,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                         textAlign: TextAlign.center,
                       ),
                       const SizedBox(height: 32),
-                      
+
                       // Info Box
                       Container(
                         padding: const EdgeInsets.all(20),
@@ -115,10 +116,11 @@ class PendingApprovalScreen extends ConsumerWidget {
                                 const SizedBox(width: 8),
                                 Text(
                                   'What happens next?',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    color: ChoiceLuxTheme.richGold,
-                                    fontWeight: FontWeight.w600,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        color: ChoiceLuxTheme.richGold,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                 ),
                               ],
                             ),
@@ -128,16 +130,19 @@ class PendingApprovalScreen extends ConsumerWidget {
                               '• You will be assigned an appropriate role\n'
                               '• You will receive access to the system\n'
                               '• You can then log in and start using the app',
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
-                                height: 1.4,
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: ChoiceLuxTheme.softWhite.withOpacity(
+                                      0.8,
+                                    ),
+                                    height: 1.4,
+                                  ),
                             ),
                           ],
                         ),
                       ),
                       const SizedBox(height: 32),
-                      
+
                       // Sign Out Button
                       SizedBox(
                         width: double.infinity,
@@ -167,4 +172,4 @@ class PendingApprovalScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

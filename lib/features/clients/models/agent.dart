@@ -27,10 +27,10 @@ class Agent {
       clientKey: json['client_key'] as int,
       contactNumber: json['contact_number'] as String,
       contactEmail: json['contact_email'] as String,
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
       isDeleted: json['is_deleted'] as bool? ?? false,
@@ -87,4 +87,4 @@ class Agent {
   String toString() {
     return 'Agent(id: $id, agentName: $agentName, clientKey: $clientKey)';
   }
-} 
+}

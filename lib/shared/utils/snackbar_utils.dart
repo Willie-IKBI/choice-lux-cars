@@ -57,7 +57,11 @@ class SnackBarUtils {
   }
 
   /// Safe SnackBar methods that check if widget is mounted
-  static void showSuccessSafe(BuildContext context, String message, {bool mounted = true}) {
+  static void showSuccessSafe(
+    BuildContext context,
+    String message, {
+    bool mounted = true,
+  }) {
     if (mounted) {
       try {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -65,7 +69,9 @@ class SnackBarUtils {
             content: Text(message),
             backgroundColor: ChoiceLuxTheme.successColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             duration: const Duration(seconds: 3),
           ),
         );
@@ -77,7 +83,11 @@ class SnackBarUtils {
   }
 
   /// Safe error SnackBar that checks if widget is mounted
-  static void showErrorSafe(BuildContext context, String message, {bool mounted = true}) {
+  static void showErrorSafe(
+    BuildContext context,
+    String message, {
+    bool mounted = true,
+  }) {
     if (mounted) {
       try {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,7 +95,9 @@ class SnackBarUtils {
             content: Text(message),
             backgroundColor: ChoiceLuxTheme.errorColor,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
             duration: const Duration(seconds: 4),
           ),
         );

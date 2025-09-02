@@ -12,13 +12,11 @@ import '../../../shared/widgets/luxury_app_bar.dart';
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
 
-  const AddEditClientScreen({
-    super.key,
-    this.client,
-  });
+  const AddEditClientScreen({super.key, this.client});
 
   @override
-  ConsumerState<AddEditClientScreen> createState() => _AddEditClientScreenState();
+  ConsumerState<AddEditClientScreen> createState() =>
+      _AddEditClientScreenState();
 }
 
 class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
@@ -27,7 +25,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   final _contactPersonController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _contactEmailController = TextEditingController();
-  
+
   bool _isLoading = false;
   String? _companyLogoUrl;
   bool _isLogoUploading = false;
@@ -57,7 +55,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.client != null;
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: isEditMode ? 'Edit Client' : 'Add Client',
@@ -73,7 +71,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              
+
               return Column(
                 children: [
                   // Form Content
@@ -97,8 +95,6 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     );
   }
 
-
-
   Widget _buildForm(bool isMobile) {
     return Form(
       key: _formKey,
@@ -107,13 +103,13 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         children: [
           // Company Logo Section
           _buildLogoSection(isMobile),
-          
+
           const SizedBox(height: 24),
-          
+
           // Company Information
           _buildSectionTitle('Company Information', isMobile),
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _companyNameController,
             label: 'Company Name',
@@ -127,13 +123,13 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Contact Information
           _buildSectionTitle('Contact Information', isMobile),
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _contactPersonController,
             label: 'Contact Person',
@@ -147,9 +143,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _contactEmailController,
             label: 'Email Address',
@@ -160,16 +156,18 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               if (value == null || value.trim().isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Please enter a valid email address';
               }
               return null;
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _contactNumberController,
             label: 'Phone Number',
@@ -184,9 +182,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Save Button (Mobile)
           if (isMobile) ...[
             SizedBox(
@@ -215,7 +213,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               ),
             ),
           ],
-          
+
           // Save Button (Desktop)
           if (!isMobile) ...[
             Row(
@@ -237,7 +235,10 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChoiceLuxTheme.richGold,
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 16,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -265,7 +266,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                 borderRadius: BorderRadius.circular(16),
                 color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                 border: Border.all(
-                  color: _isLogoUploading 
+                  color: _isLogoUploading
                       ? ChoiceLuxTheme.richGold.withOpacity(0.6)
                       : ChoiceLuxTheme.richGold.withOpacity(0.3),
                   width: _isLogoUploading ? 3 : 2,
@@ -293,37 +294,39 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                       ),
                     )
                   : _companyLogoUrl != null
-                      ? ClipRRect(
-                          borderRadius: BorderRadius.circular(14),
-                          child: Container(
-                            width: double.infinity,
-                            height: double.infinity,
-                            child: Image.network(
-                              _companyLogoUrl!,
-                              fit: BoxFit.contain,
-                              width: double.infinity,
-                              height: double.infinity,
-                              errorBuilder: (context, error, stackTrace) =>
-                                  _buildLogoPlaceholder(),
-                            ),
-                          ),
-                        )
-                      : _buildLogoPlaceholder(),
+                  ? ClipRRect(
+                      borderRadius: BorderRadius.circular(14),
+                      child: Container(
+                        width: double.infinity,
+                        height: double.infinity,
+                        child: Image.network(
+                          _companyLogoUrl!,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildLogoPlaceholder(),
+                        ),
+                      ),
+                    )
+                  : _buildLogoPlaceholder(),
             ),
           ),
           const SizedBox(height: 12),
           Text(
-            _isLogoUploading 
+            _isLogoUploading
                 ? 'Uploading logo...'
-                : _companyLogoUrl != null 
-                    ? 'Tap to change logo'
-                    : 'Tap to upload company logo',
+                : _companyLogoUrl != null
+                ? 'Tap to change logo'
+                : 'Tap to upload company logo',
             style: TextStyle(
-              color: _isLogoUploading 
+              color: _isLogoUploading
                   ? ChoiceLuxTheme.richGold
                   : ChoiceLuxTheme.platinumSilver,
               fontSize: isMobile ? 12 : 14,
-              fontWeight: _isLogoUploading ? FontWeight.w500 : FontWeight.normal,
+              fontWeight: _isLogoUploading
+                  ? FontWeight.w500
+                  : FontWeight.normal,
             ),
           ),
         ],
@@ -335,11 +338,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(
-          Icons.add_a_photo,
-          color: ChoiceLuxTheme.richGold,
-          size: 32,
-        ),
+        Icon(Icons.add_a_photo, color: ChoiceLuxTheme.richGold, size: 32),
         const SizedBox(height: 4),
         Text(
           'Add Logo',
@@ -384,21 +383,14 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(
-          icon,
-          color: ChoiceLuxTheme.platinumSilver,
-        ),
+        prefixIcon: Icon(icon, color: ChoiceLuxTheme.platinumSilver),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.platinumSilver,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.platinumSilver,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -409,9 +401,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.errorColor,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.errorColor),
         ),
         filled: true,
         fillColor: ChoiceLuxTheme.charcoalGray,
@@ -483,8 +473,8 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       // Upload logo
       final String logoUrl = await UploadService.uploadCompanyLogo(
         logoFile: imageFile,
-        companyName: _companyNameController.text.trim().isNotEmpty 
-            ? _companyNameController.text.trim() 
+        companyName: _companyNameController.text.trim().isNotEmpty
+            ? _companyNameController.text.trim()
             : null,
       );
 
@@ -505,7 +495,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       setState(() {
         _isLogoUploading = false;
       });
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -533,7 +523,10 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
           mainAxisSize: MainAxisSize.min,
           children: [
             ListTile(
-              leading: const Icon(Icons.photo_library, color: ChoiceLuxTheme.richGold),
+              leading: const Icon(
+                Icons.photo_library,
+                color: ChoiceLuxTheme.richGold,
+              ),
               title: Text(
                 'Gallery',
                 style: TextStyle(color: ChoiceLuxTheme.softWhite),
@@ -541,7 +534,10 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               onTap: () => Navigator.of(context).pop(ImageSource.gallery),
             ),
             ListTile(
-              leading: const Icon(Icons.camera_alt, color: ChoiceLuxTheme.richGold),
+              leading: const Icon(
+                Icons.camera_alt,
+                color: ChoiceLuxTheme.richGold,
+              ),
               title: Text(
                 'Camera',
                 style: TextStyle(color: ChoiceLuxTheme.softWhite),
@@ -626,4 +622,4 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       }
     }
   }
-} 
+}

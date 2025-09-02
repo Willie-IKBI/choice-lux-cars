@@ -29,13 +29,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
     final jobs = ref.watch(jobsProvider);
-    
+
     // Initialize notification provider once when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(notificationProvider.notifier).initialize();
     });
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     // Get display name from profile, fallback to email, then to 'User'
     String userName = 'User';
     if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
@@ -43,29 +43,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     } else if (currentUser?.email != null) {
       userName = currentUser!.email!.split('@')[0];
     }
-    
+
     // Check user role
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userRole == 'administrator';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
-    
+
     // Count today's jobs based on role
-    final todayJobsCount = _getTodayJobsCount(jobs.value ?? [], userProfile, isDriver);
-    
+    final todayJobsCount = _getTodayJobsCount(
+      jobs.value ?? [],
+      userProfile,
+      isDriver,
+    );
+
     // Count unassigned users for admin notification
-    final unassignedUsersCount = isAdmin 
-        ? (users.value ?? []).where((user) => user.role == null || user.role == 'unassigned').length 
+    final unassignedUsersCount = isAdmin
+        ? (users.value ?? [])
+              .where((user) => user.role == null || user.role == 'unassigned')
+              .length
         : 0;
-    
+
     // Responsive padding - provide minimal padding for mobile
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallMobile = screenWidth < 400;
-    
-    final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 24.0;
-    final verticalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
-    final sectionSpacing = isSmallMobile ? 16.0 : isMobile ? 24.0 : 32.0;
+
+    final horizontalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 24.0;
+    final verticalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 16.0;
+    final sectionSpacing = isSmallMobile
+        ? 16.0
+        : isMobile
+        ? 24.0
+        : 32.0;
 
     return Scaffold(
       key: _scaffoldKey,
@@ -93,7 +111,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
           child: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding, 
+              horizontal: horizontalPadding,
               vertical: verticalPadding,
             ),
             child: Column(
@@ -102,9 +120,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 // Welcome Section
                 _buildWelcomeSection(context, userName),
                 SizedBox(height: sectionSpacing),
-                
+
                 // Dashboard Cards
-                _buildDashboardCards(context, todayJobsCount, unassignedUsersCount),
+                _buildDashboardCards(
+                  context,
+                  todayJobsCount,
+                  unassignedUsersCount,
+                ),
                 SizedBox(height: sectionSpacing),
               ],
             ),
@@ -117,20 +139,20 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // Get today's jobs count based on user role
   int _getTodayJobsCount(List<Job> jobs, dynamic userProfile, bool isDriver) {
     if (jobs.isEmpty) return 0;
-    
+
     final today = DateTime.now();
     final todayDate = DateTime(today.year, today.month, today.day);
-    
+
     // Filter jobs for today
     final todayJobs = jobs.where((job) {
       final jobDate = DateTime(
-        job.jobStartDate.year, 
-        job.jobStartDate.month, 
-        job.jobStartDate.day
+        job.jobStartDate.year,
+        job.jobStartDate.month,
+        job.jobStartDate.day,
       );
       return jobDate.isAtSameMomentAs(todayDate);
     }).toList();
-    
+
     if (isDriver) {
       // For drivers, only count their assigned jobs
       return todayJobs.where((job) => job.driverId == userProfile?.id).length;
@@ -154,15 +176,35 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    
-    final titleSize = isSmallMobile ? 18.0 : isMobile ? 20.0 : 32.0;
-    final subtitleSize = isSmallMobile ? 12.0 : isMobile ? 14.0 : 18.0;
-    final spacing = isSmallMobile ? 3.0 : isMobile ? 4.0 : 8.0;
-    final sectionSpacing = isSmallMobile ? 6.0 : isMobile ? 8.0 : 16.0;
-    
+
+    final titleSize = isSmallMobile
+        ? 18.0
+        : isMobile
+        ? 20.0
+        : 32.0;
+    final subtitleSize = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 14.0
+        : 18.0;
+    final spacing = isSmallMobile
+        ? 3.0
+        : isMobile
+        ? 4.0
+        : 8.0;
+    final sectionSpacing = isSmallMobile
+        ? 6.0
+        : isMobile
+        ? 8.0
+        : 16.0;
+
     // Add horizontal padding for mobile (accounting for main container padding)
-    final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 8.0 : 0.0;
-    
+    final horizontalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 8.0
+        : 0.0;
+
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
       child: Column(
@@ -189,7 +231,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           SizedBox(height: sectionSpacing),
           Container(
             height: 2,
-            width: isSmallMobile ? 30 : isMobile ? 40 : 60,
+            width: isSmallMobile
+                ? 30
+                : isMobile
+                ? 40
+                : 60,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -205,7 +251,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     );
   }
 
-  Widget _buildDashboardCards(BuildContext context, int todayJobsCount, int unassignedUsersCount) {
+  Widget _buildDashboardCards(
+    BuildContext context,
+    int todayJobsCount,
+    int unassignedUsersCount,
+  ) {
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
     final userRole = userProfile?.role?.toLowerCase();
@@ -213,16 +263,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isAdmin = userRole == 'administrator';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
-    
+
     // Build dashboard items based on role
     List<DashboardItem> dashboardItems = [];
-    
+
     if (isDriver) {
       // Drivers only see Jobs card
       dashboardItems = [
         DashboardItem(
           title: 'Jobs',
-          subtitle: todayJobsCount > 0 
+          subtitle: todayJobsCount > 0
               ? '$todayJobsCount job${todayJobsCount == 1 ? '' : 's'} today'
               : 'No jobs today',
           icon: Icons.work_outline,
@@ -237,13 +287,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         if (isAdmin || isManager)
           DashboardItem(
             title: 'Manage Users',
-            subtitle: unassignedUsersCount > 0 
+            subtitle: unassignedUsersCount > 0
                 ? '$unassignedUsersCount user${unassignedUsersCount == 1 ? '' : 's'} pending approval'
                 : 'User & driver management',
             icon: Icons.people,
             route: '/users',
             color: ChoiceLuxTheme.richGold,
-            badge: unassignedUsersCount > 0 ? unassignedUsersCount.toString() : null,
+            badge: unassignedUsersCount > 0
+                ? unassignedUsersCount.toString()
+                : null,
           ),
         DashboardItem(
           title: 'Clients',
@@ -268,7 +320,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         DashboardItem(
           title: 'Jobs',
-          subtitle: todayJobsCount > 0 
+          subtitle: todayJobsCount > 0
               ? '$todayJobsCount job${todayJobsCount == 1 ? '' : 's'} today'
               : 'Track job progress',
           icon: Icons.work_outline,
@@ -289,16 +341,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Responsive grid configuration based on screen size
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    
+
     // Debug logging for screen dimensions
     Log.d('Screen dimensions: ${screenWidth}x${screenHeight}');
-    
+
     // TEMPORARY: Force 2 columns for mobile testing
     int crossAxisCount;
     double spacing;
     double childAspectRatio;
     EdgeInsets outerPadding = const EdgeInsets.all(16);
-    
+
     if (screenWidth >= 1200) {
       // Large Desktop - 4 columns
       Log.d('Layout: Large Desktop (4 columns)');
@@ -325,25 +377,32 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       childAspectRatio = 0.9;
     }
 
-    Log.d('Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio');
+    Log.d(
+      'Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio',
+    );
 
     return Padding(
       padding: outerPadding,
       child: GridView.count(
         shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(), // Prevent internal scrolling
+        physics:
+            const NeverScrollableScrollPhysics(), // Prevent internal scrolling
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: spacing,
         mainAxisSpacing: spacing,
         childAspectRatio: childAspectRatio,
-        children: dashboardItems.map((item) => DashboardCard(
-          icon: item.icon,
-          title: item.title,
-          subtitle: item.subtitle,
-          iconColor: item.color,
-          badge: item.badge,
-          onTap: () => context.go(item.route),
-        )).toList(),
+        children: dashboardItems
+            .map(
+              (item) => DashboardCard(
+                icon: item.icon,
+                title: item.title,
+                subtitle: item.subtitle,
+                iconColor: item.color,
+                badge: item.badge,
+                onTap: () => context.go(item.route),
+              ),
+            )
+            .toList(),
       ),
     );
   }
@@ -351,9 +410,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   // Notification handler
   void _handleNotifications() {
     Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (context) => const NotificationListScreen(),
-      ),
+      MaterialPageRoute(builder: (context) => const NotificationListScreen()),
     );
   }
 }
@@ -376,5 +433,3 @@ class DashboardItem {
     this.badge,
   });
 }
-
- 

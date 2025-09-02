@@ -29,11 +29,8 @@ class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
   final Job job;
 
-  const JobProgressScreen({
-    Key? key,
-    required this.jobId,
-    required this.job,
-  }) : super(key: key);
+  const JobProgressScreen({Key? key, required this.jobId, required this.job})
+    : super(key: key);
 
   @override
   ConsumerState<JobProgressScreen> createState() => _JobProgressScreenState();
@@ -48,7 +45,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   int _currentTripIndex = 1;
   int _progressPercentage = 0;
   Map<String, String?> _jobAddresses = {};
-  
+
   // Store references to avoid ancestor lookup issues
   JobsNotifier? _jobsNotifier;
 
@@ -124,13 +121,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Future<void> _loadJobProgress() async {
     try {
       setState(() => _isLoading = true);
-      
+
       // Parse job ID once and validate
       final jobIdInt = int.tryParse(widget.jobId);
       if (jobIdInt == null) {
         throw Exception('Invalid job ID: ${widget.jobId}');
       }
-      
+
       // Load job progress
       final progress = await DriverFlowApiService.getJobProgress(jobIdInt);
       Log.d('=== LOADED JOB PROGRESS ===');
@@ -138,17 +135,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       Log.d('Vehicle collected: ${progress['vehicle_collected']}');
       Log.d('Current step from DB: ${progress['current_step']}');
       Log.d('Job status: ${progress['job_status']}');
-      
+
       // Load trip progress
       final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
       Log.d('=== LOADED TRIP PROGRESS ===');
       Log.d('Trip data: $trips');
-      
+
       // Load job addresses
       final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
       Log.d('=== LOADED JOB ADDRESSES ===');
       Log.d('Addresses: $addresses');
-      
+
       setState(() {
         _jobProgress = progress;
         _tripProgress = trips;
@@ -156,39 +153,41 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         _currentTripIndex = progress['current_trip_index'] ?? 1;
         _progressPercentage = progress['progress_percentage'] ?? 0;
       });
-      
+
       // Update step statuses
       _updateStepStatus();
-      
+
       // Determine current step
       _determineCurrentStep();
-      
+
       // Check if all steps are completed and update job status if needed
-      if (_jobSteps.every((s) => s.isCompleted) && 
-          _jobProgress != null && 
+      if (_jobSteps.every((s) => s.isCompleted) &&
+          _jobProgress != null &&
           _jobProgress!['job_status'] != 'completed') {
         Log.d('=== AUTO-UPDATING JOB STATUS TO COMPLETED ===');
         try {
-          await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
+          await DriverFlowApiService.updateJobStatusToCompleted(
+            int.parse(widget.jobId),
+          );
           // Refresh jobs list to update job card
           ref.invalidate(jobsProvider);
         } catch (e) {
           Log.e('Error auto-updating job status: $e');
         }
       }
-      
+
       if (mounted) {
         setState(() {
           _isLoading = false;
         });
       }
-      
+
       // Force a final UI update to ensure all changes are reflected
       if (mounted) {
         setState(() {
           // This ensures the UI reflects the latest step progression
         });
-        
+
         // Add a small delay and force another rebuild to ensure UI updates
         Future.delayed(const Duration(milliseconds: 100), () {
           if (mounted) {
@@ -229,26 +228,34 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         case 'pickup_arrival':
           // Pickup arrival is completed if any trip has pickup_arrived_at
           // Once completed, it cannot be undone
-          isCompleted = _tripProgress?.any((trip) => 
-            trip['pickup_arrived_at'] != null) ?? false;
+          isCompleted =
+              _tripProgress?.any((trip) => trip['pickup_arrived_at'] != null) ??
+              false;
           break;
         case 'passenger_onboard':
           // Passenger onboard is completed if any trip has passenger_onboard_at
           // Once completed, it cannot be undone
-          isCompleted = _tripProgress?.any((trip) => 
-            trip['passenger_onboard_at'] != null) ?? false;
+          isCompleted =
+              _tripProgress?.any(
+                (trip) => trip['passenger_onboard_at'] != null,
+              ) ??
+              false;
           break;
         case 'dropoff_arrival':
           // Dropoff arrival is completed if any trip has dropoff_arrived_at
           // Once completed, it cannot be undone
-          isCompleted = _tripProgress?.any((trip) => 
-            trip['dropoff_arrived_at'] != null) ?? false;
+          isCompleted =
+              _tripProgress?.any(
+                (trip) => trip['dropoff_arrived_at'] != null,
+              ) ??
+              false;
           break;
         case 'trip_complete':
           // Trip complete is completed if any trip has status 'completed'
           // Once completed, it cannot be undone
-          isCompleted = _tripProgress?.any((trip) => 
-            trip['status'] == 'completed') ?? false;
+          isCompleted =
+              _tripProgress?.any((trip) => trip['status'] == 'completed') ??
+              false;
           break;
         case 'vehicle_return':
           // Vehicle return is completed if job_closed_time is set
@@ -263,11 +270,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       // Update the step completion status
       _jobSteps[i] = step.copyWith(isCompleted: isCompleted);
-      
+
       // Debug logging for step completion
       Log.d('Step ${step.id}: isCompleted = $isCompleted');
     }
-    
+
     // Update step titles with addresses
     _updateStepTitlesWithAddresses();
   }
@@ -276,7 +283,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     for (int i = 0; i < _jobSteps.length; i++) {
       final step = _jobSteps[i];
       String newTitle = step.title;
-      
+
       switch (step.id) {
         case 'pickup_arrival':
           final pickupAddress = _jobAddresses['pickup'];
@@ -291,7 +298,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           }
           break;
       }
-      
+
       if (newTitle != step.title) {
         _jobSteps[i] = step.copyWith(title: newTitle);
       }
@@ -311,13 +318,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     String newCurrentStep = 'not_started'; // Default to not started
 
     // Priority 1: Check if job has actually started
-    if (_jobProgress!['vehicle_collected'] == false && 
+    if (_jobProgress!['vehicle_collected'] == false &&
         _jobProgress!['current_step'] == null) {
       newCurrentStep = 'not_started';
       Log.d('Job has not started yet - showing as not started');
     }
     // Priority 2: Trust the database current_step if it exists and is valid
-    else if (_jobProgress!['current_step'] != null && 
+    else if (_jobProgress!['current_step'] != null &&
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
         _jobProgress!['current_step'].toString() != 'completed') {
@@ -326,20 +333,30 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     } else {
       // Priority 3: Determine step based on completion status
       Log.d('No valid current_step in DB, using completion-based logic');
-      
+
       if (_jobProgress!['job_closed_time'] != null) {
         newCurrentStep = 'completed';
         Log.d('Job is completed');
-      } else if (_tripProgress?.any((trip) => trip['status'] == 'completed') == true) {
+      } else if (_tripProgress?.any((trip) => trip['status'] == 'completed') ==
+          true) {
         newCurrentStep = 'vehicle_return';
         Log.d('Trip completed, moving to vehicle return');
-      } else if (_tripProgress?.any((trip) => trip['dropoff_arrived_at'] != null) == true) {
+      } else if (_tripProgress?.any(
+            (trip) => trip['dropoff_arrived_at'] != null,
+          ) ==
+          true) {
         newCurrentStep = 'trip_complete';
         Log.d('Dropoff arrived, moving to trip complete');
-      } else if (_tripProgress?.any((trip) => trip['passenger_onboard_at'] != null) == true) {
+      } else if (_tripProgress?.any(
+            (trip) => trip['passenger_onboard_at'] != null,
+          ) ==
+          true) {
         newCurrentStep = 'dropoff_arrival';
         Log.d('Passenger onboard, moving to dropoff arrival');
-      } else if (_tripProgress?.any((trip) => trip['pickup_arrived_at'] != null) == true) {
+      } else if (_tripProgress?.any(
+            (trip) => trip['pickup_arrived_at'] != null,
+          ) ==
+          true) {
         newCurrentStep = 'passenger_onboard';
         Log.d('Pickup arrived, moving to passenger onboard');
       } else if (_jobProgress!['vehicle_collected'] == true) {
@@ -352,7 +369,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
 
     Log.d('Final current step: $newCurrentStep');
-    
+
     // Update the current step if it changed
     if (_currentStep != newCurrentStep) {
       Log.d('Step changed from $_currentStep to $newCurrentStep');
@@ -362,107 +379,111 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     } else {
       Log.d('Step unchanged: $_currentStep');
     }
-    
+
     // Force a rebuild of the step status to ensure UI updates
     _updateStepStatus();
   }
 
   Future<void> _startJob() async {
     if (!mounted) return;
-    
+
     // Show the vehicle collection modal
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return VehicleCollectionModal(
-          onConfirm: (({
-            required double odometerReading,
-            required String odometerImageUrl,
-            required double gpsLat,
-            required double gpsLng,
-            required double gpsAccuracy,
-          }) async {
-            // Store the modal context before any async operations
-            final modalContext = context;
-            
-            try {
-              setState(() => _isUpdating = true);
-              
-              Log.d('=== STARTING JOB ===');
-              Log.d('Job ID: ${widget.jobId}');
-              Log.d('Odometer: $odometerReading');
-              Log.d('Image URL: $odometerImageUrl');
-              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
-               
-              await DriverFlowApiService.startJob(
-                int.parse(widget.jobId),
-                odoStartReading: odometerReading,
-                pdpStartImage: odometerImageUrl,
-                gpsLat: gpsLat,
-                gpsLng: gpsLng,
-                gpsAccuracy: gpsAccuracy,
-              );
-              
-              Log.d('=== JOB STARTED SUCCESSFULLY ===');
-              Log.d('Now loading job progress...');
-              
-              // Add a longer delay to ensure database update is reflected
-              await Future.delayed(const Duration(milliseconds: 1000));
-               
-              if (mounted) {
-                await _loadJobProgress();
-                Log.d('=== JOB PROGRESS LOADED ===');
-                Log.d('Current step after reload: $_currentStep');
-                
-                // Force a UI rebuild to ensure step progression is visible
-                if (mounted) {
-                  setState(() {
-                    // This will trigger a rebuild and ensure the UI updates
-                    // Force rebuild by updating a dummy variable
-                    _isLoading = _isLoading;
-                  });
+          onConfirm:
+              (({
+                required double odometerReading,
+                required String odometerImageUrl,
+                required double gpsLat,
+                required double gpsLng,
+                required double gpsAccuracy,
+              }) async {
+                // Store the modal context before any async operations
+                final modalContext = context;
+
+                try {
+                  setState(() => _isUpdating = true);
+
+                  Log.d('=== STARTING JOB ===');
+                  Log.d('Job ID: ${widget.jobId}');
+                  Log.d('Odometer: $odometerReading');
+                  Log.d('Image URL: $odometerImageUrl');
+                  Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+                  await DriverFlowApiService.startJob(
+                    int.parse(widget.jobId),
+                    odoStartReading: odometerReading,
+                    pdpStartImage: odometerImageUrl,
+                    gpsLat: gpsLat,
+                    gpsLng: gpsLng,
+                    gpsAccuracy: gpsAccuracy,
+                  );
+
+                  Log.d('=== JOB STARTED SUCCESSFULLY ===');
+                  Log.d('Now loading job progress...');
+
+                  // Add a longer delay to ensure database update is reflected
+                  await Future.delayed(const Duration(milliseconds: 1000));
+
+                  if (mounted) {
+                    await _loadJobProgress();
+                    Log.d('=== JOB PROGRESS LOADED ===');
+                    Log.d('Current step after reload: $_currentStep');
+
+                    // Force a UI rebuild to ensure step progression is visible
+                    if (mounted) {
+                      setState(() {
+                        // This will trigger a rebuild and ensure the UI updates
+                        // Force rebuild by updating a dummy variable
+                        _isLoading = _isLoading;
+                      });
+                    }
+
+                    // Add another small delay to ensure UI updates are processed
+                    await Future.delayed(const Duration(milliseconds: 200));
+
+                    // Force another reload to ensure we have the latest data
+                    if (mounted) {
+                      await _loadJobProgress();
+                      Log.d('=== SECOND RELOAD COMPLETE ===');
+                      Log.d('Final current step: $_currentStep');
+                    }
+
+                    // Close the modal using the stored context
+                    if (modalContext.mounted) {
+                      Navigator.of(modalContext).pop();
+                    }
+
+                    // Show success message after modal is closed and widget is still mounted
+                    if (mounted) {
+                      SnackBarUtils.showSuccess(
+                        context,
+                        'Job started successfully!',
+                      );
+                    }
+                  }
+                } catch (e) {
+                  Log.d('=== ERROR STARTING JOB ===');
+                  Log.e('Error: $e');
+
+                  // Close the modal using the stored context
+                  if (modalContext.mounted) {
+                    Navigator.of(modalContext).pop();
+                  }
+
+                  // Show error message after modal is closed and widget is still mounted
+                  if (mounted) {
+                    SnackBarUtils.showError(context, 'Failed to start job: $e');
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isUpdating = false);
+                  }
                 }
-                
-                // Add another small delay to ensure UI updates are processed
-                await Future.delayed(const Duration(milliseconds: 200));
-                
-                // Force another reload to ensure we have the latest data
-                if (mounted) {
-                  await _loadJobProgress();
-                  Log.d('=== SECOND RELOAD COMPLETE ===');
-                  Log.d('Final current step: $_currentStep');
-                }
-                
-                // Close the modal using the stored context
-                if (modalContext.mounted) {
-                  Navigator.of(modalContext).pop();
-                }
-                
-                // Show success message after modal is closed and widget is still mounted
-                if (mounted) {
-                  SnackBarUtils.showSuccess(context, 'Job started successfully!');
-                }
-              }
-            } catch (e) {
-              Log.d('=== ERROR STARTING JOB ===');
-              Log.e('Error: $e');
-              
-              // Close the modal using the stored context
-              if (modalContext.mounted) {
-                Navigator.of(modalContext).pop();
-              }
-              
-              // Show error message after modal is closed and widget is still mounted
-              if (mounted) {
-                SnackBarUtils.showError(context, 'Failed to start job: $e');
-              }
-            } finally {
-              if (mounted) {
-                setState(() => _isUpdating = false);
-              }
-            }
-          }),
+              }),
           onCancel: () {
             if (mounted) {
               Navigator.of(context).pop();
@@ -475,19 +496,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _collectVehicle() async {
     if (!mounted) return;
-    
+
     try {
       setState(() => _isUpdating = true);
-      
+
       final position = await _getCurrentLocation();
-      
+
       await DriverFlowApiService.collectVehicle(
         int.parse(widget.jobId),
         gpsLat: position.latitude,
         gpsLng: position.longitude,
         gpsAccuracy: position.accuracy,
       );
-      
+
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
@@ -505,18 +526,20 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _arriveAtPickup() async {
     if (!mounted) return;
-    
+
     try {
       setState(() => _isUpdating = true);
-      
+
       // Get current location
       final position = await _getCurrentLocation();
-      
+
       Log.d('=== ARRIVING AT PICKUP ===');
       Log.d('Job ID: ${widget.jobId}');
       Log.d('Trip Index: $_currentTripIndex');
-      Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
-      
+      Log.d(
+        'GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}',
+      );
+
       await DriverFlowApiService.arriveAtPickup(
         int.parse(widget.jobId),
         _currentTripIndex,
@@ -524,20 +547,20 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         gpsLng: position.longitude,
         gpsAccuracy: position.accuracy,
       );
-      
+
       Log.d('=== PICKUP ARRIVAL COMPLETED ===');
-      
+
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
-        
+
         // Step completed - user must manually proceed to next step
         // No automatic advancement - user controls progression
       }
     } catch (e) {
       Log.e('=== ERROR IN PICKUP ARRIVAL ===');
       Log.e('Error: $e');
-      
+
       if (mounted) {
         SnackBarUtils.showError(context, 'Failed to record pickup arrival: $e');
       }
@@ -550,25 +573,28 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _passengerOnboard() async {
     if (!mounted) return;
-    
+
     try {
       setState(() => _isUpdating = true);
-      
+
       await DriverFlowApiService.passengerOnboard(
         int.parse(widget.jobId),
         _currentTripIndex,
       );
-      
+
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
-        
+
         // Step completed - user must manually proceed to next step
         // No automatic advancement - user controls progression
       }
     } catch (e) {
       if (mounted) {
-        SnackBarUtils.showError(context, 'Failed to record passenger onboard: $e');
+        SnackBarUtils.showError(
+          context,
+          'Failed to record passenger onboard: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -579,12 +605,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _arriveAtDropoff() async {
     if (!mounted) return;
-    
+
     try {
       setState(() => _isUpdating = true);
-      
+
       final position = await _getCurrentLocation();
-      
+
       await DriverFlowApiService.arriveAtDropoff(
         int.parse(widget.jobId),
         _currentTripIndex,
@@ -592,17 +618,20 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         gpsLng: position.longitude,
         gpsAccuracy: position.accuracy,
       );
-      
+
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
-        
+
         // Step completed - user must manually proceed to next step
         // No automatic advancement - user controls progression
       }
     } catch (e) {
       if (mounted) {
-        SnackBarUtils.showError(context, 'Failed to record dropoff arrival: $e');
+        SnackBarUtils.showError(
+          context,
+          'Failed to record dropoff arrival: $e',
+        );
       }
     } finally {
       if (mounted) {
@@ -613,19 +642,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _completeTrip() async {
     if (!mounted) return;
-    
+
     try {
       setState(() => _isUpdating = true);
-      
+
       await DriverFlowApiService.completeTrip(
         int.parse(widget.jobId),
         _currentTripIndex,
       );
-      
+
       if (mounted) {
         await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Trip completed!');
-        
+
         // Step completed - user must manually proceed to next step
         // No automatic advancement - user controls progression
       }
@@ -640,87 +669,89 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 
-
-
   Future<void> _returnVehicle() async {
     if (!mounted) return;
-    
+
     // Store the modal context before any async operations
     final modalContext = context;
-    
+
     // Show the vehicle return modal
     showDialog(
       context: context,
       barrierDismissible: false,
       builder: (BuildContext context) {
         return VehicleReturnModal(
-          onConfirm: (({
-            required double odoEndReading,
-            required String pdpEndImage,
-            required double gpsLat,
-            required double gpsLng,
-            required double gpsAccuracy,
-          }) async {
-            try {
-              setState(() => _isUpdating = true);
-              
-              Log.d('=== RETURNING VEHICLE ===');
-              Log.d('Job ID: ${widget.jobId}');
-              Log.d('Odometer: $odoEndReading');
-              Log.d('Image: $pdpEndImage');
-              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
-              
-              await DriverFlowApiService.returnVehicle(
-                int.parse(widget.jobId),
-                odoEndReading: odoEndReading,
-                pdpEndImage: pdpEndImage,
-                gpsLat: gpsLat,
-                gpsLng: gpsLng,
-                gpsAccuracy: gpsAccuracy,
-              );
-              
-              Log.d('=== VEHICLE RETURN COMPLETED ===');
-              
-              if (mounted) {
-                await _loadJobProgress();
-                
-                // Close the modal using the stored context
-                if (modalContext.mounted) {
-                  Navigator.of(modalContext).pop();
-                }
-                
-                // Show success message after modal is closed and widget is still mounted
-                if (mounted) {
-                  // Refresh jobs list to update job card status
-                  ref.invalidate(jobsProvider);
-                  
-                  // Show job completion dialog
-                  showJobCompletionDialog(
-                    context,
-                    jobNumber: widget.job.jobNumber ?? 'Unknown',
-                    passengerName: widget.job.passengerName,
+          onConfirm:
+              (({
+                required double odoEndReading,
+                required String pdpEndImage,
+                required double gpsLat,
+                required double gpsLng,
+                required double gpsAccuracy,
+              }) async {
+                try {
+                  setState(() => _isUpdating = true);
+
+                  Log.d('=== RETURNING VEHICLE ===');
+                  Log.d('Job ID: ${widget.jobId}');
+                  Log.d('Odometer: $odoEndReading');
+                  Log.d('Image: $pdpEndImage');
+                  Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+                  await DriverFlowApiService.returnVehicle(
+                    int.parse(widget.jobId),
+                    odoEndReading: odoEndReading,
+                    pdpEndImage: pdpEndImage,
+                    gpsLat: gpsLat,
+                    gpsLng: gpsLng,
+                    gpsAccuracy: gpsAccuracy,
                   );
+
+                  Log.d('=== VEHICLE RETURN COMPLETED ===');
+
+                  if (mounted) {
+                    await _loadJobProgress();
+
+                    // Close the modal using the stored context
+                    if (modalContext.mounted) {
+                      Navigator.of(modalContext).pop();
+                    }
+
+                    // Show success message after modal is closed and widget is still mounted
+                    if (mounted) {
+                      // Refresh jobs list to update job card status
+                      ref.invalidate(jobsProvider);
+
+                      // Show job completion dialog
+                      showJobCompletionDialog(
+                        context,
+                        jobNumber: widget.job.jobNumber ?? 'Unknown',
+                        passengerName: widget.job.passengerName,
+                      );
+                    }
+                  }
+                } catch (e) {
+                  Log.e('=== ERROR IN VEHICLE RETURN ===');
+                  Log.e('Error: $e');
+
+                  // Close the modal using the stored context
+                  if (modalContext.mounted) {
+                    Navigator.of(modalContext).pop();
+                  }
+
+                  // Show error message after modal is closed and widget is still mounted
+                  if (mounted) {
+                    SnackBarUtils.showError(
+                      context,
+                      'Failed to return vehicle: $e',
+                    );
+                  }
+                } finally {
+                  if (mounted) {
+                    setState(() => _isUpdating = false);
+                  }
                 }
-              }
-            } catch (e) {
-              Log.e('=== ERROR IN VEHICLE RETURN ===');
-              Log.e('Error: $e');
-              
-              // Close the modal using the stored context
-              if (modalContext.mounted) {
-                Navigator.of(modalContext).pop();
-              }
-              
-              // Show error message after modal is closed and widget is still mounted
-              if (mounted) {
-                SnackBarUtils.showError(context, 'Failed to return vehicle: $e');
-              }
-            } finally {
-              if (mounted) {
-                setState(() => _isUpdating = false);
-              }
-            }
-          }),
+              }),
           onCancel: () {
             if (modalContext.mounted) {
               Navigator.of(modalContext).pop();
@@ -734,14 +765,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Future<void> _closeJob() async {
     try {
       setState(() => _isUpdating = true);
-      
+
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
-      
+
       await _loadJobProgress();
-      
+
       // Refresh jobs list to update job card status
       ref.invalidate(jobsProvider);
-      
+
       // Show job completion dialog
       showJobCompletionDialog(
         context,
@@ -781,8 +812,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     return 'placeholder_image_url';
   }
 
-
-
   Future<void> _debugCurrentState() async {
     Log.d('=== DEBUG CURRENT STATE ===');
     Log.d('Current step: $_currentStep');
@@ -790,7 +819,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     Log.d('Trip progress: $_tripProgress');
     Log.d('Vehicle collected: ${_jobProgress?['vehicle_collected']}');
     Log.d('Current step from DB: ${_jobProgress?['current_step']}');
-    
+
     for (int i = 0; i < _jobSteps.length; i++) {
       final step = _jobSteps[i];
       Log.d('Step ${i + 1}: ${step.id} - Completed: ${step.isCompleted}');
@@ -804,15 +833,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         Log.d('=== CHECKING JOB STATUS UPDATE ===');
         Log.d('All steps completed, updating job status to completed');
         Log.d('Current job status: ${_jobProgress?['job_status']}');
-        
-        await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
-        
+
+        await DriverFlowApiService.updateJobStatusToCompleted(
+          int.parse(widget.jobId),
+        );
+
         // Refresh job progress to get updated status
         await _loadJobProgress();
-        
+
         // Refresh jobs list to update job card
         ref.invalidate(jobsProvider);
-        
+
         Log.d('=== JOB STATUS UPDATE COMPLETED ===');
       } catch (e) {
         Log.e('=== ERROR UPDATING JOB STATUS ===');
@@ -824,22 +855,24 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Future<void> _forceUpdateJobStatus() async {
     try {
       Log.d('=== FORCE UPDATING JOB STATUS TO COMPLETED ===');
-      
-      await DriverFlowApiService.updateJobStatusToCompleted(int.parse(widget.jobId));
-      
+
+      await DriverFlowApiService.updateJobStatusToCompleted(
+        int.parse(widget.jobId),
+      );
+
       // Refresh job progress to get updated status
       await _loadJobProgress();
-      
+
       // Refresh jobs list to update job card
       ref.invalidate(jobsProvider);
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Job status updated to completed!'),
           backgroundColor: Colors.green,
         ),
       );
-      
+
       Log.d('=== FORCE JOB STATUS UPDATE COMPLETED ===');
     } catch (e) {
       Log.e('=== ERROR FORCE UPDATING JOB STATUS ===');
@@ -867,7 +900,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     // Check if all steps are completed
     final allStepsCompleted = _jobSteps.every((s) => s.isCompleted);
-    
+
     if (allStepsCompleted) {
       // Show completion message when all steps are done
       return Container(
@@ -926,7 +959,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.blue,
                 foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
                 ),
@@ -999,7 +1035,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ),
           );
         }
-        
+
       case 'vehicle_collection':
         if (!step.isCompleted) {
           // Check if job is confirmed before allowing start
@@ -1064,10 +1100,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           }
         }
         break;
-        
+
       case 'pickup_arrival':
         // Only show button if previous step (vehicle_collection) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('vehicle_collection')) {
+        if (!step.isCompleted &&
+            _isPreviousStepCompleted('vehicle_collection')) {
           return _buildLuxuryButton(
             onPressed: _arriveAtPickup,
             icon: Icons.location_on_rounded,
@@ -1078,7 +1115,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           return _buildStepLockedMessage('Complete vehicle collection first');
         }
         break;
-        
+
       case 'passenger_onboard':
         // Only show button if previous step (pickup_arrival) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival')) {
@@ -1092,10 +1129,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           return _buildStepLockedMessage('Arrive at pickup location first');
         }
         break;
-        
+
       case 'dropoff_arrival':
         // Only show button if previous step (passenger_onboard) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('passenger_onboard')) {
+        if (!step.isCompleted &&
+            _isPreviousStepCompleted('passenger_onboard')) {
           return _buildLuxuryButton(
             onPressed: _arriveAtDropoff,
             icon: Icons.location_on_rounded,
@@ -1106,7 +1144,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           return _buildStepLockedMessage('Complete passenger onboarding first');
         }
         break;
-        
+
       case 'trip_complete':
         // Only show button if previous step (dropoff_arrival) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('dropoff_arrival')) {
@@ -1120,7 +1158,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           return _buildStepLockedMessage('Arrive at dropoff location first');
         }
         break;
-        
+
       case 'vehicle_return':
         // Only show button if previous step (trip_complete) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('trip_complete')) {
@@ -1140,7 +1178,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             isPrimary: true,
           );
         }
-        
+
       case 'completed':
         // Job is completed, show completion message
         return _buildStepCompletedMessage('Job completed successfully!');
@@ -1153,7 +1191,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   bool _isPreviousStepCompleted(String stepId) {
     final stepIndex = _jobSteps.indexWhere((step) => step.id == stepId);
     if (stepIndex == -1) return false;
-    
+
     // Check if the step is completed
     return _jobSteps[stepIndex].isCompleted;
   }
@@ -1236,13 +1274,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }) {
     if (isPrimary) {
       return Container(
-                 decoration: BoxDecoration(
-           gradient: LinearGradient(
-             colors: [
-               ChoiceLuxTheme.richGold,
-               ChoiceLuxTheme.richGold.withOpacity(0.9),
-             ],
-           ),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              ChoiceLuxTheme.richGold,
+              ChoiceLuxTheme.richGold.withOpacity(0.9),
+            ],
+          ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
@@ -1352,18 +1390,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 ),
               ),
               const SizedBox(width: 8),
-              
+
               // Brand Icon with Gold Glow
               Container(
                 padding: const EdgeInsets.all(3),
-                                   decoration: BoxDecoration(
-                     shape: BoxShape.circle,
-                     gradient: LinearGradient(
-                       colors: [
-                         ChoiceLuxTheme.richGold,
-                         ChoiceLuxTheme.richGold.withOpacity(0.8),
-                       ],
-                     ),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: LinearGradient(
+                    colors: [
+                      ChoiceLuxTheme.richGold,
+                      ChoiceLuxTheme.richGold.withOpacity(0.8),
+                    ],
+                  ),
                   boxShadow: [
                     BoxShadow(
                       color: ChoiceLuxTheme.richGold.withOpacity(0.25),
@@ -1383,7 +1421,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 ),
               ),
               const SizedBox(width: 16),
-              
+
               // Title with Gold Accent
               Expanded(
                 child: Text(
@@ -1396,7 +1434,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   ),
                 ),
               ),
-              
+
               // Premium Refresh Button
               Container(
                 decoration: BoxDecoration(
@@ -1423,23 +1461,24 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // User Menu
               Consumer(
                 builder: (context, ref, child) {
                   final currentUser = ref.watch(currentUserProvider);
                   final userProfile = ref.watch(currentUserProfileProvider);
-                  
+
                   // Get display name from profile, fallback to email, then to 'User'
                   String displayName = 'User';
-                  if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
+                  if (userProfile != null &&
+                      userProfile.displayNameOrEmail != 'User') {
                     displayName = userProfile.displayNameOrEmail;
                   } else if (currentUser?.email != null) {
                     displayName = currentUser!.email!.split('@')[0];
                   }
-                  
+
                   return PopupMenuButton<String>(
                     offset: const Offset(0, 8),
                     shape: RoundedRectangleBorder(
@@ -1516,7 +1555,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                 ),
                                 child: CircleAvatar(
                                   radius: 18,
-                                  backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                  backgroundColor: ChoiceLuxTheme.richGold
+                                      .withOpacity(0.2),
                                   child: Text(
                                     displayName.substring(0, 1).toUpperCase(),
                                     style: const TextStyle(
@@ -1804,7 +1844,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               final step = entry.value;
               final isCurrentStep = step.id == _currentStep;
               final isCompleted = step.isCompleted;
-              
+
               return Column(
                 children: [
                   Row(
@@ -1817,54 +1857,62 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                           shape: BoxShape.circle,
                           gradient: isCurrentStep
                               ? (step.id == 'not_started'
-                                  ? LinearGradient(
-                                      colors: [
-                                        ChoiceLuxTheme.infoColor,
-                                        ChoiceLuxTheme.infoColor.withOpacity(0.8),
-                                      ],
-                                    )
-                                  : LinearGradient(
-                                      colors: [
-                                        ChoiceLuxTheme.richGold,
-                                        ChoiceLuxTheme.richGold.withOpacity(0.8),
-                                      ],
-                                    ))
+                                    ? LinearGradient(
+                                        colors: [
+                                          ChoiceLuxTheme.infoColor,
+                                          ChoiceLuxTheme.infoColor.withOpacity(
+                                            0.8,
+                                          ),
+                                        ],
+                                      )
+                                    : LinearGradient(
+                                        colors: [
+                                          ChoiceLuxTheme.richGold,
+                                          ChoiceLuxTheme.richGold.withOpacity(
+                                            0.8,
+                                          ),
+                                        ],
+                                      ))
                               : isCompleted
-                                  ? LinearGradient(
-                                      colors: [
-                                        ChoiceLuxTheme.successColor,
-                                        ChoiceLuxTheme.successColor.withOpacity(0.8),
-                                      ],
-                                    )
-                                  : null,
+                              ? LinearGradient(
+                                  colors: [
+                                    ChoiceLuxTheme.successColor,
+                                    ChoiceLuxTheme.successColor.withOpacity(
+                                      0.8,
+                                    ),
+                                  ],
+                                )
+                              : null,
                           color: isCurrentStep || isCompleted
                               ? null
                               : ChoiceLuxTheme.charcoalGray,
                           border: Border.all(
                             color: isCurrentStep
-                                ? (step.id == 'not_started' 
-                                    ? ChoiceLuxTheme.infoColor 
-                                    : ChoiceLuxTheme.richGold)
+                                ? (step.id == 'not_started'
+                                      ? ChoiceLuxTheme.infoColor
+                                      : ChoiceLuxTheme.richGold)
                                 : isCompleted
-                                    ? ChoiceLuxTheme.successColor
-                                    : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                                ? ChoiceLuxTheme.successColor
+                                : ChoiceLuxTheme.platinumSilver.withOpacity(
+                                    0.3,
+                                  ),
                             width: 2,
                           ),
                         ),
                         child: Icon(
-                          isCompleted
-                              ? Icons.check_rounded
-                              : step.icon,
+                          isCompleted ? Icons.check_rounded : step.icon,
                           color: isCompleted
                               ? Colors.black
                               : isCurrentStep
-                                  ? (step.id == 'not_started' ? Colors.white : Colors.black)
-                                  : ChoiceLuxTheme.platinumSilver,
+                              ? (step.id == 'not_started'
+                                    ? Colors.white
+                                    : Colors.black)
+                              : ChoiceLuxTheme.platinumSilver,
                           size: 20,
                         ),
                       ),
                       const SizedBox(width: 16),
-                      
+
                       // Step Content
                       Expanded(
                         child: Column(
@@ -1876,12 +1924,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                   step.title,
                                   style: TextStyle(
                                     color: isCurrentStep
-                                        ? (step.id == 'not_started' 
-                                            ? ChoiceLuxTheme.infoColor 
-                                            : ChoiceLuxTheme.richGold)
+                                        ? (step.id == 'not_started'
+                                              ? ChoiceLuxTheme.infoColor
+                                              : ChoiceLuxTheme.richGold)
                                         : isCompleted
-                                            ? ChoiceLuxTheme.successColor
-                                            : ChoiceLuxTheme.softWhite,
+                                        ? ChoiceLuxTheme.successColor
+                                        : ChoiceLuxTheme.softWhite,
                                     fontSize: 16,
                                     fontWeight: FontWeight.w600,
                                   ),
@@ -1894,13 +1942,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                       vertical: 4,
                                     ),
                                     decoration: BoxDecoration(
-                                      color: step.id == 'not_started' 
+                                      color: step.id == 'not_started'
                                           ? ChoiceLuxTheme.infoColor
                                           : ChoiceLuxTheme.richGold,
                                       borderRadius: BorderRadius.circular(12),
                                     ),
                                     child: Text(
-                                      step.id == 'not_started' ? 'Not Started' : 'Current',
+                                      step.id == 'not_started'
+                                          ? 'Not Started'
+                                          : 'Current',
                                       style: const TextStyle(
                                         color: Colors.black,
                                         fontSize: 10,
@@ -1950,7 +2000,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Widget _buildLuxuryCurrentStepCard() {
     // Check if all steps are completed
     final allStepsCompleted = _jobSteps.every((s) => s.isCompleted);
-    
+
     if (allStepsCompleted) {
       // Show completion card when all steps are done
       return Container(
@@ -2129,7 +2179,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.job.isConfirmed == true 
+                          widget.job.isConfirmed == true
                               ? 'Job Ready to Start'
                               : 'Job Not Confirmed',
                           style: const TextStyle(
@@ -2221,11 +2271,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     ),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    currentStep.icon,
-                    color: Colors.black,
-                    size: 24,
-                  ),
+                  child: Icon(currentStep.icon, color: Colors.black, size: 24),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -2277,7 +2323,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               ),
               child: const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    ChoiceLuxTheme.richGold,
+                  ),
                 ),
               ),
             )
@@ -2300,9 +2348,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       const SizedBox(height: 24),
                       _buildLuxuryTimeline(),
                       const SizedBox(height: 24),
-                      
+
                       // Trip Progress (if available)
-                      if (_tripProgress != null && _tripProgress!.isNotEmpty) ...[
+                      if (_tripProgress != null &&
+                          _tripProgress!.isNotEmpty) ...[
                         Container(
                           decoration: BoxDecoration(
                             gradient: ChoiceLuxTheme.cardGradient,
@@ -2349,10 +2398,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                     margin: const EdgeInsets.only(bottom: 12),
                                     padding: const EdgeInsets.all(16),
                                     decoration: BoxDecoration(
-                                      color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                                      color: ChoiceLuxTheme.jetBlack
+                                          .withOpacity(0.3),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                                        color: ChoiceLuxTheme.platinumSilver
+                                            .withOpacity(0.1),
                                         width: 1,
                                       ),
                                     ),
@@ -2362,8 +2413,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                           width: 32,
                                           height: 32,
                                           decoration: BoxDecoration(
-                                            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(16),
+                                            color: ChoiceLuxTheme.richGold
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              16,
+                                            ),
                                           ),
                                           child: Center(
                                             child: Text(
@@ -2379,12 +2433,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                         const SizedBox(width: 16),
                                         Expanded(
                                           child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
                                             children: [
                                               Text(
                                                 'Trip ${trip['trip_index']}',
                                                 style: const TextStyle(
-                                                  color: ChoiceLuxTheme.softWhite,
+                                                  color:
+                                                      ChoiceLuxTheme.softWhite,
                                                   fontSize: 16,
                                                   fontWeight: FontWeight.w600,
                                                 ),
@@ -2393,7 +2449,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                               Text(
                                                 'Status: ${trip['status'] ?? 'pending'}',
                                                 style: TextStyle(
-                                                  color: ChoiceLuxTheme.platinumSilver,
+                                                  color: ChoiceLuxTheme
+                                                      .platinumSilver,
                                                   fontSize: 14,
                                                   fontWeight: FontWeight.w400,
                                                 ),
@@ -2403,7 +2460,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                         ),
                                         Icon(
                                           _getTripStatusIcon(trip['status']),
-                                          color: _getTripStatusColor(trip['status']),
+                                          color: _getTripStatusColor(
+                                            trip['status'],
+                                          ),
                                           size: 24,
                                         ),
                                       ],
@@ -2453,5 +2512,3 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 }
-
-

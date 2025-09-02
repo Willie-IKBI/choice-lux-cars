@@ -39,7 +39,9 @@ class User {
       userEmail: map['user_email'] as String? ?? '',
       role: map['role'] as String?,
       driverLicence: map['driver_licence'] as String?,
-      driverLicExp: map['driver_lic_exp'] != null ? DateTime.tryParse(map['driver_lic_exp']) : null,
+      driverLicExp: map['driver_lic_exp'] != null
+          ? DateTime.tryParse(map['driver_lic_exp'])
+          : null,
       pdp: map['pdp'] as String?,
       pdpExp: map['pdp_exp'] != null ? DateTime.tryParse(map['pdp_exp']) : null,
       profileImage: map['profile_image'] as String?,
@@ -73,4 +75,4 @@ class User {
   }
 
   Map<String, dynamic> toJson() => toMap();
-} 
+}

@@ -19,7 +19,7 @@ class ProgressBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clampedProgress = progress.clamp(0, 100);
-    
+
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -80,17 +80,11 @@ class _AnimatedProgressBarState extends State<AnimatedProgressBar>
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      duration: widget.duration,
-      vsync: this,
-    );
+    _controller = AnimationController(duration: widget.duration, vsync: this);
     _animation = Tween<double>(
       begin: _previousProgress / 100.0,
       end: widget.progress / 100.0,
-    ).animate(CurvedAnimation(
-      parent: _controller,
-      curve: Curves.easeInOut,
-    ));
+    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
     _controller.forward();
   }
 
@@ -102,10 +96,7 @@ class _AnimatedProgressBarState extends State<AnimatedProgressBar>
       _animation = Tween<double>(
         begin: _previousProgress / 100.0,
         end: widget.progress / 100.0,
-      ).animate(CurvedAnimation(
-        parent: _controller,
-        curve: Curves.easeInOut,
-      ));
+      ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
       _controller.forward(from: 0.0);
     }
   }

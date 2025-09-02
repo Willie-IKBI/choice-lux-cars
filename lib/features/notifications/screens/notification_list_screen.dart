@@ -14,10 +14,12 @@ class NotificationListScreen extends ConsumerStatefulWidget {
   const NotificationListScreen({super.key});
 
   @override
-  ConsumerState<NotificationListScreen> createState() => _NotificationListScreenState();
+  ConsumerState<NotificationListScreen> createState() =>
+      _NotificationListScreenState();
 }
 
-class _NotificationListScreenState extends ConsumerState<NotificationListScreen> {
+class _NotificationListScreenState
+    extends ConsumerState<NotificationListScreen> {
   String _selectedFilter = 'all';
   bool _showUnreadOnly = false;
   final ScrollController _scrollController = ScrollController();
@@ -51,16 +53,16 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           children: [
             // Custom App Bar
             _buildCustomAppBar(),
-            
+
             // Filter and Stats Section
             _buildFilterSection(),
-            
+
             // Notifications List
             Expanded(
               child: Consumer(
                 builder: (context, ref, child) {
                   final notificationState = ref.watch(notificationProvider);
-                  
+
                   if (notificationState.isLoading) {
                     return _buildLoadingState();
                   }
@@ -75,23 +77,33 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
 
                   return RefreshIndicator(
                     onRefresh: () async {
-                      await ref.read(notificationProvider.notifier).loadNotifications();
+                      await ref
+                          .read(notificationProvider.notifier)
+                          .loadNotifications();
                     },
                     color: ChoiceLuxTheme.richGold,
                     backgroundColor: ChoiceLuxTheme.charcoalGray,
                     child: ListView.builder(
                       controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                      itemCount: _getFilteredNotifications(notificationState.notifications).length,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      itemCount: _getFilteredNotifications(
+                        notificationState.notifications,
+                      ).length,
                       itemBuilder: (context, index) {
-                        final filteredNotifications = _getFilteredNotifications(notificationState.notifications);
+                        final filteredNotifications = _getFilteredNotifications(
+                          notificationState.notifications,
+                        );
                         final notification = filteredNotifications[index];
                         return Padding(
                           padding: const EdgeInsets.only(bottom: 12),
                           child: NotificationCard(
                             notification: notification,
                             onTap: () => _handleNotificationTap(notification),
-                            onDismiss: () => _handleNotificationDismiss(notification),
+                            onDismiss: () =>
+                                _handleNotificationDismiss(notification),
                             onMarkRead: () => _handleMarkAsRead(notification),
                           ),
                         );
@@ -156,9 +168,9 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   ),
                 ),
               ),
-              
+
               const SizedBox(width: 16),
-              
+
               // Title
               Expanded(
                 child: Text(
@@ -171,7 +183,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   ),
                 ),
               ),
-              
+
               // Filter Button
               Container(
                 decoration: BoxDecoration(
@@ -205,29 +217,49 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   ),
                   itemBuilder: (context) => [
                     _buildFilterMenuItem('all', 'All', Icons.all_inbox),
-                    _buildFilterMenuItem(NotificationConstants.jobAssignment, 'Job Assignments', Icons.work),
-                    _buildFilterMenuItem(NotificationConstants.jobStatusChange, 'Status Updates', Icons.update),
-                    _buildFilterMenuItem(NotificationConstants.paymentReminder, 'Payment Reminders', Icons.payment),
-                    _buildFilterMenuItem(NotificationConstants.systemAlert, 'System Alerts', Icons.warning),
+                    _buildFilterMenuItem(
+                      NotificationConstants.jobAssignment,
+                      'Job Assignments',
+                      Icons.work,
+                    ),
+                    _buildFilterMenuItem(
+                      NotificationConstants.jobStatusChange,
+                      'Status Updates',
+                      Icons.update,
+                    ),
+                    _buildFilterMenuItem(
+                      NotificationConstants.paymentReminder,
+                      'Payment Reminders',
+                      Icons.payment,
+                    ),
+                    _buildFilterMenuItem(
+                      NotificationConstants.systemAlert,
+                      'System Alerts',
+                      Icons.warning,
+                    ),
                   ],
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
+
               // Mark All Read Button
               Consumer(
                 builder: (context, ref, child) {
                   final notificationState = ref.watch(notificationProvider);
                   final unreadCount = notificationState.unreadCount;
-                  
+
                   if (unreadCount > 0) {
                     return Container(
                       decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.successColor.withValues(alpha: 0.1),
+                        color: ChoiceLuxTheme.successColor.withValues(
+                          alpha: 0.1,
+                        ),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: ChoiceLuxTheme.successColor.withValues(alpha: 0.3),
+                          color: ChoiceLuxTheme.successColor.withValues(
+                            alpha: 0.3,
+                          ),
                           width: 1,
                         ),
                       ),
@@ -256,16 +288,16 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     );
   }
 
-  PopupMenuItem<String> _buildFilterMenuItem(String value, String label, IconData icon) {
+  PopupMenuItem<String> _buildFilterMenuItem(
+    String value,
+    String label,
+    IconData icon,
+  ) {
     return PopupMenuItem(
       value: value,
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: ChoiceLuxTheme.richGold,
-            size: 18,
-          ),
+          Icon(icon, color: ChoiceLuxTheme.richGold, size: 18),
           const SizedBox(width: 12),
           Text(
             label,
@@ -284,29 +316,41 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     return Consumer(
       builder: (context, ref, child) {
         final notificationState = ref.watch(notificationProvider);
-        
+
         // Use the provider's calculated stats instead of recalculating locally
         final totalCount = notificationState.totalCount;
         final unreadCount = notificationState.unreadCount;
         final highPriorityCount = notificationState.highPriorityCount;
-        
+
         // Fallback calculation if provider stats are 0 but we have notifications
-        final fallbackTotalCount = totalCount > 0 
-            ? totalCount 
+        final fallbackTotalCount = totalCount > 0
+            ? totalCount
             : notificationState.notifications.where((n) => !n.isHidden).length;
-        final fallbackUnreadCount = unreadCount > 0 
-            ? unreadCount 
-            : notificationState.notifications.where((n) => !n.isHidden && !n.isRead).length;
-        final fallbackHighPriorityCount = highPriorityCount > 0 
-            ? highPriorityCount 
-            : notificationState.notifications.where((n) => !n.isHidden && n.isHighPriority).length;
-        
+        final fallbackUnreadCount = unreadCount > 0
+            ? unreadCount
+            : notificationState.notifications
+                  .where((n) => !n.isHidden && !n.isRead)
+                  .length;
+        final fallbackHighPriorityCount = highPriorityCount > 0
+            ? highPriorityCount
+            : notificationState.notifications
+                  .where((n) => !n.isHidden && n.isHighPriority)
+                  .length;
+
         // Debug logging to help identify the issue
-        Log.d('Notification stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
-        Log.d('Fallback stats - Total: $fallbackTotalCount, Unread: $fallbackUnreadCount, High Priority: $fallbackHighPriorityCount');
-        Log.d('Total notifications in list: ${notificationState.notifications.length}');
-        Log.d('Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}');
-        
+        Log.d(
+          'Notification stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+        );
+        Log.d(
+          'Fallback stats - Total: $fallbackTotalCount, Unread: $fallbackUnreadCount, High Priority: $fallbackHighPriorityCount',
+        );
+        Log.d(
+          'Total notifications in list: ${notificationState.notifications.length}',
+        );
+        Log.d(
+          'Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}',
+        );
+
         return Container(
           margin: const EdgeInsets.all(16),
           padding: const EdgeInsets.all(20),
@@ -340,9 +384,9 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 20),
-              
+
               // Stats cards
               Row(
                 children: [
@@ -401,29 +445,29 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
       selectedColor: ChoiceLuxTheme.richGold,
       checkmarkColor: Colors.black,
       side: BorderSide(
-        color: selected 
-            ? ChoiceLuxTheme.richGold 
+        color: selected
+            ? ChoiceLuxTheme.richGold
             : ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
         width: 1,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color) {
+  Widget _buildStatItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Expanded(
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: color.withValues(alpha: 0.3),
-            width: 1,
-          ),
+          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -487,11 +531,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: ChoiceLuxTheme.errorColor,
-          ),
+          Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
           const SizedBox(height: 16),
           Text(
             'Error loading notifications',
@@ -566,10 +606,12 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
   }
 
   void _loadFilteredNotifications() {
-    ref.read(notificationProvider.notifier).loadNotifications(
-      unreadOnly: _showUnreadOnly,
-      notificationType: _selectedFilter == 'all' ? null : _selectedFilter,
-    );
+    ref
+        .read(notificationProvider.notifier)
+        .loadNotifications(
+          unreadOnly: _showUnreadOnly,
+          notificationType: _selectedFilter == 'all' ? null : _selectedFilter,
+        );
   }
 
   void _handleNotificationTap(notification) {
@@ -577,7 +619,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     if (!notification.isRead) {
       _handleMarkAsRead(notification);
     }
-    
+
     // Handle navigation based on notification type and action data
     if (notification.actionData != null) {
       final route = notification.actionRoute;
@@ -586,59 +628,81 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
         return;
       }
     }
-    
+
     // Fallback navigation based on notification type
     switch (notification.notificationType) {
       case NotificationConstants.jobAssignment:
       case NotificationConstants.jobReassignment:
       case NotificationConstants.jobStatusChange:
       case NotificationConstants.jobCancellation:
-        if (notification.jobId != null && notification.jobId.toString().isNotEmpty) {
+        if (notification.jobId != null &&
+            notification.jobId.toString().isNotEmpty) {
           // Handle both integer and string job IDs
           String jobIdToUse = notification.jobId.toString();
-          
+
           // If it's a job number (like "2025-002"), try to find the actual job ID
           if (jobIdToUse.contains('-')) {
             // This is a job number, we need to find the actual job ID
-            Log.d('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
-            SnackBarUtils.showWarning(context, 'Job number detected, navigating to jobs list');
+            Log.d(
+              'Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse',
+            );
+            SnackBarUtils.showWarning(
+              context,
+              'Job number detected, navigating to jobs list',
+            );
             // For now, navigate to jobs list and let user find the job
             context.go('/jobs');
             return;
           }
-          
+
           // Use the job ID directly (should be integer now)
           try {
-            context.go(NotificationConstants.getJobSummaryRoute(int.parse(jobIdToUse)));
+            context.go(
+              NotificationConstants.getJobSummaryRoute(int.parse(jobIdToUse)),
+            );
           } catch (e) {
             Log.e('Error navigating to job: $e');
-            SnackBarUtils.showError(context, 'Failed to navigate to job details');
+            SnackBarUtils.showError(
+              context,
+              'Failed to navigate to job details',
+            );
             // Fallback to jobs list
             context.go('/jobs');
           }
         }
         break;
       case NotificationConstants.paymentReminder:
-        if (notification.jobId != null && notification.jobId.toString().isNotEmpty) {
+        if (notification.jobId != null &&
+            notification.jobId.toString().isNotEmpty) {
           // Handle both integer and string job IDs
           String jobIdToUse = notification.jobId.toString();
-          
+
           // If it's a job number (like "2025-002"), try to find the actual job ID
           if (jobIdToUse.contains('-')) {
             // This is a job number, we need to find the actual job ID
-            Log.d('Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse');
-            SnackBarUtils.showWarning(context, 'Job number detected, navigating to jobs list');
+            Log.d(
+              'Warning: ${NotificationConstants.errorInvalidJobId}: $jobIdToUse',
+            );
+            SnackBarUtils.showWarning(
+              context,
+              'Job number detected, navigating to jobs list',
+            );
             // For now, navigate to jobs list and let user find the job
             context.go('/jobs');
             return;
           }
-          
+
           // Use the job ID directly (should be integer now)
           try {
-            context.go(NotificationConstants.getJobPaymentRoute(int.parse(jobIdToUse)));
+            context.go(
+              NotificationConstants.getJobPaymentRoute(int.parse(jobIdToUse)),
+            );
           } catch (e) {
             Log.e('Error navigating to job payment: $e');
-            SnackBarUtils.showError(context, 'Failed to navigate to job payment');
+            SnackBarUtils.showError(
+              context,
+              'Failed to navigate to job payment',
+            );
             // Fallback to jobs list
             context.go('/jobs');
           }
@@ -649,13 +713,18 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
         break;
       default:
         // Stay on notifications screen for unknown types
-        SnackBarUtils.showInfo(context, 'Unknown notification type: ${notification.notificationType}');
+        SnackBarUtils.showInfo(
+          context,
+          'Unknown notification type: ${notification.notificationType}',
+        );
         break;
     }
   }
 
   void _handleNotificationDismiss(notification) {
-    ref.read(notificationProvider.notifier).dismissNotification(notification.id);
+    ref
+        .read(notificationProvider.notifier)
+        .dismissNotification(notification.id);
   }
 
   void _handleMarkAsRead(notification) {
@@ -668,10 +737,14 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     });
   }
 
-  List<app_notification.AppNotification> _getFilteredNotifications(List<app_notification.AppNotification> notifications) {
+  List<app_notification.AppNotification> _getFilteredNotifications(
+    List<app_notification.AppNotification> notifications,
+  ) {
     // First filter out dismissed notifications
-    final activeNotifications = notifications.where((n) => !n.isHidden).toList();
-    
+    final activeNotifications = notifications
+        .where((n) => !n.isHidden)
+        .toList();
+
     // Then apply the selected filter
     switch (_selectedFilter) {
       case 'unread':
@@ -682,13 +755,17 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     }
   }
 
-  Widget _buildFilterButton(String label, bool isSelected, VoidCallback onPressed) {
+  Widget _buildFilterButton(
+    String label,
+    bool isSelected,
+    VoidCallback onPressed,
+  ) {
     return GestureDetector(
       onTap: onPressed,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
         decoration: BoxDecoration(
-          gradient: isSelected 
+          gradient: isSelected
               ? LinearGradient(
                   colors: [
                     ChoiceLuxTheme.richGold,
@@ -696,10 +773,12 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
                   ],
                 )
               : null,
-          color: isSelected ? null : ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
+          color: isSelected
+              ? null
+              : ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: isSelected 
+            color: isSelected
                 ? ChoiceLuxTheme.richGold
                 : ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             width: 1,
@@ -709,11 +788,7 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             if (isSelected) ...[
-              Icon(
-                Icons.check,
-                color: Colors.black,
-                size: 16,
-              ),
+              Icon(Icons.check, color: Colors.black, size: 16),
               const SizedBox(width: 8),
             ],
             Text(
@@ -730,24 +805,22 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
     );
   }
 
-  Widget _buildStatCard(String label, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
         children: [
-          Icon(
-            icon,
-            color: color,
-            size: 24,
-          ),
+          Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
           Text(
             value,
@@ -792,18 +865,14 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
         ),
         content: Text(
           'Are you sure you want to mark all notifications as read?',
-          style: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver,
-          ),
+          style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
             child: Text(
               'Cancel',
-              style: TextStyle(
-                color: ChoiceLuxTheme.platinumSilver,
-              ),
+              style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
           ),
           ElevatedButton(
@@ -821,4 +890,4 @@ class _NotificationListScreenState extends ConsumerState<NotificationListScreen>
       ),
     );
   }
-} 
+}

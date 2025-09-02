@@ -6,9 +6,9 @@ class AuthError implements Exception {
   final String? originalError;
   final String? code;
   final String? field;
-  
+
   AuthError(this.message, [this.originalError, this.code, this.field]);
-  
+
   @override
   String toString() => message;
 }
@@ -28,9 +28,10 @@ class AuthErrorUtils {
     } catch (e) {
       Log.e('Error in AuthErrorUtils.toAuthError: $e');
       return AuthError(
-        code: 'unknown_error',
-        message: 'An unexpected error occurred',
-        field: null,
+        'An unexpected error occurred',
+        null,
+        'unknown_error',
+        null,
       );
     }
   }
@@ -45,11 +46,11 @@ class AuthErrorUtils {
     try {
       final lowerMessage = errorMessage.toLowerCase();
       final lowerField = fieldName.toLowerCase();
-      
+
       if (lowerMessage.contains(lowerField)) {
         return errorMessage;
       }
-      
+
       return null;
     } catch (e) {
       Log.e('Error in AuthErrorUtils.getFieldError: $e');

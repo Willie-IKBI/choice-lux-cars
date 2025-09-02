@@ -23,7 +23,9 @@ class AddressDisplayWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayAddress = address.trim().isNotEmpty ? address : 'Address not specified';
+    final displayAddress = address.trim().isNotEmpty
+        ? address
+        : 'Address not specified';
     final isAddressValid = address.trim().isNotEmpty;
 
     return Column(
@@ -33,11 +35,7 @@ class AddressDisplayWidget extends StatelessWidget {
           Row(
             children: [
               if (icon != null) ...[
-                Icon(
-                  icon,
-                  size: 16,
-                  color: ChoiceLuxTheme.richGold,
-                ),
+                Icon(icon, size: 16, color: ChoiceLuxTheme.richGold),
                 const SizedBox(width: 4),
               ],
               Text(
@@ -53,11 +51,11 @@ class AddressDisplayWidget extends StatelessWidget {
           const SizedBox(height: 4),
         ],
         GestureDetector(
-          onTap: clickable && isAddressValid ? _openInMaps : onTap,
+          onTap: clickable && isAddressValid ? () => _openInMaps(context) : onTap,
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
-              color: clickable && isAddressValid 
+              color: clickable && isAddressValid
                   ? ChoiceLuxTheme.richGold.withOpacity(0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
@@ -74,8 +72,10 @@ class AddressDisplayWidget extends StatelessWidget {
                 Icon(
                   Icons.location_on,
                   size: 14,
-                  color: isAddressValid 
-                      ? (clickable ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver)
+                  color: isAddressValid
+                      ? (clickable
+                            ? ChoiceLuxTheme.richGold
+                            : ChoiceLuxTheme.platinumSilver)
                       : ChoiceLuxTheme.errorColor,
                 ),
                 const SizedBox(width: 4),
@@ -84,11 +84,13 @@ class AddressDisplayWidget extends StatelessWidget {
                     displayAddress,
                     style: TextStyle(
                       fontSize: 12,
-                      color: isAddressValid 
-                          ? (clickable ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver)
+                      color: isAddressValid
+                          ? (clickable
+                                ? ChoiceLuxTheme.richGold
+                                : ChoiceLuxTheme.platinumSilver)
                           : ChoiceLuxTheme.errorColor,
-                      decoration: clickable && isAddressValid 
-                          ? TextDecoration.underline 
+                      decoration: clickable && isAddressValid
+                          ? TextDecoration.underline
                           : null,
                     ),
                   ),
@@ -109,11 +111,11 @@ class AddressDisplayWidget extends StatelessWidget {
     );
   }
 
-  Future<void> _openInMaps() async {
+  Future<void> _openInMaps(BuildContext context) async {
     try {
       final encodedAddress = Uri.encodeComponent(address);
       final url = 'https://maps.google.com/maps?q=$encodedAddress';
-      
+
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       } else {

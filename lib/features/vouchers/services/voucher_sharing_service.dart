@@ -8,10 +8,7 @@ class VoucherSharingService {
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
-        await launchUrl(
-          uri,
-          mode: LaunchMode.externalApplication,
-        );
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
       } else {
         throw Exception('Could not open voucher URL');
       }
@@ -34,13 +31,13 @@ class VoucherSharingService {
 
       // Clean phone number (remove spaces, dashes, etc.)
       final cleanPhone = _cleanPhoneNumber(phoneNumber);
-      
+
       // Create share message
       final message = _createShareMessage(voucherData, voucherUrl);
-      
+
       // Create WhatsApp URL
       final whatsappUrl = _createWhatsAppUrl(cleanPhone, message);
-      
+
       // Launch WhatsApp
       final uri = Uri.parse(whatsappUrl);
       if (await canLaunchUrl(uri)) {
@@ -81,9 +78,10 @@ class VoucherSharingService {
 
       final subject = 'Voucher for ${voucherData.passengerName}';
       final body = _createEmailBody(voucherData, voucherUrl);
-      
-      final emailUrl = 'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
-      
+
+      final emailUrl =
+          'mailto:$email?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+
       final uri = Uri.parse(emailUrl);
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
@@ -99,17 +97,17 @@ class VoucherSharingService {
   String _cleanPhoneNumber(String phone) {
     // Remove all non-digit characters except +
     String cleaned = phone.replaceAll(RegExp(r'[^\d+]'), '');
-    
+
     // If it starts with 0, replace with country code (assuming South Africa)
     if (cleaned.startsWith('0')) {
       cleaned = '+27${cleaned.substring(1)}';
     }
-    
+
     // If it doesn't start with +, add +27 (South Africa)
     if (!cleaned.startsWith('+')) {
       cleaned = '+27$cleaned';
     }
-    
+
     return cleaned;
   }
 
@@ -118,7 +116,7 @@ class VoucherSharingService {
     final passengerName = voucherData.passengerName;
     final companyName = voucherData.companyName;
     final voucherNo = voucherData.quoteNo ?? 'N/A';
-    
+
     return '''Hi! Here's your booking voucher from $companyName.
 
 Passenger: $passengerName
@@ -135,7 +133,7 @@ Thank you for choosing $companyName!''';
     final companyName = voucherData.companyName;
     final voucherNo = voucherData.quoteNo ?? 'N/A';
     final quoteDate = voucherData.formattedQuoteDate;
-    
+
     return '''Dear $passengerName,
 
 Thank you for your booking with $companyName.
@@ -182,11 +180,11 @@ $companyName Team''';
   /// Get available sharing options
   List<String> getAvailableSharingOptions() {
     final options = ['System Share Sheet'];
-    
+
     // Note: We can't reliably detect WhatsApp availability without trying to launch it
     // So we'll include it as an option and handle the fallback in the sharing method
     options.add('WhatsApp');
-    
+
     return options;
   }
 }

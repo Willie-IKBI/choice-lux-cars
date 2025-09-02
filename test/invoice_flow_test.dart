@@ -33,7 +33,10 @@ void main() {
       test('should generate storage path correctly', () {
         const jobId = '123';
         const timestamp = 1234567890;
-        final storagePath = InvoiceConfigService.getStoragePath(jobId, timestamp);
+        final storagePath = InvoiceConfigService.getStoragePath(
+          jobId,
+          timestamp,
+        );
         expect(storagePath, 'invoices/invoice_123_1234567890.pdf');
       });
     });
@@ -59,8 +62,8 @@ void main() {
               'date': '2025-01-01T00:00:00.000Z',
               'time': '10:00',
               'pickup_location': 'Airport',
-              'dropoff_location': 'Hotel'
-            }
+              'dropoff_location': 'Hotel',
+            },
           ],
           'notes': 'Test notes',
           'invoice_number': 'INV-123',
@@ -77,8 +80,8 @@ void main() {
             'account_number': '1234567890',
             'branch_code': '123456',
             'swift_code': 'TESTZAJJ',
-            'reference': 'INV-123'
-          }
+            'reference': 'INV-123',
+          },
         };
 
         final invoiceData = InvoiceData.fromJson(json);
@@ -122,8 +125,8 @@ void main() {
             'account_name': 'Test Account',
             'account_number': '1234567890',
             'branch_code': '123456',
-            'swift_code': 'TESTZAJJ'
-          }
+            'swift_code': 'TESTZAJJ',
+          },
         };
 
         final invoiceData = InvoiceData.fromJson(json);

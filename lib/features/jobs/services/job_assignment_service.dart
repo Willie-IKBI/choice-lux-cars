@@ -15,15 +15,18 @@ class JobAssignmentService {
     required bool isReassignment,
   }) async {
     try {
-      Log.d('Assigning job $jobId to driver $driverId (reassignment: $isReassignment)');
-      
+      Log.d(
+        'Assigning job $jobId to driver $driverId (reassignment: $isReassignment)',
+      );
+
       // This would need to be updated to use the repository pattern
       // For now, keeping the existing logic but marking as needing update
-      Log.d('Job assignment logic needs to be updated to use repository pattern');
-      
+      Log.d(
+        'Job assignment logic needs to be updated to use repository pattern',
+      );
+
       // TODO: Update to use JobsRepository.updateJob() method
       // TODO: Update to use NotificationRepository.createNotification() method
-      
     } catch (error) {
       Log.e('Error assigning job to driver: $error');
       rethrow;
@@ -34,13 +37,13 @@ class JobAssignmentService {
   static Future<List<Map<String, dynamic>>> getUnassignedJobs() async {
     try {
       Log.d('Getting unassigned jobs');
-      
+
       // This would need to be updated to use the repository pattern
       // For now, returning empty list as placeholder
       Log.d('getUnassignedJobs needs to be updated to use repository pattern');
-      
+
       // TODO: Update to use JobsRepository.getJobsByStatus('open') method
-      
+
       return [];
     } catch (error) {
       Log.e('Error getting unassigned jobs: $error');

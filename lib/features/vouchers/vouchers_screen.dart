@@ -18,11 +18,7 @@ class VouchersScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.card_giftcard,
-              size: 64,
-              color: Colors.teal,
-            ),
+            Icon(Icons.card_giftcard, size: 64, color: Colors.teal),
             SizedBox(height: 16),
             Text(
               'Vouchers Management',
@@ -41,4 +37,4 @@ class VouchersScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

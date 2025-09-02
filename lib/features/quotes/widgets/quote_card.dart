@@ -8,12 +8,9 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 class QuoteCard extends StatelessWidget {
   final Quote quote;
   final VoidCallback? onTap;
+  final BuildContext context;
 
-  const QuoteCard({
-    super.key,
-    required this.quote,
-    this.onTap,
-  });
+  const QuoteCard({super.key, required this.quote, this.onTap, required this.context});
 
   @override
   Widget build(BuildContext context) {
@@ -23,8 +20,16 @@ class QuoteCard extends StatelessWidget {
 
     return Container(
       margin: EdgeInsets.symmetric(
-        horizontal: isSmallMobile ? 4 : isMobile ? 8 : 12,
-        vertical: isSmallMobile ? 6 : isMobile ? 8 : 12,
+        horizontal: isSmallMobile
+            ? 4
+            : isMobile
+            ? 8
+            : 12,
+        vertical: isSmallMobile
+            ? 6
+            : isMobile
+            ? 8
+            : 12,
       ),
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
@@ -47,25 +52,49 @@ class QuoteCard extends StatelessWidget {
           onTap: onTap ?? () => context.go('/quotes/${quote.id}'),
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 16
+                  : 20,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header with Quote ID and Status
                 _buildHeader(isMobile, isSmallMobile),
-                
-                SizedBox(height: isSmallMobile ? 12 : isMobile ? 16 : 20),
-                
+
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 16
+                      : 20,
+                ),
+
                 // Passenger Information
                 _buildPassengerInfo(isMobile, isSmallMobile),
-                
-                SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
-                
+
+                SizedBox(
+                  height: isSmallMobile
+                      ? 8
+                      : isMobile
+                      ? 12
+                      : 16,
+                ),
+
                 // Trip Details
                 _buildTripDetails(isMobile, isSmallMobile),
-                
-                SizedBox(height: isSmallMobile ? 12 : isMobile ? 16 : 20),
-                
+
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 16
+                      : 20,
+                ),
+
                 // Footer with Amount and Action
                 _buildFooter(isMobile, isSmallMobile),
               ],
@@ -84,7 +113,11 @@ class QuoteCard extends StatelessWidget {
           child: Text(
             'Quote #${quote.id}',
             style: TextStyle(
-              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontSize: isSmallMobile
+                  ? 14
+                  : isMobile
+                  ? 16
+                  : 18,
               fontWeight: FontWeight.w700,
               color: ChoiceLuxTheme.richGold,
             ),
@@ -94,8 +127,16 @@ class QuoteCard extends StatelessWidget {
         const SizedBox(width: 8),
         Container(
           padding: EdgeInsets.symmetric(
-            horizontal: isSmallMobile ? 6 : isMobile ? 8 : 10,
-            vertical: isSmallMobile ? 3 : isMobile ? 4 : 6,
+            horizontal: isSmallMobile
+                ? 6
+                : isMobile
+                ? 8
+                : 10,
+            vertical: isSmallMobile
+                ? 3
+                : isMobile
+                ? 4
+                : 6,
           ),
           decoration: BoxDecoration(
             color: _getStatusColor().withValues(alpha: 0.15),
@@ -108,7 +149,11 @@ class QuoteCard extends StatelessWidget {
           child: Text(
             quote.statusDisplayName,
             style: TextStyle(
-              fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
+              fontSize: isSmallMobile
+                  ? 10
+                  : isMobile
+                  ? 11
+                  : 12,
               fontWeight: FontWeight.w600,
               color: _getStatusColor(),
             ),
@@ -125,18 +170,28 @@ class QuoteCard extends StatelessWidget {
         Row(
           children: [
             Container(
-              padding: EdgeInsets.all(isSmallMobile ? 4 : isMobile ? 6 : 8),
+              padding: EdgeInsets.all(
+                isSmallMobile
+                    ? 4
+                    : isMobile
+                    ? 6
+                    : 8,
+              ),
               decoration: BoxDecoration(
-                color: quote.hasCompletePassengerDetails 
+                color: quote.hasCompletePassengerDetails
                     ? ChoiceLuxTheme.successColor.withOpacity(0.1)
                     : ChoiceLuxTheme.warningColor.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
                 Icons.person,
-                size: isSmallMobile ? 14 : isMobile ? 16 : 18,
-                color: quote.hasCompletePassengerDetails 
-                    ? ChoiceLuxTheme.successColor 
+                size: isSmallMobile
+                    ? 14
+                    : isMobile
+                    ? 16
+                    : 18,
+                color: quote.hasCompletePassengerDetails
+                    ? ChoiceLuxTheme.successColor
                     : ChoiceLuxTheme.warningColor,
               ),
             ),
@@ -145,10 +200,14 @@ class QuoteCard extends StatelessWidget {
               child: Text(
                 quote.passengerName ?? 'Passenger name not specified',
                 style: TextStyle(
-                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  fontSize: isSmallMobile
+                      ? 13
+                      : isMobile
+                      ? 14
+                      : 16,
                   fontWeight: FontWeight.w600,
-                  color: quote.hasCompletePassengerDetails 
-                      ? ChoiceLuxTheme.softWhite 
+                  color: quote.hasCompletePassengerDetails
+                      ? ChoiceLuxTheme.softWhite
                       : ChoiceLuxTheme.warningColor,
                 ),
                 overflow: TextOverflow.ellipsis,
@@ -156,7 +215,13 @@ class QuoteCard extends StatelessWidget {
             ),
           ],
         ),
-        SizedBox(height: isSmallMobile ? 6 : isMobile ? 8 : 10),
+        SizedBox(
+          height: isSmallMobile
+              ? 6
+              : isMobile
+              ? 8
+              : 10,
+        ),
         Row(
           children: [
             _buildInfoChip(
@@ -186,8 +251,16 @@ class QuoteCard extends StatelessWidget {
   }) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallMobile ? 6 : isMobile ? 8 : 10,
-        vertical: isSmallMobile ? 3 : isMobile ? 4 : 6,
+        horizontal: isSmallMobile
+            ? 6
+            : isMobile
+            ? 8
+            : 10,
+        vertical: isSmallMobile
+            ? 3
+            : isMobile
+            ? 4
+            : 6,
       ),
       decoration: BoxDecoration(
         color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
@@ -201,14 +274,22 @@ class QuoteCard extends StatelessWidget {
         children: [
           Icon(
             icon,
-            size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+            size: isSmallMobile
+                ? 12
+                : isMobile
+                ? 14
+                : 16,
             color: ChoiceLuxTheme.platinumSilver,
           ),
           const SizedBox(width: 4),
           Text(
             label,
             style: TextStyle(
-              fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
+              fontSize: isSmallMobile
+                  ? 10
+                  : isMobile
+                  ? 11
+                  : 12,
               color: ChoiceLuxTheme.platinumSilver,
               fontWeight: FontWeight.w500,
             ),
@@ -229,33 +310,55 @@ class QuoteCard extends StatelessWidget {
                 children: [
                   Icon(
                     Icons.calendar_today,
-                    size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    size: isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
                     color: ChoiceLuxTheme.platinumSilver,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     quote.daysUntilJobDateText,
                     style: TextStyle(
-                      fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                      fontSize: isSmallMobile
+                          ? 11
+                          : isMobile
+                          ? 12
+                          : 13,
                       fontWeight: FontWeight.w500,
                       color: _getDateColor(),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+              SizedBox(
+                height: isSmallMobile
+                    ? 4
+                    : isMobile
+                    ? 6
+                    : 8,
+              ),
               Row(
                 children: [
                   Icon(
                     Icons.location_on,
-                    size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    size: isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
                     color: ChoiceLuxTheme.platinumSilver,
                   ),
                   const SizedBox(width: 6),
                   Text(
                     quote.location ?? 'Location not specified',
                     style: TextStyle(
-                      fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                      fontSize: isSmallMobile
+                          ? 11
+                          : isMobile
+                          ? 12
+                          : 13,
                       color: ChoiceLuxTheme.platinumSilver,
                     ),
                   ),
@@ -267,7 +370,13 @@ class QuoteCard extends StatelessWidget {
         if (quote.quoteAmount != null) ...[
           const SizedBox(width: 12),
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 8 : isMobile ? 10 : 12),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 8
+                  : isMobile
+                  ? 10
+                  : 12,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.richGold.withOpacity(0.1),
               borderRadius: BorderRadius.circular(12),
@@ -281,7 +390,11 @@ class QuoteCard extends StatelessWidget {
                 Text(
                   'R ${quote.quoteAmount!.toStringAsFixed(2)}',
                   style: TextStyle(
-                    fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                    fontSize: isSmallMobile
+                        ? 14
+                        : isMobile
+                        ? 16
+                        : 18,
                     fontWeight: FontWeight.w700,
                     color: ChoiceLuxTheme.richGold,
                   ),
@@ -289,7 +402,11 @@ class QuoteCard extends StatelessWidget {
                 Text(
                   'Total Amount',
                   style: TextStyle(
-                    fontSize: isSmallMobile ? 9 : isMobile ? 10 : 11,
+                    fontSize: isSmallMobile
+                        ? 9
+                        : isMobile
+                        ? 10
+                        : 11,
                     color: ChoiceLuxTheme.platinumSilver,
                   ),
                 ),
@@ -307,7 +424,11 @@ class QuoteCard extends StatelessWidget {
         // View Details Button
         Expanded(
           child: Container(
-            height: isSmallMobile ? 36 : isMobile ? 40 : 44,
+            height: isSmallMobile
+                ? 36
+                : isMobile
+                ? 40
+                : 44,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -335,14 +456,22 @@ class QuoteCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.visibility,
-                        size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                        size: isSmallMobile
+                            ? 14
+                            : isMobile
+                            ? 16
+                            : 18,
                         color: Colors.black,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'VIEW DETAILS',
                         style: TextStyle(
-                          fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                          fontSize: isSmallMobile
+                              ? 11
+                              : isMobile
+                              ? 12
+                              : 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
@@ -354,12 +483,16 @@ class QuoteCard extends StatelessWidget {
             ),
           ),
         ),
-        
+
         // PDF View Button (if PDF exists)
         if (quote.quotePdf != null && quote.quotePdf!.isNotEmpty) ...[
           const SizedBox(width: 8),
           Container(
-            height: isSmallMobile ? 36 : isMobile ? 40 : 44,
+            height: isSmallMobile
+                ? 36
+                : isMobile
+                ? 40
+                : 44,
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.successColor,
               borderRadius: BorderRadius.circular(12),
@@ -374,12 +507,20 @@ class QuoteCard extends StatelessWidget {
             child: Material(
               color: Colors.transparent,
               child: InkWell(
-                onTap: () => _openPdf(quote.quotePdf!),
+                onTap: () => _openPdf(quote.quotePdf!, context),
                 borderRadius: BorderRadius.circular(12),
                 child: Padding(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isSmallMobile ? 12 : isMobile ? 14 : 16,
-                    vertical: isSmallMobile ? 8 : isMobile ? 10 : 12,
+                    horizontal: isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
+                    vertical: isSmallMobile
+                        ? 8
+                        : isMobile
+                        ? 10
+                        : 12,
                   ),
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -387,14 +528,22 @@ class QuoteCard extends StatelessWidget {
                     children: [
                       Icon(
                         Icons.picture_as_pdf,
-                        size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                        size: isSmallMobile
+                            ? 14
+                            : isMobile
+                            ? 16
+                            : 18,
                         color: Colors.white,
                       ),
                       const SizedBox(width: 6),
                       Text(
                         'PDF',
                         style: TextStyle(
-                          fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                          fontSize: isSmallMobile
+                              ? 11
+                              : isMobile
+                              ? 12
+                              : 13,
                           fontWeight: FontWeight.w600,
                           color: Colors.white,
                         ),
@@ -443,7 +592,7 @@ class QuoteCard extends StatelessWidget {
     }
   }
 
-  Future<void> _openPdf(String url) async {
+  Future<void> _openPdf(String url, BuildContext context) async {
     try {
       final cacheBustedUrl = '$url?cb=${DateTime.now().millisecondsSinceEpoch}';
       await launchUrlString(cacheBustedUrl);

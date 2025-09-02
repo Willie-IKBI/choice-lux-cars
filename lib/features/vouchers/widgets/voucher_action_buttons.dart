@@ -20,7 +20,8 @@ class VoucherActionButtons extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<VoucherActionButtons> createState() => _VoucherActionButtonsState();
+  ConsumerState<VoucherActionButtons> createState() =>
+      _VoucherActionButtonsState();
 }
 
 class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
@@ -45,10 +46,10 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
 
   Future<void> _createVoucher() async {
     try {
-      await ref.read(voucherControllerProvider.notifier).createVoucher(
-        jobId: widget.jobId,
-      );
-      
+      await ref
+          .read(voucherControllerProvider.notifier)
+          .createVoucher(jobId: widget.jobId);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -92,10 +93,10 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
 
     if (confirmed == true) {
       try {
-        await ref.read(voucherControllerProvider.notifier).regenerateVoucher(
-          jobId: widget.jobId,
-        );
-        
+        await ref
+            .read(voucherControllerProvider.notifier)
+            .regenerateVoucher(jobId: widget.jobId);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -149,10 +150,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text(
-            'Share Voucher',
-            style: Theme.of(context).textTheme.titleMedium,
-          ),
+          Text('Share Voucher', style: Theme.of(context).textTheme.titleMedium),
           const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Icons.chat, color: Colors.green),
@@ -278,7 +276,8 @@ class VoucherActionBar extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isTight = constraints.maxWidth < 320; // Breakpoint for tight layouts
+        final isTight =
+            constraints.maxWidth < 320; // Breakpoint for tight layouts
         final horizontalGap = isTight ? 6.0 : 8.0;
         final verticalGap = isTight ? 6.0 : 8.0;
 
@@ -304,31 +303,41 @@ class VoucherActionBar extends StatelessWidget {
               _buildCreateVoucherButton(context, isTight, constraints.maxWidth)
             else if (hasVoucher) ...[
               const SizedBox(height: 6),
-              _buildVoucherActions(context, isTight, horizontalGap, verticalGap, constraints.maxWidth)
+              _buildVoucherActions(
+                context,
+                isTight,
+                horizontalGap,
+                verticalGap,
+                constraints.maxWidth,
+              ),
             ] else if (!canCreateVoucher) ...[
               const SizedBox(height: 6),
-              _buildNoPermissionMessage(context)
+              _buildNoPermissionMessage(context),
             ],
 
             // Loading indicator
-            if (voucherState.isLoading)
-              _buildLoadingIndicator(context),
+            if (voucherState.isLoading) _buildLoadingIndicator(context),
 
             // Error message
-            if (voucherState.hasError)
-              _buildErrorMessage(context),
+            if (voucherState.hasError) _buildErrorMessage(context),
           ],
         );
       },
     );
   }
 
-  Widget _buildCreateVoucherButton(BuildContext context, bool isTight, double maxWidth) {
+  Widget _buildCreateVoucherButton(
+    BuildContext context,
+    bool isTight,
+    double maxWidth,
+  ) {
     // Ensure constraints are valid - minWidth cannot exceed maxWidth
     final availableWidth = maxWidth;
     final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
-    final effectiveMinWidth = minWidth < availableWidth ? minWidth : availableWidth * 0.8;
-    
+    final effectiveMinWidth = minWidth < availableWidth
+        ? minWidth
+        : availableWidth * 0.8;
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         minWidth: effectiveMinWidth,
@@ -356,7 +365,13 @@ class VoucherActionBar extends StatelessWidget {
     );
   }
 
-  Widget _buildVoucherActions(BuildContext context, bool isTight, double horizontalGap, double verticalGap, double maxWidth) {
+  Widget _buildVoucherActions(
+    BuildContext context,
+    bool isTight,
+    double horizontalGap,
+    double verticalGap,
+    double maxWidth,
+  ) {
     return Wrap(
       spacing: horizontalGap,
       runSpacing: verticalGap,
@@ -373,11 +388,7 @@ class VoucherActionBar extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: Colors.green[700],
-              ),
+              Icon(Icons.check_circle, size: 14, color: Colors.green[700]),
               const SizedBox(width: 3),
               Text(
                 'Voucher Created',
@@ -405,8 +416,13 @@ class VoucherActionBar extends StatelessWidget {
               label: const Text('Open Voucher', style: TextStyle(fontSize: 11)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                foregroundColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -438,7 +454,12 @@ class VoucherActionBar extends StatelessWidget {
     );
   }
 
-  Widget _iconAction(BuildContext context, IconData icon, String tooltip, {VoidCallback? onTap}) {
+  Widget _iconAction(
+    BuildContext context,
+    IconData icon,
+    String tooltip, {
+    VoidCallback? onTap,
+  }) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -448,18 +469,22 @@ class VoucherActionBar extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.secondaryContainer.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
             ),
           ),
           child: Icon(
             icon,
             size: 16,
-            color: onTap == null 
-              ? Colors.grey 
-              : Theme.of(context).colorScheme.onSecondaryContainer,
+            color: onTap == null
+                ? Colors.grey
+                : Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
       ),
@@ -499,7 +524,9 @@ class VoucherActionBar extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primaryContainer.withValues(alpha: 0.1),
+        color: Theme.of(
+          context,
+        ).colorScheme.primaryContainer.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(6),
       ),
       child: Row(

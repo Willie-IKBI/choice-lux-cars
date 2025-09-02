@@ -33,10 +33,16 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
   @override
   void initState() {
     super.initState();
-    _pickupLocationController = TextEditingController(text: widget.trip.pickupLocation);
-    _dropoffLocationController = TextEditingController(text: widget.trip.dropoffLocation);
+    _pickupLocationController = TextEditingController(
+      text: widget.trip.pickupLocation,
+    );
+    _dropoffLocationController = TextEditingController(
+      text: widget.trip.dropoffLocation,
+    );
     _notesController = TextEditingController(text: widget.trip.notes ?? '');
-    _amountController = TextEditingController(text: widget.trip.amount.toString());
+    _amountController = TextEditingController(
+      text: widget.trip.amount.toString(),
+    );
     _pickupDate = widget.trip.pickupDate;
     _pickupTime = TimeOfDay.fromDateTime(widget.trip.pickupDate);
     _clientPickupTime = widget.trip.clientPickupTime;
@@ -151,12 +157,16 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
         dropoffLocation: _dropoffLocationController.text.trim(),
         clientPickupTime: _clientPickupTime,
         clientDropoffTime: _clientDropoffTime,
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         amount: double.tryParse(_amountController.text) ?? 0.0,
       );
 
-              await ref.read(tripsByJobProvider(jobId).notifier).updateTrip(updatedTrip);
-      
+      await ref
+          .read(tripsByJobProvider(jobId).notifier)
+          .updateTrip(updatedTrip);
+
       if (mounted) {
         widget.onTripUpdated(updatedTrip);
         Navigator.of(context).pop();
@@ -166,9 +176,9 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
       }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error updating trip: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error updating trip: $e')));
       }
     } finally {
       if (mounted) {
@@ -211,7 +221,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                 ],
               ),
               const SizedBox(height: 24),
-              
+
               // Pickup Date & Time
               Row(
                 children: [
@@ -219,7 +229,10 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Pickup Date', style: TextStyle(fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Pickup Date',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectDate(context),
@@ -231,9 +244,14 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.calendar_today, color: ChoiceLuxTheme.richGold),
+                                Icon(
+                                  Icons.calendar_today,
+                                  color: ChoiceLuxTheme.richGold,
+                                ),
                                 const SizedBox(width: 8),
-                                Text('${_pickupDate.day}/${_pickupDate.month}/${_pickupDate.year}'),
+                                Text(
+                                  '${_pickupDate.day}/${_pickupDate.month}/${_pickupDate.year}',
+                                ),
                               ],
                             ),
                           ),
@@ -246,7 +264,10 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Pickup Time', style: TextStyle(fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Pickup Time',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectTime(context),
@@ -258,9 +279,14 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.access_time, color: ChoiceLuxTheme.richGold),
+                                Icon(
+                                  Icons.access_time,
+                                  color: ChoiceLuxTheme.richGold,
+                                ),
                                 const SizedBox(width: 8),
-                                Text('${_pickupTime.hour.toString().padLeft(2, '0')}:${_pickupTime.minute.toString().padLeft(2, '0')}'),
+                                Text(
+                                  '${_pickupTime.hour.toString().padLeft(2, '0')}:${_pickupTime.minute.toString().padLeft(2, '0')}',
+                                ),
                               ],
                             ),
                           ),
@@ -334,7 +360,10 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Client Pickup Time (Optional)', style: TextStyle(fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Client Pickup Time (Optional)',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectClientPickupTime(context),
@@ -346,11 +375,16 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.access_time, color: ChoiceLuxTheme.richGold),
+                                Icon(
+                                  Icons.access_time,
+                                  color: ChoiceLuxTheme.richGold,
+                                ),
                                 const SizedBox(width: 8),
-                                Text(_clientPickupTime != null 
-                                  ? '${_clientPickupTime!.day}/${_clientPickupTime!.month}/${_clientPickupTime!.year} ${_clientPickupTime!.hour.toString().padLeft(2, '0')}:${_clientPickupTime!.minute.toString().padLeft(2, '0')}'
-                                  : 'Not set'),
+                                Text(
+                                  _clientPickupTime != null
+                                      ? '${_clientPickupTime!.day}/${_clientPickupTime!.month}/${_clientPickupTime!.year} ${_clientPickupTime!.hour.toString().padLeft(2, '0')}:${_clientPickupTime!.minute.toString().padLeft(2, '0')}'
+                                      : 'Not set',
+                                ),
                               ],
                             ),
                           ),
@@ -363,7 +397,10 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text('Client Dropoff Time (Optional)', style: TextStyle(fontWeight: FontWeight.w500)),
+                        const Text(
+                          'Client Dropoff Time (Optional)',
+                          style: TextStyle(fontWeight: FontWeight.w500),
+                        ),
                         const SizedBox(height: 8),
                         InkWell(
                           onTap: () => _selectClientDropoffTime(context),
@@ -375,11 +412,16 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(Icons.access_time, color: ChoiceLuxTheme.richGold),
+                                Icon(
+                                  Icons.access_time,
+                                  color: ChoiceLuxTheme.richGold,
+                                ),
                                 const SizedBox(width: 8),
-                                Text(_clientDropoffTime != null 
-                                  ? '${_clientDropoffTime!.day}/${_clientDropoffTime!.month}/${_clientDropoffTime!.year} ${_clientDropoffTime!.hour.toString().padLeft(2, '0')}:${_clientDropoffTime!.minute.toString().padLeft(2, '0')}'
-                                  : 'Not set'),
+                                Text(
+                                  _clientDropoffTime != null
+                                      ? '${_clientDropoffTime!.day}/${_clientDropoffTime!.month}/${_clientDropoffTime!.year} ${_clientDropoffTime!.hour.toString().padLeft(2, '0')}:${_clientDropoffTime!.minute.toString().padLeft(2, '0')}'
+                                      : 'Not set',
+                                ),
                               ],
                             ),
                           ),
@@ -408,7 +450,9 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -421,12 +465,15 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                         foregroundColor: Colors.white,
                       ),
                       child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
-                          )
-                        : const Text('Update Trip'),
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Update Trip'),
                     ),
                   ),
                 ],
@@ -437,4 +484,4 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
       ),
     );
   }
-} 
+}

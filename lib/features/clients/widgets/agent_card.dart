@@ -33,13 +33,9 @@ class _AgentCardState extends State<AgentCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -64,7 +60,7 @@ class _AgentCardState extends State<AgentCard>
     return LayoutBuilder(
       builder: (context, constraints) {
         final isMobile = constraints.maxWidth < 600;
-        
+
         return MouseRegion(
           onEnter: (_) => _onHover(true),
           onExit: (_) => _onHover(false),
@@ -80,10 +76,7 @@ class _AgentCardState extends State<AgentCard>
                       borderRadius: BorderRadius.circular(16),
                       gradient: ChoiceLuxTheme.cardGradient,
                       border: _isHovered
-                          ? Border.all(
-                              color: ChoiceLuxTheme.richGold,
-                              width: 2,
-                            )
+                          ? Border.all(color: ChoiceLuxTheme.richGold, width: 2)
                           : null,
                       boxShadow: _isHovered
                           ? [
@@ -118,9 +111,12 @@ class _AgentCardState extends State<AgentCard>
                                   height: isMobile ? 40 : 48,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(25),
-                                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                                    color: ChoiceLuxTheme.richGold.withOpacity(
+                                      0.1,
+                                    ),
                                     border: Border.all(
-                                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                                      color: ChoiceLuxTheme.richGold
+                                          .withOpacity(0.3),
                                     ),
                                   ),
                                   child: Icon(
@@ -132,23 +128,31 @@ class _AgentCardState extends State<AgentCard>
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         widget.agent.agentName,
-                                        style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                                          fontWeight: FontWeight.bold,
-                                          color: ChoiceLuxTheme.softWhite,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .titleLarge
+                                            ?.copyWith(
+                                              fontWeight: FontWeight.bold,
+                                              color: ChoiceLuxTheme.softWhite,
+                                            ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         'Agent',
-                                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                          color: ChoiceLuxTheme.platinumSilver,
-                                        ),
+                                        style: Theme.of(context)
+                                            .textTheme
+                                            .bodyMedium
+                                            ?.copyWith(
+                                              color:
+                                                  ChoiceLuxTheme.platinumSilver,
+                                            ),
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                       ),
@@ -158,7 +162,7 @@ class _AgentCardState extends State<AgentCard>
                               ],
                             ),
                             const SizedBox(height: 16),
-                            
+
                             // Contact information
                             _buildContactInfo(
                               Icons.email,
@@ -171,13 +175,14 @@ class _AgentCardState extends State<AgentCard>
                               widget.agent.contactNumber,
                               isMobile,
                             ),
-                            
+
                             const SizedBox(height: 16),
-                            
+
                             // Action buttons
                             if (_isHovered || isMobile) ...[
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceEvenly,
                                 children: [
                                   _buildActionButton(
                                     Icons.edit,
@@ -199,10 +204,12 @@ class _AgentCardState extends State<AgentCard>
                               Center(
                                 child: Text(
                                   'Hover for actions',
-                                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
-                                    fontStyle: FontStyle.italic,
-                                  ),
+                                  style: Theme.of(context).textTheme.bodySmall
+                                      ?.copyWith(
+                                        color: ChoiceLuxTheme.platinumSilver
+                                            .withOpacity(0.7),
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                 ),
                               ),
                             ],
@@ -232,9 +239,9 @@ class _AgentCardState extends State<AgentCard>
         Expanded(
           child: Text(
             text,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: ChoiceLuxTheme.softWhite,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.bodyMedium?.copyWith(color: ChoiceLuxTheme.softWhite),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
@@ -255,10 +262,7 @@ class _AgentCardState extends State<AgentCard>
         padding: EdgeInsets.symmetric(horizontal: isMobile ? 2.0 : 4.0),
         child: ElevatedButton.icon(
           onPressed: onPressed,
-          icon: Icon(
-            icon,
-            size: isMobile ? 16 : 18,
-          ),
+          icon: Icon(icon, size: isMobile ? 16 : 18),
           label: Text(
             label,
             style: TextStyle(
@@ -286,4 +290,4 @@ class _AgentCardState extends State<AgentCard>
       ),
     );
   }
-} 
+}

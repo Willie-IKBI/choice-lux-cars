@@ -184,10 +184,9 @@ class EnumUtils {
 
   static String formatEnumWithSpaces(dynamic enumValue) {
     final name = formatEnum(enumValue);
-    return name.replaceAllMapped(
-      RegExp(r'([A-Z])'),
-      (match) => ' ${match.group(1)}',
-    ).trim();
+    return name
+        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(1)}')
+        .trim();
   }
 
   static String formatEnumTitle(dynamic enumValue) {
@@ -214,5 +213,6 @@ extension DateTimeExtensions on DateTime {
 
 extension DoubleExtensions on double {
   String get formattedCurrency => CurrencyUtils.formatCurrency(this);
-  String get formattedCurrencyWithCommas => CurrencyUtils.formatCurrencyWithCommas(this);
-} 
+  String get formattedCurrencyWithCommas =>
+      CurrencyUtils.formatCurrencyWithCommas(this);
+}

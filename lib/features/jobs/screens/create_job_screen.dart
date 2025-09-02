@@ -18,11 +18,8 @@ import 'package:uuid/uuid.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
   final String? jobId; // null for create, non-null for edit
-  
-  const CreateJobScreen({
-    super.key,
-    this.jobId,
-  });
+
+  const CreateJobScreen({super.key, this.jobId});
 
   @override
   ConsumerState<CreateJobScreen> createState() => _CreateJobScreenState();
@@ -30,7 +27,7 @@ class CreateJobScreen extends ConsumerStatefulWidget {
 
 class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   final _formKey = GlobalKey<FormState>();
-  
+
   // Controllers
   final _passengerNameController = TextEditingController();
   final _passengerContactController = TextEditingController();
@@ -39,7 +36,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   final _notesController = TextEditingController();
   final _paymentAmountController = TextEditingController();
   final _clientSearchController = TextEditingController();
-  
+
   // Form values
   String? _selectedClientId;
   String? _selectedAgentId;
@@ -48,11 +45,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
   DateTime? _selectedJobStartDate;
   bool _collectPayment = false;
-  
+
   // Loading states
   bool _isLoading = false;
   bool _isSubmitting = false;
-  
+
   // Search states
   String _clientSearchQuery = '';
   bool _showClientDropdown = false;
@@ -60,8 +57,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   // Calculate completion percentage
   double get _completionPercentage {
     int completedFields = 0;
-    int totalRequiredFields = 7; // client, vehicle, driver, location, date, passenger count, luggage count
-    
+    int totalRequiredFields =
+        7; // client, vehicle, driver, location, date, passenger count, luggage count
+
     // Required fields
     if (_selectedClientId != null) completedFields++;
     if (_selectedVehicleId != null) completedFields++;
@@ -70,22 +68,22 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     if (_selectedJobStartDate != null) completedFields++;
     if (_pasCountController.text.isNotEmpty) completedFields++;
     if (_luggageCountController.text.isNotEmpty) completedFields++;
-    
+
     return (completedFields / totalRequiredFields) * 100;
   }
-  
+
   @override
   void initState() {
     super.initState();
     Log.d('CreateJobScreen initialized');
     _loadData();
-    
+
     // If editing, load the job data
     if (widget.jobId != null) {
       _loadJobForEditing();
     }
   }
-  
+
   @override
   void dispose() {
     _passengerNameController.dispose();
@@ -97,26 +95,26 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     _clientSearchController.dispose();
     super.dispose();
   }
-  
+
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
-    
+
     try {
       await Future.delayed(const Duration(milliseconds: 100));
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error loading data: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
     } finally {
       setState(() => _isLoading = false);
     }
   }
-  
+
   Future<void> _loadJobForEditing() async {
     if (widget.jobId == null) return;
-    
+
     setState(() => _isLoading = true);
-    
+
     try {
       // Load the job data
       final jobsState = ref.read(jobsProvider);
@@ -124,7 +122,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         throw Exception('Jobs not loaded');
       }
       final job = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
-      
+
       // Populate form fields
       _selectedClientId = job.clientId;
       _selectedAgentId = job.agentId;
@@ -133,7 +131,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       _selectedLocation = job.location;
       _selectedJobStartDate = job.jobStartDate;
       _collectPayment = job.collectPayment;
-      
+
       _passengerNameController.text = job.passengerName ?? '';
       _passengerContactController.text = job.passengerContact ?? '';
       _pasCountController.text = job.pasCount.toString();
@@ -142,18 +140,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       if (job.paymentAmount != null) {
         _paymentAmountController.text = job.paymentAmount!.toString();
       }
-      
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error loading job data: $e')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading job data: $e')));
       }
     } finally {
       setState(() => _isLoading = false);
     }
   }
-  
+
   void _onClientChanged(String? clientId) {
     setState(() {
       _selectedClientId = clientId;
@@ -161,7 +158,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       _showClientDropdown = false;
     });
   }
-  
+
   Future<void> _selectJobStartDate() async {
     final picked = await showDatePicker(
       context: context,
@@ -182,36 +179,38 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         );
       },
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedJobStartDate = picked;
       });
     }
   }
-  
+
   Future<void> _createJob() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isSubmitting = true);
-    
+
     try {
       final currentUser = ref.read(currentUserProfileProvider);
       if (currentUser == null) throw Exception('User not authenticated');
-      
+
       final isEditing = widget.jobId != null;
-      
+
       if (isEditing) {
         // Update existing job
         final jobsState = ref.read(jobsProvider);
         if (!jobsState.hasValue) {
           throw Exception('Jobs not loaded');
         }
-        final existingJob = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
-        
+        final existingJob = jobsState.value!.firstWhere(
+          (j) => j.id == widget.jobId,
+        );
+
         // Check if driver is being changed
         final isDriverChanged = _selectedDriverId != existingJob.driverId;
-        
+
         final updatedJob = Job(
           id: existingJob.id,
           clientId: _selectedClientId!,
@@ -220,30 +219,32 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           driverId: _selectedDriverId!,
           jobStartDate: _selectedJobStartDate!,
           orderDate: existingJob.orderDate,
-          passengerName: _passengerNameController.text.trim().isEmpty 
-              ? null 
+          passengerName: _passengerNameController.text.trim().isEmpty
+              ? null
               : _passengerNameController.text.trim(),
-          passengerContact: _passengerContactController.text.trim().isEmpty 
-              ? null 
+          passengerContact: _passengerContactController.text.trim().isEmpty
+              ? null
               : _passengerContactController.text.trim(),
           pasCount: double.parse(_pasCountController.text),
           luggageCount: _luggageCountController.text,
-          notes: _notesController.text.trim().isEmpty 
-              ? null 
+          notes: _notesController.text.trim().isEmpty
+              ? null
               : _notesController.text.trim(),
           collectPayment: _collectPayment,
-          paymentAmount: _paymentAmountController.text.isNotEmpty 
-              ? double.tryParse(_paymentAmountController.text) 
+          paymentAmount: _paymentAmountController.text.isNotEmpty
+              ? double.tryParse(_paymentAmountController.text)
               : existingJob.paymentAmount,
           status: existingJob.status,
           location: _selectedLocation,
           createdBy: existingJob.createdBy,
           createdAt: existingJob.createdAt,
-          driverConfirmation: isDriverChanged ? false : existingJob.driverConfirmation, // Reset if driver changed
+          driverConfirmation: isDriverChanged
+              ? false
+              : existingJob.driverConfirmation, // Reset if driver changed
         );
-        
+
         await ref.read(jobsProvider.notifier).updateJob(updatedJob);
-        
+
         // Show appropriate message based on driver change
         if (mounted) {
           if (isDriverChanged) {
@@ -252,10 +253,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               '✅ Job updated and reassigned to new driver. Driver will be notified.',
             );
           } else {
-            SnackBarUtils.showSuccess(
-              context,
-              '✅ Job updated successfully!',
-            );
+            SnackBarUtils.showSuccess(context, '✅ Job updated successfully!');
           }
           context.go('/jobs/${widget.jobId}/summary');
         }
@@ -269,38 +267,39 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           driverId: _selectedDriverId!,
           jobStartDate: _selectedJobStartDate!,
           orderDate: DateTime.now(),
-          passengerName: _passengerNameController.text.trim().isEmpty 
-              ? null 
+          passengerName: _passengerNameController.text.trim().isEmpty
+              ? null
               : _passengerNameController.text.trim(),
-          passengerContact: _passengerContactController.text.trim().isEmpty 
-              ? null 
+          passengerContact: _passengerContactController.text.trim().isEmpty
+              ? null
               : _passengerContactController.text.trim(),
           pasCount: double.parse(_pasCountController.text),
           luggageCount: _luggageCountController.text,
-          notes: _notesController.text.trim().isEmpty 
-              ? null 
+          notes: _notesController.text.trim().isEmpty
+              ? null
               : _notesController.text.trim(),
           collectPayment: _collectPayment,
-          paymentAmount: null, // Amount will be completed later in transport details
+          paymentAmount:
+              null, // Amount will be completed later in transport details
           status: 'open',
           location: _selectedLocation,
           createdBy: currentUser.id,
           createdAt: DateTime.now(),
           driverConfirmation: false, // Set to false when creating new job
         );
-        
+
         final createdJob = await ref.read(jobsProvider.notifier).createJob(job);
-        
+
         if (mounted) {
           // Show success message before navigation
           SnackBarUtils.showSuccess(
             context,
             'Job created successfully! Moving to transport details...',
           );
-          
+
           // Use a small delay to ensure SnackBar is shown before navigation
           await Future.delayed(const Duration(milliseconds: 100));
-          
+
           if (mounted && createdJob != null && createdJob['id'] != null) {
             // Navigate to trip management screen for Step 2
             context.go('/jobs/${createdJob['id']}/trip-management');
@@ -309,36 +308,36 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       }
     } catch (e) {
       if (mounted) {
-        SnackBarUtils.showError(
-          context,
-          'Error creating job: $e',
-        );
+        SnackBarUtils.showError(context, 'Error creating job: $e');
       }
     } finally {
       setState(() => _isSubmitting = false);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final isMobile = MediaQuery.of(context).size.width < 768;
     final screenWidth = MediaQuery.of(context).size.width;
-    
+
     // Calculate responsive max width based on screen size
     double getMaxWidth() {
-      if (screenWidth < 768) return screenWidth - 32; // Mobile: full width minus padding
+      if (screenWidth < 768)
+        return screenWidth - 32; // Mobile: full width minus padding
       if (screenWidth < 1024) return 800; // Tablet: 800px max
       if (screenWidth < 1440) return 1000; // Medium desktop: 1000px max
       if (screenWidth < 1920) return 1200; // Large desktop: 1200px max
       return 1400; // Extra large: 1400px max
     }
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
-        subtitle: widget.jobId != null ? 'Update Job Details' : 'Step 1: Job Details',
+        subtitle: widget.jobId != null
+            ? 'Update Job Details'
+            : 'Step 1: Job Details',
         showBackButton: true,
-        onBackPressed: () => widget.jobId != null 
+        onBackPressed: () => widget.jobId != null
             ? context.go('/jobs/${widget.jobId}/summary')
             : context.go('/jobs'),
       ),
@@ -347,38 +346,46 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           final clientsAsync = ref.watch(clientsProvider);
           final vehiclesState = ref.watch(vehiclesProvider);
           final users = ref.watch(usersProvider);
-          
+
           if (vehiclesState.isLoading || !users.hasValue) {
             return const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
               ),
             );
           }
-          
+
           if (vehiclesState.error != null) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  const Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
+                  const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: ChoiceLuxTheme.errorColor,
+                  ),
                   const SizedBox(height: 16),
                   Text('Error loading vehicles: ${vehiclesState.error}'),
                   const SizedBox(height: 16),
                   ElevatedButton(
-                    onPressed: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
+                    onPressed: () =>
+                        ref.read(vehiclesProvider.notifier).fetchVehicles(),
                     child: const Text('Retry'),
                   ),
                 ],
               ),
             );
           }
-          
+
           return clientsAsync.when(
             data: (clients) {
               final vehicles = vehiclesState.value ?? [];
-              final allUsers = users.value ?? []; // Show all users regardless of role
-              
+              final allUsers =
+                  users.value ?? []; // Show all users regardless of role
+
               return Form(
                 key: _formKey,
                 child: SingleChildScrollView(
@@ -391,9 +398,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         children: [
                           // Progress indicator
                           _buildProgressIndicator(),
-                          
+
                           const SizedBox(height: 32),
-                          
+
                           // Client & Agent Selection
                           _buildFormSection(
                             title: 'Client & Agent Selection',
@@ -404,9 +411,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               _buildAgentDropdown(),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 32),
-                          
+
                           // Job Details
                           _buildFormSection(
                             title: 'Job Details',
@@ -421,9 +428,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               _buildJobStartDatePicker(),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 32),
-                          
+
                           // Passenger Details
                           _buildFormSection(
                             title: 'Passenger Details',
@@ -456,10 +463,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                           icon: Icons.people,
                                           keyboardType: TextInputType.number,
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter passenger count';
                                             }
-                                            if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                                            if (double.tryParse(value) ==
+                                                    null ||
+                                                double.parse(value) <= 0) {
                                               return 'Please enter a valid number';
                                             }
                                             return null;
@@ -473,7 +483,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                           icon: Icons.work,
                                           keyboardType: TextInputType.number,
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter luggage count';
                                             }
                                             return null;
@@ -491,10 +502,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                             icon: Icons.people,
                                             keyboardType: TextInputType.number,
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Please enter passenger count';
                                               }
-                                              if (double.tryParse(value) == null || double.parse(value) <= 0) {
+                                              if (double.tryParse(value) ==
+                                                      null ||
+                                                  double.parse(value) <= 0) {
                                                 return 'Please enter a valid number';
                                               }
                                               return null;
@@ -510,7 +524,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                             icon: Icons.work,
                                             keyboardType: TextInputType.number,
                                             validator: (value) {
-                                              if (value == null || value.isEmpty) {
+                                              if (value == null ||
+                                                  value.isEmpty) {
                                                 return 'Please enter luggage count';
                                               }
                                               return null;
@@ -521,9 +536,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                     ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 32),
-                          
+
                           // Payment & Notes
                           _buildFormSection(
                             title: 'Payment & Notes',
@@ -534,16 +549,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               _buildTextField(
                                 controller: _notesController,
                                 label: 'Notes',
-                                hint: 'Enter pickup location, flight details, or other relevant information',
+                                hint:
+                                    'Enter pickup location, flight details, or other relevant information',
                                 icon: Icons.note,
                                 maxLines: 4,
                                 isRequired: false,
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 32),
-                          
+
                           _buildActionButtons(isMobile),
                         ],
                       ),
@@ -554,12 +570,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             },
             loading: () => const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
               ),
             ),
-            error: (error, stack) => Center(
-              child: Text('Error loading clients: $error'),
-            ),
+            error: (error, stack) =>
+                Center(child: Text('Error loading clients: $error')),
           );
         },
       ),
@@ -619,7 +636,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.richGold.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
@@ -664,8 +684,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             _getCompletionStatusText(),
             style: TextStyle(
               fontSize: 12,
-              color: _completionPercentage == 100 
-                  ? ChoiceLuxTheme.successColor 
+              color: _completionPercentage == 100
+                  ? ChoiceLuxTheme.successColor
                   : ChoiceLuxTheme.platinumSilver,
               fontWeight: FontWeight.w500,
             ),
@@ -683,9 +703,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     } else if (_completionPercentage < 100) {
       return 'Almost there! Complete the remaining fields';
     } else {
-      return widget.jobId != null 
-        ? 'All required fields completed! Ready to update job'
-        : 'All required fields completed! Ready to create job';
+      return widget.jobId != null
+          ? 'All required fields completed! Ready to update job'
+          : 'All required fields completed! Ready to create job';
     }
   }
 
@@ -715,11 +735,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   color: ChoiceLuxTheme.richGold.withOpacity(0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 20,
-                ),
+                child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
               ),
               const SizedBox(width: 12),
               Text(
@@ -742,7 +758,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   Widget _buildSearchableClientDropdown(List<dynamic> clients) {
     final filteredClients = clients.where((client) {
       if (_clientSearchQuery.isEmpty) return true;
-      return client.companyName.toLowerCase().contains(_clientSearchQuery.toLowerCase());
+      return client.companyName.toLowerCase().contains(
+        _clientSearchQuery.toLowerCase(),
+      );
     }).toList();
 
     return Column(
@@ -803,7 +821,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         )
                       : null,
                   border: InputBorder.none,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
                 ),
                 validator: (value) {
                   if (_selectedClientId == null) {
@@ -812,7 +833,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   return null;
                 },
               ),
-              
+
               // Selected client display
               if (_selectedClientId != null)
                 Container(
@@ -836,7 +857,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          clients.firstWhere((c) => c.id.toString() == _selectedClientId).companyName,
+                          clients
+                              .firstWhere(
+                                (c) => c.id.toString() == _selectedClientId,
+                              )
+                              .companyName,
                           style: const TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
@@ -846,7 +871,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     ],
                   ),
                 ),
-              
+
               // Dropdown list
               if (_showClientDropdown && filteredClients.isNotEmpty)
                 Container(
@@ -925,18 +950,24 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
     return Consumer(
       builder: (context, ref, child) {
-        final agentsAsync = ref.watch(agentsByClientProvider(_selectedClientId!));
-        
+        final agentsAsync = ref.watch(
+          agentsByClientProvider(_selectedClientId!),
+        );
+
         return agentsAsync.when(
           data: (agents) => _buildDropdownField(
             label: 'Agent',
             hint: 'Select an agent (optional)',
             icon: Icons.person,
             value: _selectedAgentId,
-            items: agents.map((agent) => DropdownMenuItem(
-              value: agent.id.toString(),
-              child: Text(agent.agentName),
-            )).toList(),
+            items: agents
+                .map(
+                  (agent) => DropdownMenuItem(
+                    value: agent.id.toString(),
+                    child: Text(agent.agentName),
+                  ),
+                )
+                .toList(),
             onChanged: (value) => setState(() => _selectedAgentId = value),
             isRequired: false,
           ),
@@ -957,7 +988,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 ),
                 SizedBox(width: 12),
@@ -1002,16 +1035,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     // Sort vehicles by make alphabetically
     final sortedVehicles = List.from(vehicles)
       ..sort((a, b) => (a.make ?? '').compareTo(b.make ?? ''));
-    
+
     return _buildDropdownField(
       label: 'Vehicle *',
       hint: 'Select a vehicle',
       icon: Icons.directions_car,
       value: _selectedVehicleId,
       items: sortedVehicles.map((vehicle) {
-        final hasValidLicense = vehicle.licenseExpiryDate != null &&
+        final hasValidLicense =
+            vehicle.licenseExpiryDate != null &&
             vehicle.licenseExpiryDate!.isAfter(DateTime.now());
-        
+
         return DropdownMenuItem(
           value: vehicle.id.toString(),
           child: Row(
@@ -1024,7 +1058,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               ),
               if (!hasValidLicense)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.errorColor,
                     borderRadius: BorderRadius.circular(4),
@@ -1059,11 +1096,12 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       icon: Icons.person,
       value: _selectedDriverId,
       items: allUsers.map((user) {
-        final hasValidLicense = user.driverLicExp != null &&
+        final hasValidLicense =
+            user.driverLicExp != null &&
             user.driverLicExp!.isAfter(DateTime.now());
-        final hasValidPdp = user.pdpExp != null &&
-            user.pdpExp!.isAfter(DateTime.now());
-        
+        final hasValidPdp =
+            user.pdpExp != null && user.pdpExp!.isAfter(DateTime.now());
+
         return DropdownMenuItem(
           value: user.id.toString(),
           child: Row(
@@ -1076,7 +1114,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               ),
               if (!hasValidLicense || !hasValidPdp)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 2,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.errorColor,
                     borderRadius: BorderRadius.circular(4),
@@ -1111,18 +1152,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       icon: Icons.location_on,
       value: _selectedLocation,
       items: const [
-        DropdownMenuItem(
-          value: 'Jhb',
-          child: Text('Johannesburg (Jhb)'),
-        ),
-        DropdownMenuItem(
-          value: 'Cpt',
-          child: Text('Cape Town (Cpt)'),
-        ),
-        DropdownMenuItem(
-          value: 'Dbn',
-          child: Text('Durban (Dbn)'),
-        ),
+        DropdownMenuItem(value: 'Jhb', child: Text('Johannesburg (Jhb)')),
+        DropdownMenuItem(value: 'Cpt', child: Text('Cape Town (Cpt)')),
+        DropdownMenuItem(value: 'Dbn', child: Text('Durban (Dbn)')),
       ],
       onChanged: (value) => setState(() => _selectedLocation = value),
       validator: (value) {
@@ -1194,10 +1226,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             padding: const EdgeInsets.only(top: 8, left: 12),
             child: Text(
               'Please select a job start date',
-              style: TextStyle(
-                color: ChoiceLuxTheme.errorColor,
-                fontSize: 12,
-              ),
+              style: TextStyle(color: ChoiceLuxTheme.errorColor, fontSize: 12),
             ),
           ),
       ],
@@ -1272,10 +1301,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.richGold,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
@@ -1284,7 +1310,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 width: 1,
               ),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           validator: validator,
         ),
@@ -1359,12 +1388,12 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.richGold,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
           ),
           items: items,
           onChanged: onChanged,
@@ -1413,7 +1442,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 children: [
                   Switch(
                     value: _collectPayment,
-                    onChanged: (value) => setState(() => _collectPayment = value),
+                    onChanged: (value) =>
+                        setState(() => _collectPayment = value),
                     activeColor: ChoiceLuxTheme.richGold,
                     activeTrackColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
                   ),
@@ -1429,7 +1459,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   ),
                 ],
               ),
-
             ],
           ),
         ),
@@ -1469,7 +1498,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                             height: 20,
                             child: CircularProgressIndicator(
                               strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                Colors.black,
+                              ),
                             ),
                           )
                         : Text(
@@ -1485,9 +1516,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
-                    onPressed: _isSubmitting ? null : () => widget.jobId != null 
-                        ? context.go('/jobs/${widget.jobId}/summary')
-                        : context.go('/jobs'),
+                    onPressed: _isSubmitting
+                        ? null
+                        : () => widget.jobId != null
+                              ? context.go('/jobs/${widget.jobId}/summary')
+                              : context.go('/jobs'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ChoiceLuxTheme.platinumSilver,
                       side: BorderSide(
@@ -1513,25 +1546,27 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
                 OutlinedButton(
-                  onPressed: _isSubmitting ? null : () => widget.jobId != null 
-                      ? context.go('/jobs/${widget.jobId}/summary')
-                      : context.go('/jobs'),
+                  onPressed: _isSubmitting
+                      ? null
+                      : () => widget.jobId != null
+                            ? context.go('/jobs/${widget.jobId}/summary')
+                            : context.go('/jobs'),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: ChoiceLuxTheme.platinumSilver,
                     side: BorderSide(
                       color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
                     ),
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: const Text(
                     'Cancel',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -1540,7 +1575,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChoiceLuxTheme.richGold,
                     foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 32,
+                      vertical: 16,
+                    ),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
@@ -1551,7 +1589,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                           height: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.black,
+                            ),
                           ),
                         )
                       : Text(
@@ -1566,4 +1606,4 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
     );
   }
-} 
+}

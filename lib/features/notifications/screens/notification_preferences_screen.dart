@@ -6,10 +6,12 @@ class NotificationPreferencesScreen extends ConsumerStatefulWidget {
   const NotificationPreferencesScreen({super.key});
 
   @override
-  ConsumerState<NotificationPreferencesScreen> createState() => _NotificationPreferencesScreenState();
+  ConsumerState<NotificationPreferencesScreen> createState() =>
+      _NotificationPreferencesScreenState();
 }
 
-class _NotificationPreferencesScreenState extends ConsumerState<NotificationPreferencesScreen> {
+class _NotificationPreferencesScreenState
+    extends ConsumerState<NotificationPreferencesScreen> {
   // Notification type preferences
   bool _jobAssignments = true;
   bool _jobReassignments = true;
@@ -34,17 +36,14 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: 'Notification Settings',
         showBackButton: true,
         showLogo: false,
         actions: [
-          TextButton(
-            onPressed: _savePreferences,
-            child: const Text('Save'),
-          ),
+          TextButton(onPressed: _savePreferences, child: const Text('Save')),
         ],
       ),
       body: SingleChildScrollView(
@@ -55,7 +54,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
             // Notification Types Section
             _buildSectionHeader('Notification Types', Icons.category),
             const SizedBox(height: 16),
-            
+
             _buildSwitchTile(
               'Job Assignments',
               'Get notified when new jobs are assigned to you',
@@ -63,7 +62,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _jobAssignments,
               (value) => setState(() => _jobAssignments = value),
             ),
-            
+
             _buildSwitchTile(
               'Job Reassignments',
               'Get notified when jobs are reassigned to you',
@@ -71,7 +70,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _jobReassignments,
               (value) => setState(() => _jobReassignments = value),
             ),
-            
+
             _buildSwitchTile(
               'Job Status Changes',
               'Get notified when job status is updated',
@@ -79,7 +78,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _jobStatusChanges,
               (value) => setState(() => _jobStatusChanges = value),
             ),
-            
+
             _buildSwitchTile(
               'Job Cancellations',
               'Get notified when jobs are cancelled',
@@ -87,7 +86,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _jobCancellations,
               (value) => setState(() => _jobCancellations = value),
             ),
-            
+
             _buildSwitchTile(
               'Payment Reminders',
               'Get notified about payment reminders',
@@ -95,7 +94,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _paymentReminders,
               (value) => setState(() => _paymentReminders = value),
             ),
-            
+
             _buildSwitchTile(
               'System Alerts',
               'Get notified about system maintenance and updates',
@@ -103,13 +102,13 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _systemAlerts,
               (value) => setState(() => _systemAlerts = value),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Delivery Methods Section
             _buildSectionHeader('Delivery Methods', Icons.notifications),
             const SizedBox(height: 16),
-            
+
             _buildSwitchTile(
               'Push Notifications',
               'Receive notifications on your device',
@@ -117,7 +116,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _pushNotifications,
               (value) => setState(() => _pushNotifications = value),
             ),
-            
+
             _buildSwitchTile(
               'In-App Notifications',
               'Show notifications within the app',
@@ -125,7 +124,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _inAppNotifications,
               (value) => setState(() => _inAppNotifications = value),
             ),
-            
+
             _buildSwitchTile(
               'Email Notifications',
               'Receive notifications via email',
@@ -133,13 +132,13 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _emailNotifications,
               (value) => setState(() => _emailNotifications = value),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Sound & Vibration Section
             _buildSectionHeader('Sound & Vibration', Icons.volume_up),
             const SizedBox(height: 16),
-            
+
             _buildSwitchTile(
               'Sound',
               'Play sound for notifications',
@@ -147,7 +146,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _soundEnabled,
               (value) => setState(() => _soundEnabled = value),
             ),
-            
+
             _buildSwitchTile(
               'Vibration',
               'Vibrate for notifications',
@@ -155,13 +154,13 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _vibrationEnabled,
               (value) => setState(() => _vibrationEnabled = value),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Priority Settings Section
             _buildSectionHeader('Priority Settings', Icons.priority_high),
             const SizedBox(height: 16),
-            
+
             _buildSwitchTile(
               'High Priority Only',
               'Only show high priority notifications',
@@ -169,13 +168,13 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _highPriorityOnly,
               (value) => setState(() => _highPriorityOnly = value),
             ),
-            
+
             const SizedBox(height: 32),
-            
+
             // Quiet Hours Section
             _buildSectionHeader('Quiet Hours', Icons.bedtime),
             const SizedBox(height: 16),
-            
+
             _buildSwitchTile(
               'Enable Quiet Hours',
               'Mute notifications during specified hours',
@@ -183,10 +182,10 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               _quietHoursEnabled,
               (value) => setState(() => _quietHoursEnabled = value),
             ),
-            
+
             if (_quietHoursEnabled) ...[
               const SizedBox(height: 16),
-              
+
               Row(
                 children: [
                   Expanded(
@@ -207,34 +206,34 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
                 ],
               ),
             ],
-            
+
             const SizedBox(height: 32),
-            
+
             // Actions Section
             _buildSectionHeader('Actions', Icons.settings),
             const SizedBox(height: 16),
-            
+
             _buildActionTile(
               'Test Notification',
               'Send a test notification to verify settings',
               Icons.send,
               () => _sendTestNotification(),
             ),
-            
+
             _buildActionTile(
               'Clear All Notifications',
               'Delete all notifications from your device',
               Icons.clear_all,
               () => _clearAllNotifications(),
             ),
-            
+
             _buildActionTile(
               'Reset to Defaults',
               'Restore default notification settings',
               Icons.restore,
               () => _resetToDefaults(),
             ),
-            
+
             const SizedBox(height: 32),
           ],
         ),
@@ -249,10 +248,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
         const SizedBox(width: 8),
         Text(
           title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w600,
-          ),
+          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -287,10 +283,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
           padding: const EdgeInsets.only(left: 32),
           child: Text(
             subtitle,
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
           ),
         ),
         value: value,
@@ -310,17 +303,11 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
         leading: Icon(Icons.access_time, color: Colors.grey[600]),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
           time.format(context),
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
         onTap: () async {
           final newTime = await showTimePicker(
@@ -348,17 +335,11 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
         leading: Icon(icon, color: Colors.grey[600]),
         title: Text(
           title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w500,
-          ),
+          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 14,
-            color: Colors.grey[600],
-          ),
+          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
         ),
         onTap: onTap,
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
@@ -369,19 +350,15 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
   void _savePreferences() {
     // TODO: Implement saving preferences to backend
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Notification preferences saved'),
-      ),
+      const SnackBar(content: Text('Notification preferences saved')),
     );
   }
 
   void _sendTestNotification() {
     // TODO: Implement test notification
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Test notification sent'),
-      ),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Test notification sent')));
   }
 
   void _clearAllNotifications() {
@@ -402,9 +379,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               // TODO: Implement clear all notifications
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('All notifications cleared'),
-                ),
+                const SnackBar(content: Text('All notifications cleared')),
               );
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
@@ -449,9 +424,7 @@ class _NotificationPreferencesScreenState extends ConsumerState<NotificationPref
               });
               Navigator.of(context).pop();
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Settings reset to defaults'),
-                ),
+                const SnackBar(content: Text('Settings reset to defaults')),
               );
             },
             child: const Text('Reset'),

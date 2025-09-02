@@ -18,7 +18,7 @@ class FirebaseService {
   static Future<void> initialize() async {
     try {
       FirebaseOptions options;
-      
+
       if (kIsWeb) {
         // Web configuration
         options = const FirebaseOptions(
@@ -30,18 +30,20 @@ class FirebaseService {
           appId: AppConstants.firebaseAppId,
         );
       } else {
-                  // Mobile configuration (Android/iOS)
-          options = const FirebaseOptions(
-            apiKey: AppConstants.firebaseApiKey,
-            appId: AppConstants.firebaseAppId,
-            messagingSenderId: AppConstants.firebaseMessagingSenderId,
-            projectId: AppConstants.firebaseProjectId,
-            storageBucket: AppConstants.firebaseStorageBucket,
-          );
+        // Mobile configuration (Android/iOS)
+        options = const FirebaseOptions(
+          apiKey: AppConstants.firebaseApiKey,
+          appId: AppConstants.firebaseAppId,
+          messagingSenderId: AppConstants.firebaseMessagingSenderId,
+          projectId: AppConstants.firebaseProjectId,
+          storageBucket: AppConstants.firebaseStorageBucket,
+        );
       }
 
       await Firebase.initializeApp(options: options);
-      Log.d('Firebase initialized successfully for ${kIsWeb ? 'Web' : 'Mobile'}');
+      Log.d(
+        'Firebase initialized successfully for ${kIsWeb ? 'Web' : 'Mobile'}',
+      );
     } catch (error) {
       Log.e('Failed to initialize Firebase: $error');
       // Don't rethrow Firebase initialization errors to prevent app crashes
@@ -107,9 +109,7 @@ class FirebaseService {
       if (token != null) {
         await _supabaseService.updateProfile(
           userId: userId,
-          data: {
-            'fcm_token': token,
-          },
+          data: {'fcm_token': token},
         );
         Log.d('FCM token updated in profile for user: $userId');
       }
@@ -180,8 +180,10 @@ class FirebaseService {
   }
 
   // Setup background message handler
-  static Future<void> firebaseMessagingBackgroundHandler(RemoteMessage message) async {
+  static Future<void> firebaseMessagingBackgroundHandler(
+    RemoteMessage message,
+  ) async {
     await Firebase.initializeApp();
     Log.d('Handling a background message: ${message.messageId}');
   }
-} 
+}

@@ -8,7 +8,8 @@ class ForgotPasswordScreen extends ConsumerStatefulWidget {
   const ForgotPasswordScreen({super.key});
 
   @override
-  ConsumerState<ForgotPasswordScreen> createState() => _ForgotPasswordScreenState();
+  ConsumerState<ForgotPasswordScreen> createState() =>
+      _ForgotPasswordScreenState();
 }
 
 class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
@@ -29,20 +30,16 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, 0.5),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutBack,
-    ));
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, 0.5), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animationController,
+            curve: Curves.easeOutBack,
+          ),
+        );
     _animationController.forward();
   }
 
@@ -59,9 +56,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         _isLoading = true;
       });
 
-      final success = await ref.read(authProvider.notifier).resetPassword(
-        email: _emailController.text.trim(),
-      );
+      final success = await ref
+          .read(authProvider.notifier)
+          .resetPassword(email: _emailController.text.trim());
 
       setState(() {
         _isLoading = false;
@@ -76,7 +73,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Failed to send reset email. Please try again.'),
+              content: const Text(
+                'Failed to send reset email. Please try again.',
+              ),
               backgroundColor: ChoiceLuxTheme.errorColor,
             ),
           );
@@ -89,19 +88,22 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
+        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
+              final isTablet =
+                  constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
 
               return Center(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 24.0 : isTablet ? 64.0 : 120.0,
+                    horizontal: isMobile
+                        ? 24.0
+                        : isTablet
+                        ? 64.0
+                        : 120.0,
                     vertical: 32.0,
                   ),
                   child: FadeTransition(
@@ -112,7 +114,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                         constraints: BoxConstraints(
                           maxWidth: isMobile ? double.infinity : 400,
                         ),
-                        child: _emailSent ? _buildSuccessView() : _buildResetForm(),
+                        child: _emailSent
+                            ? _buildSuccessView()
+                            : _buildResetForm(),
                       ),
                     ),
                   ),
@@ -129,9 +133,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     return Card(
       elevation: 12,
       shadowColor: Colors.black.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
@@ -225,9 +227,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(
-                      color: ChoiceLuxTheme.errorColor,
-                    ),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.errorColor),
                   ),
                   focusedErrorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -243,7 +243,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                   if (value == null || value.isEmpty) {
                     return 'Please enter your email address';
                   }
-                  if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                  if (!RegExp(
+                    r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                  ).hasMatch(value)) {
                     return 'Please enter a valid email address';
                   }
                   return null;
@@ -271,7 +273,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                         width: 20,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.black,
+                          ),
                         ),
                       )
                     : Text(
@@ -308,9 +312,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
     return Card(
       elevation: 12,
       shadowColor: Colors.black.withOpacity(0.3),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),

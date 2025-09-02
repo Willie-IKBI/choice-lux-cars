@@ -21,7 +21,8 @@ class InvoiceActionButtons extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<InvoiceActionButtons> createState() => _InvoiceActionButtonsState();
+  ConsumerState<InvoiceActionButtons> createState() =>
+      _InvoiceActionButtonsState();
 }
 
 class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
@@ -46,13 +47,13 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
 
   Future<void> _createInvoice() async {
     try {
-      await ref.read(invoiceControllerProvider.notifier).createInvoice(
-        jobId: widget.jobId,
-      );
-      
+      await ref
+          .read(invoiceControllerProvider.notifier)
+          .createInvoice(jobId: widget.jobId);
+
       // Refresh jobs data to show updated invoice status
       await ref.read(jobsProvider.notifier).refreshJobs();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -96,13 +97,13 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
 
     if (confirmed == true) {
       try {
-        await ref.read(invoiceControllerProvider.notifier).regenerateInvoice(
-          jobId: widget.jobId,
-        );
-        
+        await ref
+            .read(invoiceControllerProvider.notifier)
+            .regenerateInvoice(jobId: widget.jobId);
+
         // Refresh jobs data to show updated invoice status
         await ref.read(jobsProvider.notifier).refreshJobs();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -126,7 +127,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
 
   Future<void> _openInvoice() async {
     if (widget.invoicePdfUrl == null) return;
-    
+
     try {
       await _sharingService.openInvoiceUrl(widget.invoicePdfUrl!);
     } catch (e) {
@@ -153,17 +154,14 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
           children: [
             const Text(
               'Share Invoice',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
-                         ListTile(
-               leading: const Icon(Icons.chat, color: Colors.green),
-               title: const Text('WhatsApp'),
-               onTap: () => Navigator.of(context).pop('whatsapp'),
-             ),
+            ListTile(
+              leading: const Icon(Icons.chat, color: Colors.green),
+              title: const Text('WhatsApp'),
+              onTap: () => Navigator.of(context).pop('whatsapp'),
+            ),
             ListTile(
               leading: const Icon(Icons.email, color: Colors.blue),
               title: const Text('Email'),
@@ -236,7 +234,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
         invoiceUrl: widget.invoicePdfUrl!,
         invoiceData: widget.invoiceData!,
       );
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -315,31 +313,41 @@ class InvoiceActionBar extends StatelessWidget {
               _buildCreateInvoiceButton(context, isTight, constraints.maxWidth)
             else if (hasInvoice) ...[
               const SizedBox(height: 6),
-              _buildInvoiceActions(context, isTight, horizontalGap, verticalGap, constraints.maxWidth)
+              _buildInvoiceActions(
+                context,
+                isTight,
+                horizontalGap,
+                verticalGap,
+                constraints.maxWidth,
+              ),
             ] else if (!canCreateInvoice) ...[
               const SizedBox(height: 6),
-              _buildNoPermissionMessage(context)
+              _buildNoPermissionMessage(context),
             ],
 
             // Loading indicator
-            if (invoiceState.isLoading)
-              _buildLoadingIndicator(context),
+            if (invoiceState.isLoading) _buildLoadingIndicator(context),
 
             // Error message
-            if (invoiceState.hasError)
-              _buildErrorMessage(context),
+            if (invoiceState.hasError) _buildErrorMessage(context),
           ],
         );
       },
     );
   }
 
-  Widget _buildCreateInvoiceButton(BuildContext context, bool isTight, double maxWidth) {
+  Widget _buildCreateInvoiceButton(
+    BuildContext context,
+    bool isTight,
+    double maxWidth,
+  ) {
     // Ensure constraints are valid - minWidth cannot exceed maxWidth
     final availableWidth = maxWidth;
     final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
-    final effectiveMinWidth = minWidth < availableWidth ? minWidth : availableWidth * 0.8;
-    
+    final effectiveMinWidth = minWidth < availableWidth
+        ? minWidth
+        : availableWidth * 0.8;
+
     return ConstrainedBox(
       constraints: BoxConstraints(
         minWidth: effectiveMinWidth,
@@ -367,7 +375,13 @@ class InvoiceActionBar extends StatelessWidget {
     );
   }
 
-  Widget _buildInvoiceActions(BuildContext context, bool isTight, double horizontalGap, double verticalGap, double maxWidth) {
+  Widget _buildInvoiceActions(
+    BuildContext context,
+    bool isTight,
+    double horizontalGap,
+    double verticalGap,
+    double maxWidth,
+  ) {
     return Wrap(
       spacing: horizontalGap,
       runSpacing: verticalGap,
@@ -384,11 +398,7 @@ class InvoiceActionBar extends StatelessWidget {
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                Icons.check_circle,
-                size: 14,
-                color: Colors.green[700],
-              ),
+              Icon(Icons.check_circle, size: 14, color: Colors.green[700]),
               const SizedBox(width: 3),
               Text(
                 'Invoice Created',
@@ -416,8 +426,13 @@ class InvoiceActionBar extends StatelessWidget {
               label: const Text('Open Invoice', style: TextStyle(fontSize: 11)),
               style: ElevatedButton.styleFrom(
                 backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(context).colorScheme.onPrimaryContainer,
-                padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                foregroundColor: Theme.of(
+                  context,
+                ).colorScheme.onPrimaryContainer,
+                padding: const EdgeInsets.symmetric(
+                  vertical: 8,
+                  horizontal: 12,
+                ),
                 minimumSize: const Size(0, 32),
                 tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                 visualDensity: VisualDensity.compact,
@@ -449,7 +464,12 @@ class InvoiceActionBar extends StatelessWidget {
     );
   }
 
-  Widget _iconAction(BuildContext context, IconData icon, String tooltip, {VoidCallback? onTap}) {
+  Widget _iconAction(
+    BuildContext context,
+    IconData icon,
+    String tooltip, {
+    VoidCallback? onTap,
+  }) {
     return Tooltip(
       message: tooltip,
       child: InkWell(
@@ -459,18 +479,22 @@ class InvoiceActionBar extends StatelessWidget {
           width: 32,
           height: 32,
           decoration: BoxDecoration(
-            color: Theme.of(context).colorScheme.secondaryContainer.withValues(alpha: 0.8),
+            color: Theme.of(
+              context,
+            ).colorScheme.secondaryContainer.withValues(alpha: 0.8),
             borderRadius: BorderRadius.circular(999),
             border: Border.all(
-              color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSecondaryContainer.withValues(alpha: 0.2),
             ),
           ),
           child: Icon(
             icon,
             size: 16,
-            color: onTap == null 
-              ? Colors.grey 
-              : Theme.of(context).colorScheme.onSecondaryContainer,
+            color: onTap == null
+                ? Colors.grey
+                : Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
       ),
@@ -548,19 +572,12 @@ class InvoiceActionBar extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              Icons.error,
-              size: 12,
-              color: Colors.red[700],
-            ),
+            Icon(Icons.error, size: 12, color: Colors.red[700]),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 invoiceState.errorMessage ?? 'Failed to create invoice',
-                style: TextStyle(
-                  fontSize: 10,
-                  color: Colors.red[700],
-                ),
+                style: TextStyle(fontSize: 10, color: Colors.red[700]),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),

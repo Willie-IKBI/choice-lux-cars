@@ -19,9 +19,9 @@ class AgentsByClientNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   Future<List<Agent>> _fetchAgentsByClient() async {
     try {
       Log.d('Fetching agents for client: $clientId');
-      
+
       final result = await _agentsRepository.fetchAgentsByClient(clientId);
-      
+
       if (result.isSuccess) {
         final agents = result.data!;
         Log.d('Fetched ${agents.length} agents for client: $clientId');
@@ -40,14 +40,16 @@ class AgentsByClientNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   Future<void> addAgent(Agent agent) async {
     try {
       Log.d('addAgent called with agent: ${agent.agentName}, id: ${agent.id}');
-      
+
       final result = await _agentsRepository.createAgent(agent);
-      
+
       if (result.isSuccess) {
         final createdAgentData = result.data!;
         final createdAgent = Agent.fromJson(createdAgentData);
-        Log.d('addAgent - created agent object: ${createdAgent.agentName}, id: ${createdAgent.id}');
-        
+        Log.d(
+          'addAgent - created agent object: ${createdAgent.agentName}, id: ${createdAgent.id}',
+        );
+
         // Update the current state to include the new agent
         final currentAgents = state.value ?? [];
         final updatedAgents = [createdAgent, ...currentAgents];
@@ -65,16 +67,22 @@ class AgentsByClientNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   /// Update an existing agent
   Future<void> updateAgent(Agent agent) async {
     try {
-      Log.d('updateAgent called with agent: ${agent.agentName}, id: ${agent.id}');
-      
+      Log.d(
+        'updateAgent called with agent: ${agent.agentName}, id: ${agent.id}',
+      );
+
       final result = await _agentsRepository.updateAgent(agent);
-      
+
       if (result.isSuccess) {
-        Log.d('updateAgent - agent updated successfully: ${agent.agentName}, id: ${agent.id}');
-        
+        Log.d(
+          'updateAgent - agent updated successfully: ${agent.agentName}, id: ${agent.id}',
+        );
+
         // Update the current state to replace the old agent with the updated one
         final currentAgents = state.value ?? [];
-        final updatedAgents = currentAgents.map((a) => a.id == agent.id ? agent : a).toList();
+        final updatedAgents = currentAgents
+            .map((a) => a.id == agent.id ? agent : a)
+            .toList();
         state = AsyncValue.data(updatedAgents);
       } else {
         Log.e('updateAgent error: ${result.error!.message}');
@@ -90,14 +98,18 @@ class AgentsByClientNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   Future<void> deleteAgent(String agentId) async {
     try {
       Log.d('deleteAgent called with agentId: $agentId');
-      
+
       final result = await _agentsRepository.deleteAgent(agentId);
-      
+
       if (result.isSuccess) {
         // Update the current state to remove the soft-deleted agent
         final currentAgents = state.value ?? [];
-        final updatedAgents = currentAgents.where((a) => a.id.toString() != agentId).toList();
-        Log.d('deleteAgent - updated agents list: ${updatedAgents.map((a) => '${a.agentName} (ID: ${a.id})').join(', ')}');
+        final updatedAgents = currentAgents
+            .where((a) => a.id.toString() != agentId)
+            .toList();
+        Log.d(
+          'deleteAgent - updated agents list: ${updatedAgents.map((a) => '${a.agentName} (ID: ${a.id})').join(', ')}',
+        );
         state = AsyncValue.data(updatedAgents);
       } else {
         Log.e('deleteAgent error: ${result.error!.message}');
@@ -133,9 +145,9 @@ class SingleAgentNotifier extends FamilyAsyncNotifier<Agent?, String> {
   Future<Agent?> _fetchAgentById() async {
     try {
       Log.d('Fetching agent by ID: $agentId');
-      
+
       final result = await _agentsRepository.fetchAgentById(agentId);
-      
+
       if (result.isSuccess) {
         Log.d('Fetched agent successfully: ${result.data?.agentName}');
         return result.data;
@@ -156,7 +168,13 @@ class SingleAgentNotifier extends FamilyAsyncNotifier<Agent?, String> {
 }
 
 /// Provider for agents by client using AsyncNotifierProvider.family
-final agentsByClientProvider = AsyncNotifierProvider.family<AgentsByClientNotifier, List<Agent>, String>(AgentsByClientNotifier.new);
+final agentsByClientProvider =
+    AsyncNotifierProvider.family<AgentsByClientNotifier, List<Agent>, String>(
+      AgentsByClientNotifier.new,
+    );
 
 /// Provider for single agent using AsyncNotifierProvider.family
-final agentProvider = AsyncNotifierProvider.family<SingleAgentNotifier, Agent?, String>(SingleAgentNotifier.new); 
+final agentProvider =
+    AsyncNotifierProvider.family<SingleAgentNotifier, Agent?, String>(
+      SingleAgentNotifier.new,
+    );

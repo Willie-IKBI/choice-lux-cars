@@ -23,7 +23,9 @@ class InvoiceRepository {
       return InvoiceData.fromJson(invoiceData);
     } catch (e) {
       if (e.toString().contains('Access denied')) {
-        throw Exception('Access denied: You do not have permission to access this job');
+        throw Exception(
+          'Access denied: You do not have permission to access this job',
+        );
       } else if (e.toString().contains('not found')) {
         throw Exception('Job not found or client is inactive');
       } else {
@@ -43,10 +45,14 @@ class InvoiceRepository {
       // Upload to Supabase Storage
       await _supabase.storage
           .from(InvoiceConfigService.storageBucket)
-          .uploadBinary(storagePath, bytes, fileOptions: const FileOptions(
-            upsert: true,
-            contentType: 'application/pdf',
-          ));
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: const FileOptions(
+              upsert: true,
+              contentType: 'application/pdf',
+            ),
+          );
 
       // Get public URL
       final publicUrl = _supabase.storage

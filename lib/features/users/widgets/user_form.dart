@@ -14,7 +14,13 @@ class UserForm extends StatefulWidget {
   final VoidCallback? onDeactivate;
   final bool canDeactivate;
 
-  const UserForm({Key? key, this.user, required this.onSave, this.onDeactivate, this.canDeactivate = false}) : super(key: key);
+  const UserForm({
+    Key? key,
+    this.user,
+    required this.onSave,
+    this.onDeactivate,
+    this.canDeactivate = false,
+  }) : super(key: key);
 
   @override
   State<UserForm> createState() => _UserFormState();
@@ -38,9 +44,17 @@ class _UserFormState extends State<UserForm> {
   bool _uploading = false;
 
   final List<_RoleOption> roles = const [
-    _RoleOption('administrator', 'Administrator', Icons.admin_panel_settings_outlined),
+    _RoleOption(
+      'administrator',
+      'Administrator',
+      Icons.admin_panel_settings_outlined,
+    ),
     _RoleOption('manager', 'Manager', Icons.business_center_outlined),
-    _RoleOption('driver_manager', 'Driver Manager', Icons.settings_suggest_outlined),
+    _RoleOption(
+      'driver_manager',
+      'Driver Manager',
+      Icons.settings_suggest_outlined,
+    ),
     _RoleOption('driver', 'Driver', Icons.directions_car_outlined),
     _RoleOption('agent', 'Agent', Icons.person_outline),
     _RoleOption('unassigned', 'Unassigned', Icons.help_outline),
@@ -71,10 +85,17 @@ class _UserFormState extends State<UserForm> {
 
   Future<void> _pickAndUploadImage(WidgetRef ref, String userId) async {
     final picker = ImagePicker();
-    final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 800, maxHeight: 800, imageQuality: 85);
+    final picked = await picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
     if (picked != null) {
       setState(() => _uploading = true);
-      final url = await ref.read(usersProvider.notifier).uploadProfileImage(picked, userId);
+      final url = await ref
+          .read(usersProvider.notifier)
+          .uploadProfileImage(picked, userId);
       setState(() {
         profileImage = url;
         _uploading = false;
@@ -109,18 +130,35 @@ class _UserFormState extends State<UserForm> {
                     children: [
                       const Icon(Icons.error_outline, color: Colors.red),
                       const SizedBox(width: 8),
-                      Expanded(child: Text(errorSummary!, style: const TextStyle(color: Colors.red, fontWeight: FontWeight.w600))),
+                      Expanded(
+                        child: Text(
+                          errorSummary!,
+                          style: const TextStyle(
+                            color: Colors.red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
                     ],
                   ),
                 ),
               // Avatar + Header Section
               Card(
                 margin: const EdgeInsets.only(bottom: 24),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16), side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: Colors.white.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
                 elevation: 4,
                 shadowColor: Colors.black.withOpacity(0.08),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 24,
+                    horizontal: 16,
+                  ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
@@ -130,18 +168,35 @@ class _UserFormState extends State<UserForm> {
                           CircleAvatar(
                             radius: isWide ? 52 : 44,
                             backgroundColor: Colors.grey[800],
-                            backgroundImage: profileImage != null && profileImage!.isNotEmpty ? NetworkImage(profileImage!) : null,
-                            child: profileImage == null || profileImage!.isEmpty ? Text(displayName.isNotEmpty ? displayName[0].toUpperCase() : '?', style: const TextStyle(fontSize: 32, color: Colors.white)) : null,
+                            backgroundImage:
+                                profileImage != null && profileImage!.isNotEmpty
+                                ? NetworkImage(profileImage!)
+                                : null,
+                            child: profileImage == null || profileImage!.isEmpty
+                                ? Text(
+                                    displayName.isNotEmpty
+                                        ? displayName[0].toUpperCase()
+                                        : '?',
+                                    style: const TextStyle(
+                                      fontSize: 32,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : null,
                           ),
                           if (_uploading)
-                            const Positioned.fill(child: Center(child: CircularProgressIndicator())),
+                            const Positioned.fill(
+                              child: Center(child: CircularProgressIndicator()),
+                            ),
                         ],
                       ),
                       const SizedBox(height: 16),
                       TextButton.icon(
                         icon: const Icon(Icons.camera_alt_outlined),
                         label: const Text('Change Profile Image'),
-                        onPressed: widget.user == null ? null : () => _pickAndUploadImage(ref, widget.user!.id),
+                        onPressed: widget.user == null
+                            ? null
+                            : () => _pickAndUploadImage(ref, widget.user!.id),
                       ),
                     ],
                   ),
@@ -183,7 +238,9 @@ class _UserFormState extends State<UserForm> {
                             icon: const Icon(Icons.block),
                             label: const Text('Deactivate'),
                             style: OutlinedButton.styleFrom(
-                              foregroundColor: Theme.of(context).colorScheme.error,
+                              foregroundColor: Theme.of(
+                                context,
+                              ).colorScheme.error,
                               minimumSize: const Size.fromHeight(48),
                               padding: const EdgeInsets.symmetric(vertical: 16),
                             ),
@@ -198,31 +255,37 @@ class _UserFormState extends State<UserForm> {
                           style: FilledButton.styleFrom(
                             minimumSize: const Size.fromHeight(48),
                             padding: const EdgeInsets.symmetric(vertical: 16),
-                            textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                             elevation: 2,
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
                               _formKey.currentState!.save();
-                              widget.onSave(User(
-                                id: widget.user?.id ?? '',
-                                displayName: displayName,
-                                userEmail: userEmail,
-                                role: role,
-                                status: status,
-                                driverLicence: driverLicence,
-                                driverLicExp: driverLicExp,
-                                pdp: pdp,
-                                pdpExp: pdpExp,
-                                number: number,
-                                address: address,
-                                kin: kin,
-                                kinNumber: kinNumber,
-                                profileImage: profileImage,
-                              ));
+                              widget.onSave(
+                                User(
+                                  id: widget.user?.id ?? '',
+                                  displayName: displayName,
+                                  userEmail: userEmail,
+                                  role: role,
+                                  status: status,
+                                  driverLicence: driverLicence,
+                                  driverLicExp: driverLicExp,
+                                  pdp: pdp,
+                                  pdpExp: pdpExp,
+                                  number: number,
+                                  address: address,
+                                  kin: kin,
+                                  kinNumber: kinNumber,
+                                  profileImage: profileImage,
+                                ),
+                              );
                             } else {
                               setState(() {
-                                errorSummary = 'Please correct the errors highlighted below.';
+                                errorSummary =
+                                    'Please correct the errors highlighted below.';
                               });
                             }
                           },
@@ -242,41 +305,51 @@ class _UserFormState extends State<UserForm> {
                               icon: const Icon(Icons.block),
                               label: const Text('Deactivate'),
                               style: OutlinedButton.styleFrom(
-                                foregroundColor: Theme.of(context).colorScheme.error,
+                                foregroundColor: Theme.of(
+                                  context,
+                                ).colorScheme.error,
                               ),
                               onPressed: () {
-                                Log.d('Deactivate button pressed in UserForm (desktop)');
+                                Log.d(
+                                  'Deactivate button pressed in UserForm (desktop)',
+                                );
                                 widget.onDeactivate?.call();
                               },
                             ),
                           ),
                         FilledButton(
                           style: FilledButton.styleFrom(
-                            textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                            textStyle: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
                             elevation: 2,
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
                               _formKey.currentState!.save();
-                              widget.onSave(User(
-                                id: widget.user?.id ?? '',
-                                displayName: displayName,
-                                userEmail: userEmail,
-                                role: role,
-                                status: status,
-                                driverLicence: driverLicence,
-                                driverLicExp: driverLicExp,
-                                pdp: pdp,
-                                pdpExp: pdpExp,
-                                number: number,
-                                address: address,
-                                kin: kin,
-                                kinNumber: kinNumber,
-                                profileImage: profileImage,
-                              ));
+                              widget.onSave(
+                                User(
+                                  id: widget.user?.id ?? '',
+                                  displayName: displayName,
+                                  userEmail: userEmail,
+                                  role: role,
+                                  status: status,
+                                  driverLicence: driverLicence,
+                                  driverLicExp: driverLicExp,
+                                  pdp: pdp,
+                                  pdpExp: pdpExp,
+                                  number: number,
+                                  address: address,
+                                  kin: kin,
+                                  kinNumber: kinNumber,
+                                  profileImage: profileImage,
+                                ),
+                              );
                             } else {
                               setState(() {
-                                errorSummary = 'Please correct the errors highlighted below.';
+                                errorSummary =
+                                    'Please correct the errors highlighted below.';
                               });
                             }
                           },
@@ -312,7 +385,13 @@ class _UserFormState extends State<UserForm> {
               children: [
                 const Icon(Icons.person, size: 22),
                 const SizedBox(width: 8),
-                Text('Basic Info', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 18)),
+                Text(
+                  'Basic Info',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -320,7 +399,8 @@ class _UserFormState extends State<UserForm> {
               initialValue: displayName,
               decoration: _modernInputDecoration('Full Name'),
               style: const TextStyle(fontSize: 15),
-              validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+              validator: (val) =>
+                  val == null || val.isEmpty ? 'Required' : null,
               onSaved: (val) => displayName = val ?? '',
             ),
             const SizedBox(height: 12),
@@ -335,22 +415,31 @@ class _UserFormState extends State<UserForm> {
                 ? DropdownButtonFormField<String>(
                     value: role,
                     decoration: _modernInputDecoration('Role'),
-                    items: roles.map((r) => DropdownMenuItem<String>(
-                      value: r.value,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(r.icon, size: 18),
-                          const SizedBox(width: 8),
-                          Text(r.label),
-                        ],
-                      ),
-                    )).toList(),
+                    items: roles
+                        .map(
+                          (r) => DropdownMenuItem<String>(
+                            value: r.value,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(r.icon, size: 18),
+                                const SizedBox(width: 8),
+                                Text(r.label),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
                     onChanged: (val) => setState(() => role = val),
                     onSaved: (val) => role = val,
                   )
                 : TextFormField(
-                    initialValue: roles.firstWhere((r) => r.value == role, orElse: () => roles.last).label,
+                    initialValue: roles
+                        .firstWhere(
+                          (r) => r.value == role,
+                          orElse: () => roles.last,
+                        )
+                        .label,
                     decoration: _modernInputDecoration('Role'),
                     style: const TextStyle(fontSize: 15),
                     readOnly: true,
@@ -359,17 +448,21 @@ class _UserFormState extends State<UserForm> {
             DropdownButtonFormField<String>(
               value: status,
               decoration: _modernInputDecoration('Status'),
-              items: statuses.map((s) => DropdownMenuItem<String>(
-                value: s.value,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(s.icon, size: 18),
-                    const SizedBox(width: 8),
-                    Text(s.label),
-                  ],
-                ),
-              )).toList(),
+              items: statuses
+                  .map(
+                    (s) => DropdownMenuItem<String>(
+                      value: s.value,
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(s.icon, size: 18),
+                          const SizedBox(width: 8),
+                          Text(s.label),
+                        ],
+                      ),
+                    ),
+                  )
+                  .toList(),
               onChanged: (val) => setState(() => status = val),
               onSaved: (val) => status = val,
             ),
@@ -397,7 +490,13 @@ class _UserFormState extends State<UserForm> {
               children: [
                 const Icon(Icons.phone, size: 22),
                 const SizedBox(width: 8),
-                Text('Contact Info', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 18)),
+                Text(
+                  'Contact Info',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -452,7 +551,13 @@ class _UserFormState extends State<UserForm> {
               children: [
                 const Icon(Icons.directions_car, size: 22),
                 const SizedBox(width: 8),
-                Text('Driver Details', style: Theme.of(context).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600, fontSize: 18)),
+                Text(
+                  'Driver Details',
+                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    fontWeight: FontWeight.w600,
+                    fontSize: 18,
+                  ),
+                ),
               ],
             ),
             const SizedBox(height: 16),
@@ -463,7 +568,10 @@ class _UserFormState extends State<UserForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Driver License', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'Driver License',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       if (driverLicence != null && driverLicence!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -472,20 +580,29 @@ class _UserFormState extends State<UserForm> {
                       Consumer(
                         builder: (context, ref, _) => TextButton.icon(
                           icon: const Icon(Icons.upload_file),
-                          label: Text(driverLicence == null ? 'Upload' : 'Replace'),
-                          onPressed: widget.user == null ? null : () async {
-                            final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                            if (picked != null) {
-                              setState(() => _uploading = true);
-                              final url = await ref.read(usersProvider.notifier).uploadDriverLicenseImage(
-                                picked, widget.user!.id
-                              );
-                              setState(() {
-                                driverLicence = url;
-                                _uploading = false;
-                              });
-                            }
-                          },
+                          label: Text(
+                            driverLicence == null ? 'Upload' : 'Replace',
+                          ),
+                          onPressed: widget.user == null
+                              ? null
+                              : () async {
+                                  final picked = await ImagePicker().pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (picked != null) {
+                                    setState(() => _uploading = true);
+                                    final url = await ref
+                                        .read(usersProvider.notifier)
+                                        .uploadDriverLicenseImage(
+                                          picked,
+                                          widget.user!.id,
+                                        );
+                                    setState(() {
+                                      driverLicence = url;
+                                      _uploading = false;
+                                    });
+                                  }
+                                },
                         ),
                       ),
                     ],
@@ -496,7 +613,10 @@ class _UserFormState extends State<UserForm> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('PDP', style: const TextStyle(fontWeight: FontWeight.w500)),
+                      Text(
+                        'PDP',
+                        style: const TextStyle(fontWeight: FontWeight.w500),
+                      ),
                       if (pdp != null && pdp!.isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 8, bottom: 8),
@@ -506,19 +626,26 @@ class _UserFormState extends State<UserForm> {
                         builder: (context, ref, _) => TextButton.icon(
                           icon: const Icon(Icons.upload_file),
                           label: Text(pdp == null ? 'Upload' : 'Replace'),
-                          onPressed: widget.user == null ? null : () async {
-                            final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
-                            if (picked != null) {
-                              setState(() => _uploading = true);
-                              final url = await ref.read(usersProvider.notifier).uploadPdpImage(
-                                picked, widget.user!.id
-                              );
-                              setState(() {
-                                pdp = url;
-                                _uploading = false;
-                              });
-                            }
-                          },
+                          onPressed: widget.user == null
+                              ? null
+                              : () async {
+                                  final picked = await ImagePicker().pickImage(
+                                    source: ImageSource.gallery,
+                                  );
+                                  if (picked != null) {
+                                    setState(() => _uploading = true);
+                                    final url = await ref
+                                        .read(usersProvider.notifier)
+                                        .uploadPdpImage(
+                                          picked,
+                                          widget.user!.id,
+                                        );
+                                    setState(() {
+                                      pdp = url;
+                                      _uploading = false;
+                                    });
+                                  }
+                                },
                         ),
                       ),
                     ],
@@ -551,11 +678,38 @@ class _UserFormState extends State<UserForm> {
     final now = DateTime.now();
     final soon = now.add(const Duration(days: 90));
     if (date.isBefore(now)) {
-      return Row(children: [const Icon(Icons.error, color: Colors.red, size: 16), const SizedBox(width: 4), Text('Expired', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600))]);
+      return Row(
+        children: [
+          const Icon(Icons.error, color: Colors.red, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            'Expired',
+            style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
+          ),
+        ],
+      );
     } else if (date.isBefore(soon)) {
-      return Row(children: [const Icon(Icons.warning, color: Colors.amber, size: 16), const SizedBox(width: 4), Text('Expiring Soon', style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w600))]);
+      return Row(
+        children: [
+          const Icon(Icons.warning, color: Colors.amber, size: 16),
+          const SizedBox(width: 4),
+          Text(
+            'Expiring Soon',
+            style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w600),
+          ),
+        ],
+      );
     }
-    return Row(children: [const Icon(Icons.check_circle, color: Colors.green, size: 16), const SizedBox(width: 4), Text('Valid', style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600))]);
+    return Row(
+      children: [
+        const Icon(Icons.check_circle, color: Colors.green, size: 16),
+        const SizedBox(width: 4),
+        Text(
+          'Valid',
+          style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
+        ),
+      ],
+    );
   }
 
   InputDecoration _modernInputDecoration(String label) {
@@ -585,11 +739,15 @@ class _UserFormState extends State<UserForm> {
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
       labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
-      errorStyle: const TextStyle(fontWeight: FontWeight.w600, color: Colors.redAccent),
+      errorStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.redAccent,
+      ),
     );
   }
 
-  String _titleCase(String s) => s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
+  String _titleCase(String s) =>
+      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 }
 
 class _RoleOption {
@@ -613,43 +771,44 @@ class _DatePickerFormField extends FormField<DateTime> {
     FormFieldSetter<DateTime>? onSaved,
     Widget? helper,
   }) : super(
-          initialValue: initialDate,
-          onSaved: onSaved,
-          builder: (FormFieldState<DateTime> state) {
-            return Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                InkWell(
-                  onTap: () async {
-                    final picked = await showDatePicker(
-                      context: state.context,
-                      initialDate: state.value ?? DateTime.now(),
-                      firstDate: DateTime(2000),
-                      lastDate: DateTime(2100),
-                    );
-                    if (picked != null) {
-                      state.didChange(picked);
-                    }
-                  },
-                  child: InputDecorator(
-                    decoration: InputDecoration(
-                      labelText: label,
-                      filled: true,
-                      errorText: state.errorText,
-                    ),
-                    child: Text(
-                      state.value != null
-                          ? '${state.value!.year}-${state.value!.month.toString().padLeft(2, '0')}-${state.value!.day.toString().padLeft(2, '0')}'
-                          : 'Select date',
-                      style: TextStyle(
-                        color: state.value != null ? Colors.white : Colors.grey,
-                      ),
-                    ),
-                  ),
-                ),
-                if (helper != null) Padding(padding: const EdgeInsets.only(top: 4), child: helper),
-              ],
-            );
-          },
-        );
-} 
+         initialValue: initialDate,
+         onSaved: onSaved,
+         builder: (FormFieldState<DateTime> state) {
+           return Column(
+             crossAxisAlignment: CrossAxisAlignment.start,
+             children: [
+               InkWell(
+                 onTap: () async {
+                   final picked = await showDatePicker(
+                     context: state.context,
+                     initialDate: state.value ?? DateTime.now(),
+                     firstDate: DateTime(2000),
+                     lastDate: DateTime(2100),
+                   );
+                   if (picked != null) {
+                     state.didChange(picked);
+                   }
+                 },
+                 child: InputDecorator(
+                   decoration: InputDecoration(
+                     labelText: label,
+                     filled: true,
+                     errorText: state.errorText,
+                   ),
+                   child: Text(
+                     state.value != null
+                         ? '${state.value!.year}-${state.value!.month.toString().padLeft(2, '0')}-${state.value!.day.toString().padLeft(2, '0')}'
+                         : 'Select date',
+                     style: TextStyle(
+                       color: state.value != null ? Colors.white : Colors.grey,
+                     ),
+                   ),
+                 ),
+               ),
+               if (helper != null)
+                 Padding(padding: const EdgeInsets.only(top: 4), child: helper),
+             ],
+           );
+         },
+       );
+}

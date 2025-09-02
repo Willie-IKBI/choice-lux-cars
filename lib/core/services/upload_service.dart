@@ -7,34 +7,34 @@ class UploadService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Upload an image file to Supabase Storage
-  /// 
+  ///
   /// [file] - The image file to upload
   /// [bucket] - The storage bucket name (e.g., 'clc_images')
   /// [folder] - The folder path within the bucket (e.g., 'odometer')
   /// [fileName] - The filename to use in storage
-  /// 
+  ///
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadImage(File file, String bucket, String folder, String fileName) async {
+  static Future<String> uploadImage(
+    File file,
+    String bucket,
+    String folder,
+    String fileName,
+  ) async {
     try {
       // Create the full path including folder
       final fullPath = '$folder/$fileName';
-      
+
       // Upload to Supabase Storage
       await _supabase.storage
           .from(bucket)
           .upload(
             fullPath,
             file,
-            fileOptions: const FileOptions(
-              cacheControl: '3600',
-              upsert: false,
-            ),
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
       // Get the public URL
-      final publicUrl = _supabase.storage
-          .from(bucket)
-          .getPublicUrl(fullPath);
+      final publicUrl = _supabase.storage.from(bucket).getPublicUrl(fullPath);
 
       return publicUrl;
     } catch (e) {
@@ -43,34 +43,34 @@ class UploadService {
   }
 
   /// Upload image bytes to Supabase Storage
-  /// 
+  ///
   /// [bytes] - The image bytes to upload
   /// [bucket] - The storage bucket name (e.g., 'clc_images')
   /// [folder] - The folder path within the bucket (e.g., 'odometer')
   /// [fileName] - The filename to use in storage
-  /// 
+  ///
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadImageBytes(Uint8List bytes, String bucket, String folder, String fileName) async {
+  static Future<String> uploadImageBytes(
+    Uint8List bytes,
+    String bucket,
+    String folder,
+    String fileName,
+  ) async {
     try {
       // Create the full path including folder
       final fullPath = '$folder/$fileName';
-      
+
       // Upload to Supabase Storage
       await _supabase.storage
           .from(bucket)
           .uploadBinary(
             fullPath,
             bytes,
-            fileOptions: const FileOptions(
-              cacheControl: '3600',
-              upsert: false,
-            ),
+            fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
 
       // Get the public URL
-      final publicUrl = _supabase.storage
-          .from(bucket)
-          .getPublicUrl(fullPath);
+      final publicUrl = _supabase.storage.from(bucket).getPublicUrl(fullPath);
 
       return publicUrl;
     } catch (e) {
@@ -79,60 +79,72 @@ class UploadService {
   }
 
   /// Upload odometer image (convenience method)
-  /// 
+  ///
   /// [bytes] - The image bytes to upload
   /// [fileName] - The filename to use in storage
-  /// 
+  ///
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadOdometerImage(Uint8List bytes, String fileName) async {
+  static Future<String> uploadOdometerImage(
+    Uint8List bytes,
+    String fileName,
+  ) async {
     return uploadImageBytes(bytes, 'clc_images', 'odometer', fileName);
   }
 
   /// Upload vehicle image (convenience method)
-  /// 
+  ///
   /// [bytes] - The image bytes to upload
   /// [fileName] - The filename to use in storage
-  /// 
+  ///
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadVehicleImage(Uint8List bytes, String fileName) async {
+  static Future<String> uploadVehicleImage(
+    Uint8List bytes,
+    String fileName,
+  ) async {
     return uploadImageBytes(bytes, 'clc_images', 'vehicles', fileName);
   }
 
   /// Upload profile image (convenience method)
-  /// 
+  ///
   /// [bytes] - The image bytes to upload
   /// [fileName] - The filename to use in storage
-  /// 
+  ///
   /// Returns the public URL of the uploaded image
-  static Future<String> uploadProfileImage(Uint8List bytes, String fileName) async {
+  static Future<String> uploadProfileImage(
+    Uint8List bytes,
+    String fileName,
+  ) async {
     return uploadImageBytes(bytes, 'clc_images', 'profile_images', fileName);
   }
 
   /// Delete an image from Supabase Storage
-  /// 
+  ///
   /// [bucket] - The storage bucket name
   /// [folder] - The folder path within the bucket
   /// [fileName] - The filename to delete
-  static Future<void> deleteImage(String bucket, String folder, String fileName) async {
+  static Future<void> deleteImage(
+    String bucket,
+    String folder,
+    String fileName,
+  ) async {
     try {
       final fullPath = '$folder/$fileName';
-      await _supabase.storage
-          .from(bucket)
-          .remove([fullPath]);
+      await _supabase.storage.from(bucket).remove([fullPath]);
     } catch (e) {
       throw Exception('Failed to delete image: $e');
     }
   }
 
   /// Get a list of files in a bucket folder
-  /// 
+  ///
   /// [bucket] - The storage bucket name
   /// [folder] - The folder path within the bucket
-  static Future<List<FileObject>> listFiles(String bucket, String folder) async {
+  static Future<List<FileObject>> listFiles(
+    String bucket,
+    String folder,
+  ) async {
     try {
-      final response = await _supabase.storage
-          .from(bucket)
-          .list(path: folder);
+      final response = await _supabase.storage.from(bucket).list(path: folder);
 
       return response;
     } catch (e) {
@@ -141,12 +153,15 @@ class UploadService {
   }
 
   /// Generate a unique filename with timestamp
-  /// 
+  ///
   /// [prefix] - Optional prefix for the filename
   /// [extension] - File extension (e.g., '.jpg')
-  /// 
+  ///
   /// Returns a unique filename
-  static String generateUniqueFileName({String? prefix, String extension = '.jpg'}) {
+  static String generateUniqueFileName({
+    String? prefix,
+    String extension = '.jpg',
+  }) {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp % 10000).toString().padLeft(4, '0');
     final prefixPart = prefix != null ? '${prefix}_' : '';
@@ -154,9 +169,9 @@ class UploadService {
   }
 
   /// Extract filename from a public URL
-  /// 
+  ///
   /// [url] - The public URL of the file
-  /// 
+  ///
   /// Returns the filename
   static String extractFileNameFromUrl(String url) {
     try {
@@ -203,35 +218,28 @@ class UploadService {
     String? companyName,
   }) async {
     try {
-      final String fileName = companyName != null 
+      final String fileName = companyName != null
           ? '${companyName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg'
           : 'logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
-      
-      return await uploadImage(
-        logoFile,
-        'clc_images',
-        'logos',
-        fileName,
-      );
+
+      return await uploadImage(logoFile, 'clc_images', 'logos', fileName);
     } catch (e) {
       throw Exception('Failed to upload company logo: $e');
     }
   }
 
   /// Upload vehicle image with ID (legacy method)
-  static Future<String> uploadVehicleImageWithId(Uint8List bytes, int? vehicleId) async {
+  static Future<String> uploadVehicleImageWithId(
+    Uint8List bytes,
+    int? vehicleId,
+  ) async {
     try {
       final fileName = 'vehicle.jpg';
-      final path = vehicleId != null 
+      final path = vehicleId != null
           ? '$vehicleId/$fileName'
           : 'temp/${DateTime.now().millisecondsSinceEpoch}_$fileName';
-      
-      return await uploadImageBytes(
-        bytes,
-        'clc_images',
-        'vehicles',
-        path,
-      );
+
+      return await uploadImageBytes(bytes, 'clc_images', 'vehicles', path);
     } catch (e) {
       throw Exception('Failed to upload vehicle image: $e');
     }
@@ -247,12 +255,10 @@ class UploadService {
   static Future<void> ensureBucketExists() async {
     try {
       // Try to list files in bucket to check if it exists
-      await _supabase.storage
-          .from('clc_images')
-          .list();
+      await _supabase.storage.from('clc_images').list();
     } catch (e) {
       // Bucket doesn't exist, create it
       await _supabase.storage.createBucket('clc_images');
     }
   }
-} 
+}

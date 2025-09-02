@@ -18,11 +18,7 @@ class InvoicesScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.receipt,
-              size: 64,
-              color: Colors.purple,
-            ),
+            Icon(Icons.receipt, size: 64, color: Colors.purple),
             SizedBox(height: 16),
             Text(
               'Invoices Management',
@@ -41,4 +37,4 @@ class InvoicesScreen extends StatelessWidget {
       ),
     );
   }
-} 
+}

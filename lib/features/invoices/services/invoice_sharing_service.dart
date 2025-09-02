@@ -25,7 +25,7 @@ class InvoiceSharingService {
     try {
       final message = _buildWhatsAppMessage(invoiceUrl, invoiceData);
       final encodedMessage = Uri.encodeComponent(message);
-      
+
       String whatsappUrl;
       if (Platform.isAndroid || Platform.isIOS) {
         whatsappUrl = 'https://wa.me/?text=$encodedMessage';
@@ -38,7 +38,10 @@ class InvoiceSharingService {
         await launchUrl(uri);
       } else {
         // Fallback to general share
-        await Share.share(message, subject: 'Invoice for Job #${invoiceData.jobId}');
+        await Share.share(
+          message,
+          subject: 'Invoice for Job #${invoiceData.jobId}',
+        );
       }
     } catch (e) {
       throw Exception('Failed to share via WhatsApp: $e');
@@ -52,10 +55,11 @@ class InvoiceSharingService {
     try {
       final subject = 'Invoice for Job #${invoiceData.jobId}';
       final body = _buildEmailBody(invoiceUrl, invoiceData);
-      
-      final emailUrl = 'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+
+      final emailUrl =
+          'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
       final uri = Uri.parse(emailUrl);
-      
+
       if (await canLaunchUrl(uri)) {
         await launchUrl(uri);
       } else {

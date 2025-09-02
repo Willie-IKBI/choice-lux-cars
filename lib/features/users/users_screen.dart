@@ -36,9 +36,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   String? _statusFilter;
 
   final List<_RoleOption> roles = const [
-    _RoleOption('administrator', 'Administrator', Icons.admin_panel_settings_outlined),
+    _RoleOption(
+      'administrator',
+      'Administrator',
+      Icons.admin_panel_settings_outlined,
+    ),
     _RoleOption('manager', 'Manager', Icons.business_center_outlined),
-    _RoleOption('driver_manager', 'Driver Manager', Icons.settings_suggest_outlined),
+    _RoleOption(
+      'driver_manager',
+      'Driver Manager',
+      Icons.settings_suggest_outlined,
+    ),
     _RoleOption('driver', 'Driver', Icons.directions_car_outlined),
     _RoleOption('agent', 'Agent', Icons.person_outline),
     _RoleOption('unassigned', 'Unassigned', Icons.help_outline),
@@ -52,27 +60,34 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   @override
   Widget build(BuildContext context) {
     final userProfile = ref.watch(currentUserProfileProvider);
-    if (userProfile == null || (userProfile.role?.toLowerCase() != 'administrator' && userProfile.role?.toLowerCase() != 'manager')) {
+    if (userProfile == null ||
+        (userProfile.role?.toLowerCase() != 'administrator' &&
+            userProfile.role?.toLowerCase() != 'manager')) {
       return const Scaffold(
-        body: Center(child: Text('Access Denied: You do not have permission to view this page.')),
+        body: Center(
+          child: Text(
+            'Access Denied: You do not have permission to view this page.',
+          ),
+        ),
       );
     }
-    
+
     // Responsive breakpoints for mobile optimization
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
     final isTablet = screenWidth >= 600 && screenWidth < 800;
     final isDesktop = screenWidth >= 800;
-    
+
     final users = ref.watch(usersProvider);
     final usersNotifier = ref.read(usersProvider.notifier);
     final usersList = users.value ?? [];
     final isLoading = usersList.isEmpty;
     final filtered = usersList.where((u) {
-      final matchesSearch = _search.isEmpty ||
-        u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
-        u.userEmail.toLowerCase().contains(_search.toLowerCase());
+      final matchesSearch =
+          _search.isEmpty ||
+          u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
+          u.userEmail.toLowerCase().contains(_search.toLowerCase());
       final matchesRole = _roleFilter == null || u.role == _roleFilter;
       final matchesStatus = _statusFilter == null || u.status == _statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
@@ -115,12 +130,24 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: EdgeInsets.all(isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12.0
+                  : isMobile
+                  ? 16.0
+                  : 24.0,
+            ),
             child: Column(
               children: [
                 // Responsive search and filters section
                 _buildResponsiveSearchAndFilters(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
                 const SizedBox(height: 12),
                 Expanded(
                   child: isLoading
@@ -136,11 +163,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                   child: ListView.separated(
                                     key: ValueKey(filtered.length),
                                     padding: EdgeInsets.symmetric(
-                                      horizontal: isSmallMobile ? 4.0 : isMobile ? 6.0 : 8.0,
+                                      horizontal: isSmallMobile
+                                          ? 4.0
+                                          : isMobile
+                                          ? 6.0
+                                          : 8.0,
                                       vertical: 8.0,
                                     ),
                                     itemCount: filtered.length,
-                                    separatorBuilder: (_, __) => SizedBox(height: isSmallMobile ? 8 : 12),
+                                    separatorBuilder: (_, __) => SizedBox(
+                                      height: isSmallMobile ? 8 : 12,
+                                    ),
                                     itemBuilder: (context, index) {
                                       final user = filtered[index];
                                       return _buildSwipeableUserCard(
@@ -148,9 +181,13 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                         user: user,
                                         isMobile: isMobile,
                                         isSmallMobile: isSmallMobile,
-                                        onTap: () => context.go('/users/${user.id}'),
-                                        onEdit: () => context.go('/users/${user.id}/edit'),
-                                        onToggleStatus: () => _toggleUserStatus(user),
+                                        onTap: () =>
+                                            context.go('/users/${user.id}'),
+                                        onEdit: () => context.go(
+                                          '/users/${user.id}/edit',
+                                        ),
+                                        onToggleStatus: () =>
+                                            _toggleUserStatus(user),
                                       );
                                     },
                                   ),
@@ -164,8 +201,6 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       ),
     );
   }
-
-
 
   Widget _buildResponsiveSearchAndFilters(bool isMobile, bool isSmallMobile) {
     if (isMobile) {
@@ -183,9 +218,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       // Desktop: Horizontal layout
       return Row(
         children: [
-          Expanded(
-            child: _buildResponsiveSearchBar(isMobile, isSmallMobile),
-          ),
+          Expanded(child: _buildResponsiveSearchBar(isMobile, isSmallMobile)),
           const SizedBox(width: 12),
           SizedBox(
             width: 180,
@@ -194,17 +227,21 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               hintText: 'Role',
               items: [
                 DropdownMenuItem<String>(value: null, child: Text('All Roles')),
-                ...roles.map((r) => DropdownMenuItem<String>(
-                  value: r.value,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(r.icon, size: 18), 
-                      const SizedBox(width: 8), 
-                      Flexible(child: Text(r.label, overflow: TextOverflow.ellipsis))
-                    ]
+                ...roles.map(
+                  (r) => DropdownMenuItem<String>(
+                    value: r.value,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(r.icon, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(r.label, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
                   ),
-                )),
+                ),
               ],
               onChanged: (val) => setState(() => _roleFilter = val),
               isMobile: isMobile,
@@ -218,18 +255,25 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               value: _statusFilter,
               hintText: 'Status',
               items: [
-                DropdownMenuItem<String>(value: null, child: Text('All Statuses')),
-                ...statuses.map((s) => DropdownMenuItem<String>(
-                  value: s.value,
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(s.icon, size: 18), 
-                      const SizedBox(width: 8), 
-                      Flexible(child: Text(s.label, overflow: TextOverflow.ellipsis))
-                    ]
+                DropdownMenuItem<String>(
+                  value: null,
+                  child: Text('All Statuses'),
+                ),
+                ...statuses.map(
+                  (s) => DropdownMenuItem<String>(
+                    value: s.value,
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(s.icon, size: 18),
+                        const SizedBox(width: 8),
+                        Flexible(
+                          child: Text(s.label, overflow: TextOverflow.ellipsis),
+                        ),
+                      ],
+                    ),
                   ),
-                )),
+                ),
               ],
               onChanged: (val) => setState(() => _statusFilter = val),
               isMobile: isMobile,
@@ -351,21 +395,16 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
   Widget _buildMobileFilterButton(bool isSmallMobile) {
     final hasActiveFilters = _roleFilter != null || _statusFilter != null;
-    final filterCount = (_roleFilter != null ? 1 : 0) + (_statusFilter != null ? 1 : 0);
-    
+    final filterCount =
+        (_roleFilter != null ? 1 : 0) + (_statusFilter != null ? 1 : 0);
+
     return Container(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(
-          Icons.filter_list,
-          color: ChoiceLuxTheme.richGold,
-          size: 20,
-        ),
+        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
         label: Text(
-          hasActiveFilters 
-              ? 'Filters: $filterCount active'
-              : 'Filter users',
+          hasActiveFilters ? 'Filters: $filterCount active' : 'Filter users',
           style: TextStyle(
             color: ChoiceLuxTheme.richGold,
             fontWeight: FontWeight.w600,
@@ -415,7 +454,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Title
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -438,7 +477,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 ],
               ),
             ),
-            
+
             // Filter options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -447,32 +486,28 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   // Role filter section
                   _buildMobileFilterSection(
                     title: 'Role',
-                    options: roles.map((r) => _FilterOption(
-                      r.value,
-                      r.label,
-                      r.icon,
-                    )).toList(),
+                    options: roles
+                        .map((r) => _FilterOption(r.value, r.label, r.icon))
+                        .toList(),
                     selectedValue: _roleFilter,
                     onChanged: (value) => setState(() => _roleFilter = value),
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // Status filter section
                   _buildMobileFilterSection(
                     title: 'Status',
-                    options: statuses.map((s) => _FilterOption(
-                      s.value,
-                      s.label,
-                      s.icon,
-                    )).toList(),
+                    options: statuses
+                        .map((s) => _FilterOption(s.value, s.label, s.icon))
+                        .toList(),
                     selectedValue: _statusFilter,
                     onChanged: (value) => setState(() => _statusFilter = value),
                   ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -498,14 +533,16 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
         const SizedBox(height: 8),
-        ...options.map((option) => _buildMobileFilterOption(
-          option: option,
-          isSelected: selectedValue == option.value,
-          onTap: () {
-            onChanged(selectedValue == option.value ? null : option.value);
-            Navigator.of(context).pop();
-          },
-        )),
+        ...options.map(
+          (option) => _buildMobileFilterOption(
+            option: option,
+            isSelected: selectedValue == option.value,
+            onTap: () {
+              onChanged(selectedValue == option.value ? null : option.value);
+              Navigator.of(context).pop();
+            },
+          ),
+        ),
       ],
     );
   }
@@ -524,12 +561,18 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            constraints: const BoxConstraints(minHeight: 48), // Ensure minimum 44px touch target
+            constraints: const BoxConstraints(
+              minHeight: 48,
+            ), // Ensure minimum 44px touch target
             decoration: BoxDecoration(
-              color: isSelected ? ChoiceLuxTheme.richGold.withOpacity(0.1) : Colors.transparent,
+              color: isSelected
+                  ? ChoiceLuxTheme.richGold.withOpacity(0.1)
+                  : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: isSelected
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
                 width: 1,
               ),
             ),
@@ -537,7 +580,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               children: [
                 Icon(
                   option.icon,
-                  color: isSelected ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.platinumSilver,
+                  color: isSelected
+                      ? ChoiceLuxTheme.richGold
+                      : ChoiceLuxTheme.platinumSilver,
                   size: 20,
                 ),
                 const SizedBox(width: 16),
@@ -545,8 +590,12 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   child: Text(
                     option.label,
                     style: TextStyle(
-                      color: isSelected ? ChoiceLuxTheme.richGold : ChoiceLuxTheme.softWhite,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      color: isSelected
+                          ? ChoiceLuxTheme.richGold
+                          : ChoiceLuxTheme.softWhite,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       fontSize: 16,
                     ),
                   ),
@@ -635,13 +684,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
-                  user.status?.toLowerCase() == 'active' ? Icons.block : Icons.check_circle,
+                  user.status?.toLowerCase() == 'active'
+                      ? Icons.block
+                      : Icons.check_circle,
                   color: ChoiceLuxTheme.richGold,
                   size: 24,
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  user.status?.toLowerCase() == 'active' ? 'Deactivate' : 'Activate',
+                  user.status?.toLowerCase() == 'active'
+                      ? 'Deactivate'
+                      : 'Activate',
                   style: TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w600,
@@ -653,10 +706,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
       ),
-      child: UserCard(
-        user: user,
-        onTap: onTap,
-      ),
+      child: UserCard(user: user, onTap: onTap),
     );
   }
 
@@ -667,7 +717,13 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         children: [
           // Loading animation
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 20
+                  : 24,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -677,21 +733,41 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               strokeWidth: isMobile ? 2.0 : 3.0,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           // Loading text
           Text(
             'Loading users...',
             style: TextStyle(
-              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontSize: isSmallMobile
+                  ? 14
+                  : isMobile
+                  ? 16
+                  : 18,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             'Please wait while we fetch user data',
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
@@ -707,31 +783,61 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 20 : isMobile ? 24 : 28),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 20
+                  : isMobile
+                  ? 24
+                  : 28,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.people_outline,
-              size: isSmallMobile ? 40 : isMobile ? 48 : 56,
+              size: isSmallMobile
+                  ? 40
+                  : isMobile
+                  ? 48
+                  : 56,
               color: ChoiceLuxTheme.richGold,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           Text(
             'No users found',
             style: TextStyle(
-              fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              fontSize: isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 18
+                  : 20,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             'Try adjusting your search or filters',
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,

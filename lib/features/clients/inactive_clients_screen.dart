@@ -13,7 +13,8 @@ class InactiveClientsScreen extends ConsumerStatefulWidget {
   const InactiveClientsScreen({super.key});
 
   @override
-  ConsumerState<InactiveClientsScreen> createState() => _InactiveClientsScreenState();
+  ConsumerState<InactiveClientsScreen> createState() =>
+      _InactiveClientsScreenState();
 }
 
 class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
@@ -118,10 +119,17 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                   data: (clients) {
                     final filteredClients = _searchQuery.isEmpty
                         ? clients
-                        : clients.where((client) =>
-                            client.companyName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-                            client.contactPerson.toLowerCase().contains(_searchQuery.toLowerCase())
-                          ).toList();
+                        : clients
+                              .where(
+                                (client) =>
+                                    client.companyName.toLowerCase().contains(
+                                      _searchQuery.toLowerCase(),
+                                    ) ||
+                                    client.contactPerson.toLowerCase().contains(
+                                      _searchQuery.toLowerCase(),
+                                    ),
+                              )
+                              .toList();
 
                     if (filteredClients.isEmpty) {
                       return _buildEmptyState();
@@ -145,16 +153,14 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                         const SizedBox(height: 16),
                         Text(
                           'Error loading inactive clients',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: ChoiceLuxTheme.softWhite,
-                          ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(color: ChoiceLuxTheme.softWhite),
                         ),
                         const SizedBox(height: 8),
                         Text(
                           error.toString(),
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                            color: ChoiceLuxTheme.platinumSilver,
-                          ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(color: ChoiceLuxTheme.platinumSilver),
                           textAlign: TextAlign.center,
                         ),
                         const SizedBox(height: 16),
@@ -211,29 +217,31 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
   }
 
   Widget _buildInactiveClientsGrid(List<Client> clients) {
-    final clientCards = clients.map((client) => ClientCard(
-      client: client,
-      isSelected: false,
-      onTap: () {
-        context.go('/clients/${client.id}');
-      },
-      onEdit: () {
-        context.go('/clients/edit/${client.id}');
-      },
-      onDelete: () => _showRestoreDialog(client),
-      onViewAgents: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Viewing agents for ${client.companyName}'),
-            backgroundColor: ChoiceLuxTheme.richGold,
+    final clientCards = clients
+        .map(
+          (client) => ClientCard(
+            client: client,
+            isSelected: false,
+            onTap: () {
+              context.go('/clients/${client.id}');
+            },
+            onEdit: () {
+              context.go('/clients/edit/${client.id}');
+            },
+            onDelete: () => _showRestoreDialog(client),
+            onViewAgents: () {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Viewing agents for ${client.companyName}'),
+                  backgroundColor: ChoiceLuxTheme.richGold,
+                ),
+              );
+            },
           ),
-        );
-      },
-    )).toList();
+        )
+        .toList();
 
-    return ResponsiveGrid(
-      children: clientCards,
-    );
+    return ResponsiveGrid(children: clientCards);
   }
 
   void _showRestoreDialog(Client client) {
@@ -241,9 +249,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -277,10 +283,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           children: [
             Text(
               'Are you sure you want to restore this client?',
-              style: TextStyle(
-                color: ChoiceLuxTheme.softWhite,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Container(
@@ -333,15 +336,14 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
+              ref
+                  .read(clientsProvider.notifier)
+                  .restoreClient(client.id.toString());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
                     children: [
-                      Icon(
-                        Icons.check_circle,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
+                      Icon(Icons.check_circle, color: ChoiceLuxTheme.softWhite),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text('${client.companyName} has been restored'),
@@ -371,4 +373,4 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
       ),
     );
   }
-} 
+}

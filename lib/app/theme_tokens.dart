@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 /// App-wide design tokens for consistent theming
-/// 
+///
 /// This class provides centralized access to brand colors, spacing, and radius values
 /// that can be used throughout the app for consistent design.
 @immutable
@@ -24,13 +24,12 @@ class AppTokens extends ThemeExtension<AppTokens> {
     Color? brandBlack,
     double? radiusMd,
     double? spacing,
-  }) =>
-      AppTokens(
-        brandGold: brandGold ?? this.brandGold,
-        brandBlack: brandBlack ?? this.brandBlack,
-        radiusMd: radiusMd ?? this.radiusMd,
-        spacing: spacing ?? this.spacing,
-      );
+  }) => AppTokens(
+    brandGold: brandGold ?? this.brandGold,
+    brandBlack: brandBlack ?? this.brandBlack,
+    radiusMd: radiusMd ?? this.radiusMd,
+    spacing: spacing ?? this.spacing,
+  );
 
   @override
   ThemeExtension<AppTokens> lerp(ThemeExtension<AppTokens>? other, double t) {

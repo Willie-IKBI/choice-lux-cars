@@ -17,9 +17,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<List<Trip>> _fetchTrips() async {
     try {
       Log.d('Fetching trips...');
-      
+
       final result = await _tripsRepository.fetchTrips();
-      
+
       if (result.isSuccess) {
         final trips = result.data!;
         Log.d('Fetched ${trips.length} trips successfully');
@@ -38,9 +38,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<void> fetchTripsForJob(String jobId) async {
     try {
       Log.d('Fetching trips for job: $jobId');
-      
+
       final result = await _tripsRepository.fetchTripsForJob(jobId);
-      
+
       if (result.isSuccess) {
         final trips = result.data!;
         state = AsyncValue.data(trips);
@@ -59,9 +59,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<Map<String, dynamic>> createTrip(Trip trip) async {
     try {
       Log.d('Creating trip for job: ${trip.jobId}');
-      
+
       final result = await _tripsRepository.createTrip(trip);
-      
+
       if (result.isSuccess) {
         // Refresh trips list
         await fetchTripsForJob(trip.jobId.toString());
@@ -81,13 +81,15 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<void> updateTrip(Trip trip) async {
     try {
       Log.d('Updating trip: ${trip.id}');
-      
+
       final result = await _tripsRepository.updateTrip(trip);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentTrips = state.value ?? [];
-        final updatedTrips = currentTrips.map((t) => t.id == trip.id ? trip : t).toList();
+        final updatedTrips = currentTrips
+            .map((t) => t.id == trip.id ? trip : t)
+            .toList();
         state = AsyncValue.data(updatedTrips);
         Log.d('Trip updated successfully');
       } else {
@@ -104,9 +106,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<void> updateTripStatus(String tripId, String status) async {
     try {
       Log.d('Updating trip status: $tripId to $status');
-      
+
       final result = await _tripsRepository.updateTripStatus(tripId, status);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentTrips = state.value ?? [];
@@ -116,7 +118,7 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
           }
           return trip;
         }).toList();
-        
+
         state = AsyncValue.data(updatedTrips);
         Log.d('Trip status updated successfully');
       } else {
@@ -133,9 +135,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<void> deleteTrip(String tripId, String jobId) async {
     try {
       Log.d('Deleting trip: $tripId');
-      
+
       final result = await _tripsRepository.deleteTrip(tripId);
-      
+
       if (result.isSuccess) {
         // Refresh trips for the job
         await fetchTripsForJob(jobId.toString());
@@ -154,9 +156,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<List<Trip>> getTripsByStatus(String status) async {
     try {
       Log.d('Getting trips by status: $status');
-      
+
       final result = await _tripsRepository.getTripsByStatus(status);
-      
+
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -173,9 +175,9 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<List<Trip>> getTripsByDriver(String driverId) async {
     try {
       Log.d('Getting trips by driver: $driverId');
-      
+
       final result = await _tripsRepository.getTripsByDriver(driverId);
-      
+
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -194,7 +196,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   }
 
   /// Get total amount for all trips
-  double get totalAmount => (state.value ?? []).fold(0, (sum, trip) => sum + trip.amount);
+  double get totalAmount =>
+      (state.value ?? []).fold(0, (sum, trip) => sum + trip.amount);
 
   /// Refresh trips data
   Future<void> refresh() async {
@@ -204,6 +207,27 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   /// Add a new trip (alias for createTrip)
   Future<Map<String, dynamic>> addTrip(Trip trip) async {
     return createTrip(trip);
+  }
+
+  /// Delete a trip
+  Future<void> deleteTrip(String tripId) async {
+    try {
+      Log.d('Deleting trip: $tripId');
+
+      final result = await _tripsRepository.deleteTrip(tripId);
+
+      if (result.isSuccess) {
+        // Refresh trips list
+        ref.invalidateSelf();
+        Log.d('Trip deleted successfully');
+      } else {
+        Log.e('Error deleting trip: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error deleting trip: $error');
+      rethrow;
+    }
   }
 }
 
@@ -223,9 +247,9 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
   Future<List<Trip>> _fetchTripsForJob() async {
     try {
       Log.d('Fetching trips for job: $jobId');
-      
+
       final result = await _tripsRepository.fetchTripsForJob(jobId);
-      
+
       if (result.isSuccess) {
         final trips = result.data!;
         Log.d('Fetched ${trips.length} trips for job: $jobId');
@@ -247,7 +271,10 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
 }
 
 /// Provider for TripsNotifier using AsyncNotifierProvider
-final tripsProvider = AsyncNotifierProvider<TripsNotifier, List<Trip>>(() => TripsNotifier());
+final tripsProvider = AsyncNotifierProvider<TripsNotifier, List<Trip>>(TripsNotifier.new);
 
 /// Async provider for trips by job that exposes AsyncValue<List<Trip>>
-final tripsByJobProvider = AsyncNotifierProvider.family<TripsByJobNotifier, List<Trip>, String>(TripsByJobNotifier.new);
+final tripsByJobProvider =
+    AsyncNotifierProvider.family<TripsByJobNotifier, List<Trip>, String>(
+      TripsByJobNotifier.new,
+    );

@@ -11,7 +11,8 @@ class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
 
   @override
-  ConsumerState<ResetPasswordScreen> createState() => _ResetPasswordScreenState();
+  ConsumerState<ResetPasswordScreen> createState() =>
+      _ResetPasswordScreenState();
 }
 
 class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
@@ -25,7 +26,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   @override
   void initState() {
     super.initState();
-    
+
     // Check if user has a valid session for password reset
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkResetSession();
@@ -35,15 +36,22 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   void _checkResetSession() async {
     // Check if user has a valid session for password reset
     try {
-      final session = await SupabaseService.instance.supabase.auth.currentSession;
-      Log.d('Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}');
-      
+      final session =
+          await SupabaseService.instance.supabase.auth.currentSession;
+      Log.d(
+        'Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}',
+      );
+
       if (session == null) {
-        Log.d('Reset Password Screen - No session found, redirecting to forgot password');
+        Log.d(
+          'Reset Password Screen - No session found, redirecting to forgot password',
+        );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Invalid or expired reset link. Please request a new password reset.'),
+              content: const Text(
+                'Invalid or expired reset link. Please request a new password reset.',
+              ),
               backgroundColor: ChoiceLuxTheme.errorColor,
             ),
           );
@@ -57,7 +65,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text('Error validating reset session. Please try again.'),
+            content: const Text(
+              'Error validating reset session. Please try again.',
+            ),
             backgroundColor: ChoiceLuxTheme.errorColor,
           ),
         );
@@ -70,13 +80,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   void dispose() {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-    
+
     // Clear password recovery state when leaving the screen
     // This prevents the router from redirecting back to reset password
     if (mounted) {
       ref.read(authProvider.notifier).setPasswordRecovery(false);
     }
-    
+
     super.dispose();
   }
 
@@ -90,7 +100,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         // Get the current session from Supabase
         final session = Supabase.instance.client.auth.currentSession;
         if (session == null) {
-          throw Exception('No active session found. Please use the reset link from your email.');
+          throw Exception(
+            'No active session found. Please use the reset link from your email.',
+          );
         }
 
         // Update the password using the current session
@@ -105,10 +117,12 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         if (mounted) {
           // Clear the password recovery state before redirecting
           ref.read(authProvider.notifier).setPasswordRecovery(false);
-          
+
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text('Password updated successfully! Please sign in with your new password.'),
+              content: const Text(
+                'Password updated successfully! Please sign in with your new password.',
+              ),
               backgroundColor: ChoiceLuxTheme.successColor,
             ),
           );
@@ -137,19 +151,22 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
+        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
         child: SafeArea(
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              final isTablet = constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
+              final isTablet =
+                  constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
 
               return Center(
                 child: SingleChildScrollView(
                   padding: EdgeInsets.symmetric(
-                    horizontal: isMobile ? 24.0 : isTablet ? 64.0 : 120.0,
+                    horizontal: isMobile
+                        ? 24.0
+                        : isTablet
+                        ? 64.0
+                        : 120.0,
                     vertical: 32.0,
                   ),
                   child: ConstrainedBox(
@@ -202,7 +219,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 'Please enter your new password below.',
                                 style: TextStyle(
                                   fontSize: 16,
-                                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                                  color: ChoiceLuxTheme.platinumSilver
+                                      .withOpacity(0.8),
                                 ),
                                 textAlign: TextAlign.center,
                               ),
@@ -213,17 +231,23 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 controller: _passwordController,
                                 obscureText: _obscurePassword,
                                 textInputAction: TextInputAction.next,
-                                style: TextStyle(color: ChoiceLuxTheme.softWhite),
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'New Password',
-                                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                                  labelStyle: TextStyle(
+                                    color: ChoiceLuxTheme.platinumSilver,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.lock_outline,
                                     color: ChoiceLuxTheme.richGold,
                                   ),
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                                      _obscurePassword
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
                                       color: ChoiceLuxTheme.platinumSilver,
                                     ),
                                     onPressed: () {
@@ -235,7 +259,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                                      color: ChoiceLuxTheme.platinumSilver
+                                          .withOpacity(0.3),
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
@@ -259,7 +284,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     ),
                                   ),
                                   filled: true,
-                                  fillColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                                  fillColor: ChoiceLuxTheme.charcoalGray
+                                      .withOpacity(0.3),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -278,29 +304,37 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                 controller: _confirmPasswordController,
                                 obscureText: _obscureConfirmPassword,
                                 textInputAction: TextInputAction.done,
-                                style: TextStyle(color: ChoiceLuxTheme.softWhite),
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 decoration: InputDecoration(
                                   labelText: 'Confirm New Password',
-                                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                                  labelStyle: TextStyle(
+                                    color: ChoiceLuxTheme.platinumSilver,
+                                  ),
                                   prefixIcon: Icon(
                                     Icons.lock_outline,
                                     color: ChoiceLuxTheme.richGold,
                                   ),
                                   suffixIcon: IconButton(
                                     icon: Icon(
-                                      _obscureConfirmPassword ? Icons.visibility : Icons.visibility_off,
+                                      _obscureConfirmPassword
+                                          ? Icons.visibility
+                                          : Icons.visibility_off,
                                       color: ChoiceLuxTheme.platinumSilver,
                                     ),
                                     onPressed: () {
                                       setState(() {
-                                        _obscureConfirmPassword = !_obscureConfirmPassword;
+                                        _obscureConfirmPassword =
+                                            !_obscureConfirmPassword;
                                       });
                                     },
                                   ),
                                   enabledBorder: OutlineInputBorder(
                                     borderRadius: BorderRadius.circular(12),
                                     borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                                      color: ChoiceLuxTheme.platinumSilver
+                                          .withOpacity(0.3),
                                     ),
                                   ),
                                   focusedBorder: OutlineInputBorder(
@@ -324,7 +358,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     ),
                                   ),
                                   filled: true,
-                                  fillColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                                  fillColor: ChoiceLuxTheme.charcoalGray
+                                      .withOpacity(0.3),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
@@ -346,8 +381,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                   backgroundColor: ChoiceLuxTheme.richGold,
                                   foregroundColor: Colors.black,
                                   elevation: 4,
-                                  shadowColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  shadowColor: ChoiceLuxTheme.richGold
+                                      .withOpacity(0.3),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -358,7 +396,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         width: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                Colors.black,
+                                              ),
                                         ),
                                       )
                                     : Text(

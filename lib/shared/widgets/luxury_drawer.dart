@@ -22,7 +22,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     final userProfile = ref.watch(currentUserProfileProvider);
     final currentUser = ref.watch(currentUserProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
-    
+
     // Get display name from profile, fallback to email, then to 'User'
     String displayName = 'User';
     if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
@@ -39,16 +39,17 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     return _buildDesktopDrawer(context, displayName, userProfile);
   }
 
-  Widget _buildMobileDrawer(BuildContext context, String displayName, userProfile) {
+  Widget _buildMobileDrawer(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            ChoiceLuxTheme.jetBlack,
-            ChoiceLuxTheme.charcoalGray,
-          ],
+          colors: [ChoiceLuxTheme.jetBlack, ChoiceLuxTheme.charcoalGray],
         ),
         borderRadius: BorderRadius.only(
           topLeft: Radius.circular(20),
@@ -68,10 +69,10 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               borderRadius: BorderRadius.circular(2),
             ),
           ),
-          
+
           // Header Section (Compact)
           _buildMobileHeader(context, displayName, userProfile),
-          
+
           // Menu Items (Scrollable)
           Flexible(
             child: SingleChildScrollView(
@@ -79,7 +80,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               child: Column(
                 children: [
                   // Account Section
-                  if (userProfile?.role != null && userProfile!.role != 'unassigned')
+                  if (userProfile?.role != null &&
+                      userProfile!.role != 'unassigned')
                     _buildMobileMenuSection(
                       title: 'Account',
                       items: [
@@ -101,37 +103,38 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         ),
                       ],
                     ),
-                  
+
                   // Company Section
                   _buildMobileMenuSection(
                     title: 'Company',
                     items: [
-                                              _buildMobileMenuItem(
-                          icon: Icons.business_outlined,
-                          title: 'About Choice Lux Cars',
-                          onTap: () {
-                            Log.d('Navigate to About');
-                            Navigator.pop(context);
-                            context.push('/about');
-                          },
-                        ),
-                                              _buildMobileMenuItem(
-                          icon: Icons.contact_support_outlined,
-                          title: 'Contact Information',
-                          onTap: () {
-                            Log.d('Navigate to Contact');
-                            Navigator.pop(context);
-                            context.push('/contact');
-                          },
-                        ),
+                      _buildMobileMenuItem(
+                        icon: Icons.business_outlined,
+                        title: 'About Choice Lux Cars',
+                        onTap: () {
+                          Log.d('Navigate to About');
+                          Navigator.pop(context);
+                          context.push('/about');
+                        },
+                      ),
+                      _buildMobileMenuItem(
+                        icon: Icons.contact_support_outlined,
+                        title: 'Contact Information',
+                        onTap: () {
+                          Log.d('Navigate to Contact');
+                          Navigator.pop(context);
+                          context.push('/contact');
+                        },
+                      ),
                     ],
                   ),
-                  
+
                   // Legal & Support Section (Collapsible)
                   _buildCollapsibleSection(
                     title: 'Legal & Support',
                     isExpanded: _isLegalExpanded,
-                    onToggle: () => setState(() => _isLegalExpanded = !_isLegalExpanded),
+                    onToggle: () =>
+                        setState(() => _isLegalExpanded = !_isLegalExpanded),
                     items: [
                       _buildMobileMenuItem(
                         icon: Icons.privacy_tip_outlined,
@@ -162,7 +165,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       ),
                     ],
                   ),
-                  
+
                   // Administration Section (Role-based)
                   if (userProfile?.role == 'admin') ...[
                     _buildMobileMenuSection(
@@ -196,12 +199,13 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       ],
                     ),
                   ],
-                  
+
                   // App Section (Collapsible)
                   _buildCollapsibleSection(
                     title: 'App',
                     isExpanded: _isAppExpanded,
-                    onToggle: () => setState(() => _isAppExpanded = !_isAppExpanded),
+                    onToggle: () =>
+                        setState(() => _isAppExpanded = !_isAppExpanded),
                     items: [
                       _buildMobileMenuItem(
                         icon: Icons.info_outline,
@@ -222,13 +226,13 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
-          
+
           // Bottom Section - Sign Out & Exit
           _buildMobileBottomSection(context),
         ],
@@ -236,7 +240,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     );
   }
 
-  Widget _buildDesktopDrawer(BuildContext context, String displayName, userProfile) {
+  Widget _buildDesktopDrawer(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     return Drawer(
       width: 280,
       child: Container(
@@ -244,24 +252,22 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              ChoiceLuxTheme.jetBlack,
-              ChoiceLuxTheme.charcoalGray,
-            ],
+            colors: [ChoiceLuxTheme.jetBlack, ChoiceLuxTheme.charcoalGray],
           ),
         ),
         child: Column(
           children: [
             // Header Section
             _buildDesktopHeader(context, displayName, userProfile),
-            
+
             // Menu Items
             Expanded(
               child: SingleChildScrollView(
                 child: Column(
                   children: [
                     // User Profile Section
-                    if (userProfile?.role != null && userProfile!.role != 'unassigned')
+                    if (userProfile?.role != null &&
+                        userProfile!.role != 'unassigned')
                       _buildMenuSection(
                         title: 'Account',
                         items: [
@@ -285,71 +291,71 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           ),
                         ],
                       ),
-                      
-                      // Company Information Section
-                      _buildMenuSection(
-                        title: 'Company',
-                        items: [
-                          _buildMenuItem(
-                            icon: Icons.business_outlined,
-                            title: 'About Choice Lux Cars',
-                            subtitle: 'Learn about our company',
-                            onTap: () {
-                              Log.d('Navigate to About');
-                              Navigator.pop(context);
-                              context.push('/about');
-                            },
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.contact_support_outlined,
-                            title: 'Contact Information',
-                            subtitle: 'Get in touch with us',
-                            onTap: () {
-                              Log.d('Navigate to Contact');
-                              Navigator.pop(context);
-                              context.push('/contact');
-                            },
-                          ),
-                        ],
-                      ),
-                      
-                      // Legal & Support Section
-                      _buildMenuSection(
-                        title: 'Legal & Support',
-                        items: [
-                          _buildMenuItem(
-                            icon: Icons.privacy_tip_outlined,
-                            title: 'Privacy Policy',
-                            subtitle: 'How we protect your data',
-                            onTap: () {
-                              Log.d('Navigate to Privacy Policy');
-                              Navigator.pop(context);
-                              context.push('/privacy-policy');
-                            },
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.description_outlined,
-                            title: 'Terms of Service',
-                            subtitle: 'Our terms and conditions',
-                            onTap: () {
-                              Log.d('Navigate to Terms of Service');
-                              Navigator.pop(context);
-                              context.push('/terms-of-service');
-                            },
-                          ),
-                          _buildMenuItem(
-                            icon: Icons.help_outline,
-                            title: 'Help & Support',
-                            subtitle: 'Get help and support',
-                            onTap: () {
-                              Log.d('Navigate to Help & Support');
-                              Navigator.pop(context);
-                              context.push('/help-support');
-                            },
-                          ),
-                        ],
-                      ),
-                    
+
+                    // Company Information Section
+                    _buildMenuSection(
+                      title: 'Company',
+                      items: [
+                        _buildMenuItem(
+                          icon: Icons.business_outlined,
+                          title: 'About Choice Lux Cars',
+                          subtitle: 'Learn about our company',
+                          onTap: () {
+                            Log.d('Navigate to About');
+                            Navigator.pop(context);
+                            context.push('/about');
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.contact_support_outlined,
+                          title: 'Contact Information',
+                          subtitle: 'Get in touch with us',
+                          onTap: () {
+                            Log.d('Navigate to Contact');
+                            Navigator.pop(context);
+                            context.push('/contact');
+                          },
+                        ),
+                      ],
+                    ),
+
+                    // Legal & Support Section
+                    _buildMenuSection(
+                      title: 'Legal & Support',
+                      items: [
+                        _buildMenuItem(
+                          icon: Icons.privacy_tip_outlined,
+                          title: 'Privacy Policy',
+                          subtitle: 'How we protect your data',
+                          onTap: () {
+                            Log.d('Navigate to Privacy Policy');
+                            Navigator.pop(context);
+                            context.push('/privacy-policy');
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.description_outlined,
+                          title: 'Terms of Service',
+                          subtitle: 'Our terms and conditions',
+                          onTap: () {
+                            Log.d('Navigate to Terms of Service');
+                            Navigator.pop(context);
+                            context.push('/terms-of-service');
+                          },
+                        ),
+                        _buildMenuItem(
+                          icon: Icons.help_outline,
+                          title: 'Help & Support',
+                          subtitle: 'Get help and support',
+                          onTap: () {
+                            Log.d('Navigate to Help & Support');
+                            Navigator.pop(context);
+                            context.push('/help-support');
+                          },
+                        ),
+                      ],
+                    ),
+
                     // Administration Section (Role-based)
                     if (userProfile?.role == 'admin') ...[
                       _buildMenuSection(
@@ -386,7 +392,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         ],
                       ),
                     ],
-                    
+
                     // App Management Section
                     _buildMenuSection(
                       title: 'App',
@@ -415,7 +421,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                 ),
               ),
             ),
-            
+
             // Bottom Section - Sign Out & Exit
             _buildBottomSection(context, ref),
           ],
@@ -424,7 +430,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     );
   }
 
-  Widget _buildMobileHeader(BuildContext context, String displayName, userProfile) {
+  Widget _buildMobileHeader(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
       decoration: BoxDecoration(
@@ -521,7 +531,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     );
   }
 
-  Widget _buildDesktopHeader(BuildContext context, String displayName, userProfile) {
+  Widget _buildDesktopHeader(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     return Container(
       padding: const EdgeInsets.fromLTRB(24, 60, 24, 24),
       decoration: BoxDecoration(
@@ -592,7 +606,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             ],
           ),
           const SizedBox(height: 24),
-          
+
           // User Info with Enhanced Avatar
           Row(
             children: [
@@ -711,10 +725,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
             ),
           ),
         ),
-        if (isExpanded) ...[
-          ...items,
-          const SizedBox(height: 4),
-        ],
+        if (isExpanded) ...[...items, const SizedBox(height: 4)],
       ],
     );
   }
@@ -742,11 +753,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 20,
-                ),
+                child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -834,11 +841,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
-                  icon,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 20,
-                ),
+                child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -983,11 +986,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           ),
           title: Row(
             children: [
-              Icon(
-                Icons.logout,
-                color: ChoiceLuxTheme.errorColor,
-                size: 24,
-              ),
+              Icon(Icons.logout, color: ChoiceLuxTheme.errorColor, size: 24),
               const SizedBox(width: 12),
               Text(
                 'Sign Out',
@@ -1027,9 +1026,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
               child: const Text(
                 'Sign Out',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -1141,5 +1138,4 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       },
     );
   }
-
-} 
+}

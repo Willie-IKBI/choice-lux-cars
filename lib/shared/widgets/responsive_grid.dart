@@ -8,14 +8,14 @@ class ResponsiveBreakpoints {
   static const double tablet = 800;
   static const double desktop = 1200;
   static const double largeDesktop = 1600;
-  
+
   // Utility methods for consistent breakpoint checking
   static bool isSmallMobile(double width) => width < smallMobile;
   static bool isMobile(double width) => width < mobile;
   static bool isTablet(double width) => width >= mobile && width < tablet;
   static bool isDesktop(double width) => width >= tablet && width < desktop;
   static bool isLargeDesktop(double width) => width >= desktop;
-  
+
   // Combined checks for common patterns
   static bool isMobileOrSmall(double width) => width < mobile;
   static bool isTabletOrLarger(double width) => width >= tablet;
@@ -31,7 +31,7 @@ class ResponsiveTokens {
     if (ResponsiveBreakpoints.isDesktop(width)) return 20.0;
     return 24.0; // Large desktop
   }
-  
+
   static double getSpacing(double width) {
     if (ResponsiveBreakpoints.isSmallMobile(width)) return 4.0;
     if (ResponsiveBreakpoints.isMobile(width)) return 6.0;
@@ -39,7 +39,7 @@ class ResponsiveTokens {
     if (ResponsiveBreakpoints.isDesktop(width)) return 12.0;
     return 16.0; // Large desktop
   }
-  
+
   static double getCornerRadius(double width) {
     if (ResponsiveBreakpoints.isSmallMobile(width)) return 6.0;
     if (ResponsiveBreakpoints.isMobile(width)) return 8.0;
@@ -47,7 +47,7 @@ class ResponsiveTokens {
     if (ResponsiveBreakpoints.isDesktop(width)) return 12.0;
     return 16.0; // Large desktop
   }
-  
+
   static double getIconSize(double width) {
     if (ResponsiveBreakpoints.isSmallMobile(width)) return 16.0;
     if (ResponsiveBreakpoints.isMobile(width)) return 18.0;
@@ -55,7 +55,7 @@ class ResponsiveTokens {
     if (ResponsiveBreakpoints.isDesktop(width)) return 24.0;
     return 28.0; // Large desktop
   }
-  
+
   static double getFontSize(double width, {double baseSize = 14.0}) {
     if (ResponsiveBreakpoints.isSmallMobile(width)) return baseSize - 2;
     if (ResponsiveBreakpoints.isMobile(width)) return baseSize - 1;
@@ -87,28 +87,34 @@ class ResponsiveGrid extends StatelessWidget {
     return LayoutBuilder(
       builder: (context, constraints) {
         final availableWidth = maxWidth ?? constraints.maxWidth;
-        
+
         // Use centralized breakpoints
-        final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(availableWidth);
+        final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(
+          availableWidth,
+        );
         final isMobile = ResponsiveBreakpoints.isMobile(availableWidth);
         final isTablet = ResponsiveBreakpoints.isTablet(availableWidth);
         final isDesktop = ResponsiveBreakpoints.isDesktop(availableWidth);
-        final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(availableWidth);
-        
+        final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(
+          availableWidth,
+        );
+
         // Grid configuration based on screen size
         final gridConfig = _getGridConfiguration(
-          availableWidth, 
-          isSmallMobile, 
-          isMobile, 
-          isTablet, 
-          isDesktop, 
-          isLargeDesktop
+          availableWidth,
+          isSmallMobile,
+          isMobile,
+          isTablet,
+          isDesktop,
+          isLargeDesktop,
         );
-        
+
         return GridView.builder(
           padding: padding ?? gridConfig.padding,
           shrinkWrap: shrinkWrap,
-          physics: physics ?? (isMobile ? const AlwaysScrollableScrollPhysics() : null),
+          physics:
+              physics ??
+              (isMobile ? const AlwaysScrollableScrollPhysics() : null),
           gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
             maxCrossAxisExtent: gridConfig.maxCrossAxisExtent,
             crossAxisSpacing: gridConfig.spacing,
@@ -139,7 +145,9 @@ class ResponsiveGrid extends StatelessWidget {
       );
     } else if (isMobile) {
       return _GridConfiguration(
-        maxCrossAxisExtent: width < 500 ? width - 32 : (width - 48) / 2, // 1 or 2 columns
+        maxCrossAxisExtent: width < 500
+            ? width - 32
+            : (width - 48) / 2, // 1 or 2 columns
         spacing: ResponsiveTokens.getSpacing(width),
         padding: EdgeInsets.all(ResponsiveTokens.getPadding(width)),
         aspectRatio: 1.8, // Shorter aspect ratio to prevent overflow
@@ -188,17 +196,19 @@ class _GridConfiguration {
 extension ResponsiveExtension on BuildContext {
   double get screenWidth => MediaQuery.of(this).size.width;
   double get screenHeight => MediaQuery.of(this).size.height;
-  
+
   bool get isSmallMobile => ResponsiveBreakpoints.isSmallMobile(screenWidth);
   bool get isMobile => ResponsiveBreakpoints.isMobile(screenWidth);
   bool get isTablet => ResponsiveBreakpoints.isTablet(screenWidth);
   bool get isDesktop => ResponsiveBreakpoints.isDesktop(screenWidth);
   bool get isLargeDesktop => ResponsiveBreakpoints.isLargeDesktop(screenWidth);
-  
+
   double get responsivePadding => ResponsiveTokens.getPadding(screenWidth);
   double get responsiveSpacing => ResponsiveTokens.getSpacing(screenWidth);
-  double get responsiveCornerRadius => ResponsiveTokens.getCornerRadius(screenWidth);
+  double get responsiveCornerRadius =>
+      ResponsiveTokens.getCornerRadius(screenWidth);
   double get responsiveIconSize => ResponsiveTokens.getIconSize(screenWidth);
-  
-  double responsiveFontSize(double baseSize) => ResponsiveTokens.getFontSize(screenWidth, baseSize: baseSize);
-} 
+
+  double responsiveFontSize(double baseSize) =>
+      ResponsiveTokens.getFontSize(screenWidth, baseSize: baseSize);
+}

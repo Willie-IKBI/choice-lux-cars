@@ -76,17 +76,15 @@ class DriverFlowUtils {
   }) {
     // Check if current user is the assigned driver
     final isAssignedDriver = currentUserId == jobDriverId;
-    
+
     // For "Start Job" button (open/assigned status), only show if job is confirmed
     if (jobStatus == JobStatus.open || jobStatus == JobStatus.assigned) {
       return isAssignedDriver && isJobConfirmed;
     }
-    
+
     // For other statuses (started, inProgress), show regardless of confirmation
-    return isAssignedDriver && (
-      jobStatus == JobStatus.started ||
-      jobStatus == JobStatus.inProgress
-    );
+    return isAssignedDriver &&
+        (jobStatus == JobStatus.started || jobStatus == JobStatus.inProgress);
   }
 
   /// Get route for driver flow based on job status
@@ -142,11 +140,11 @@ class DriverFlowUtils {
   /// Get step title with address for driver flow
   static String getStepTitleWithAddress(String stepId, String? address) {
     final baseTitle = getStepTitle(stepId);
-    
+
     if (address == null || address.trim().isEmpty) {
       return baseTitle;
     }
-    
+
     switch (stepId) {
       case 'pickup_arrival':
         return '$baseTitle - $address';

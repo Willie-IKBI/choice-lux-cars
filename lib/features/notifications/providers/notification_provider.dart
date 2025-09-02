@@ -79,10 +79,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       );
 
       // Calculate stats from active notifications only
-      final activeNotifications = notifications.where((n) => !n.isHidden).toList();
+      final activeNotifications = notifications
+          .where((n) => !n.isHidden)
+          .toList();
       final unreadCount = activeNotifications.where((n) => !n.isRead).length;
       final totalCount = activeNotifications.length;
-      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+      final highPriorityCount = activeNotifications
+          .where((n) => n.isHighPriority)
+          .length;
 
       state = state.copyWith(
         notifications: notifications,
@@ -92,35 +96,43 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         isLoading: false,
       );
 
-      Log.d('Loaded ${notifications.length} notifications, ${unreadCount} unread');
-      Log.d('Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
-      
+      Log.d(
+        'Loaded ${notifications.length} notifications, ${unreadCount} unread',
+      );
+      Log.d(
+        'Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+      );
+
       // Also update stats based on loaded notifications
       await _updateStatsFromNotifications(notifications);
     } catch (e) {
       Log.e('Error loading notifications: $e');
-      state = state.copyWith(
-        isLoading: false,
-        error: e.toString(),
-      );
+      state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
   /// Update stats based on loaded notifications
-  Future<void> _updateStatsFromNotifications(List<app_notification.AppNotification> notifications) async {
+  Future<void> _updateStatsFromNotifications(
+    List<app_notification.AppNotification> notifications,
+  ) async {
     try {
       // Calculate stats from active notifications only (not hidden)
-      final activeNotifications = notifications.where((n) => !n.isHidden).toList();
+      final activeNotifications = notifications
+          .where((n) => !n.isHidden)
+          .toList();
       final totalCount = activeNotifications.length;
       final unreadCount = activeNotifications.where((n) => !n.isRead).length;
       final readCount = activeNotifications.where((n) => n.isRead).length;
       final dismissedCount = notifications.where((n) => n.isDismissed).length;
-      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
-      
+      final highPriorityCount = activeNotifications
+          .where((n) => n.isHighPriority)
+          .length;
+
       // Group by type
       final byType = <String, int>{};
       for (final notification in activeNotifications) {
-        byType[notification.notificationType] = (byType[notification.notificationType] ?? 0) + 1;
+        byType[notification.notificationType] =
+            (byType[notification.notificationType] ?? 0) + 1;
       }
 
       final stats = {
@@ -138,9 +150,11 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         unreadCount: unreadCount,
         highPriorityCount: highPriorityCount,
       );
-      
+
       Log.d('Updated stats from notifications: $stats');
-      Log.d('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d(
+        'Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+      );
     } catch (e) {
       Log.e('Error updating stats from notifications: $e');
     }
@@ -150,21 +164,23 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> loadStats() async {
     try {
       final stats = await _notificationService.getNotificationStats();
-      
+
       // Extract counts from stats and update state
       final totalCount = stats['total_count'] ?? 0;
       final unreadCount = stats['unread_count'] ?? 0;
       final highPriorityCount = stats['high_priority_count'] ?? 0;
-      
+
       state = state.copyWith(
         stats: stats,
         totalCount: totalCount,
         unreadCount: unreadCount,
         highPriorityCount: highPriorityCount,
       );
-      
+
       Log.d('Loaded notification stats: $stats');
-      Log.d('Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d(
+        'Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+      );
     } catch (e) {
       Log.e('Error loading notification stats: $e');
       // Fallback: calculate stats from current notifications
@@ -180,19 +196,20 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       // Update local state
       final updatedNotifications = state.notifications.map((notification) {
         if (notification.id == notificationId) {
-          return notification.copyWith(
-            isRead: true,
-            readAt: DateTime.now(),
-          );
+          return notification.copyWith(isRead: true, readAt: DateTime.now());
         }
         return notification;
       }).toList();
 
       // Calculate new stats from active notifications only
-      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final activeNotifications = updatedNotifications
+          .where((n) => !n.isHidden)
+          .toList();
       final unreadCount = activeNotifications.where((n) => !n.isRead).length;
       final totalCount = activeNotifications.length;
-      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+      final highPriorityCount = activeNotifications
+          .where((n) => n.isHighPriority)
+          .length;
 
       state = state.copyWith(
         notifications: updatedNotifications,
@@ -202,7 +219,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       );
 
       Log.d('Marked notification $notificationId as read');
-      Log.d('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d(
+        'Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+      );
     } catch (e) {
       Log.e('Error marking notification as read: $e');
     }
@@ -216,10 +235,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       // Update local state
       final updatedNotifications = state.notifications.map((notification) {
         if (notificationIds.contains(notification.id)) {
-          return notification.copyWith(
-            isRead: true,
-            readAt: DateTime.now(),
-          );
+          return notification.copyWith(isRead: true, readAt: DateTime.now());
         }
         return notification;
       }).toList();
@@ -244,16 +260,17 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
       // Update local state
       final updatedNotifications = state.notifications.map((notification) {
-        return notification.copyWith(
-          isRead: true,
-          readAt: DateTime.now(),
-        );
+        return notification.copyWith(isRead: true, readAt: DateTime.now());
       }).toList();
 
       // Calculate new stats from active notifications only
-      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final activeNotifications = updatedNotifications
+          .where((n) => !n.isHidden)
+          .toList();
       final totalCount = activeNotifications.length;
-      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+      final highPriorityCount = activeNotifications
+          .where((n) => n.isHighPriority)
+          .length;
 
       state = state.copyWith(
         notifications: updatedNotifications,
@@ -263,7 +280,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       );
 
       Log.d('Marked all notifications as read');
-      Log.d('Updated stats - Total: $totalCount, Unread: 0, High Priority: $highPriorityCount');
+      Log.d(
+        'Updated stats - Total: $totalCount, Unread: 0, High Priority: $highPriorityCount',
+      );
     } catch (e) {
       Log.e('Error marking all notifications as read: $e');
     }
@@ -286,10 +305,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       }).toList();
 
       // Calculate new stats from active notifications only
-      final activeNotifications = updatedNotifications.where((n) => !n.isHidden).toList();
+      final activeNotifications = updatedNotifications
+          .where((n) => !n.isHidden)
+          .toList();
       final unreadCount = activeNotifications.where((n) => !n.isRead).length;
       final totalCount = activeNotifications.length;
-      final highPriorityCount = activeNotifications.where((n) => n.isHighPriority).length;
+      final highPriorityCount = activeNotifications
+          .where((n) => n.isHighPriority)
+          .length;
 
       state = state.copyWith(
         notifications: updatedNotifications,
@@ -299,7 +322,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       );
 
       Log.d('Dismissed notification $notificationId');
-      Log.d('Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount');
+      Log.d(
+        'Updated stats - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
+      );
     } catch (e) {
       Log.e('Error dismissing notification: $e');
     }
@@ -312,8 +337,8 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
       // Update local state
       final updatedNotifications = state.notifications
-        .where((notification) => notification.id != notificationId)
-        .toList();
+          .where((notification) => notification.id != notificationId)
+          .toList();
 
       final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
 
@@ -363,8 +388,8 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   /// Remove notification from state (for real-time updates)
   void removeNotification(String notificationId) {
     final updatedNotifications = state.notifications
-      .where((n) => n.id != notificationId)
-      .toList();
+        .where((n) => n.id != notificationId)
+        .toList();
 
     final unreadCount = updatedNotifications.where((n) => !n.isRead).length;
 
@@ -386,7 +411,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   void startRealtimeSubscription() {
     try {
       _subscription?.cancel();
-      
+
       _subscription = _notificationService.getNotificationsStream().listen(
         (notifications) {
           final unreadCount = notifications.where((n) => !n.isRead).length;
@@ -538,16 +563,16 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> initialize() async {
     try {
       Log.d('Initializing notification provider...');
-      
+
       // Load initial notifications
       await loadNotifications();
-      
+
       // Set up real-time subscription
       startRealtimeSubscription();
-      
+
       // Load notification stats
       await loadStats();
-      
+
       Log.d('Notification provider initialized successfully');
     } catch (e) {
       Log.e('Error initializing notification provider: $e');
@@ -559,13 +584,13 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
   Future<void> hideJobNotifications(String jobId) async {
     try {
       Log.d('Hiding notifications for job: $jobId');
-      
+
       // Mark all notifications for this job as dismissed
       await _notificationService.dismissJobNotifications(jobId);
-      
+
       // Reload notifications to reflect changes
       await loadNotifications();
-      
+
       Log.d('Job notifications hidden successfully');
     } catch (e) {
       Log.e('Error hiding job notifications: $e');
@@ -575,10 +600,11 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 }
 
 // Providers
-final notificationProvider = StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
-  return NotificationNotifier();
-});
+final notificationProvider =
+    StateNotifierProvider<NotificationNotifier, NotificationState>((ref) {
+      return NotificationNotifier();
+    });
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
-}); 
+});

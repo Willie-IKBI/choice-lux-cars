@@ -4,11 +4,8 @@ class JobMonitoringCard extends StatelessWidget {
   final Map<String, dynamic> job;
   final VoidCallback? onTap;
 
-  const JobMonitoringCard({
-    Key? key,
-    required this.job,
-    this.onTap,
-  }) : super(key: key);
+  const JobMonitoringCard({Key? key, required this.job, this.onTap})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -66,9 +63,9 @@ class JobMonitoringCard extends StatelessWidget {
                   _buildStatusChip(activityRecency),
                 ],
               ),
-              
+
               const SizedBox(height: 16),
-              
+
               // Progress section
               Row(
                 children: [
@@ -120,9 +117,9 @@ class JobMonitoringCard extends StatelessWidget {
                   ),
                 ],
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Progress bar
               LinearProgressIndicator(
                 value: progressPercentage / 100,
@@ -132,39 +129,25 @@ class JobMonitoringCard extends StatelessWidget {
                 ),
                 minHeight: 6,
               ),
-              
+
               const SizedBox(height: 12),
-              
+
               // Activity info
               Row(
                 children: [
-                  Icon(
-                    Icons.access_time,
-                    size: 16,
-                    color: Colors.grey[600],
-                  ),
+                  Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
                   const SizedBox(width: 4),
                   Text(
                     'Last activity: ${_formatTimestamp(lastActivity)}',
-                    style: TextStyle(
-                      color: Colors.grey[600],
-                      fontSize: 12,
-                    ),
+                    style: TextStyle(color: Colors.grey[600], fontSize: 12),
                   ),
                   const Spacer(),
                   if (estimatedCompletion != null) ...[
-                    Icon(
-                      Icons.schedule,
-                      size: 16,
-                      color: Colors.grey[600],
-                    ),
+                    Icon(Icons.schedule, size: 16, color: Colors.grey[600]),
                     const SizedBox(width: 4),
                     Text(
                       'ETA: ${_formatEstimatedCompletion(estimatedCompletion)}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 12,
-                      ),
+                      style: TextStyle(color: Colors.grey[600], fontSize: 12),
                     ),
                   ],
                 ],
@@ -179,7 +162,7 @@ class JobMonitoringCard extends StatelessWidget {
   Widget _buildStatusChip(String recency) {
     Color chipColor;
     String chipText;
-    
+
     switch (recency) {
       case 'very_recent':
         chipColor = Colors.green;
@@ -271,7 +254,7 @@ class JobMonitoringCard extends StatelessWidget {
 
   String _formatTimestamp(String? timestamp) {
     if (timestamp == null) return 'Unknown';
-    
+
     try {
       final dateTime = DateTime.parse(timestamp);
       final now = DateTime.now();
@@ -293,7 +276,7 @@ class JobMonitoringCard extends StatelessWidget {
 
   String _formatEstimatedCompletion(String? estimatedCompletion) {
     if (estimatedCompletion == null) return 'N/A';
-    
+
     try {
       final dateTime = DateTime.parse(estimatedCompletion);
       final now = DateTime.now();

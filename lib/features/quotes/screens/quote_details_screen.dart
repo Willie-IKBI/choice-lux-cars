@@ -15,10 +15,7 @@ import 'package:url_launcher/url_launcher_string.dart';
 class QuoteDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
 
-  const QuoteDetailsScreen({
-    super.key,
-    required this.quoteId,
-  });
+  const QuoteDetailsScreen({super.key, required this.quoteId});
 
   @override
   ConsumerState<QuoteDetailsScreen> createState() => _QuoteDetailsScreenState();
@@ -72,7 +69,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   Future<void> _loadQuote() async {
     setState(() => _isLoading = true);
     try {
-      final quote = await ref.read(quotesProvider.notifier).getQuote(widget.quoteId);
+      final quote = await ref
+          .read(quotesProvider.notifier)
+          .getQuote(widget.quoteId);
       if (quote != null) {
         setState(() {
           _quote = quote;
@@ -97,7 +96,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   // Get transport details total
   double get _transportTotal {
     try {
-      final transportDetails = ref.read(quoteTransportDetailsProvider(widget.quoteId));
+      final transportDetails = ref.read(
+        quoteTransportDetailsProvider(widget.quoteId),
+      );
       final list = transportDetails.value ?? [];
       return list.fold(0.0, (sum, transport) => sum + transport.amount);
     } catch (e) {
@@ -107,7 +108,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
 
   void _initializeFormData() {
     if (_quote == null) return;
-    
+
     _passengerNameController.text = _quote!.passengerName ?? '';
     _passengerContactController.text = _quote!.passengerContact ?? '';
     _pasCountController.text = _quote!.pasCount.toString();
@@ -115,7 +116,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     _notesController.text = _quote!.notes ?? '';
     _quoteTitleController.text = _quote!.quoteTitle ?? '';
     _quoteDescriptionController.text = _quote!.quoteDescription ?? '';
-    
+
     _selectedClientId = _quote!.clientId;
     _selectedAgentId = _quote!.agentId;
     _selectedVehicleId = _quote!.vehicleId;
@@ -129,7 +130,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   bool get _canEdit {
     final currentUser = ref.read(currentUserProfileProvider);
     if (currentUser == null) return false;
-    
+
     final role = currentUser.role?.toLowerCase();
     return role == 'administrator' || role == 'manager';
   }
@@ -196,7 +197,8 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         title: 'Quote #${_quote!.id}',
         subtitle: _isEditMode ? 'Edit Quote' : 'Quote Details',
         showBackButton: true,
-        onBackPressed: () => _isEditMode ? _cancelEdit() : context.go('/quotes'),
+        onBackPressed: () =>
+            _isEditMode ? _cancelEdit() : context.go('/quotes'),
         actions: [
           if (_canEdit && !_isEditMode)
             IconButton(
@@ -224,23 +226,29 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         ),
         child: SafeArea(
           child: SingleChildScrollView(
-            padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 24),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 16
+                  : 24,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header with Status and Actions
                 _buildHeader(isMobile, isSmallMobile),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Main Content
                 if (_isEditMode)
                   _buildEditForm(isMobile, isSmallMobile)
                 else
                   _buildViewContent(isMobile, isSmallMobile),
-                
+
                 const SizedBox(height: 24),
-                
+
                 // Action Buttons
                 _buildActionButtons(isMobile, isSmallMobile),
               ],
@@ -253,13 +261,17 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
 
   Widget _buildHeader(bool isMobile, bool isSmallMobile) {
     return Container(
-      padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+      padding: EdgeInsets.all(
+        isSmallMobile
+            ? 16
+            : isMobile
+            ? 20
+            : 24,
+      ),
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: _getStatusColor().withOpacity(0.2),
-        ),
+        border: Border.all(color: _getStatusColor().withOpacity(0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,7 +285,11 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                     Text(
                       'Quote #${_quote!.id}',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        fontSize: isSmallMobile
+                            ? 18
+                            : isMobile
+                            ? 20
+                            : 24,
                         fontWeight: FontWeight.w700,
                         color: ChoiceLuxTheme.richGold,
                       ),
@@ -282,7 +298,11 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                     Text(
                       _quote!.quoteTitle ?? 'Untitled Quote',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                        fontSize: isSmallMobile
+                            ? 14
+                            : isMobile
+                            ? 16
+                            : 18,
                         color: ChoiceLuxTheme.softWhite,
                       ),
                     ),
@@ -291,20 +311,30 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
               ),
               Container(
                 padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 8 : isMobile ? 12 : 16,
-                  vertical: isSmallMobile ? 4 : isMobile ? 6 : 8,
+                  horizontal: isSmallMobile
+                      ? 8
+                      : isMobile
+                      ? 12
+                      : 16,
+                  vertical: isSmallMobile
+                      ? 4
+                      : isMobile
+                      ? 6
+                      : 8,
                 ),
                 decoration: BoxDecoration(
                   color: _getStatusColor().withOpacity(0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: _getStatusColor().withOpacity(0.3),
-                  ),
+                  border: Border.all(color: _getStatusColor().withOpacity(0.3)),
                 ),
                 child: Text(
                   _quote!.statusDisplayName,
                   style: TextStyle(
-                    fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
                     fontWeight: FontWeight.w600,
                     color: _getStatusColor(),
                   ),
@@ -317,42 +347,58 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             children: [
               Icon(
                 Icons.calendar_today,
-                size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+                size: isSmallMobile
+                    ? 16
+                    : isMobile
+                    ? 18
+                    : 20,
                 color: ChoiceLuxTheme.platinumSilver,
               ),
               const SizedBox(width: 8),
               Text(
                 'Created: ${_formatDate(_quote!.createdAt)}',
                 style: TextStyle(
-                  fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                  fontSize: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 14
+                      : 16,
                   color: ChoiceLuxTheme.platinumSilver,
                 ),
               ),
-                             const Spacer(),
-               Column(
-                 crossAxisAlignment: CrossAxisAlignment.end,
-                 children: [
-                   if (_quote!.quoteAmount != null) ...[
-                     Text(
-                       'R ${_quote!.quoteAmount!.toStringAsFixed(2)}',
-                       style: TextStyle(
-                         fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
-                         fontWeight: FontWeight.w700,
-                         color: ChoiceLuxTheme.richGold,
-                       ),
-                     ),
-                   ],
-                   if (_transportTotal > 0) ...[
-                     Text(
-                       'Transport: R ${_transportTotal.toStringAsFixed(2)}',
-                       style: TextStyle(
-                         fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
-                         color: ChoiceLuxTheme.platinumSilver,
-                       ),
-                     ),
-                   ],
-                 ],
-               ),
+              const Spacer(),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (_quote!.quoteAmount != null) ...[
+                    Text(
+                      'R ${_quote!.quoteAmount!.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: isSmallMobile
+                            ? 16
+                            : isMobile
+                            ? 18
+                            : 20,
+                        fontWeight: FontWeight.w700,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                    ),
+                  ],
+                  if (_transportTotal > 0) ...[
+                    Text(
+                      'Transport: R ${_transportTotal.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: isSmallMobile
+                            ? 10
+                            : isMobile
+                            ? 11
+                            : 12,
+                        color: ChoiceLuxTheme.platinumSilver,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
             ],
           ),
         ],
@@ -369,14 +415,17 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
           icon: Icons.person,
           children: [
             _buildInfoRow('Name', _quote!.passengerName ?? 'Not specified'),
-            _buildInfoRow('Contact', _quote!.passengerContact ?? 'Not specified'),
+            _buildInfoRow(
+              'Contact',
+              _quote!.passengerContact ?? 'Not specified',
+            ),
             _buildInfoRow('Passengers', '${_quote!.pasCount.toInt()}'),
             _buildInfoRow('Luggage', _quote!.luggage),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Trip Information
         _buildInfoSection(
           title: 'Trip Information',
@@ -384,31 +433,35 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
           children: [
             _buildInfoRow('Job Date', _formatDate(_quote!.jobDate)),
             _buildInfoRow('Location', _quote!.location ?? 'Not specified'),
-            _buildInfoRow('Vehicle Type', _quote!.vehicleType ?? 'Not specified'),
+            _buildInfoRow(
+              'Vehicle Type',
+              _quote!.vehicleType ?? 'Not specified',
+            ),
           ],
         ),
-        
+
         const SizedBox(height: 16),
-        
+
         // Quote Details
         _buildInfoSection(
           title: 'Quote Details',
           icon: Icons.description,
           children: [
             _buildInfoRow('Title', _quote!.quoteTitle ?? 'Not specified'),
-            _buildInfoRow('Description', _quote!.quoteDescription ?? 'Not specified'),
+            _buildInfoRow(
+              'Description',
+              _quote!.quoteDescription ?? 'Not specified',
+            ),
             _buildInfoRow('Status', _quote!.statusDisplayName),
           ],
         ),
-        
+
         if (_quote!.notes?.isNotEmpty == true) ...[
           const SizedBox(height: 16),
           _buildInfoSection(
             title: 'Additional Notes',
             icon: Icons.note,
-            children: [
-              _buildInfoRow('Notes', _quote!.notes!),
-            ],
+            children: [_buildInfoRow('Notes', _quote!.notes!)],
           ),
         ],
       ],
@@ -452,9 +505,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Quote Details
           _buildEditSection(
             title: 'Quote Details',
@@ -505,11 +558,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: ChoiceLuxTheme.richGold,
-                size: 20,
-              ),
+              Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -547,11 +596,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         children: [
           Row(
             children: [
-              Icon(
-                icon,
-                color: ChoiceLuxTheme.richGold,
-                size: 20,
-              ),
+              Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
               const SizedBox(width: 8),
               Text(
                 title,
@@ -644,11 +689,15 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.picture_as_pdf),
-                  label: Text(_isGeneratingPdf ? 'Generating...' : 'Generate PDF'),
+                  label: Text(
+                    _isGeneratingPdf ? 'Generating...' : 'Generate PDF',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChoiceLuxTheme.richGold,
                     foregroundColor: Colors.black,
@@ -668,11 +717,15 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                           height: 16,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              Colors.white,
+                            ),
                           ),
                         )
                       : const Icon(Icons.refresh),
-                  label: Text(_isGeneratingPdf ? 'Regenerating...' : 'Regenerate PDF'),
+                  label: Text(
+                    _isGeneratingPdf ? 'Regenerating...' : 'Regenerate PDF',
+                  ),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: ChoiceLuxTheme.warningColor,
                     foregroundColor: Colors.white,
@@ -684,7 +737,8 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             const SizedBox(width: 12),
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => context.go('/quotes/${widget.quoteId}/transport-details'),
+                onPressed: () =>
+                    context.go('/quotes/${widget.quoteId}/transport-details'),
                 icon: const Icon(Icons.route),
                 label: const Text('Transport Details'),
                 style: ElevatedButton.styleFrom(
@@ -696,9 +750,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             ),
           ],
         ),
-        
+
         const SizedBox(height: 12),
-        
+
         // Share Quote Button (if PDF exists)
         if (_quote?.quotePdf != null && _quote!.quotePdf!.isNotEmpty)
           SizedBox(
@@ -714,7 +768,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
               ),
             ),
           ),
-        
+
         // View PDF Button (if PDF exists)
         if (_quote?.quotePdf != null && _quote!.quotePdf!.isNotEmpty) ...[
           const SizedBox(height: 12),
@@ -732,9 +786,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             ),
           ),
         ],
-        
+
         const SizedBox(height: 12),
-        
+
         // Status Management (if can edit)
         if (_canEdit && !_isEditMode)
           Container(
@@ -759,27 +813,42 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                   ),
                 ),
                 const SizedBox(height: 12),
-                                 DropdownButtonFormField<String>(
-                   value: _getValidDropdownValue(_quote!.quoteStatus),
-                   decoration: const InputDecoration(
-                     labelText: 'Quote Status',
-                     border: OutlineInputBorder(),
-                   ),
-                   items: [
-                     const DropdownMenuItem(value: 'draft', child: Text('Draft')),
-                     const DropdownMenuItem(value: 'open', child: Text('Open')),
-                     const DropdownMenuItem(value: 'sent', child: Text('Sent')),
-                     const DropdownMenuItem(value: 'accepted', child: Text('Accepted')),
-                     const DropdownMenuItem(value: 'rejected', child: Text('Rejected')),
-                     const DropdownMenuItem(value: 'expired', child: Text('Expired')),
-                     const DropdownMenuItem(value: 'closed', child: Text('Closed')),
-                   ],
-                   onChanged: (value) {
-                     if (value != null) {
-                       _updateQuoteStatus(value);
-                     }
-                   },
-                 ),
+                DropdownButtonFormField<String>(
+                  value: _getValidDropdownValue(_quote!.quoteStatus),
+                  decoration: const InputDecoration(
+                    labelText: 'Quote Status',
+                    border: OutlineInputBorder(),
+                  ),
+                  items: [
+                    const DropdownMenuItem(
+                      value: 'draft',
+                      child: Text('Draft'),
+                    ),
+                    const DropdownMenuItem(value: 'open', child: Text('Open')),
+                    const DropdownMenuItem(value: 'sent', child: Text('Sent')),
+                    const DropdownMenuItem(
+                      value: 'accepted',
+                      child: Text('Accepted'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'rejected',
+                      child: Text('Rejected'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'expired',
+                      child: Text('Expired'),
+                    ),
+                    const DropdownMenuItem(
+                      value: 'closed',
+                      child: Text('Closed'),
+                    ),
+                  ],
+                  onChanged: (value) {
+                    if (value != null) {
+                      _updateQuoteStatus(value);
+                    }
+                  },
+                ),
               ],
             ),
           ),
@@ -804,28 +873,28 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     setState(() => _isLoading = true);
     try {
       final updatedQuote = _quote!.copyWith(
-        passengerName: _passengerNameController.text.trim().isEmpty 
-            ? null 
+        passengerName: _passengerNameController.text.trim().isEmpty
+            ? null
             : _passengerNameController.text.trim(),
-        passengerContact: _passengerContactController.text.trim().isEmpty 
-            ? null 
+        passengerContact: _passengerContactController.text.trim().isEmpty
+            ? null
             : _passengerContactController.text.trim(),
         pasCount: double.parse(_pasCountController.text),
         luggage: _luggageController.text.trim(),
-        notes: _notesController.text.trim().isEmpty 
-            ? null 
+        notes: _notesController.text.trim().isEmpty
+            ? null
             : _notesController.text.trim(),
-        quoteTitle: _quoteTitleController.text.trim().isEmpty 
-            ? null 
+        quoteTitle: _quoteTitleController.text.trim().isEmpty
+            ? null
             : _quoteTitleController.text.trim(),
-        quoteDescription: _quoteDescriptionController.text.trim().isEmpty 
-            ? null 
+        quoteDescription: _quoteDescriptionController.text.trim().isEmpty
+            ? null
             : _quoteDescriptionController.text.trim(),
         updatedAt: DateTime.now(),
       );
 
       await ref.read(quotesProvider.notifier).updateQuote(updatedQuote);
-      
+
       setState(() {
         _quote = updatedQuote;
         _isEditMode = false;
@@ -861,7 +930,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
       );
 
       await ref.read(quotesProvider.notifier).updateQuote(updatedQuote);
-      
+
       setState(() => _quote = updatedQuote);
 
       if (mounted) {
@@ -888,71 +957,78 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     setState(() => _isGeneratingPdf = true);
     try {
       if (_quote == null) throw Exception('Quote not found');
-      
+
       // Fetch related data for PDF
-      final transportDetails = await ref.read(quotesProvider.notifier).getQuoteTransportDetails(widget.quoteId);
-      
-             // Fetch client, agent, vehicle, and driver data
-       final clientData = await SupabaseService.instance.getClient(_quote!.clientId);
-       final agentData = _quote!.agentId != null 
-           ? await SupabaseService.instance.getAgent(_quote!.agentId!)
-           : null;
-       final vehicleData = _quote!.vehicleId != null 
-           ? await SupabaseService.instance.getVehicle(_quote!.vehicleId!)
-           : null;
-       final driverData = _quote!.driverId != null 
-           ? await SupabaseService.instance.getUser(_quote!.driverId!)
-           : null;
-      
+      final transportDetails = await ref
+          .read(quotesProvider.notifier)
+          .getQuoteTransportDetails(widget.quoteId);
+
+      // Fetch client, agent, vehicle, and driver data
+      final clientData = await SupabaseService.instance.getClient(
+        _quote!.clientId,
+      );
+      final agentData = _quote!.agentId != null
+          ? await SupabaseService.instance.getAgent(_quote!.agentId!)
+          : null;
+      final vehicleData = _quote!.vehicleId != null
+          ? await SupabaseService.instance.getVehicle(_quote!.vehicleId!)
+          : null;
+      final driverData = _quote!.driverId != null
+          ? await SupabaseService.instance.getUser(_quote!.driverId!)
+          : null;
+
       // Generate PDF
       final pdfService = QuotePdfService();
-             final pdfBytes = await pdfService.buildQuotePdf(
-         quote: _quote!,
-         transportDetails: transportDetails,
-         clientData: clientData ?? {},
-         agentData: agentData,
-         vehicleData: vehicleData,
-         driverData: driverData,
-       );
-      
-             // Upload to Supabase Storage
-       final path = 'quotes/quote_${_quote!.id}.pdf';
-       final supabase = Supabase.instance.client;
-       
-       try {
-         await supabase.storage
-             .from('pdfdocuments')
-             .remove([path]); // Force delete existing
-       } catch (e) {
-         // File might not exist, continue
-       }
-       
-       final uploadedPath = await supabase.storage
-           .from('pdfdocuments')
-           .uploadBinary(
-             path,
-             pdfBytes,
-             fileOptions: const FileOptions(contentType: 'application/pdf', upsert: true),
-           );
+      final pdfBytes = await pdfService.buildQuotePdf(
+        quote: _quote!,
+        transportDetails: transportDetails,
+        clientData: clientData ?? {},
+        agentData: agentData,
+        vehicleData: vehicleData,
+        driverData: driverData,
+      );
+
+      // Upload to Supabase Storage
+      final path = 'quotes/quote_${_quote!.id}.pdf';
+      final supabase = Supabase.instance.client;
+
+      try {
+        await supabase.storage.from('pdfdocuments').remove([
+          path,
+        ]); // Force delete existing
+      } catch (e) {
+        // File might not exist, continue
+      }
+
+      final uploadedPath = await supabase.storage
+          .from('pdfdocuments')
+          .uploadBinary(
+            path,
+            pdfBytes,
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: true,
+            ),
+          );
 
       if (uploadedPath == null || uploadedPath.isEmpty) {
         throw Exception('Failed to upload PDF');
       }
 
-             // Get public URL
-       final publicUrl = supabase.storage
-           .from('pdfdocuments')
-           .getPublicUrl(path);
+      // Get public URL
+      final publicUrl = supabase.storage
+          .from('pdfdocuments')
+          .getPublicUrl(path);
 
       // Update quote with PDF URL
       final updatedQuote = _quote!.copyWith(
         quotePdf: publicUrl,
         updatedAt: DateTime.now(),
       );
-      
+
       await ref.read(quotesProvider.notifier).updateQuote(updatedQuote);
       setState(() => _quote = updatedQuote);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -984,22 +1060,26 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     setState(() => _isGeneratingPdf = true);
     try {
       if (_quote == null) throw Exception('Quote not found');
-      
+
       // Fetch related data for PDF
-      final transportDetails = await ref.read(quotesProvider.notifier).getQuoteTransportDetails(widget.quoteId);
-      
+      final transportDetails = await ref
+          .read(quotesProvider.notifier)
+          .getQuoteTransportDetails(widget.quoteId);
+
       // Fetch client, agent, vehicle, and driver data
-      final clientData = await SupabaseService.instance.getClient(_quote!.clientId);
-      final agentData = _quote!.agentId != null 
+      final clientData = await SupabaseService.instance.getClient(
+        _quote!.clientId,
+      );
+      final agentData = _quote!.agentId != null
           ? await SupabaseService.instance.getAgent(_quote!.agentId!)
           : null;
-      final vehicleData = _quote!.vehicleId != null 
+      final vehicleData = _quote!.vehicleId != null
           ? await SupabaseService.instance.getVehicle(_quote!.vehicleId!)
           : null;
-      final driverData = _quote!.driverId != null 
+      final driverData = _quote!.driverId != null
           ? await SupabaseService.instance.getUser(_quote!.driverId!)
           : null;
-      
+
       // Generate PDF
       final pdfService = QuotePdfService();
       final pdfBytes = await pdfService.buildQuotePdf(
@@ -1010,26 +1090,27 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         vehicleData: vehicleData,
         driverData: driverData,
       );
-      
+
       // Upload to Supabase Storage (force overwrite)
       final path = 'quotes/quote_${_quote!.id}.pdf';
       final supabase = Supabase.instance.client;
-      
+
       // Always remove existing file for regeneration
       try {
-        await supabase.storage
-            .from('pdfdocuments')
-            .remove([path]);
+        await supabase.storage.from('pdfdocuments').remove([path]);
       } catch (e) {
         // File might not exist, continue
       }
-      
+
       final uploadedPath = await supabase.storage
           .from('pdfdocuments')
           .uploadBinary(
             path,
             pdfBytes,
-            fileOptions: const FileOptions(contentType: 'application/pdf', upsert: true),
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: true,
+            ),
           );
 
       if (uploadedPath == null || uploadedPath.isEmpty) {
@@ -1046,10 +1127,10 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         quotePdf: publicUrl,
         updatedAt: DateTime.now(),
       );
-      
+
       await ref.read(quotesProvider.notifier).updateQuote(updatedQuote);
       setState(() => _quote = updatedQuote);
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -1081,7 +1162,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     if (_quote?.quotePdf == null || _quote!.quotePdf!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('No PDF available to share. Please generate a PDF first.'),
+          content: Text(
+            'No PDF available to share. Please generate a PDF first.',
+          ),
           backgroundColor: ChoiceLuxTheme.warningColor,
         ),
       );
@@ -1090,7 +1173,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
 
     try {
       final url = _quote!.quotePdf!;
-      
+
       // Show share options dialog
       showDialog(
         context: context,
@@ -1108,7 +1191,10 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.email, color: ChoiceLuxTheme.richGold),
+                leading: const Icon(
+                  Icons.email,
+                  color: ChoiceLuxTheme.richGold,
+                ),
                 title: const Text('Share via Email'),
                 onTap: () {
                   Navigator.pop(context);
@@ -1162,8 +1248,10 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
 
   Future<void> _shareViaEmail(String url) async {
     try {
-      final subject = 'Quote #${_quote!.id} - ${_quote!.quoteTitle ?? 'Untitled Quote'}';
-      final body = '''
+      final subject =
+          'Quote #${_quote!.id} - ${_quote!.quoteTitle ?? 'Untitled Quote'}';
+      final body =
+          '''
 Hello,
 
 Please find the quote attached: ${_quote!.quoteTitle ?? 'Untitled Quote'}
@@ -1180,7 +1268,8 @@ Best regards,
 Choice Lux Cars
 ''';
 
-      final emailUrl = 'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
+      final emailUrl =
+          'mailto:?subject=${Uri.encodeComponent(subject)}&body=${Uri.encodeComponent(body)}';
       await launchUrlString(emailUrl);
     } catch (e) {
       if (mounted) {
@@ -1236,13 +1325,21 @@ Choice Lux Cars
   }
 
   String _getValidDropdownValue(String status) {
-    final validStatuses = ['draft', 'open', 'sent', 'accepted', 'rejected', 'expired', 'closed'];
+    final validStatuses = [
+      'draft',
+      'open',
+      'sent',
+      'accepted',
+      'rejected',
+      'expired',
+      'closed',
+    ];
     final normalizedStatus = status.toLowerCase().trim();
-    
+
     if (validStatuses.contains(normalizedStatus)) {
       return normalizedStatus;
     }
-    
+
     // Default to draft if status is not recognized
     return 'draft';
   }

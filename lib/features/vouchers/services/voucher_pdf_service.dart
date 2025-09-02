@@ -21,7 +21,9 @@ class VoucherPdfService {
         if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
           logoImage = pw.MemoryImage(response.bodyBytes);
         }
-      } catch (_) {/* ignore */ }
+      } catch (_) {
+        /* ignore */
+      }
     }
 
     final dateFormat = DateFormat('dd/MM/yyyy');
@@ -37,9 +39,17 @@ class VoucherPdfService {
       pw.MultiPage(
         pageTheme: pageTheme,
         header: (context) => context.pageNumber == 1
-            ? PdfTheme.buildHeroHeader(logo: logoImage, companyName: data.companyName) // page 1
-            : PdfTheme.buildCompactHeader(logo: logoImage, documentNumber: 'VN#${data.jobId}'), // page 2+
-        footer: (context) => PdfTheme.buildFooter('www.choiceluxcars.com | bookings@choiceluxcars.com'),
+            ? PdfTheme.buildHeroHeader(
+                logo: logoImage,
+                companyName: data.companyName,
+              ) // page 1
+            : PdfTheme.buildCompactHeader(
+                logo: logoImage,
+                documentNumber: 'VN#${data.jobId}',
+              ), // page 2+
+        footer: (context) => PdfTheme.buildFooter(
+          'www.choiceluxcars.com | bookings@choiceluxcars.com',
+        ),
         build: (context) => [
           _sectionVoucherSummary(data, dateFormat),
           pw.SizedBox(height: PdfTheme.spacing20),
@@ -50,7 +60,8 @@ class VoucherPdfService {
           _sectionDriverVehicle(data),
           pw.SizedBox(height: PdfTheme.spacing20),
 
-          if (data.hasTransportDetails) _sectionTransportDetails(data, dateFormat, timeFormat),
+          if (data.hasTransportDetails)
+            _sectionTransportDetails(data, dateFormat, timeFormat),
           if (data.hasTransportDetails) pw.SizedBox(height: PdfTheme.spacing20),
 
           if (data.hasNotes) _sectionNotes(data),
@@ -85,10 +96,7 @@ class VoucherPdfService {
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                 children: [
-                  pw.Text(
-                    'Confirmation Voucher',
-                    style: PdfTheme.titleSmall,
-                  ),
+                  pw.Text('Confirmation Voucher', style: PdfTheme.titleSmall),
                   pw.SizedBox(height: 6),
                   pw.Text(
                     'This voucher confirms your booking and related services.',
@@ -177,14 +185,21 @@ class VoucherPdfService {
     );
   }
 
-  pw.Widget _sectionTransportDetails(VoucherData data, DateFormat dateFormat, DateFormat timeFormat) {
+  pw.Widget _sectionTransportDetails(
+    VoucherData data,
+    DateFormat dateFormat,
+    DateFormat timeFormat,
+  ) {
     final table = pw.TableHelper.fromTextArray(
       border: pw.TableBorder.all(color: PdfTheme.grey300, width: 0.5),
       headerStyle: PdfTheme.labelText.copyWith(color: PdfColors.white),
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey700),
       cellStyle: PdfTheme.bodyText.copyWith(fontSize: 10),
       cellAlignment: pw.Alignment.centerLeft,
-      cellPadding: pw.EdgeInsets.symmetric(horizontal: PdfTheme.spacing12, vertical: PdfTheme.spacing8),
+      cellPadding: pw.EdgeInsets.symmetric(
+        horizontal: PdfTheme.spacing12,
+        vertical: PdfTheme.spacing8,
+      ),
       headers: ['Date', 'Time', 'Pick-Up Location', 'Drop-Off Location'],
       data: data.transport.map((item) {
         return [
@@ -204,10 +219,7 @@ class VoucherPdfService {
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('TRANSPORT DETAILS'),
-        table,
-      ],
+      children: [_sectionHeader('TRANSPORT DETAILS'), table],
     );
   }
 
@@ -223,7 +235,10 @@ class VoucherPdfService {
               margin: const pw.EdgeInsets.only(top: 4, right: 8),
               width: 4,
               height: 4,
-              decoration: pw.BoxDecoration(color: PdfTheme.grey600, shape: pw.BoxShape.circle),
+              decoration: pw.BoxDecoration(
+                color: PdfTheme.grey600,
+                shape: pw.BoxShape.circle,
+              ),
             ),
             pw.Expanded(
               child: pw.Text(
@@ -245,10 +260,22 @@ class VoucherPdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _numberedTerm(1, 'This voucher confirms your booking and related services.'),
-            _numberedTerm(2, 'Any changes must be made at least 24 hours in advance.'),
-            _numberedTerm(3, 'Errors in details are the responsibility of the client.'),
-            _numberedTerm(4, 'This document is subject to the operator\'s standard conditions.'),
+            _numberedTerm(
+              1,
+              'This voucher confirms your booking and related services.',
+            ),
+            _numberedTerm(
+              2,
+              'Any changes must be made at least 24 hours in advance.',
+            ),
+            _numberedTerm(
+              3,
+              'Errors in details are the responsibility of the client.',
+            ),
+            _numberedTerm(
+              4,
+              'This document is subject to the operator\'s standard conditions.',
+            ),
           ],
         ),
       ],
@@ -258,26 +285,26 @@ class VoucherPdfService {
   // ---- SMALL HELPERS --------------------------------------------------------
 
   pw.BoxDecoration _innerBox() => pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(6),
-        border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-      );
+    color: PdfColors.white,
+    borderRadius: pw.BorderRadius.circular(6),
+    border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
+  );
 
-  pw.Widget _subTitle(String text) => pw.Text(
-        text,
-        style: PdfTheme.titleSmall,
-      );
+  pw.Widget _subTitle(String text) => pw.Text(text, style: PdfTheme.titleSmall);
 
   pw.Widget _kv(String k, String v) => pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 4),
-        child: pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            pw.Text('$k: ', style: PdfTheme.labelText.copyWith(color: PdfTheme.grey600)),
-            pw.Text(v, style: PdfTheme.bodyText.copyWith(color: PdfTheme.grey800)),
-          ],
+    padding: const pw.EdgeInsets.only(bottom: 4),
+    child: pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text(
+          '$k: ',
+          style: PdfTheme.labelText.copyWith(color: PdfTheme.grey600),
         ),
-      );
+        pw.Text(v, style: PdfTheme.bodyText.copyWith(color: PdfTheme.grey800)),
+      ],
+    ),
+  );
 
   pw.Widget _infoRow(String label, String value) {
     return PdfTheme.buildInfoRow(label, value);
@@ -300,7 +327,10 @@ class VoucherPdfService {
             child: pw.Center(
               child: pw.Text(
                 '$n',
-                style: PdfTheme.captionText.copyWith(font: PdfTheme.fontBold, color: PdfColors.white),
+                style: PdfTheme.captionText.copyWith(
+                  font: PdfTheme.fontBold,
+                  color: PdfColors.white,
+                ),
               ),
             ),
           ),

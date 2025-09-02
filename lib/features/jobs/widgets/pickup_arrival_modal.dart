@@ -7,7 +7,8 @@ class PickupArrivalModal extends StatefulWidget {
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
-  }) onConfirm;
+  })
+  onConfirm;
   final VoidCallback onCancel;
 
   const PickupArrivalModal({
@@ -118,9 +119,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 500,
-        ),
+        constraints: BoxConstraints(maxWidth: 500),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           decoration: BoxDecoration(
@@ -213,7 +212,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                     // GPS Status Section
                     _buildGpsStatusSection(),
                     const SizedBox(height: 24),
-                    
+
                     // Confirmation Message
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -328,7 +327,9 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 )
               else if (_currentPosition != null)
@@ -352,14 +353,14 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                       _isCapturingLocation
                           ? 'Capturing location...'
                           : _currentPosition != null
-                              ? 'Location captured successfully'
-                              : 'Location capture failed',
+                          ? 'Location captured successfully'
+                          : 'Location capture failed',
                       style: TextStyle(
                         color: _isCapturingLocation
                             ? ChoiceLuxTheme.platinumSilver
                             : _currentPosition != null
-                                ? ChoiceLuxTheme.successColor
-                                : ChoiceLuxTheme.errorColor,
+                            ? ChoiceLuxTheme.successColor
+                            : ChoiceLuxTheme.errorColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

@@ -27,7 +27,8 @@ class JobsScreen extends ConsumerStatefulWidget {
   ConsumerState<JobsScreen> createState() => _JobsScreenState();
 }
 
-class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObserver {
+class _JobsScreenState extends ConsumerState<JobsScreen>
+    with WidgetsBindingObserver {
   String _currentFilter = 'open'; // open, closed, in_progress, all
   String _searchQuery = '';
   int _currentPage = 1;
@@ -62,58 +63,63 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
     final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
     final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
-    
+
     final jobs = ref.watch(jobsProvider);
     final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
-    
+
     // Load related data
     final vehiclesState = ref.watch(vehiclesProvider);
     final users = ref.watch(usersProvider);
     final clientsAsync = ref.watch(clientsProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
-    
+
     // Debug information
     Log.d('=== JOBS SCREEN DEBUG ===');
     Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
     Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
     if ((jobs.value ?? []).isNotEmpty) {
-      Log.d('Sample job: ${(jobs.value ?? []).first.id} - ${(jobs.value ?? []).first.status} - ${(jobs.value ?? []).first.passengerName}');
+      Log.d(
+        'Sample job: ${(jobs.value ?? []).first.id} - ${(jobs.value ?? []).first.status} - ${(jobs.value ?? []).first.passengerName}',
+      );
     }
-    
+
     // Check if user can create vouchers based on role
     final userRole = userProfile?.role?.toLowerCase();
-    final canCreateVoucher = userRole == 'administrator' || 
-                            userRole == 'admin' ||
-                            userRole == 'manager' ||
-                            userRole == 'driver_manager' ||
-                            userRole == 'drivermanager';
-    
+    final canCreateVoucher =
+        userRole == 'administrator' ||
+        userRole == 'admin' ||
+        userRole == 'manager' ||
+        userRole == 'driver_manager' ||
+        userRole == 'drivermanager';
+
     // Check if user can create invoices (same permissions as vouchers for now)
     final canCreateInvoice = canCreateVoucher;
 
     // Apply filters
     List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
     Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
-    
-            // Apply search filter
-        if (_searchQuery.isNotEmpty) {
-          filteredJobs = filteredJobs.where((job) {
-            final passengerName = job.passengerName?.toLowerCase() ?? '';
-            final clientName = job.clientId.toString().toLowerCase(); // Convert int to string
-            final searchLower = _searchQuery.toLowerCase();
-            return passengerName.contains(searchLower) || 
-                   clientName.contains(searchLower) ||
-                   job.id.toString().toLowerCase().contains(searchLower);
-          }).toList();
-        }
+
+    // Apply search filter
+    if (_searchQuery.isNotEmpty) {
+      filteredJobs = filteredJobs.where((job) {
+        final passengerName = job.passengerName?.toLowerCase() ?? '';
+        final clientName = job.clientId
+            .toString()
+            .toLowerCase(); // Convert int to string
+        final searchLower = _searchQuery.toLowerCase();
+        return passengerName.contains(searchLower) ||
+            clientName.contains(searchLower) ||
+            job.id.toString().toLowerCase().contains(searchLower);
+      }).toList();
+    }
 
     // Pagination
     final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
     final startIndex = (_currentPage - 1) * _itemsPerPage;
     final endIndex = startIndex + _itemsPerPage;
     final paginatedJobs = filteredJobs.sublist(
-      startIndex, 
-      endIndex > filteredJobs.length ? filteredJobs.length : endIndex
+      startIndex,
+      endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
     );
 
     return Scaffold(
@@ -138,8 +144,16 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                 backgroundColor: ChoiceLuxTheme.richGold,
                 foregroundColor: Colors.black,
                 padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 12 : isMobile ? 16 : 20,
-                  vertical: isSmallMobile ? 6 : isMobile ? 8 : 10,
+                  horizontal: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 16
+                      : 20,
+                  vertical: isSmallMobile
+                      ? 6
+                      : isMobile
+                      ? 8
+                      : 10,
                 ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),
@@ -154,22 +168,33 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
           children: [
             // Enhanced Filter Section with better mobile layout
             _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
-            
+
             // Enhanced Search Section
             _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop),
-            
+
             // Results count with better mobile optimization
-            _buildResultsCount(filteredJobs.length, isSmallMobile, isMobile, isTablet, isDesktop),
-            
+            _buildResultsCount(
+              filteredJobs.length,
+              isSmallMobile,
+              isMobile,
+              isTablet,
+              isDesktop,
+            ),
+
             // Enhanced Jobs list with better responsive behavior
             Expanded(
               child: paginatedJobs.isEmpty
-                  ? _buildEmptyState(isSmallMobile, isMobile, isTablet, isDesktop)
+                  ? _buildEmptyState(
+                      isSmallMobile,
+                      isMobile,
+                      isTablet,
+                      isDesktop,
+                    )
                   : clientsAsync.when(
                       data: (clients) => _buildJobsList(
-                        paginatedJobs, 
-                        clients, 
-                        (vehiclesState.value ?? []), 
+                        paginatedJobs,
+                        clients,
+                        (vehiclesState.value ?? []),
                         (users.value ?? []),
                         isSmallMobile,
                         isMobile,
@@ -178,14 +203,32 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                         canCreateVoucher,
                         canCreateInvoice,
                       ),
-                      loading: () => _buildLoadingState(isSmallMobile, isMobile, isTablet, isDesktop),
-                      error: (error, stack) => _buildErrorState(error, isSmallMobile, isMobile, isTablet, isDesktop),
+                      loading: () => _buildLoadingState(
+                        isSmallMobile,
+                        isMobile,
+                        isTablet,
+                        isDesktop,
+                      ),
+                      error: (error, stack) => _buildErrorState(
+                        error,
+                        isSmallMobile,
+                        isMobile,
+                        isTablet,
+                        isDesktop,
+                      ),
                     ),
             ),
 
             // Enhanced Pagination with better mobile layout
             if (totalPages > 1)
-              _buildPaginationSection(totalPages, filteredJobs.length, isSmallMobile, isMobile, isTablet, isDesktop),
+              _buildPaginationSection(
+                totalPages,
+                filteredJobs.length,
+                isSmallMobile,
+                isMobile,
+                isTablet,
+                isDesktop,
+              ),
           ],
         ),
       ),
@@ -193,26 +236,78 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Filter Section
-  Widget _buildFilterSection(bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
-    
+  Widget _buildFilterSection(
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: padding,
-        vertical: spacing,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
       child: SingleChildScrollView(
         scrollDirection: Axis.horizontal,
         child: Row(
           children: [
-            _buildFilterButton('Open Jobs', 'open', isSmallMobile, isMobile, isTablet, isDesktop),
-            SizedBox(width: isSmallMobile ? 6 : isMobile ? 8 : 12),
-            _buildFilterButton('In Progress', 'in_progress', isSmallMobile, isMobile, isTablet, isDesktop),
-            SizedBox(width: isSmallMobile ? 6 : isMobile ? 8 : 12),
-            _buildFilterButton('Completed', 'completed', isSmallMobile, isMobile, isTablet, isDesktop),
-            SizedBox(width: isSmallMobile ? 6 : isMobile ? 8 : 12),
-            _buildFilterButton('All Jobs', 'all', isSmallMobile, isMobile, isTablet, isDesktop),
+            _buildFilterButton(
+              'Open Jobs',
+              'open',
+              isSmallMobile,
+              isMobile,
+              isTablet,
+              isDesktop,
+            ),
+            SizedBox(
+              width: isSmallMobile
+                  ? 6
+                  : isMobile
+                  ? 8
+                  : 12,
+            ),
+            _buildFilterButton(
+              'In Progress',
+              'in_progress',
+              isSmallMobile,
+              isMobile,
+              isTablet,
+              isDesktop,
+            ),
+            SizedBox(
+              width: isSmallMobile
+                  ? 6
+                  : isMobile
+                  ? 8
+                  : 12,
+            ),
+            _buildFilterButton(
+              'Completed',
+              'completed',
+              isSmallMobile,
+              isMobile,
+              isTablet,
+              isDesktop,
+            ),
+            SizedBox(
+              width: isSmallMobile
+                  ? 6
+                  : isMobile
+                  ? 8
+                  : 12,
+            ),
+            _buildFilterButton(
+              'All Jobs',
+              'all',
+              isSmallMobile,
+              isMobile,
+              isTablet,
+              isDesktop,
+            ),
           ],
         ),
       ),
@@ -220,25 +315,33 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Search Section
-  Widget _buildSearchSection(bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
-    final cornerRadius = ResponsiveTokens.getCornerRadius(MediaQuery.of(context).size.width);
-    
+  Widget _buildSearchSection(
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+    final cornerRadius = ResponsiveTokens.getCornerRadius(
+      MediaQuery.of(context).size.width,
+    );
+
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: padding,
-        vertical: spacing,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
       child: Row(
         children: [
           Expanded(
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: isSmallMobile 
-                  ? 'Search jobs...' 
-                  : 'Search jobs by passenger name, client, or job ID...',
+                hintText: isSmallMobile
+                    ? 'Search jobs...'
+                    : 'Search jobs by passenger name, client, or job ID...',
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(cornerRadius),
@@ -246,18 +349,40 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
                 filled: true,
                 fillColor: Colors.grey.withValues(alpha: 0.1),
                 contentPadding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 12 : isMobile ? 16 : 20,
-                  vertical: isSmallMobile ? 8 : isMobile ? 12 : 16,
+                  horizontal: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 16
+                      : 20,
+                  vertical: isSmallMobile
+                      ? 8
+                      : isMobile
+                      ? 12
+                      : 16,
                 ),
               ),
             ),
           ),
           if (_searchQuery.isNotEmpty) ...[
-            SizedBox(width: isSmallMobile ? 6 : isMobile ? 8 : 12),
+            SizedBox(
+              width: isSmallMobile
+                  ? 6
+                  : isMobile
+                  ? 8
+                  : 12,
+            ),
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: isSmallMobile ? 6 : isMobile ? 8 : 12,
-                vertical: isSmallMobile ? 4 : isMobile ? 6 : 8,
+                horizontal: isSmallMobile
+                    ? 6
+                    : isMobile
+                    ? 8
+                    : 12,
+                vertical: isSmallMobile
+                    ? 4
+                    : isMobile
+                    ? 6
+                    : 8,
               ),
               decoration: BoxDecoration(
                 color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
@@ -266,7 +391,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
               child: Text(
                 'Filtered: $_currentFilter',
                 style: TextStyle(
-                  fontSize: ResponsiveTokens.getFontSize(MediaQuery.of(context).size.width, baseSize: 12.0),
+                  fontSize: ResponsiveTokens.getFontSize(
+                    MediaQuery.of(context).size.width,
+                    baseSize: 12.0,
+                  ),
                   color: ChoiceLuxTheme.richGold,
                 ),
               ),
@@ -278,21 +406,31 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Results Count
-  Widget _buildResultsCount(int count, bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
-    
+  Widget _buildResultsCount(
+    int count,
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: padding,
-        vertical: spacing,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
       child: Row(
         children: [
           Text(
             '$count jobs found',
             style: TextStyle(
-              fontSize: ResponsiveTokens.getFontSize(MediaQuery.of(context).size.width, baseSize: 14.0),
+              fontSize: ResponsiveTokens.getFontSize(
+                MediaQuery.of(context).size.width,
+                baseSize: 14.0,
+              ),
               color: ChoiceLuxTheme.platinumSilver,
               fontWeight: FontWeight.w500,
             ),
@@ -303,12 +441,26 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Empty State
-  Widget _buildEmptyState(bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
-    final iconSize = ResponsiveTokens.getIconSize(MediaQuery.of(context).size.width);
-    final fontSize = ResponsiveTokens.getFontSize(MediaQuery.of(context).size.width, baseSize: 14.0);
-    
+  Widget _buildEmptyState(
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+    final iconSize = ResponsiveTokens.getIconSize(
+      MediaQuery.of(context).size.width,
+    );
+    final fontSize = ResponsiveTokens.getFontSize(
+      MediaQuery.of(context).size.width,
+      baseSize: 14.0,
+    );
+
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -369,31 +521,30 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
     bool canCreateVoucher,
     bool canCreateInvoice,
   ) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    final spacing = ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
-    
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+
     return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: padding,
-        vertical: spacing,
-      ),
+      padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
       itemCount: jobs.length,
       itemBuilder: (context, index) {
         final job = jobs[index];
-        
+
         // Find related data
         Client? client;
         Vehicle? vehicle;
         User? driver;
-        
+
         try {
-          client = clients.firstWhere(
-            (c) => c.id.toString() == job.clientId,
-          );
+          client = clients.firstWhere((c) => c.id.toString() == job.clientId);
         } catch (e) {
           client = null;
         }
-        
+
         try {
           vehicle = vehicles.firstWhere(
             (v) => v.id.toString() == job.vehicleId,
@@ -401,15 +552,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
         } catch (e) {
           vehicle = null;
         }
-        
+
         try {
-          driver = users.firstWhere(
-            (u) => u.id == job.driverId,
-          );
+          driver = users.firstWhere((u) => u.id == job.driverId);
         } catch (e) {
           driver = null;
         }
-        
+
         return Padding(
           padding: EdgeInsets.only(bottom: spacing),
           child: JobListCard(
@@ -430,33 +579,51 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Loading State
-  Widget _buildLoadingState(bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
+  Widget _buildLoadingState(
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
     return const Center(
-      child: CircularProgressIndicator(
-        color: ChoiceLuxTheme.richGold,
-      ),
+      child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
     );
   }
 
   // Enhanced Error State
-  Widget _buildErrorState(Object error, bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final fontSize = ResponsiveTokens.getFontSize(MediaQuery.of(context).size.width, baseSize: 14.0);
-    
+  Widget _buildErrorState(
+    Object error,
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final fontSize = ResponsiveTokens.getFontSize(
+      MediaQuery.of(context).size.width,
+      baseSize: 14.0,
+    );
+
     return Center(
       child: Text(
         'Error loading clients: $error',
-        style: TextStyle(
-          fontSize: fontSize,
-          color: ChoiceLuxTheme.errorColor,
-        ),
+        style: TextStyle(fontSize: fontSize, color: ChoiceLuxTheme.errorColor),
       ),
     );
   }
 
   // Enhanced Pagination Section
-  Widget _buildPaginationSection(int totalPages, int totalItems, bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
-    final padding = ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
-    
+  Widget _buildPaginationSection(
+    int totalPages,
+    int totalItems,
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+
     return Container(
       padding: EdgeInsets.all(padding),
       child: PaginationWidget(
@@ -470,10 +637,20 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   }
 
   // Enhanced Filter Button
-  Widget _buildFilterButton(String label, String filter, bool isSmallMobile, bool isMobile, bool isTablet, bool isDesktop) {
+  Widget _buildFilterButton(
+    String label,
+    String filter,
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
     final isSelected = _currentFilter == filter;
-    final fontSize = ResponsiveTokens.getFontSize(MediaQuery.of(context).size.width, baseSize: 14.0);
-    
+    final fontSize = ResponsiveTokens.getFontSize(
+      MediaQuery.of(context).size.width,
+      baseSize: 14.0,
+    );
+
     return GestureDetector(
       onTap: () => setState(() {
         _currentFilter = filter;
@@ -481,27 +658,35 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
       }),
       child: Container(
         padding: EdgeInsets.symmetric(
-          horizontal: isSmallMobile ? 10 : isMobile ? 14 : isTablet ? 18 : 20,
-          vertical: isSmallMobile ? 6 : isMobile ? 8 : isTablet ? 10 : 12,
+          horizontal: isSmallMobile
+              ? 10
+              : isMobile
+              ? 14
+              : isTablet
+              ? 18
+              : 20,
+          vertical: isSmallMobile
+              ? 6
+              : isMobile
+              ? 8
+              : isTablet
+              ? 10
+              : 12,
         ),
         decoration: BoxDecoration(
-          color: isSelected 
-            ? ChoiceLuxTheme.richGold 
-            : Colors.transparent,
+          color: isSelected ? ChoiceLuxTheme.richGold : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: isSelected 
-              ? ChoiceLuxTheme.richGold 
-              : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
+            color: isSelected
+                ? ChoiceLuxTheme.richGold
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
         child: Text(
           label,
           style: TextStyle(
-            color: isSelected 
-              ? Colors.black 
-              : ChoiceLuxTheme.platinumSilver,
+            color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
             fontSize: fontSize,
             fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
           ),
@@ -515,16 +700,18 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
       case 'open':
         return jobs.where((job) => job.status == 'open').toList();
       case 'in_progress':
-        return jobs.where((job) => 
-          job.status == 'in_progress' || 
-          job.status == 'started' || 
-          job.status == 'assigned'
-        ).toList();
+        return jobs
+            .where(
+              (job) =>
+                  job.status == 'in_progress' ||
+                  job.status == 'started' ||
+                  job.status == 'assigned',
+            )
+            .toList();
       case 'completed':
-        return jobs.where((job) => 
-          job.status == 'completed' || 
-          job.status == 'closed'
-        ).toList();
+        return jobs
+            .where((job) => job.status == 'completed' || job.status == 'closed')
+            .toList();
       case 'all':
       default:
         return jobs;
@@ -534,4 +721,4 @@ class _JobsScreenState extends ConsumerState<JobsScreen> with WidgetsBindingObse
   void _manualRefresh() {
     ref.read(jobsProvider.notifier).fetchJobs();
   }
-} 
+}

@@ -58,7 +58,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
     final authState = ref.watch(authProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final authNotifier = ref.read(authProvider.notifier);
-    
+
     return MaterialApp.router(
       title: 'Choice Lux Cars',
       theme: ChoiceLuxTheme.lightTheme,
@@ -69,7 +69,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
     );
   }
 
-  GoRouter _buildRouter(AsyncValue authState, userProfile, AuthNotifier authNotifier) {
+  GoRouter _buildRouter(
+    AsyncValue authState,
+    userProfile,
+    AuthNotifier authNotifier,
+  ) {
     return GoRouter(
       initialLocation: '/login',
       redirect: (context, state) {
@@ -100,13 +104,13 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           name: 'forgot_password',
           builder: (context, state) => const ForgotPasswordScreen(),
         ),
-                 GoRoute(
-           path: '/reset-password',
-           name: 'reset_password',
-           builder: (context, state) => const ResetPasswordScreen(),
-         ),
-         
-         GoRoute(
+        GoRoute(
+          path: '/reset-password',
+          name: 'reset_password',
+          builder: (context, state) => const ResetPasswordScreen(),
+        ),
+
+        GoRoute(
           path: '/pending-approval',
           name: 'pending_approval',
           builder: (context, state) => const PendingApprovalScreen(),
@@ -116,7 +120,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           name: 'user_profile',
           builder: (context, state) => const UserProfileScreen(),
         ),
-        
+
         // Main app routes (protected)
         GoRoute(
           path: '/',
@@ -204,9 +208,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
             final quoteId = state.pathParameters['id']!;
             // TODO: Create QuoteSummaryScreen
             return const Scaffold(
-              body: Center(
-                child: Text('Quote Summary Screen - Coming Soon'),
-              ),
+              body: Center(child: Text('Quote Summary Screen - Coming Soon')),
             );
           },
         ),
@@ -294,7 +296,8 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
         GoRoute(
           path: '/vehicles/edit',
           name: 'edit_vehicle',
-          builder: (context, state) => VehicleEditorScreen(vehicle: state.extra as Vehicle?),
+          builder: (context, state) =>
+              VehicleEditorScreen(vehicle: state.extra as Vehicle?),
         ),
         GoRoute(
           path: '/vouchers',
@@ -371,7 +374,10 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: ChoiceLuxTheme.richGold,
                         foregroundColor: Colors.black,
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text('Go to Dashboard'),
                     ),
@@ -381,7 +387,10 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ChoiceLuxTheme.richGold,
                         side: BorderSide(color: ChoiceLuxTheme.richGold),
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                       child: const Text('Sign In Again'),
                     ),
@@ -394,4 +403,4 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
       ),
     );
   }
-} 
+}

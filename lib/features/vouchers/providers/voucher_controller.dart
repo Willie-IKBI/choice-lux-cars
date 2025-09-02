@@ -18,14 +18,7 @@ final voucherPdfServiceProvider = Provider<VoucherPdfService>((ref) {
 });
 
 // State for voucher creation process
-enum VoucherState {
-  idle,
-  fetching,
-  generating,
-  uploading,
-  success,
-  error,
-}
+enum VoucherState { idle, fetching, generating, uploading, success, error }
 
 class VoucherControllerState {
   final VoucherState state;
@@ -55,12 +48,13 @@ class VoucherControllerState {
   }
 
   bool get isIdle => state == VoucherState.idle;
-  bool get isLoading => state == VoucherState.fetching || 
-                       state == VoucherState.generating || 
-                       state == VoucherState.uploading;
+  bool get isLoading =>
+      state == VoucherState.fetching ||
+      state == VoucherState.generating ||
+      state == VoucherState.uploading;
   bool get isSuccess => state == VoucherState.success;
   bool get hasError => state == VoucherState.error;
-  
+
   String get loadingMessage {
     switch (state) {
       case VoucherState.fetching:
@@ -82,7 +76,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
   final Ref? _ref;
 
   VoucherController(this._repository, this._pdfService, [this._ref])
-      : super(const VoucherControllerState());
+    : super(const VoucherControllerState());
 
   /// Create voucher for a job
   Future<void> createVoucher({required String jobId}) async {
@@ -107,7 +101,9 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
 
       // Step 1: Fetch voucher data
       state = state.copyWith(state: VoucherState.fetching);
-      final voucherData = await _repository.fetchVoucherData(jobId: int.parse(jobId));
+      final voucherData = await _repository.fetchVoucherData(
+        jobId: int.parse(jobId),
+      );
       state = state.copyWith(voucherData: voucherData);
 
       // Step 2: Generate PDF
@@ -173,12 +169,14 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
   /// Check if user can create vouchers based on role
   bool _canCreateVoucher(String? userRole) {
     if (userRole == null) return false;
-    
+
     // Handle both role variations (admin/administrator, driver_manager/driverManager)
     const allowedRoles = [
-      'admin', 'administrator', 
-      'manager', 
-      'driver_manager', 'drivermanager'
+      'admin',
+      'administrator',
+      'manager',
+      'driver_manager',
+      'drivermanager',
     ];
     return allowedRoles.contains(userRole.toLowerCase());
   }
@@ -212,11 +210,12 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
 }
 
 // Provider for VoucherController
-final voucherControllerProvider = StateNotifierProvider<VoucherController, VoucherControllerState>((ref) {
-  final repository = ref.watch(voucherRepositoryProvider);
-  final pdfService = ref.watch(voucherPdfServiceProvider);
-  return VoucherController(repository, pdfService, ref);
-});
+final voucherControllerProvider =
+    StateNotifierProvider<VoucherController, VoucherControllerState>((ref) {
+      final repository = ref.watch(voucherRepositoryProvider);
+      final pdfService = ref.watch(voucherPdfServiceProvider);
+      return VoucherController(repository, pdfService, ref);
+    });
 
 // Provider for checking if user can create vouchers
 final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
@@ -233,9 +232,11 @@ final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
     final userRole = profile['role'] as String?;
     // Handle both role variations (admin/administrator, driver_manager/driverManager)
     const allowedRoles = [
-      'admin', 'administrator', 
-      'manager', 
-      'driver_manager', 'drivermanager'
+      'admin',
+      'administrator',
+      'manager',
+      'driver_manager',
+      'drivermanager',
     ];
     return allowedRoles.contains(userRole?.toLowerCase());
   } catch (e) {

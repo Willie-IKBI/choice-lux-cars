@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 
 /// Repository for client-related data operations
-/// 
+///
 /// Encapsulates all Supabase queries and returns domain models.
 /// This layer separates data access from business logic.
 class ClientsRepository {
@@ -19,14 +19,14 @@ class ClientsRepository {
   Future<Result<List<Client>>> fetchClients() async {
     try {
       Log.d('Fetching clients from database');
-      
+
       final response = await _supabase
           .from('clients')
           .select()
           .order('company_name', ascending: true);
 
       Log.d('Fetched ${response.length} clients from database');
-      
+
       final clients = response.map((json) => Client.fromJson(json)).toList();
       return Result.success(clients);
     } catch (error) {
@@ -39,13 +39,13 @@ class ClientsRepository {
   Future<Result<Map<String, dynamic>>> createClient(Client client) async {
     try {
       Log.d('Creating client: ${client.companyName}');
-      
+
       final clientData = client.toJson();
       // Ensure any nullable fields are properly handled
       if (clientData['status'] == null) {
         clientData['status'] = 'active';
       }
-      
+
       final response = await _supabase
           .from('clients')
           .insert(clientData)
@@ -64,11 +64,13 @@ class ClientsRepository {
   Future<Result<void>> updateClient(Client client) async {
     try {
       Log.d('Updating client: ${client.id}');
-      
+
       if (client.id == null) {
-        return const Result.failure(UnknownException('Client ID is required for update'));
+        return const Result.failure(
+          UnknownException('Client ID is required for update'),
+        );
       }
-      
+
       await _supabase
           .from('clients')
           .update(client.toJson())
@@ -86,11 +88,8 @@ class ClientsRepository {
   Future<Result<void>> deleteClient(String clientId) async {
     try {
       Log.d('Deleting client: $clientId');
-      
-      await _supabase
-          .from('clients')
-          .delete()
-          .eq('id', clientId);
+
+      await _supabase.from('clients').delete().eq('id', clientId);
 
       Log.d('Client deleted successfully');
       return const Result.success(null);
@@ -104,7 +103,7 @@ class ClientsRepository {
   Future<Result<Client?>> getClientById(String clientId) async {
     try {
       Log.d('Fetching client by ID: $clientId');
-      
+
       final response = await _supabase
           .from('clients')
           .select()
@@ -128,7 +127,7 @@ class ClientsRepository {
   Future<Result<List<Client>>> searchClients(String query) async {
     try {
       Log.d('Searching clients with query: $query');
-      
+
       final response = await _supabase
           .from('clients')
           .select()
@@ -136,7 +135,7 @@ class ClientsRepository {
           .order('company_name', ascending: true);
 
       Log.d('Found ${response.length} clients matching query: $query');
-      
+
       final clients = response.map((json) => Client.fromJson(json)).toList();
       return Result.success(clients);
     } catch (error) {
@@ -149,7 +148,7 @@ class ClientsRepository {
   Future<Result<List<Client>>> fetchInactiveClients() async {
     try {
       Log.d('Fetching inactive clients');
-      
+
       final response = await _supabase
           .from('clients')
           .select()
@@ -157,7 +156,7 @@ class ClientsRepository {
           .order('company_name', ascending: true);
 
       Log.d('Fetched ${response.length} inactive clients');
-      
+
       final clients = response.map((json) => Client.fromJson(json)).toList();
       return Result.success(clients);
     } catch (error) {
@@ -172,10 +171,12 @@ class ClientsRepository {
   }
 
   /// Fetch client with agents
-  Future<Result<Map<String, dynamic>?>> fetchClientWithAgents(String clientId) async {
+  Future<Result<Map<String, dynamic>?>> fetchClientWithAgents(
+    String clientId,
+  ) async {
     try {
       Log.d('Fetching client with agents: $clientId');
-      
+
       final clientResponse = await _supabase
           .from('clients')
           .select()
@@ -211,7 +212,7 @@ class ClientsRepository {
   Future<Result<void>> restoreClient(String clientId) async {
     try {
       Log.d('Restoring client: $clientId');
-      
+
       await _supabase
           .from('clients')
           .update({'status': 'active'})
@@ -229,11 +230,8 @@ class ClientsRepository {
   Future<Result<void>> permanentlyDeleteClient(String clientId) async {
     try {
       Log.d('Permanently deleting client: $clientId');
-      
-      await _supabase
-          .from('clients')
-          .delete()
-          .eq('id', clientId);
+
+      await _supabase.from('clients').delete().eq('id', clientId);
 
       Log.d('Client permanently deleted successfully');
       return const Result.success(null);
@@ -249,20 +247,20 @@ class ClientsRepository {
       return Result.failure(AuthException(error.message));
     } else if (error is PostgrestException) {
       // Check if it's a network-related error
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout') ||
           error.message.contains('connection')) {
         return Result.failure(NetworkException(error.message));
       }
       // Check if it's an auth-related error
-      if (error.message.contains('JWT') || 
+      if (error.message.contains('JWT') ||
           error.message.contains('unauthorized') ||
           error.message.contains('forbidden')) {
         return Result.failure(AuthException(error.message));
       }
       return Result.failure(UnknownException(error.message));
     } else if (error is StorageException) {
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout')) {
         return Result.failure(NetworkException(error.message));
       }

@@ -17,7 +17,7 @@ class InvoiceData {
   final String vehicleType;
   final List<TransportDetail> transport;
   final String notes;
-  
+
   // Invoice specific fields
   final String invoiceNumber;
   final DateTime invoiceDate;
@@ -61,7 +61,7 @@ class InvoiceData {
     return InvoiceData(
       jobId: json['job_id'] as int? ?? 0,
       quoteNo: json['quote_no'] as String?,
-      quoteDate: json['quote_date'] != null 
+      quoteDate: json['quote_date'] != null
           ? DateTime.parse(json['quote_date'] as String)
           : null,
       companyName: json['company_name'] as String? ?? 'Choice Lux Cars',
@@ -75,24 +75,29 @@ class InvoiceData {
       driverName: json['driver_name'] as String? ?? 'Not assigned',
       driverContact: json['driver_contact'] as String? ?? 'Not available',
       vehicleType: json['vehicle_type'] as String? ?? 'Not assigned',
-      transport: (json['transport'] as List<dynamic>?)
-          ?.map((e) => TransportDetail.fromJson(e as Map<String, dynamic>))
-          .toList() ?? [],
+      transport:
+          (json['transport'] as List<dynamic>?)
+              ?.map((e) => TransportDetail.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          [],
       notes: json['notes'] as String? ?? '',
       invoiceNumber: json['invoice_number'] as String? ?? 'INV-0',
-      invoiceDate: json['invoice_date'] != null 
+      invoiceDate: json['invoice_date'] != null
           ? DateTime.parse(json['invoice_date'] as String)
           : DateTime.now(),
-      dueDate: json['due_date'] != null 
+      dueDate: json['due_date'] != null
           ? DateTime.parse(json['due_date'] as String)
           : DateTime.now().add(const Duration(days: 30)),
       subtotal: (json['subtotal'] as num?)?.toDouble() ?? 0.0,
       taxAmount: (json['tax_amount'] as num?)?.toDouble() ?? 0.0,
       totalAmount: (json['total_amount'] as num?)?.toDouble() ?? 0.0,
       currency: json['currency'] as String? ?? 'ZAR',
-      paymentTerms: json['payment_terms'] as String? ?? 'Payment due within 30 days',
-      bankingDetails: json['banking_details'] != null 
-          ? BankingDetails.fromJson(json['banking_details'] as Map<String, dynamic>)
+      paymentTerms:
+          json['payment_terms'] as String? ?? 'Payment due within 30 days',
+      bankingDetails: json['banking_details'] != null
+          ? BankingDetails.fromJson(
+              json['banking_details'] as Map<String, dynamic>,
+            )
           : BankingDetails(
               bankName: 'Standard Bank',
               accountName: 'Choice Lux Cars (Pty) Ltd',
@@ -170,7 +175,7 @@ class TransportDetail {
 
   factory TransportDetail.fromJson(Map<String, dynamic> json) {
     return TransportDetail(
-      date: json['date'] != null 
+      date: json['date'] != null
           ? DateTime.parse(json['date'] as String)
           : DateTime.now(),
       time: json['time'] as String? ?? '00:00',
@@ -213,7 +218,8 @@ class BankingDetails {
   factory BankingDetails.fromJson(Map<String, dynamic> json) {
     return BankingDetails(
       bankName: json['bank_name'] as String? ?? 'Standard Bank',
-      accountName: json['account_name'] as String? ?? 'Choice Lux Cars (Pty) Ltd',
+      accountName:
+          json['account_name'] as String? ?? 'Choice Lux Cars (Pty) Ltd',
       accountNumber: json['account_number'] as String? ?? '1234567890',
       branchCode: json['branch_code'] as String? ?? '051001',
       swiftCode: json['swift_code'] as String? ?? 'SBZAZAJJ',

@@ -10,16 +10,15 @@ import 'package:choice_lux_cars/app/theme.dart';
 class QuoteTransportDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
 
-  const QuoteTransportDetailsScreen({
-    super.key,
-    required this.quoteId,
-  });
+  const QuoteTransportDetailsScreen({super.key, required this.quoteId});
 
   @override
-  ConsumerState<QuoteTransportDetailsScreen> createState() => _QuoteTransportDetailsScreenState();
+  ConsumerState<QuoteTransportDetailsScreen> createState() =>
+      _QuoteTransportDetailsScreenState();
 }
 
-class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDetailsScreen> {
+class _QuoteTransportDetailsScreenState
+    extends ConsumerState<QuoteTransportDetailsScreen> {
   bool _isLoading = false;
   bool _isAddingTransport = false;
   Quote? _quote;
@@ -57,17 +56,23 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     setState(() => _isLoading = true);
     try {
       // Load quote details
-      final quote = await ref.read(quotesProvider.notifier).getQuote(widget.quoteId);
+      final quote = await ref
+          .read(quotesProvider.notifier)
+          .getQuote(widget.quoteId);
       if (quote != null) {
         setState(() => _quote = quote);
       }
 
       // Load transport details
-      final transportNotifier = ref.read(quoteTransportDetailsProvider(widget.quoteId).notifier);
+      final transportNotifier = ref.read(
+        quoteTransportDetailsProvider(widget.quoteId).notifier,
+      );
       await transportNotifier.fetchTransportDetails();
-      
+
       // Get the updated state
-      final transportDetails = ref.read(quoteTransportDetailsProvider(widget.quoteId));
+      final transportDetails = ref.read(
+        quoteTransportDetailsProvider(widget.quoteId),
+      );
       setState(() => _transportDetails = transportDetails.value ?? []);
     } catch (e) {
       if (mounted) {
@@ -93,7 +98,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
   void _showEditTransportDialog(QuoteTransportDetail transport) {
     _isEditMode = true;
     _editingTransport = transport;
-    
+
     // Populate form with existing data
     _pickupLocationController.text = transport.pickupLocation;
     _dropoffLocationController.text = transport.dropoffLocation;
@@ -101,7 +106,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     _notesController.text = transport.notes ?? '';
     _selectedPickupDate = transport.pickupDate;
     _selectedPickupTime = TimeOfDay.fromDateTime(transport.pickupDate);
-    
+
     _showTransportDialog();
   }
 
@@ -140,7 +145,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Dropoff Location
                   TextFormField(
                     controller: _dropoffLocationController,
@@ -156,7 +161,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Pickup Date and Time
                   Row(
                     children: [
@@ -206,7 +211,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Amount
                   TextFormField(
                     controller: _amountController,
@@ -228,7 +233,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     },
                   ),
                   const SizedBox(height: 16),
-                  
+
                   // Notes
                   TextFormField(
                     controller: _notesController,
@@ -359,8 +364,10 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
 
     setState(() => _isAddingTransport = true);
     try {
-      final transportNotifier = ref.read(quoteTransportDetailsProvider(widget.quoteId).notifier);
-      
+      final transportNotifier = ref.read(
+        quoteTransportDetailsProvider(widget.quoteId).notifier,
+      );
+
       if (_isEditMode && _editingTransport != null) {
         // Update existing transport
         final updatedTransport = _editingTransport!.copyWith(
@@ -368,9 +375,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
           dropoffLocation: _dropoffLocationController.text.trim(),
           pickupDate: _selectedPickupDate!,
           amount: double.parse(_amountController.text),
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
         );
-        
+
         await transportNotifier.updateTransportDetail(updatedTransport);
       } else {
         // Add new transport
@@ -381,21 +390,27 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
           pickupLocation: _pickupLocationController.text.trim(),
           dropoffLocation: _dropoffLocationController.text.trim(),
           amount: double.parse(_amountController.text),
-          notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+          notes: _notesController.text.trim().isEmpty
+              ? null
+              : _notesController.text.trim(),
         );
-        
+
         await transportNotifier.addTransportDetail(newTransport);
       }
 
       // Refresh data
       await _loadData();
-      
+
       Navigator.of(context).pop();
-      
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_isEditMode ? 'Transport updated successfully' : 'Transport added successfully'),
+            content: Text(
+              _isEditMode
+                  ? 'Transport updated successfully'
+                  : 'Transport added successfully',
+            ),
             backgroundColor: ChoiceLuxTheme.successColor,
           ),
         );
@@ -428,9 +443,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -461,10 +474,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
           children: [
             const Text(
               'Are you sure you want to delete this transport leg?',
-              style: TextStyle(
-                color: ChoiceLuxTheme.softWhite,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Container(
@@ -542,10 +552,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             ),
             child: const Text(
               'Delete',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -554,10 +561,12 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
 
     if (confirmed == true) {
       try {
-        final transportNotifier = ref.read(quoteTransportDetailsProvider(widget.quoteId).notifier);
+        final transportNotifier = ref.read(
+          quoteTransportDetailsProvider(widget.quoteId).notifier,
+        );
         await transportNotifier.deleteTransportDetail(transport.id);
         await _loadData();
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -580,7 +589,10 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
   }
 
   double get _totalAmount {
-    return _transportDetails.fold(0.0, (sum, transport) => sum + transport.amount);
+    return _transportDetails.fold(
+      0.0,
+      (sum, transport) => sum + transport.amount,
+    );
   }
 
   @override
@@ -621,7 +633,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             children: [
               // Header with Summary
               _buildHeader(isMobile, isSmallMobile),
-              
+
               // Transport Details List
               Expanded(
                 child: _transportDetails.isEmpty
@@ -652,10 +664,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
           icon: const Icon(Icons.add, size: 24),
           label: const Text(
             'Add Transport',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
+            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
         ),
       ),
@@ -664,8 +673,20 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
 
   Widget _buildHeader(bool isMobile, bool isSmallMobile) {
     return Container(
-      margin: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
-      padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+      margin: EdgeInsets.all(
+        isSmallMobile
+            ? 12
+            : isMobile
+            ? 16
+            : 20,
+      ),
+      padding: EdgeInsets.all(
+        isSmallMobile
+            ? 16
+            : isMobile
+            ? 20
+            : 24,
+      ),
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
@@ -689,7 +710,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                   'Back to Quote',
                   style: TextStyle(
                     color: ChoiceLuxTheme.richGold,
-                    fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -698,19 +723,29 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Main Header Content
           Row(
             children: [
               Container(
-                padding: EdgeInsets.all(isSmallMobile ? 8 : isMobile ? 12 : 16),
+                padding: EdgeInsets.all(
+                  isSmallMobile
+                      ? 8
+                      : isMobile
+                      ? 12
+                      : 16,
+                ),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   Icons.route,
-                  size: isSmallMobile ? 20 : isMobile ? 24 : 28,
+                  size: isSmallMobile
+                      ? 20
+                      : isMobile
+                      ? 24
+                      : 28,
                   color: ChoiceLuxTheme.richGold,
                 ),
               ),
@@ -722,7 +757,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     Text(
                       'Transport Details',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        fontSize: isSmallMobile
+                            ? 18
+                            : isMobile
+                            ? 20
+                            : 24,
                         fontWeight: FontWeight.w700,
                         color: ChoiceLuxTheme.softWhite,
                       ),
@@ -730,7 +769,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     Text(
                       '${_transportDetails.length} transport leg${_transportDetails.length == 1 ? '' : 's'}',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                        fontSize: isSmallMobile
+                            ? 12
+                            : isMobile
+                            ? 14
+                            : 16,
                         color: ChoiceLuxTheme.platinumSilver,
                       ),
                     ),
@@ -738,7 +781,13 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                 ),
               ),
               Container(
-                padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
+                padding: EdgeInsets.all(
+                  isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 16
+                      : 20,
+                ),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(12),
@@ -751,7 +800,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     Text(
                       'R ${_totalAmount.toStringAsFixed(2)}',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+                        fontSize: isSmallMobile
+                            ? 16
+                            : isMobile
+                            ? 18
+                            : 20,
                         fontWeight: FontWeight.w700,
                         color: ChoiceLuxTheme.richGold,
                       ),
@@ -759,7 +812,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     Text(
                       'Total',
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
+                        fontSize: isSmallMobile
+                            ? 10
+                            : isMobile
+                            ? 11
+                            : 12,
                         color: ChoiceLuxTheme.platinumSilver,
                       ),
                     ),
@@ -841,15 +898,15 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
               icon: const Icon(Icons.add, size: 24),
               label: const Text(
                 'Add First Transport',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ChoiceLuxTheme.richGold,
                 foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
@@ -864,7 +921,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
   Widget _buildTransportList(bool isMobile, bool isSmallMobile) {
     return ListView.builder(
       padding: EdgeInsets.symmetric(
-        horizontal: isSmallMobile ? 12 : isMobile ? 16 : 20,
+        horizontal: isSmallMobile
+            ? 12
+            : isMobile
+            ? 16
+            : 20,
         vertical: 8,
       ),
       itemCount: _transportDetails.length,
@@ -875,9 +936,20 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
     );
   }
 
-  Widget _buildTransportCard(QuoteTransportDetail transport, int index, bool isMobile, bool isSmallMobile) {
+  Widget _buildTransportCard(
+    QuoteTransportDetail transport,
+    int index,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     return Container(
-      margin: EdgeInsets.only(bottom: isSmallMobile ? 12 : isMobile ? 16 : 20),
+      margin: EdgeInsets.only(
+        bottom: isSmallMobile
+            ? 12
+            : isMobile
+            ? 16
+            : 20,
+      ),
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
@@ -896,7 +968,13 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
         children: [
           // Header with leg number, title, date/time, and actions
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 16
+                  : 20,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.richGold.withOpacity(0.05),
               borderRadius: const BorderRadius.only(
@@ -908,10 +986,19 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
               children: [
                 // Leg number badge
                 Container(
-                  padding: EdgeInsets.all(isSmallMobile ? 8 : isMobile ? 10 : 12),
+                  padding: EdgeInsets.all(
+                    isSmallMobile
+                        ? 8
+                        : isMobile
+                        ? 10
+                        : 12,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [ChoiceLuxTheme.richGold, ChoiceLuxTheme.richGold.withOpacity(0.8)],
+                      colors: [
+                        ChoiceLuxTheme.richGold,
+                        ChoiceLuxTheme.richGold.withOpacity(0.8),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -927,14 +1014,18 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                   child: Text(
                     '${index + 1}',
                     style: TextStyle(
-                      fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      fontSize: isSmallMobile
+                          ? 14
+                          : isMobile
+                          ? 16
+                          : 18,
                       fontWeight: FontWeight.w800,
                       color: Colors.black,
                     ),
                   ),
                 ),
                 const SizedBox(width: 12),
-                
+
                 // Title and date/time
                 Expanded(
                   child: Column(
@@ -943,7 +1034,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                       Text(
                         'Transport Leg ${index + 1}',
                         style: TextStyle(
-                          fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+                          fontSize: isSmallMobile
+                              ? 16
+                              : isMobile
+                              ? 18
+                              : 20,
                           fontWeight: FontWeight.w700,
                           color: ChoiceLuxTheme.softWhite,
                         ),
@@ -953,28 +1048,44 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                         children: [
                           Icon(
                             Icons.calendar_today,
-                            size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                            size: isSmallMobile
+                                ? 12
+                                : isMobile
+                                ? 14
+                                : 16,
                             color: ChoiceLuxTheme.platinumSilver,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${transport.pickupDate.day}/${transport.pickupDate.month}/${transport.pickupDate.year}',
                             style: TextStyle(
-                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                              fontSize: isSmallMobile
+                                  ? 11
+                                  : isMobile
+                                  ? 12
+                                  : 13,
                               color: ChoiceLuxTheme.platinumSilver,
                             ),
                           ),
                           const SizedBox(width: 8),
                           Icon(
                             Icons.access_time,
-                            size: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                            size: isSmallMobile
+                                ? 12
+                                : isMobile
+                                ? 14
+                                : 16,
                             color: ChoiceLuxTheme.platinumSilver,
                           ),
                           const SizedBox(width: 4),
                           Text(
                             '${transport.pickupDate.hour.toString().padLeft(2, '0')}:${transport.pickupDate.minute.toString().padLeft(2, '0')}',
                             style: TextStyle(
-                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                              fontSize: isSmallMobile
+                                  ? 11
+                                  : isMobile
+                                  ? 12
+                                  : 13,
                               color: ChoiceLuxTheme.platinumSilver,
                             ),
                           ),
@@ -983,7 +1094,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                 ),
-                
+
                 // Action buttons
                 Row(
                   children: [
@@ -997,7 +1108,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                       ),
                       child: IconButton(
                         onPressed: () => _showEditTransportDialog(transport),
-                        icon: const Icon(Icons.edit, color: ChoiceLuxTheme.richGold, size: 18),
+                        icon: const Icon(
+                          Icons.edit,
+                          color: ChoiceLuxTheme.richGold,
+                          size: 18,
+                        ),
                         tooltip: 'Edit Transport Leg',
                         style: IconButton.styleFrom(
                           padding: const EdgeInsets.all(8),
@@ -1016,7 +1131,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                       ),
                       child: IconButton(
                         onPressed: () => _deleteTransport(transport),
-                        icon: const Icon(Icons.delete, color: ChoiceLuxTheme.errorColor, size: 18),
+                        icon: const Icon(
+                          Icons.delete,
+                          color: ChoiceLuxTheme.errorColor,
+                          size: 18,
+                        ),
                         tooltip: 'Delete Transport Leg',
                         style: IconButton.styleFrom(
                           padding: const EdgeInsets.all(8),
@@ -1029,16 +1148,28 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
               ],
             ),
           ),
-          
+
           // Route information
           Padding(
-            padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 16 : 20),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 16
+                  : 20,
+            ),
             child: Column(
               children: [
                 // Pickup location
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                  padding: EdgeInsets.all(
+                    isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -1068,7 +1199,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               'From',
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                fontSize: isSmallMobile
+                                    ? 11
+                                    : isMobile
+                                    ? 12
+                                    : 13,
                                 fontWeight: FontWeight.w600,
                                 color: ChoiceLuxTheme.richGold,
                               ),
@@ -1077,7 +1212,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               transport.pickupLocation,
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                                fontSize: isSmallMobile
+                                    ? 13
+                                    : isMobile
+                                    ? 14
+                                    : 16,
                                 fontWeight: FontWeight.w500,
                                 color: ChoiceLuxTheme.softWhite,
                               ),
@@ -1088,7 +1227,7 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                 ),
-                
+
                 // Arrow connector
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
@@ -1110,11 +1249,17 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                 ),
-                
+
                 // Dropoff location
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                  padding: EdgeInsets.all(
+                    isSmallMobile
+                        ? 12
+                        : isMobile
+                        ? 14
+                        : 16,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(12),
@@ -1144,7 +1289,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               'To',
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                fontSize: isSmallMobile
+                                    ? 11
+                                    : isMobile
+                                    ? 12
+                                    : 13,
                                 fontWeight: FontWeight.w600,
                                 color: ChoiceLuxTheme.platinumSilver,
                               ),
@@ -1153,7 +1302,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               transport.dropoffLocation,
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                                fontSize: isSmallMobile
+                                    ? 13
+                                    : isMobile
+                                    ? 14
+                                    : 16,
                                 fontWeight: FontWeight.w500,
                                 color: ChoiceLuxTheme.softWhite,
                               ),
@@ -1164,16 +1317,25 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                 ),
-                
+
                 const SizedBox(height: 16),
-                
+
                 // Amount section
                 Container(
                   width: double.infinity,
-                  padding: EdgeInsets.all(isSmallMobile ? 14 : isMobile ? 16 : 18),
+                  padding: EdgeInsets.all(
+                    isSmallMobile
+                        ? 14
+                        : isMobile
+                        ? 16
+                        : 18,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [ChoiceLuxTheme.richGold.withOpacity(0.2), ChoiceLuxTheme.richGold.withOpacity(0.1)],
+                      colors: [
+                        ChoiceLuxTheme.richGold.withOpacity(0.2),
+                        ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1211,7 +1373,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               'Amount',
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                fontSize: isSmallMobile
+                                    ? 11
+                                    : isMobile
+                                    ? 12
+                                    : 13,
                                 fontWeight: FontWeight.w600,
                                 color: ChoiceLuxTheme.platinumSilver,
                               ),
@@ -1220,7 +1386,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                             Text(
                               'R ${transport.amount.toStringAsFixed(2)}',
                               style: TextStyle(
-                                fontSize: isSmallMobile ? 18 : isMobile ? 20 : 22,
+                                fontSize: isSmallMobile
+                                    ? 18
+                                    : isMobile
+                                    ? 20
+                                    : 22,
                                 fontWeight: FontWeight.w800,
                                 color: ChoiceLuxTheme.richGold,
                               ),
@@ -1231,13 +1401,19 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                     ],
                   ),
                 ),
-                
+
                 // Notes section (if any)
                 if (transport.notes?.isNotEmpty == true) ...[
                   const SizedBox(height: 16),
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(isSmallMobile ? 12 : isMobile ? 14 : 16),
+                    padding: EdgeInsets.all(
+                      isSmallMobile
+                          ? 12
+                          : isMobile
+                          ? 14
+                          : 16,
+                    ),
                     decoration: BoxDecoration(
                       color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(12),
@@ -1251,7 +1427,9 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                            color: ChoiceLuxTheme.platinumSilver.withOpacity(
+                              0.2,
+                            ),
                             borderRadius: BorderRadius.circular(6),
                           ),
                           child: const Icon(
@@ -1268,7 +1446,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                               Text(
                                 'Notes',
                                 style: TextStyle(
-                                  fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                                  fontSize: isSmallMobile
+                                      ? 11
+                                      : isMobile
+                                      ? 12
+                                      : 13,
                                   fontWeight: FontWeight.w600,
                                   color: ChoiceLuxTheme.platinumSilver,
                                 ),
@@ -1277,7 +1459,11 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
                               Text(
                                 transport.notes!,
                                 style: TextStyle(
-                                  fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+                                  fontSize: isSmallMobile
+                                      ? 12
+                                      : isMobile
+                                      ? 13
+                                      : 14,
                                   color: ChoiceLuxTheme.softWhite,
                                   height: 1.4,
                                 ),
@@ -1296,6 +1482,4 @@ class _QuoteTransportDetailsScreenState extends ConsumerState<QuoteTransportDeta
       ),
     );
   }
-
-
 }

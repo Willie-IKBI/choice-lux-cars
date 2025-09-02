@@ -23,21 +23,14 @@ class ChoiceLuxTheme {
   static const LinearGradient backgroundGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF0A0A0A),
-      Color(0xFF1A1A1A),
-      Color(0xFF0A0A0A),
-    ],
+    colors: [Color(0xFF0A0A0A), Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
   );
 
   // Card gradient
   static const LinearGradient cardGradient = LinearGradient(
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
-    colors: [
-      Color(0xFF1E1E1E),
-      Color(0xFF2A2A2A),
-    ],
+    colors: [Color(0xFF1E1E1E), Color(0xFF2A2A2A)],
   );
 
   // Light theme
@@ -68,10 +61,7 @@ class ChoiceLuxTheme {
           color: softWhite,
           letterSpacing: 0.3,
         ),
-        iconTheme: IconThemeData(
-          color: richGold,
-          size: 24,
-        ),
+        iconTheme: IconThemeData(color: richGold, size: 24),
       ),
       cardTheme: const CardThemeData(
         elevation: 2,
@@ -114,7 +104,10 @@ class ChoiceLuxTheme {
         ),
         filled: true,
         fillColor: charcoalGray,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 12,
+        ),
         labelStyle: const TextStyle(color: platinumSilver),
         hintStyle: const TextStyle(color: platinumSilver),
       ),
@@ -122,9 +115,7 @@ class ChoiceLuxTheme {
         style: TextButton.styleFrom(
           foregroundColor: richGold,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       outlinedButtonTheme: OutlinedButtonThemeData(
@@ -132,9 +123,7 @@ class ChoiceLuxTheme {
           foregroundColor: richGold,
           side: const BorderSide(color: richGold),
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(8),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         ),
       ),
       chipTheme: const ChipThemeData(
@@ -182,9 +171,7 @@ class ChoiceLuxTheme {
         }),
         checkColor: MaterialStateProperty.all(Colors.black),
         side: const BorderSide(color: platinumSilver),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(4),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       radioTheme: RadioThemeData(
         fillColor: MaterialStateProperty.resolveWith((states) {
@@ -242,9 +229,7 @@ class ChoiceLuxTheme {
       snackBarTheme: SnackBarThemeData(
         backgroundColor: charcoalGray,
         contentTextStyle: const TextStyle(color: softWhite),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(8),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         behavior: SnackBarBehavior.floating,
       ),
       dialogTheme: DialogThemeData(
@@ -255,16 +240,12 @@ class ChoiceLuxTheme {
           fontWeight: FontWeight.w600,
         ),
         contentTextStyle: const TextStyle(color: platinumSilver),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       ),
       popupMenuTheme: PopupMenuThemeData(
         color: charcoalGray,
         textStyle: const TextStyle(color: softWhite),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
       tooltipTheme: TooltipThemeData(
         decoration: BoxDecoration(
@@ -276,7 +257,10 @@ class ChoiceLuxTheme {
       ),
       dataTableTheme: const DataTableThemeData(
         dataTextStyle: TextStyle(color: softWhite),
-        headingTextStyle: TextStyle(color: richGold, fontWeight: FontWeight.w600),
+        headingTextStyle: TextStyle(
+          color: richGold,
+          fontWeight: FontWeight.w600,
+        ),
         dividerThickness: 1,
         dataRowColor: MaterialStatePropertyAll(Colors.transparent),
         headingRowColor: MaterialStatePropertyAll(Colors.transparent),
@@ -301,7 +285,9 @@ class ChoiceLuxTheme {
         dayBackgroundColor: MaterialStateProperty.all(Colors.transparent),
         yearBackgroundColor: MaterialStateProperty.all(Colors.transparent),
         todayForegroundColor: MaterialStateProperty.all(richGold),
-        todayBackgroundColor: MaterialStateProperty.all(richGold.withOpacity(0.2)),
+        todayBackgroundColor: MaterialStateProperty.all(
+          richGold.withOpacity(0.2),
+        ),
         dayOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
         yearOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
       ),
@@ -318,4 +304,4 @@ class ChoiceLuxTheme {
 
   // Dark theme (same as light theme for this luxury dark design)
   static ThemeData get darkTheme => lightTheme;
-} 
+}

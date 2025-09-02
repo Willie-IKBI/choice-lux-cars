@@ -5,6 +5,7 @@ import '../../shared/widgets/luxury_app_bar.dart';
 import '../../app/theme.dart';
 import 'providers/quotes_provider.dart';
 import 'widgets/quote_card.dart';
+import 'models/quote.dart';
 
 class QuotesScreen extends ConsumerStatefulWidget {
   const QuotesScreen({super.key});
@@ -28,22 +29,34 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     if (_selectedStatus != 'all') {
       switch (_selectedStatus) {
         case 'draft':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'draft').toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.quoteStatus.toLowerCase() == 'draft')
+              .toList();
           break;
         case 'open':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'open').toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.quoteStatus.toLowerCase() == 'open')
+              .toList();
           break;
         case 'accepted':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.isAccepted).toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.isAccepted)
+              .toList();
           break;
         case 'expired':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.isExpired).toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.isExpired)
+              .toList();
           break;
         case 'closed':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'closed').toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.quoteStatus.toLowerCase() == 'closed')
+              .toList();
           break;
         case 'rejected':
-          filteredQuotes = (quotes.value ?? []).where((quote) => quote.quoteStatus.toLowerCase() == 'rejected').toList();
+          filteredQuotes = (quotes.value ?? [])
+              .where((quote) => quote.quoteStatus.toLowerCase() == 'rejected')
+              .toList();
           break;
       }
     }
@@ -52,7 +65,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     if (_searchQuery.isNotEmpty) {
       filteredQuotes = filteredQuotes.where((quote) {
         final passengerName = quote.passengerName?.toLowerCase() ?? '';
-        final quoteId = quote.id.toLowerCase();
+        final quoteId = quote.id?.toString().toLowerCase() ?? '';
         final query = _searchQuery.toLowerCase();
         return passengerName.contains(query) || quoteId.contains(query);
       }).toList();
@@ -79,27 +92,33 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           child: Column(
             children: [
               // Header Section with Stats
-              _buildHeaderSection(filteredQuotes.length, (quotes.value ?? []).length),
-              
+              _buildHeaderSection(
+                filteredQuotes.length,
+                (quotes.value ?? []).length,
+              ),
+
               // Search and Filter Section
               _buildSearchAndFilterSection(isMobile),
-              
+
               // View Toggle - Mobile uses compact version, Desktop uses full version
               if (isMobile) _buildMobileViewToggle() else _buildViewToggle(),
-              
+
               // Quotes List/Grid
               Expanded(
                 child: filteredQuotes.isEmpty
                     ? _buildEmptyState()
-                    : _buildQuotesList(filteredQuotes, isMobile, isSmallMobile, isDesktop),
+                    : _buildQuotesList(
+                        filteredQuotes,
+                        isMobile,
+                        isSmallMobile,
+                        isDesktop,
+                      ),
               ),
             ],
           ),
         ),
       ),
-      floatingActionButton: canCreateQuotes
-          ? _buildMobileOptimizedFAB()
-          : null,
+      floatingActionButton: canCreateQuotes ? _buildMobileOptimizedFAB() : null,
     );
   }
 
@@ -111,8 +130,20 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final isDesktop = screenWidth >= 800;
 
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
-    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : isTablet ? 16.0 : 24.0;
-    final verticalPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : isTablet ? 20.0 : 24.0;
+    final horizontalPadding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 12.0
+        : isTablet
+        ? 16.0
+        : 24.0;
+    final verticalPadding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 16.0
+        : isTablet
+        ? 20.0
+        : 24.0;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -122,33 +153,45 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-                     Column(
-             crossAxisAlignment: CrossAxisAlignment.start,
-             children: [
-               Text(
-                 'Quotes',
-                 style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                   color: ChoiceLuxTheme.richGold,
-                   fontWeight: FontWeight.w700,
-                   fontSize: isSmallMobile ? 20 : isMobile ? 24 : 28,
-                 ),
-               ),
-               const SizedBox(height: 4),
-               Text(
-                 filteredCount == totalCount 
-                     ? '$totalCount total quotes'
-                     : '$filteredCount of $totalCount quotes',
-                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                   color: ChoiceLuxTheme.platinumSilver,
-                   fontSize: isSmallMobile ? 12 : isMobile ? 14 : 16,
-                 ),
-               ),
-             ],
-           ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Quotes',
+                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                  color: ChoiceLuxTheme.richGold,
+                  fontWeight: FontWeight.w700,
+                  fontSize: isSmallMobile
+                      ? 20
+                      : isMobile
+                      ? 24
+                      : 28,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                filteredCount == totalCount
+                    ? '$totalCount total quotes'
+                    : '$filteredCount of $totalCount quotes',
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: isSmallMobile
+                      ? 12
+                      : isMobile
+                      ? 14
+                      : 16,
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 16),
           Container(
             height: 2,
-            width: isSmallMobile ? 40 : isMobile ? 60 : 80,
+            width: isSmallMobile
+                ? 40
+                : isMobile
+                ? 60
+                : 80,
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -164,8 +207,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-
-
   Widget _buildSearchAndFilterSection(bool isMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isSmallMobile = screenWidth < 400;
@@ -173,8 +214,20 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final isDesktop = screenWidth >= 800;
 
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
-    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : isTablet ? 16.0 : 24.0;
-    final verticalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : isTablet ? 16.0 : 16.0;
+    final horizontalPadding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 12.0
+        : isTablet
+        ? 16.0
+        : 24.0;
+    final verticalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : isTablet
+        ? 16.0
+        : 16.0;
 
     return Container(
       padding: EdgeInsets.symmetric(
@@ -202,8 +255,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             child: TextField(
               onChanged: (value) => setState(() => _searchQuery = value),
               decoration: InputDecoration(
-                hintText: isMobile 
-                    ? 'Search quotes...' 
+                hintText: isMobile
+                    ? 'Search quotes...'
                     : 'Search quotes by passenger name or quote ID...',
                 hintStyle: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
@@ -237,11 +290,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           // Status Filter - Mobile uses bottom sheet, Desktop uses horizontal chips
-          if (isMobile) 
+          if (isMobile)
             _buildMobileFilterButton()
           else
             SingleChildScrollView(
@@ -254,9 +307,17 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                   const SizedBox(width: 8),
                   _buildStatusChip('open', 'Open', Colors.blue),
                   const SizedBox(width: 8),
-                  _buildStatusChip('accepted', 'Accepted', ChoiceLuxTheme.successColor),
+                  _buildStatusChip(
+                    'accepted',
+                    'Accepted',
+                    ChoiceLuxTheme.successColor,
+                  ),
                   const SizedBox(width: 8),
-                  _buildStatusChip('expired', 'Expired', ChoiceLuxTheme.errorColor),
+                  _buildStatusChip(
+                    'expired',
+                    'Expired',
+                    ChoiceLuxTheme.errorColor,
+                  ),
                   const SizedBox(width: 8),
                   _buildStatusChip('closed', 'Closed', Colors.grey),
                   const SizedBox(width: 8),
@@ -283,13 +344,15 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             color: isSelected ? color : color.withOpacity(0.5),
             width: 1.5,
           ),
-          boxShadow: isSelected ? [
-            BoxShadow(
-              color: color.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ] : null,
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: color.withOpacity(0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Text(
           label,
@@ -385,8 +448,13 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12), // Increased vertical padding for better touch target
-        constraints: const BoxConstraints(minHeight: 44), // Ensure minimum 44px touch target
+        padding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ), // Increased vertical padding for better touch target
+        constraints: const BoxConstraints(
+          minHeight: 44,
+        ), // Ensure minimum 44px touch target
         decoration: BoxDecoration(
           color: isSelected ? ChoiceLuxTheme.richGold : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
@@ -405,7 +473,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               style: TextStyle(
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
+                color: isSelected
+                    ? Colors.black
+                    : ChoiceLuxTheme.platinumSilver,
               ),
             ),
           ],
@@ -437,11 +507,24 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-  Widget _buildQuotesList(List<dynamic> quotes, bool isMobile, bool isSmallMobile, bool isDesktop) {
+  Widget _buildQuotesList(
+    List<Quote> quotes,
+    bool isMobile,
+    bool isSmallMobile,
+    bool isDesktop,
+  ) {
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
-    final horizontalPadding = isSmallMobile ? 12.0 : isMobile ? 12.0 : 16.0;
-    final gridPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0;
-    
+    final horizontalPadding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 12.0
+        : 16.0;
+    final gridPadding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 16.0
+        : 24.0;
+
     if (_isGridView && !isMobile) {
       // Grid view for desktop
       return RefreshIndicator(
@@ -456,12 +539,13 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             mainAxisSpacing: 20,
             childAspectRatio: 1.2,
           ),
-          itemCount: (quotes.value ?? []).length,
+          itemCount: quotes.length,
           itemBuilder: (context, index) {
-            final quote = (quotes.value ?? [])[index];
+            final quote = quotes[index];
             return QuoteCard(
               quote: quote,
-              onTap: () => context.go('/quotes/${quote.id}'),
+              onTap: () => context.go('/quotes/${quote.id ?? ''}'),
+              context: context,
             );
           },
         ),
@@ -477,12 +561,13 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             horizontal: horizontalPadding,
             vertical: 8,
           ),
-          itemCount: (quotes.value ?? []).length,
+          itemCount: quotes.length,
           itemBuilder: (context, index) {
-            final quote = (quotes.value ?? [])[index];
+            final quote = quotes[index];
             return QuoteCard(
               quote: quote,
-              onTap: () => context.go('/quotes/${quote.id}'),
+              onTap: () => context.go('/quotes/${quote.id ?? ''}'),
+              context: context,
             );
           },
         ),
@@ -519,11 +604,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
-            child: Icon(
-              icon,
-              size: 48,
-              color: iconColor,
-            ),
+            child: Icon(icon, size: 48, color: iconColor),
           ),
           const SizedBox(height: 24),
           Text(
@@ -555,11 +636,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(
-          Icons.filter_list,
-          color: ChoiceLuxTheme.richGold,
-          size: 20,
-        ),
+        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
         label: Text(
           'Filter: ${_getStatusLabel(_selectedStatus)}',
           style: TextStyle(
@@ -611,7 +688,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Title
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -634,23 +711,43 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 ],
               ),
             ),
-            
+
             // Filter options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
                   _buildMobileFilterOption('all', 'All Quotes', Colors.grey),
-                  _buildMobileFilterOption('draft', 'Draft Quotes', Colors.orange),
+                  _buildMobileFilterOption(
+                    'draft',
+                    'Draft Quotes',
+                    Colors.orange,
+                  ),
                   _buildMobileFilterOption('open', 'Open Quotes', Colors.blue),
-                  _buildMobileFilterOption('accepted', 'Accepted Quotes', ChoiceLuxTheme.successColor),
-                  _buildMobileFilterOption('expired', 'Expired Quotes', ChoiceLuxTheme.errorColor),
-                  _buildMobileFilterOption('closed', 'Closed Quotes', Colors.grey),
-                  _buildMobileFilterOption('rejected', 'Rejected Quotes', Colors.red),
+                  _buildMobileFilterOption(
+                    'accepted',
+                    'Accepted Quotes',
+                    ChoiceLuxTheme.successColor,
+                  ),
+                  _buildMobileFilterOption(
+                    'expired',
+                    'Expired Quotes',
+                    ChoiceLuxTheme.errorColor,
+                  ),
+                  _buildMobileFilterOption(
+                    'closed',
+                    'Closed Quotes',
+                    Colors.grey,
+                  ),
+                  _buildMobileFilterOption(
+                    'rejected',
+                    'Rejected Quotes',
+                    Colors.red,
+                  ),
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -660,7 +757,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
   Widget _buildMobileFilterOption(String status, String label, Color color) {
     final isSelected = _selectedStatus == status;
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       child: Material(
@@ -673,12 +770,16 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            constraints: const BoxConstraints(minHeight: 48), // Ensure minimum 44px touch target
+            constraints: const BoxConstraints(
+              minHeight: 48,
+            ), // Ensure minimum 44px touch target
             decoration: BoxDecoration(
               color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: isSelected ? color : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: isSelected
+                    ? color
+                    : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
                 width: 1,
               ),
             ),
@@ -698,17 +799,15 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     label,
                     style: TextStyle(
                       color: isSelected ? color : ChoiceLuxTheme.softWhite,
-                      fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                      fontWeight: isSelected
+                          ? FontWeight.w600
+                          : FontWeight.w500,
                       fontSize: 16,
                     ),
                   ),
                 ),
                 if (isSelected)
-                  Icon(
-                    Icons.check_circle,
-                    color: color,
-                    size: 20,
-                  ),
+                  Icon(Icons.check_circle, color: color, size: 20),
               ],
             ),
           ),
@@ -717,16 +816,24 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-    String _getStatusLabel(String status) {
+  String _getStatusLabel(String status) {
     switch (status) {
-      case 'all': return 'All';
-      case 'draft': return 'Draft';
-      case 'open': return 'Open';
-      case 'accepted': return 'Accepted';
-      case 'expired': return 'Expired';
-      case 'closed': return 'Closed';
-      case 'rejected': return 'Rejected';
-      default: return 'All';
+      case 'all':
+        return 'All';
+      case 'draft':
+        return 'Draft';
+      case 'open':
+        return 'Open';
+      case 'accepted':
+        return 'Accepted';
+      case 'expired':
+        return 'Expired';
+      case 'closed':
+        return 'Closed';
+      case 'rejected':
+        return 'Rejected';
+      default:
+        return 'All';
     }
   }
 
@@ -757,4 +864,4 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       );
     }
   }
-} 
+}

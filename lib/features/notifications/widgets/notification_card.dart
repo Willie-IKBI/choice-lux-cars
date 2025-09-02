@@ -33,7 +33,9 @@ class NotificationCard extends ConsumerWidget {
         if (onDismiss != null) {
           onDismiss!();
         } else {
-          ref.read(notificationProvider.notifier).dismissNotification(notification.id);
+          ref
+              .read(notificationProvider.notifier)
+              .dismissNotification(notification.id);
         }
       },
       background: Container(
@@ -50,11 +52,7 @@ class NotificationCard extends ConsumerWidget {
           ),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(
-          Icons.delete,
-          color: ChoiceLuxTheme.softWhite,
-          size: 24,
-        ),
+        child: Icon(Icons.delete, color: ChoiceLuxTheme.softWhite, size: 24),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
@@ -90,10 +88,18 @@ class NotificationCard extends ConsumerWidget {
                       width: 48,
                       height: 48,
                       decoration: BoxDecoration(
-                        color: _getIconBackgroundColor(isUnread, isHighPriority, isUrgent),
+                        color: _getIconBackgroundColor(
+                          isUnread,
+                          isHighPriority,
+                          isUrgent,
+                        ),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: _getIconBorderColor(isUnread, isHighPriority, isUrgent),
+                          color: _getIconBorderColor(
+                            isUnread,
+                            isHighPriority,
+                            isUrgent,
+                          ),
                           width: 2,
                         ),
                       ),
@@ -103,9 +109,9 @@ class NotificationCard extends ConsumerWidget {
                         size: 24,
                       ),
                     ),
-                    
+
                     const SizedBox(width: 16),
-                    
+
                     // Content
                     Expanded(
                       child: Column(
@@ -119,25 +125,37 @@ class NotificationCard extends ConsumerWidget {
                                   _getNotificationTitle(),
                                   style: TextStyle(
                                     fontSize: 16,
-                                    fontWeight: isUnread ? FontWeight.w600 : FontWeight.w500,
+                                    fontWeight: isUnread
+                                        ? FontWeight.w600
+                                        : FontWeight.w500,
                                     color: ChoiceLuxTheme.softWhite,
                                   ),
                                 ),
                               ),
-                              
+
                               // Priority indicator
                               if (isHighPriority) ...[
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: isUrgent 
-                                        ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.2)
-                                        : ChoiceLuxTheme.orange.withValues(alpha: 0.2),
+                                    color: isUrgent
+                                        ? ChoiceLuxTheme.errorColor.withValues(
+                                            alpha: 0.2,
+                                          )
+                                        : ChoiceLuxTheme.orange.withValues(
+                                            alpha: 0.2,
+                                          ),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                      color: isUrgent 
-                                          ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.5)
-                                          : ChoiceLuxTheme.orange.withValues(alpha: 0.5),
+                                      color: isUrgent
+                                          ? ChoiceLuxTheme.errorColor
+                                                .withValues(alpha: 0.5)
+                                          : ChoiceLuxTheme.orange.withValues(
+                                              alpha: 0.5,
+                                            ),
                                       width: 1,
                                     ),
                                   ),
@@ -146,7 +164,7 @@ class NotificationCard extends ConsumerWidget {
                                     style: TextStyle(
                                       fontSize: 10,
                                       fontWeight: FontWeight.bold,
-                                      color: isUrgent 
+                                      color: isUrgent
                                           ? ChoiceLuxTheme.errorColor
                                           : ChoiceLuxTheme.orange,
                                     ),
@@ -154,14 +172,15 @@ class NotificationCard extends ConsumerWidget {
                                 ),
                                 const SizedBox(width: 8),
                               ],
-                              
+
                               // Action buttons
                               Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
                                   if (!notification.isRead)
                                     IconButton(
-                                      onPressed: () => _handleMarkAsRead(context, ref),
+                                      onPressed: () =>
+                                          _handleMarkAsRead(context, ref),
                                       icon: Icon(
                                         Icons.check_circle_outline,
                                         color: ChoiceLuxTheme.successColor,
@@ -174,7 +193,8 @@ class NotificationCard extends ConsumerWidget {
                                       ),
                                     ),
                                   IconButton(
-                                    onPressed: () => _handleDismiss(context, ref),
+                                    onPressed: () =>
+                                        _handleDismiss(context, ref),
                                     icon: Icon(
                                       Icons.close,
                                       color: ChoiceLuxTheme.platinumSilver,
@@ -190,9 +210,9 @@ class NotificationCard extends ConsumerWidget {
                               ),
                             ],
                           ),
-                          
+
                           const SizedBox(height: 8),
-                          
+
                           // Message
                           Text(
                             notification.message,
@@ -204,9 +224,9 @@ class NotificationCard extends ConsumerWidget {
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          
+
                           const SizedBox(height: 12),
-                          
+
                           // Footer row with timestamp and action
                           Row(
                             children: [
@@ -214,30 +234,40 @@ class NotificationCard extends ConsumerWidget {
                               Icon(
                                 Icons.access_time,
                                 size: 14,
-                                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                                color: ChoiceLuxTheme.platinumSilver.withValues(
+                                  alpha: 0.7,
+                                ),
                               ),
                               const SizedBox(width: 4),
                               Text(
                                 _getTimeAgo(),
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                                  color: ChoiceLuxTheme.platinumSilver
+                                      .withValues(alpha: 0.7),
                                 ),
                               ),
-                              
+
                               const Spacer(),
-                              
+
                               // Action button
-                              if (notification.actionData != null && notification.actionRoute != null)
+                              if (notification.actionData != null &&
+                                  notification.actionRoute != null)
                                 GestureDetector(
                                   onTap: () => _handleActionButtonTap(context),
                                   child: Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                                      color: ChoiceLuxTheme.richGold.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(12),
                                       border: Border.all(
-                                        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                                        color: ChoiceLuxTheme.richGold
+                                            .withValues(alpha: 0.3),
                                         width: 1,
                                       ),
                                     ),
@@ -282,7 +312,11 @@ class NotificationCard extends ConsumerWidget {
     return ChoiceLuxTheme.richGold.withValues(alpha: 0.2);
   }
 
-  Color _getIconBackgroundColor(bool isUnread, bool isHighPriority, bool isUrgent) {
+  Color _getIconBackgroundColor(
+    bool isUnread,
+    bool isHighPriority,
+    bool isUrgent,
+  ) {
     if (notification.isExpired) {
       return ChoiceLuxTheme.grey;
     }
@@ -367,7 +401,7 @@ class NotificationCard extends ConsumerWidget {
   String _getTimeAgo() {
     final now = DateTime.now();
     final difference = now.difference(notification.createdAt);
-    
+
     if (difference.inDays > 0) {
       return '${difference.inDays}d ago';
     } else if (difference.inHours > 0) {
@@ -388,7 +422,8 @@ class NotificationCard extends ConsumerWidget {
         final route = notification.actionRoute;
         if (route != null) {
           context.go(route);
-        } else if (notification.actionType == 'view_job' && notification.jobId.isNotEmpty) {
+        } else if (notification.actionType == 'view_job' &&
+            notification.jobId.isNotEmpty) {
           context.go('/jobs/${notification.jobId}/summary');
         }
       }
@@ -407,7 +442,9 @@ class NotificationCard extends ConsumerWidget {
     if (onDismiss != null) {
       onDismiss!();
     } else {
-      ref.read(notificationProvider.notifier).dismissNotification(notification.id);
+      ref
+          .read(notificationProvider.notifier)
+          .dismissNotification(notification.id);
     }
   }
 
@@ -416,9 +453,10 @@ class NotificationCard extends ConsumerWidget {
       final route = notification.actionRoute;
       if (route != null) {
         context.go(route);
-      } else if (notification.actionType == 'view_job' && notification.jobId.isNotEmpty) {
+      } else if (notification.actionType == 'view_job' &&
+          notification.jobId.isNotEmpty) {
         context.go('/jobs/${notification.jobId}/summary');
       }
     }
   }
-} 
+}

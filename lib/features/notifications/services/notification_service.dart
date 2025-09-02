@@ -20,14 +20,16 @@ class NotificationService {
         throw Exception('User not authenticated');
       }
 
-      Log.d('=== DEBUG: Fetching notifications for user: ${currentUser.id} ===');
+      Log.d(
+        '=== DEBUG: Fetching notifications for user: ${currentUser.id} ===',
+      );
 
       // Build query with all conditions
       var query = _supabase
-        .from('app_notifications')
-        .select()
-        .eq('user_id', currentUser.id)
-        .eq('is_hidden', false); // Only show non-hidden notifications
+          .from('app_notifications')
+          .select()
+          .eq('user_id', currentUser.id)
+          .eq('is_hidden', false); // Only show non-hidden notifications
 
       if (unreadOnly) {
         query = query.eq('is_read', false);
@@ -38,15 +40,19 @@ class NotificationService {
       }
 
       final response = await query
-        .order('created_at', ascending: false)
-        .range(offset, offset + limit - 1);
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
 
-      Log.d('Fetched ${response.length} notifications for user ${currentUser.id}');
+      Log.d(
+        'Fetched ${response.length} notifications for user ${currentUser.id}',
+      );
       if (response.isNotEmpty) {
         Log.d('Sample notification: ${response.first}');
       }
 
-      return response.map((json) => app_notification.AppNotification.fromJson(json)).toList();
+      return response
+          .map((json) => app_notification.AppNotification.fromJson(json))
+          .toList();
     } catch (e) {
       Log.e('Error fetching notifications: $e');
       rethrow;
@@ -61,8 +67,10 @@ class NotificationService {
         throw Exception('User not authenticated');
       }
 
-      final response = await _supabase
-        .rpc('get_notification_stats', params: {'user_uuid': currentUser.id});
+      final response = await _supabase.rpc(
+        'get_notification_stats',
+        params: {'user_uuid': currentUser.id},
+      );
 
       if (response == null) {
         // Fallback to manual calculation if RPC function doesn't exist
@@ -85,17 +93,20 @@ class NotificationService {
         throw Exception('User not authenticated');
       }
 
-      final notifications = await getNotifications(limit: 1000); // Get all notifications
-      
+      final notifications = await getNotifications(
+        limit: 1000,
+      ); // Get all notifications
+
       final totalCount = notifications.length;
       final unreadCount = notifications.where((n) => n.isUnread).length;
       final readCount = notifications.where((n) => n.isRead).length;
       final dismissedCount = notifications.where((n) => n.isDismissed).length;
-      
+
       // Group by type
       final byType = <String, int>{};
       for (final notification in notifications) {
-        byType[notification.notificationType] = (byType[notification.notificationType] ?? 0) + 1;
+        byType[notification.notificationType] =
+            (byType[notification.notificationType] ?? 0) + 1;
       }
 
       return {
@@ -121,13 +132,13 @@ class NotificationService {
   Future<void> markAsRead(String notificationId) async {
     try {
       await _supabase
-        .from('app_notifications')
-        .update({
-          'is_read': true,
-          'read_at': SATimeUtils.getCurrentSATimeISO(),
-          'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        })
-        .eq('id', notificationId);
+          .from('app_notifications')
+          .update({
+            'is_read': true,
+            'read_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('id', notificationId);
 
       Log.d('Marked notification $notificationId as read');
     } catch (e) {
@@ -139,8 +150,10 @@ class NotificationService {
   /// Mark multiple notifications as read
   Future<void> markMultipleAsRead(List<String> notificationIds) async {
     try {
-      await _supabase
-        .rpc('mark_notifications_as_read', params: {'notification_ids': notificationIds});
+      await _supabase.rpc(
+        'mark_notifications_as_read',
+        params: {'notification_ids': notificationIds},
+      );
 
       Log.d('Marked ${notificationIds.length} notifications as read');
     } catch (e) {
@@ -158,14 +171,14 @@ class NotificationService {
       }
 
       await _supabase
-        .from('app_notifications')
-        .update({
-          'is_read': true,
-          'read_at': SATimeUtils.getCurrentSATimeISO(),
-          'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        })
-        .eq('user_id', currentUser.id)
-        .eq('is_read', false);
+          .from('app_notifications')
+          .update({
+            'is_read': true,
+            'read_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('user_id', currentUser.id)
+          .eq('is_read', false);
 
       Log.d('Marked all notifications as read');
     } catch (e) {
@@ -178,13 +191,13 @@ class NotificationService {
   Future<void> dismissNotification(String notificationId) async {
     try {
       await _supabase
-        .from('app_notifications')
-        .update({
-          'is_hidden': true,
-          'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
-          'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        })
-        .eq('id', notificationId);
+          .from('app_notifications')
+          .update({
+            'is_hidden': true,
+            'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('id', notificationId);
 
       Log.d('Dismissed notification $notificationId');
     } catch (e) {
@@ -197,9 +210,9 @@ class NotificationService {
   Future<void> deleteNotification(String notificationId) async {
     try {
       await _supabase
-        .from('app_notifications')
-        .delete()
-        .eq('id', notificationId);
+          .from('app_notifications')
+          .delete()
+          .eq('id', notificationId);
 
       Log.d('Deleted notification $notificationId');
     } catch (e) {
@@ -220,18 +233,18 @@ class NotificationService {
   }) async {
     try {
       final response = await _supabase
-        .from('app_notifications')
-        .insert({
-          'user_id': userId,
-          'job_id': jobId,
-          'message': message,
-          'notification_type': notificationType,
-          'priority': priority,
-          'action_data': actionData,
-          'expires_at': expiresAt?.toIso8601String(),
-        })
-        .select()
-        .single();
+          .from('app_notifications')
+          .insert({
+            'user_id': userId,
+            'job_id': jobId,
+            'message': message,
+            'notification_type': notificationType,
+            'priority': priority,
+            'action_data': actionData,
+            'expires_at': expiresAt?.toIso8601String(),
+          })
+          .select()
+          .single();
 
       Log.d('Created notification: ${response['id']}');
       return app_notification.AppNotification.fromJson(response);
@@ -289,10 +302,12 @@ class NotificationService {
       final notification = await createNotification(
         userId: userId,
         jobId: jobId,
-        message: isReassignment 
-          ? 'Job #$jobNumber has been reassigned to you. Please confirm your assignment.'
-          : 'New job #$jobNumber has been assigned to you. Please confirm your assignment.',
-        notificationType: isReassignment ? 'job_reassignment' : 'job_assignment',
+        message: isReassignment
+            ? 'Job #$jobNumber has been reassigned to you. Please confirm your assignment.'
+            : 'New job #$jobNumber has been assigned to you. Please confirm your assignment.',
+        notificationType: isReassignment
+            ? 'job_reassignment'
+            : 'job_assignment',
         priority: 'high',
         actionData: {
           'job_id': jobId,
@@ -306,12 +321,14 @@ class NotificationService {
       await sendPushNotification(
         userId: userId,
         title: isReassignment ? 'Job Reassigned' : 'New Job Assignment',
-        body: isReassignment 
-          ? 'Job #$jobNumber has been reassigned to you'
-          : 'New job #$jobNumber has been assigned to you',
+        body: isReassignment
+            ? 'Job #$jobNumber has been reassigned to you'
+            : 'New job #$jobNumber has been assigned to you',
         data: {
           'action': isReassignment ? 'job_reassigned' : 'new_job_assigned',
-          'notification_type': isReassignment ? 'job_reassignment' : 'job_assignment',
+          'notification_type': isReassignment
+              ? 'job_reassignment'
+              : 'job_assignment',
           'job_id': jobId,
           'job_number': jobNumber,
           'route': '/jobs/$jobId/summary',
@@ -383,7 +400,7 @@ class NotificationService {
     try {
       String message;
       String title;
-      
+
       switch (newStatus) {
         case 'in_progress':
           message = 'Job #$jobNumber has started.';
@@ -543,23 +560,27 @@ class NotificationService {
 
       // Use a simpler stream approach
       final stream = _supabase
-        .from('app_notifications')
-        .stream(primaryKey: ['id'])
-        .eq('user_id', currentUser.id)
-        .order('created_at', ascending: false);
+          .from('app_notifications')
+          .stream(primaryKey: ['id'])
+          .eq('user_id', currentUser.id)
+          .order('created_at', ascending: false);
 
       return stream.map((list) {
-        var notifications = list.map((json) => app_notification.AppNotification.fromJson(json)).toList();
-        
+        var notifications = list
+            .map((json) => app_notification.AppNotification.fromJson(json))
+            .toList();
+
         // Apply filters in Dart code
         if (unreadOnly) {
           notifications = notifications.where((n) => !n.isRead).toList();
         }
-        
+
         if (notificationType != null) {
-          notifications = notifications.where((n) => n.notificationType == notificationType).toList();
+          notifications = notifications
+              .where((n) => n.notificationType == notificationType)
+              .toList();
         }
-        
+
         return notifications;
       });
     } catch (e) {
@@ -583,12 +604,12 @@ class NotificationService {
   Future<void> dismissJobNotifications(String jobId) async {
     try {
       await _supabase
-        .from('app_notifications')
-        .update({
-          'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
-          'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        })
-        .eq('job_id', jobId);
+          .from('app_notifications')
+          .update({
+            'dismissed_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId);
 
       Log.d('Dismissed notifications for job: $jobId');
     } catch (e) {
@@ -606,7 +627,7 @@ class NotificationService {
           .select('id')
           .eq('job_number', jobNumber)
           .single();
-      
+
       return response['id'] as int?;
     } catch (e) {
       Log.e('Error finding job ID for job number $jobNumber: $e');
@@ -618,19 +639,20 @@ class NotificationService {
   static Future<void> fixNotificationJobIds() async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       // Get notifications with job numbers instead of job IDs
       final response = await supabase
           .from('app_notifications')
           .select('id, job_id, action_data')
           .or('job_id.like.*-*,job_id.like.*JOB-*');
-      
+
       for (final notification in response) {
         final jobId = notification['job_id']?.toString();
-        if (jobId != null && (jobId.contains('-') || jobId.startsWith('JOB-'))) {
+        if (jobId != null &&
+            (jobId.contains('-') || jobId.startsWith('JOB-'))) {
           // This is a job number, try to find the actual job ID
           final actualJobId = await getJobIdByJobNumber(jobId);
-          
+
           if (actualJobId != null) {
             // Update the notification with the correct job ID
             await supabase
@@ -640,8 +662,10 @@ class NotificationService {
                   'updated_at': SATimeUtils.getCurrentSATimeISO(),
                 })
                 .eq('id', notification['id']);
-            
-            Log.d('Fixed notification ${notification['id']}: $jobId -> $actualJobId');
+
+            Log.d(
+              'Fixed notification ${notification['id']}: $jobId -> $actualJobId',
+            );
           } else {
             // Couldn't find the job, mark it as problematic
             await supabase
@@ -650,13 +674,15 @@ class NotificationService {
                   'job_id': null,
                   'action_data': {
                     ...notification['action_data'] ?? {},
-                    'error': 'Job number not found: $jobId'
+                    'error': 'Job number not found: $jobId',
                   },
                   'updated_at': SATimeUtils.getCurrentSATimeISO(),
                 })
                 .eq('id', notification['id']);
-            
-            Log.e('Could not find job for notification ${notification['id']}: $jobId');
+
+            Log.e(
+              'Could not find job for notification ${notification['id']}: $jobId',
+            );
           }
         }
       }
@@ -675,39 +701,38 @@ class NotificationService {
   }) async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       // Get all administrators, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
           .inFilter('role', ['administrator', 'manager', 'driver_manager'])
           .eq('status', 'active');
-      
-      final message = 'Job Started: $driverName is driving $passengerName ($clientName) - Job #$jobNumber';
-      
+
+      final message =
+          'Job Started: $driverName is driving $passengerName ($clientName) - Job #$jobNumber';
+
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase
-            .from('app_notifications')
-            .insert({
-              'user_id': user['id'],
-              'message': message,
-              'notification_type': 'job_start',
-              'job_id': jobId,
-              'priority': 'high',
-              'action_data': {
-                'route': '/jobs/$jobId/summary',
-                'job_id': jobId,
-                'driver_name': driverName,
-                'client_name': clientName,
-                'passenger_name': passengerName,
-                'job_number': jobNumber,
-              },
-              'created_at': SATimeUtils.getCurrentSATimeISO(),
-              'updated_at': SATimeUtils.getCurrentSATimeISO(),
-            });
+        await supabase.from('app_notifications').insert({
+          'user_id': user['id'],
+          'message': message,
+          'notification_type': 'job_start',
+          'job_id': jobId,
+          'priority': 'high',
+          'action_data': {
+            'route': '/jobs/$jobId/summary',
+            'job_id': jobId,
+            'driver_name': driverName,
+            'client_name': clientName,
+            'passenger_name': passengerName,
+            'job_number': jobNumber,
+          },
+          'created_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        });
       }
-      
+
       Log.d('Sent job start notifications to ${usersResponse.length} users');
     } catch (e) {
       Log.e('Error sending job start notification: $e');
@@ -723,41 +748,42 @@ class NotificationService {
   }) async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       // Get all administrators, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
           .inFilter('role', ['administrator', 'manager', 'driver_manager'])
           .eq('status', 'active');
-      
+
       final stepDisplayName = _getStepDisplayName(stepName);
-      final message = 'Driver Update: $driverName completed $stepDisplayName - Job #$jobNumber';
-      
+      final message =
+          'Driver Update: $driverName completed $stepDisplayName - Job #$jobNumber';
+
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase
-            .from('app_notifications')
-            .insert({
-              'user_id': user['id'],
-              'message': message,
-              'notification_type': 'step_completion',
-              'job_id': jobId,
-              'priority': 'normal',
-              'action_data': {
-                'route': '/jobs/$jobId/summary',
-                'job_id': jobId,
-                'driver_name': driverName,
-                'step_name': stepName,
-                'step_display_name': stepDisplayName,
-                'job_number': jobNumber,
-              },
-              'created_at': SATimeUtils.getCurrentSATimeISO(),
-              'updated_at': SATimeUtils.getCurrentSATimeISO(),
-            });
+        await supabase.from('app_notifications').insert({
+          'user_id': user['id'],
+          'message': message,
+          'notification_type': 'step_completion',
+          'job_id': jobId,
+          'priority': 'normal',
+          'action_data': {
+            'route': '/jobs/$jobId/summary',
+            'job_id': jobId,
+            'driver_name': driverName,
+            'step_name': stepName,
+            'step_display_name': stepDisplayName,
+            'job_number': jobNumber,
+          },
+          'created_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        });
       }
-      
-      Log.d('Sent step completion notifications to ${usersResponse.length} users');
+
+      Log.d(
+        'Sent step completion notifications to ${usersResponse.length} users',
+      );
     } catch (e) {
       Log.e('Error sending step completion notification: $e');
     }
@@ -773,40 +799,41 @@ class NotificationService {
   }) async {
     try {
       final supabase = Supabase.instance.client;
-      
+
       // Get all administrators, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
           .inFilter('role', ['administrator', 'manager', 'driver_manager'])
           .eq('status', 'active');
-      
-      final message = 'Job Completed: $driverName finished job for $passengerName ($clientName) - Job #$jobNumber';
-      
+
+      final message =
+          'Job Completed: $driverName finished job for $passengerName ($clientName) - Job #$jobNumber';
+
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase
-            .from('app_notifications')
-            .insert({
-              'user_id': user['id'],
-              'message': message,
-              'notification_type': 'job_completion',
-              'job_id': jobId,
-              'priority': 'high',
-              'action_data': {
-                'route': '/jobs/$jobId/summary',
-                'job_id': jobId,
-                'driver_name': driverName,
-                'client_name': clientName,
-                'passenger_name': passengerName,
-                'job_number': jobNumber,
-              },
-              'created_at': SATimeUtils.getCurrentSATimeISO(),
-              'updated_at': SATimeUtils.getCurrentSATimeISO(),
-            });
+        await supabase.from('app_notifications').insert({
+          'user_id': user['id'],
+          'message': message,
+          'notification_type': 'job_completion',
+          'job_id': jobId,
+          'priority': 'high',
+          'action_data': {
+            'route': '/jobs/$jobId/summary',
+            'job_id': jobId,
+            'driver_name': driverName,
+            'client_name': clientName,
+            'passenger_name': passengerName,
+            'job_number': jobNumber,
+          },
+          'created_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        });
       }
-      
-      Log.d('Sent job completion notifications to ${usersResponse.length} users');
+
+      Log.d(
+        'Sent job completion notifications to ${usersResponse.length} users',
+      );
     } catch (e) {
       Log.e('Error sending job completion notification: $e');
     }
@@ -831,4 +858,4 @@ class NotificationService {
         return stepName;
     }
   }
-} 
+}

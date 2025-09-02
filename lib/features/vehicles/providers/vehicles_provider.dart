@@ -17,9 +17,9 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<List<Vehicle>> _fetchVehicles() async {
     try {
       Log.d('Fetching vehicles...');
-      
+
       final result = await _vehiclesRepository.fetchVehicles();
-      
+
       if (result.isSuccess) {
         final vehicles = result.data!;
         Log.d('Fetched ${vehicles.length} vehicles successfully');
@@ -38,9 +38,9 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<Map<String, dynamic>> createVehicle(Vehicle vehicle) async {
     try {
       Log.d('Creating vehicle: ${vehicle.make} ${vehicle.model}');
-      
+
       final result = await _vehiclesRepository.createVehicle(vehicle);
-      
+
       if (result.isSuccess) {
         // Refresh vehicles list
         ref.invalidateSelf();
@@ -60,13 +60,15 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<void> updateVehicle(Vehicle vehicle) async {
     try {
       Log.d('Updating vehicle: ${vehicle.id}');
-      
+
       final result = await _vehiclesRepository.updateVehicle(vehicle);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentVehicles = state.value ?? [];
-        final updatedVehicles = currentVehicles.map((v) => v.id == vehicle.id ? vehicle : v).toList();
+        final updatedVehicles = currentVehicles
+            .map((v) => v.id == vehicle.id ? vehicle : v)
+            .toList();
         state = AsyncValue.data(updatedVehicles);
         Log.d('Vehicle updated successfully');
       } else {
@@ -83,13 +85,15 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<void> deleteVehicle(String vehicleId) async {
     try {
       Log.d('Deleting vehicle: $vehicleId');
-      
+
       final result = await _vehiclesRepository.deleteVehicle(vehicleId);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentVehicles = state.value ?? [];
-        final updatedVehicles = currentVehicles.where((vehicle) => vehicle.id != vehicleId).toList();
+        final updatedVehicles = currentVehicles
+            .where((vehicle) => vehicle.id != vehicleId)
+            .toList();
         state = AsyncValue.data(updatedVehicles);
         Log.d('Vehicle deleted successfully');
       } else {
@@ -106,9 +110,9 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<Vehicle?> getVehicleById(String vehicleId) async {
     try {
       Log.d('Getting vehicle by ID: $vehicleId');
-      
+
       final result = await _vehiclesRepository.getVehicleById(vehicleId);
-      
+
       if (result.isSuccess) {
         return result.data;
       } else {
@@ -125,9 +129,9 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<List<Vehicle>> getAvailableVehicles() async {
     try {
       Log.d('Getting available vehicles');
-      
+
       final result = await _vehiclesRepository.getAvailableVehicles();
-      
+
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -157,4 +161,6 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
 }
 
 /// Provider for VehiclesNotifier using AsyncNotifierProvider
-final vehiclesProvider = AsyncNotifierProvider<VehiclesNotifier, List<Vehicle>>(() => VehiclesNotifier()); 
+final vehiclesProvider = AsyncNotifierProvider<VehiclesNotifier, List<Vehicle>>(
+  () => VehiclesNotifier(),
+);

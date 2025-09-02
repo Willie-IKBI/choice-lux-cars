@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 
 /// Repository for agent-related data operations
-/// 
+///
 /// Encapsulates all Supabase queries and returns domain models.
 /// This layer separates data access from business logic.
 class AgentsRepository {
@@ -19,7 +19,7 @@ class AgentsRepository {
   Future<Result<List<Agent>>> fetchAgentsByClient(String clientId) async {
     try {
       Log.d('Fetching agents for client: $clientId');
-      
+
       final response = await _supabase
           .from('agents')
           .select()
@@ -27,7 +27,7 @@ class AgentsRepository {
           .order('agent_name', ascending: true);
 
       Log.d('Fetched ${response.length} agents for client: $clientId');
-      
+
       final agents = response.map((json) => Agent.fromJson(json)).toList();
       return Result.success(agents);
     } catch (error) {
@@ -40,13 +40,13 @@ class AgentsRepository {
   Future<Result<Map<String, dynamic>>> createAgent(Agent agent) async {
     try {
       Log.d('Creating agent: ${agent.agentName}');
-      
+
       final agentData = agent.toJson();
       // Ensure client_id is properly handled
       if (agentData['client_id'] == null) {
         agentData['client_id'] = agent.clientKey;
       }
-      
+
       final response = await _supabase
           .from('agents')
           .insert(agentData)
@@ -65,15 +65,14 @@ class AgentsRepository {
   Future<Result<void>> updateAgent(Agent agent) async {
     try {
       Log.d('Updating agent: ${agent.id}');
-      
+
       if (agent.id == null) {
-        return const Result.failure(UnknownException('Agent ID is required for update'));
+        return const Result.failure(
+          UnknownException('Agent ID is required for update'),
+        );
       }
-      
-      await _supabase
-          .from('agents')
-          .update(agent.toJson())
-          .eq('id', agent.id!);
+
+      await _supabase.from('agents').update(agent.toJson()).eq('id', agent.id!);
 
       Log.d('Agent updated successfully');
       return const Result.success(null);
@@ -87,11 +86,8 @@ class AgentsRepository {
   Future<Result<void>> deleteAgent(String agentId) async {
     try {
       Log.d('Deleting agent: $agentId');
-      
-      await _supabase
-          .from('agents')
-          .delete()
-          .eq('id', agentId);
+
+      await _supabase.from('agents').delete().eq('id', agentId);
 
       Log.d('Agent deleted successfully');
       return const Result.success(null);
@@ -105,7 +101,7 @@ class AgentsRepository {
   Future<Result<Agent?>> getAgentById(String agentId) async {
     try {
       Log.d('Fetching agent by ID: $agentId');
-      
+
       final response = await _supabase
           .from('agents')
           .select()
@@ -134,7 +130,7 @@ class AgentsRepository {
   Future<Result<List<Agent>>> searchAgents(String query) async {
     try {
       Log.d('Searching agents with query: $query');
-      
+
       final response = await _supabase
           .from('agents')
           .select()
@@ -142,7 +138,7 @@ class AgentsRepository {
           .order('agent_name', ascending: true);
 
       Log.d('Found ${response.length} agents matching query: $query');
-      
+
       final agents = response.map((json) => Agent.fromJson(json)).toList();
       return Result.success(agents);
     } catch (error) {
@@ -157,20 +153,20 @@ class AgentsRepository {
       return Result.failure(AuthException(error.message));
     } else if (error is PostgrestException) {
       // Check if it's a network-related error
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout') ||
           error.message.contains('connection')) {
         return Result.failure(NetworkException(error.message));
       }
       // Check if it's an auth-related error
-      if (error.message.contains('JWT') || 
+      if (error.message.contains('JWT') ||
           error.message.contains('unauthorized') ||
           error.message.contains('forbidden')) {
         return Result.failure(AuthException(error.message));
       }
       return Result.failure(UnknownException(error.message));
     } else if (error is StorageException) {
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout')) {
         return Result.failure(NetworkException(error.message));
       }

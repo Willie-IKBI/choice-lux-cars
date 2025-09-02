@@ -11,7 +11,8 @@ class VehicleEditorScreen extends ConsumerStatefulWidget {
   const VehicleEditorScreen({Key? key, this.vehicle}) : super(key: key);
 
   @override
-  ConsumerState<VehicleEditorScreen> createState() => _VehicleEditorScreenState();
+  ConsumerState<VehicleEditorScreen> createState() =>
+      _VehicleEditorScreenState();
 }
 
 class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
@@ -42,7 +43,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     model = v?.model ?? '';
     regPlate = v?.regPlate ?? '';
     fuelType = v?.fuelType ?? 'Petrol';
-            status = v?.status ?? 'Active';
+    status = v?.status ?? 'Active';
     regDate = v?.regDate ?? DateTime.now();
     licenseExpiryDate = v?.licenseExpiryDate ?? DateTime.now();
     vehicleImage = v?.vehicleImage;
@@ -51,12 +52,12 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   Future<void> _pickAndUploadImage() async {
     final picker = ImagePicker();
     final picked = await picker.pickImage(
-      source: ImageSource.gallery, 
+      source: ImageSource.gallery,
       imageQuality: 80,
       maxWidth: 800,
       maxHeight: 600,
     );
-    
+
     if (picked != null) {
       setState(() => isLoading = true);
       try {
@@ -65,23 +66,31 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         if (bytes.length < 10) {
           throw Exception('Invalid image file');
         }
-        
+
         // Check if it's a valid image by looking at the first few bytes
         final header = bytes.take(10).toList();
         if (!_isValidImageHeader(header)) {
-          throw Exception('Invalid image format. Please select a valid image file (JPEG, PNG, etc.)');
+          throw Exception(
+            'Invalid image format. Please select a valid image file (JPEG, PNG, etc.)',
+          );
         }
-        
-        final url = await UploadService.uploadVehicleImageWithId(bytes, widget.vehicle?.id);
+
+        final url = await UploadService.uploadVehicleImageWithId(
+          bytes,
+          widget.vehicle?.id,
+        );
         setState(() => vehicleImage = url);
-        
+
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Image uploaded successfully!'), backgroundColor: Colors.green),
+          const SnackBar(
+            content: Text('Image uploaded successfully!'),
+            backgroundColor: Colors.green,
+          ),
         );
       } catch (e) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Image upload failed: ${e.toString()}'), 
+            content: Text('Image upload failed: ${e.toString()}'),
             backgroundColor: Colors.red,
             duration: const Duration(seconds: 5),
           ),
@@ -95,26 +104,42 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   void _removeImage() {
     setState(() => vehicleImage = null);
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Image removed'), backgroundColor: Colors.orange),
+      const SnackBar(
+        content: Text('Image removed'),
+        backgroundColor: Colors.orange,
+      ),
     );
   }
 
   bool _isValidImageHeader(List<int> header) {
     // Check for common image file signatures
     if (header.length < 8) return false;
-    
+
     // JPEG: FF D8 FF
-    if (header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF) return true;
-    
+    if (header[0] == 0xFF && header[1] == 0xD8 && header[2] == 0xFF)
+      return true;
+
     // PNG: 89 50 4E 47 0D 0A 1A 0A
-    if (header[0] == 0x89 && header[1] == 0x50 && header[2] == 0x4E && header[3] == 0x47) return true;
-    
+    if (header[0] == 0x89 &&
+        header[1] == 0x50 &&
+        header[2] == 0x4E &&
+        header[3] == 0x47)
+      return true;
+
     // GIF: 47 49 46 38
-    if (header[0] == 0x47 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x38) return true;
-    
+    if (header[0] == 0x47 &&
+        header[1] == 0x49 &&
+        header[2] == 0x46 &&
+        header[3] == 0x38)
+      return true;
+
     // WebP: 52 49 46 46 ... 57 45 42 50
-    if (header[0] == 0x52 && header[1] == 0x49 && header[2] == 0x46 && header[3] == 0x46) return true;
-    
+    if (header[0] == 0x52 &&
+        header[1] == 0x49 &&
+        header[2] == 0x46 &&
+        header[3] == 0x46)
+      return true;
+
     return false;
   }
 
@@ -122,7 +147,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     if (_formKey.currentState?.validate() ?? false) {
       _formKey.currentState?.save();
       setState(() => isLoading = true);
-      
+
       try {
         final vehicle = Vehicle(
           id: widget.vehicle?.id,
@@ -137,19 +162,19 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           createdAt: widget.vehicle?.createdAt,
           updatedAt: DateTime.now(),
         );
-        
+
         final notifier = ref.read(vehiclesProvider.notifier);
         if (isEdit) {
           await notifier.updateVehicle(vehicle);
         } else {
           await notifier.addVehicle(vehicle);
         }
-        
+
         setState(() {
           isLoading = false;
           showSuccessMessage = true;
         });
-        
+
         // Show success message and close after delay
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -164,11 +189,10 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
             duration: const Duration(seconds: 2),
           ),
         );
-        
+
         Future.delayed(const Duration(seconds: 2), () {
           if (mounted) Navigator.of(context).pop();
         });
-        
       } catch (e) {
         setState(() => isLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
@@ -186,7 +210,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isActive ? Colors.green.withOpacity(0.1) : Colors.red.withOpacity(0.1),
+        color: isActive
+            ? Colors.green.withOpacity(0.1)
+            : Colors.red.withOpacity(0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: isActive ? Colors.green : Colors.red,
@@ -218,8 +244,12 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   Widget _buildLicenseCountdownIndicator() {
     final daysRemaining = licenseExpiryDate.difference(DateTime.now()).inDays;
     final isOverdue = daysRemaining < 0;
-    final statusColor = isOverdue ? Colors.red : (daysRemaining < 30 ? Colors.orange : Colors.green);
-    final statusText = isOverdue ? 'Overdue' : (daysRemaining == 0 ? 'Today' : '$daysRemaining days');
+    final statusColor = isOverdue
+        ? Colors.red
+        : (daysRemaining < 30 ? Colors.orange : Colors.green);
+    final statusText = isOverdue
+        ? 'Overdue'
+        : (daysRemaining == 0 ? 'Today' : '$daysRemaining days');
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -252,7 +282,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
 
   Widget _buildVehicleMetadata() {
     if (!isEdit) return const SizedBox.shrink();
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -291,8 +321,14 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           ),
           const SizedBox(height: 20),
           _buildMetadataRow('Vehicle ID', '#${widget.vehicle?.id ?? 'N/A'}'),
-          _buildMetadataRow('Created', widget.vehicle?.createdAt?.toString().split(' ')[0] ?? 'N/A'),
-          _buildMetadataRow('Last Updated', widget.vehicle?.updatedAt?.toString().split(' ')[0] ?? 'N/A'),
+          _buildMetadataRow(
+            'Created',
+            widget.vehicle?.createdAt?.toString().split(' ')[0] ?? 'N/A',
+          ),
+          _buildMetadataRow(
+            'Last Updated',
+            widget.vehicle?.updatedAt?.toString().split(' ')[0] ?? 'N/A',
+          ),
           const SizedBox(height: 16),
           Row(
             children: [
@@ -300,10 +336,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               const SizedBox(width: 8),
               Text(
                 'License Status',
-                style: TextStyle(
-                  color: Colors.grey[400],
-                  fontSize: 14,
-                ),
+                style: TextStyle(color: Colors.grey[400], fontSize: 14),
               ),
             ],
           ),
@@ -321,13 +354,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 14,
-            ),
-          ),
+          Text(label, style: TextStyle(color: Colors.grey[400], fontSize: 14)),
           Text(
             value,
             style: TextStyle(
@@ -360,18 +387,19 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   }
 
   Widget _buildPageTitle() {
-    if (!isEdit) return Text(
-      'Add Vehicle',
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
-    );
-    
+    if (!isEdit)
+      return Text(
+        'Add Vehicle',
+        style: Theme.of(
+          context,
+        ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+      );
+
     return Text(
       'Edit: ${widget.vehicle?.make ?? ''} ${widget.vehicle?.model ?? ''}',
-      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-        fontWeight: FontWeight.bold,
-      ),
+      style: Theme.of(
+        context,
+      ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
     );
@@ -381,8 +409,10 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width > 900;
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final isTablet = MediaQuery.of(context).size.width >= 600 && MediaQuery.of(context).size.width <= 900;
-    
+    final isTablet =
+        MediaQuery.of(context).size.width >= 600 &&
+        MediaQuery.of(context).size.width <= 900;
+
     final content = SingleChildScrollView(
       padding: EdgeInsets.all(isMobile ? 16 : 24),
       child: Form(
@@ -392,17 +422,13 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           children: [
             // Header with status badge (only for desktop)
             if (isDesktop) ...[
-              Row(
-                children: [
-                  Expanded(child: _buildPageTitle()),
-                ],
-              ),
+              Row(children: [Expanded(child: _buildPageTitle())]),
               const SizedBox(height: 32),
             ],
-            
+
             // Vehicle details section
             _buildSectionHeader('Vehicle Details'),
-            
+
             // Make and Model row
             if (isMobile) ...[
               TextFormField(
@@ -412,7 +438,8 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   labelText: 'Make',
                   hintText: 'Enter vehicle make',
                 ),
-                validator: (value) => value?.isEmpty == true ? 'Make is required' : null,
+                validator: (value) =>
+                    value?.isEmpty == true ? 'Make is required' : null,
               ),
               const SizedBox(height: fieldSpacing),
               TextFormField(
@@ -422,7 +449,8 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   labelText: 'Model',
                   hintText: 'Enter vehicle model',
                 ),
-                validator: (value) => value?.isEmpty == true ? 'Model is required' : null,
+                validator: (value) =>
+                    value?.isEmpty == true ? 'Model is required' : null,
               ),
             ] else ...[
               Row(
@@ -435,7 +463,8 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                         labelText: 'Make',
                         hintText: 'Enter vehicle make',
                       ),
-                      validator: (value) => value?.isEmpty == true ? 'Make is required' : null,
+                      validator: (value) =>
+                          value?.isEmpty == true ? 'Make is required' : null,
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -447,14 +476,15 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                         labelText: 'Model',
                         hintText: 'Enter vehicle model',
                       ),
-                      validator: (value) => value?.isEmpty == true ? 'Model is required' : null,
+                      validator: (value) =>
+                          value?.isEmpty == true ? 'Model is required' : null,
                     ),
                   ),
                 ],
               ),
             ],
             const SizedBox(height: fieldSpacing),
-            
+
             // Registration plate
             TextFormField(
               initialValue: regPlate,
@@ -463,14 +493,24 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 labelText: 'Registration Plate',
                 hintText: 'Enter registration plate',
               ),
-              validator: (value) => value?.isEmpty == true ? 'Registration plate is required' : null,
+              validator: (value) => value?.isEmpty == true
+                  ? 'Registration plate is required'
+                  : null,
             ),
             const SizedBox(height: fieldSpacing),
-            
+
             // Fuel type and status row - full width dropdowns
             if (isMobile) ...[
               DropdownButtonFormField<String>(
-                value: ['Petrol', 'Diesel', 'Hybrid', 'Electric'].contains(fuelType) ? fuelType : 'Petrol',
+                value:
+                    [
+                      'Petrol',
+                      'Diesel',
+                      'Hybrid',
+                      'Electric',
+                    ].contains(fuelType)
+                    ? fuelType
+                    : 'Petrol',
                 items: const [
                   DropdownMenuItem(value: 'Petrol', child: Text('Petrol')),
                   DropdownMenuItem(value: 'Diesel', child: Text('Diesel')),
@@ -485,10 +525,15 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               ),
               const SizedBox(height: fieldSpacing),
               DropdownButtonFormField<String>(
-                value: ['Active', 'Deactivated'].contains(status) ? status : 'Active',
+                value: ['Active', 'Deactivated'].contains(status)
+                    ? status
+                    : 'Active',
                 items: const [
                   DropdownMenuItem(value: 'Active', child: Text('Active')),
-                  DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
+                  DropdownMenuItem(
+                    value: 'Deactivated',
+                    child: Text('Deactivated'),
+                  ),
                 ],
                 onChanged: (v) => setState(() => status = v ?? 'Active'),
                 decoration: const InputDecoration(
@@ -501,14 +546,35 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 children: [
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Petrol', 'Diesel', 'Hybrid', 'Electric'].contains(fuelType) ? fuelType : 'Petrol',
+                      value:
+                          [
+                            'Petrol',
+                            'Diesel',
+                            'Hybrid',
+                            'Electric',
+                          ].contains(fuelType)
+                          ? fuelType
+                          : 'Petrol',
                       items: const [
-                        DropdownMenuItem(value: 'Petrol', child: Text('Petrol')),
-                        DropdownMenuItem(value: 'Diesel', child: Text('Diesel')),
-                        DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
-                        DropdownMenuItem(value: 'Electric', child: Text('Electric')),
+                        DropdownMenuItem(
+                          value: 'Petrol',
+                          child: Text('Petrol'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Diesel',
+                          child: Text('Diesel'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Hybrid',
+                          child: Text('Hybrid'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Electric',
+                          child: Text('Electric'),
+                        ),
                       ],
-                      onChanged: (v) => setState(() => fuelType = v ?? 'Petrol'),
+                      onChanged: (v) =>
+                          setState(() => fuelType = v ?? 'Petrol'),
                       decoration: const InputDecoration(
                         labelText: 'Fuel Type',
                         hintText: 'Select fuel type',
@@ -518,10 +584,18 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: DropdownButtonFormField<String>(
-                      value: ['Active', 'Deactivated'].contains(status) ? status : 'Active',
+                      value: ['Active', 'Deactivated'].contains(status)
+                          ? status
+                          : 'Active',
                       items: const [
-                        DropdownMenuItem(value: 'Active', child: Text('Active')),
-                        DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
+                        DropdownMenuItem(
+                          value: 'Active',
+                          child: Text('Active'),
+                        ),
+                        DropdownMenuItem(
+                          value: 'Deactivated',
+                          child: Text('Deactivated'),
+                        ),
                       ],
                       onChanged: (v) => setState(() => status = v ?? 'Active'),
                       decoration: const InputDecoration(
@@ -533,16 +607,18 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 ],
               ),
             ],
-            
+
             // Dates section
             _buildSectionHeader('Registration & License'),
-            
+
             // Registration and license dates row
             if (isMobile) ...[
               TextFormField(
                 readOnly: true,
                 controller: TextEditingController(
-                  text: regDate != DateTime(2000, 1, 1) ? regDate.toString().split(' ')[0] : '',
+                  text: regDate != DateTime(2000, 1, 1)
+                      ? regDate.toString().split(' ')[0]
+                      : '',
                 ),
                 decoration: const InputDecoration(
                   labelText: 'Registration Date',
@@ -552,7 +628,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 onTap: () async {
                   final date = await showDatePicker(
                     context: context,
-                    initialDate: regDate != DateTime(2000, 1, 1) ? regDate : DateTime.now(),
+                    initialDate: regDate != DateTime(2000, 1, 1)
+                        ? regDate
+                        : DateTime.now(),
                     firstDate: DateTime(2000),
                     lastDate: DateTime(2100),
                   );
@@ -568,7 +646,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   TextFormField(
                     readOnly: true,
                     controller: TextEditingController(
-                      text: licenseExpiryDate != DateTime(2000, 1, 1) ? licenseExpiryDate.toString().split(' ')[0] : '',
+                      text: licenseExpiryDate != DateTime(2000, 1, 1)
+                          ? licenseExpiryDate.toString().split(' ')[0]
+                          : '',
                     ),
                     decoration: const InputDecoration(
                       labelText: 'License Expiry Date',
@@ -578,7 +658,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                     onTap: () async {
                       final date = await showDatePicker(
                         context: context,
-                        initialDate: licenseExpiryDate != DateTime(2000, 1, 1) ? licenseExpiryDate : DateTime.now(),
+                        initialDate: licenseExpiryDate != DateTime(2000, 1, 1)
+                            ? licenseExpiryDate
+                            : DateTime.now(),
                         firstDate: DateTime(2000),
                         lastDate: DateTime(2100),
                       );
@@ -598,7 +680,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                     child: TextFormField(
                       readOnly: true,
                       controller: TextEditingController(
-                        text: regDate != DateTime(2000, 1, 1) ? regDate.toString().split(' ')[0] : '',
+                        text: regDate != DateTime(2000, 1, 1)
+                            ? regDate.toString().split(' ')[0]
+                            : '',
                       ),
                       decoration: const InputDecoration(
                         labelText: 'Registration Date',
@@ -608,7 +692,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
-                          initialDate: regDate != DateTime(2000, 1, 1) ? regDate : DateTime.now(),
+                          initialDate: regDate != DateTime(2000, 1, 1)
+                              ? regDate
+                              : DateTime.now(),
                           firstDate: DateTime(2000),
                           lastDate: DateTime(2100),
                         );
@@ -626,7 +712,9 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                         TextFormField(
                           readOnly: true,
                           controller: TextEditingController(
-                            text: licenseExpiryDate != DateTime(2000, 1, 1) ? licenseExpiryDate.toString().split(' ')[0] : '',
+                            text: licenseExpiryDate != DateTime(2000, 1, 1)
+                                ? licenseExpiryDate.toString().split(' ')[0]
+                                : '',
                           ),
                           decoration: const InputDecoration(
                             labelText: 'License Expiry Date',
@@ -636,7 +724,10 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                           onTap: () async {
                             final date = await showDatePicker(
                               context: context,
-                              initialDate: licenseExpiryDate != DateTime(2000, 1, 1) ? licenseExpiryDate : DateTime.now(),
+                              initialDate:
+                                  licenseExpiryDate != DateTime(2000, 1, 1)
+                                  ? licenseExpiryDate
+                                  : DateTime.now(),
                               firstDate: DateTime(2000),
                               lastDate: DateTime(2100),
                             );
@@ -653,16 +744,20 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 ],
               ),
             ],
-            
+
             // Image upload section
             _buildSectionHeader('Vehicle Image'),
-            
+
             Center(
               child: Column(
                 children: [
                   GestureDetector(
-                    onTap: vehicleImage != null ? _removeImage : _pickAndUploadImage,
-                    onLongPress: vehicleImage != null ? _pickAndUploadImage : null,
+                    onTap: vehicleImage != null
+                        ? _removeImage
+                        : _pickAndUploadImage,
+                    onLongPress: vehicleImage != null
+                        ? _pickAndUploadImage
+                        : null,
                     child: Container(
                       width: isMobile ? 160 : 200,
                       height: isMobile ? 160 : 200,
@@ -687,22 +782,32 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                                     width: isMobile ? 160 : 200,
                                     height: isMobile ? 160 : 200,
                                     fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) => Container(
-                                      width: isMobile ? 160 : 200,
-                                      height: isMobile ? 160 : 200,
-                                      color: Colors.grey[300],
-                                      child: Column(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Icon(Icons.error, size: 32, color: Colors.red[400]),
-                                          const SizedBox(height: 8),
-                                          Text(
-                                            'Image Error',
-                                            style: TextStyle(fontSize: 14, color: Colors.red[400]),
-                                          ),
-                                        ],
-                                      ),
-                                    ),
+                                    errorBuilder:
+                                        (context, error, stackTrace) =>
+                                            Container(
+                                              width: isMobile ? 160 : 200,
+                                              height: isMobile ? 160 : 200,
+                                              color: Colors.grey[300],
+                                              child: Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Icon(
+                                                    Icons.error,
+                                                    size: 32,
+                                                    color: Colors.red[400],
+                                                  ),
+                                                  const SizedBox(height: 8),
+                                                  Text(
+                                                    'Image Error',
+                                                    style: TextStyle(
+                                                      fontSize: 14,
+                                                      color: Colors.red[400],
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                            ),
                                   ),
                                 ],
                               )
@@ -713,11 +818,18 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                                 child: Column(
                                   mainAxisAlignment: MainAxisAlignment.center,
                                   children: [
-                                    Icon(Icons.add_photo_alternate, size: isMobile ? 48 : 64, color: Colors.grey[600]),
+                                    Icon(
+                                      Icons.add_photo_alternate,
+                                      size: isMobile ? 48 : 64,
+                                      color: Colors.grey[600],
+                                    ),
                                     const SizedBox(height: 8),
                                     Text(
                                       'Tap to upload',
-                                      style: TextStyle(fontSize: isMobile ? 12 : 14, color: Colors.grey[600]),
+                                      style: TextStyle(
+                                        fontSize: isMobile ? 12 : 14,
+                                        color: Colors.grey[600],
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -730,12 +842,18 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                     SizedBox(
                       width: isMobile ? double.infinity : null,
                       child: ElevatedButton.icon(
-                        icon: isLoading ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ) : const Icon(Icons.upload),
-                        label: Text(isLoading ? 'Uploading...' : 'Upload Image'),
+                        icon: isLoading
+                            ? const SizedBox(
+                                width: 16,
+                                height: 16,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                ),
+                              )
+                            : const Icon(Icons.upload),
+                        label: Text(
+                          isLoading ? 'Uploading...' : 'Upload Image',
+                        ),
                         onPressed: isLoading ? null : _pickAndUploadImage,
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(0, 48),
@@ -774,7 +892,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                 ],
               ),
             ),
-            
+
             // Action buttons with divider
             const SizedBox(height: 32),
             Divider(color: Colors.grey[800], height: 1),
@@ -830,7 +948,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         ),
       ),
     );
-    
+
     // Responsive layout based on screen size
     if (isDesktop) {
       // Desktop: Side sheet on the right with better balance
@@ -857,19 +975,20 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                         const SizedBox(width: 12),
                         Text(
                           'Vehicle Management',
-                          style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                            color: Colors.grey[200],
-                            fontWeight: FontWeight.w600,
-                          ),
+                          style: Theme.of(context).textTheme.headlineSmall
+                              ?.copyWith(
+                                color: Colors.grey[200],
+                                fontWeight: FontWeight.w600,
+                              ),
                         ),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Edit vehicle details in the panel',
-                      style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                        color: Colors.grey[500],
-                      ),
+                      style: Theme.of(
+                        context,
+                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
                     ),
                     const SizedBox(height: 32),
                     _buildVehicleMetadata(),
@@ -878,10 +997,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               ),
             ),
             // Vertical divider
-            Container(
-              width: 1,
-              color: Colors.grey[800],
-            ),
+            Container(width: 1, color: Colors.grey[800]),
             // Right side - form panel (wider)
             Expanded(
               flex: 3,
@@ -928,14 +1044,11 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           showBackButton: true,
           onBackPressed: () => Navigator.of(context).pop(),
           actions: [
-            if (isEdit) ...[
-              _buildStatusChip(status),
-              const SizedBox(width: 8),
-            ],
+            if (isEdit) ...[_buildStatusChip(status), const SizedBox(width: 8)],
           ],
         ),
         body: content,
       );
     }
   }
-} 
+}

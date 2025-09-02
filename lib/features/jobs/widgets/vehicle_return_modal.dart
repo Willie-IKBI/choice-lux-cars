@@ -13,7 +13,8 @@ class VehicleReturnModal extends StatefulWidget {
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
-  }) onConfirm;
+  })
+  onConfirm;
 
   final VoidCallback onCancel;
 
@@ -30,14 +31,14 @@ class VehicleReturnModal extends StatefulWidget {
 class _VehicleReturnModalState extends State<VehicleReturnModal> {
   final TextEditingController _odometerController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
-  
+
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   bool _isLoading = false;
   bool _isCapturingLocation = false;
   Position? _currentPosition;
   String? _locationError;
-  
+
   @override
   void initState() {
     super.initState();
@@ -189,9 +190,7 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 500,
-        ),
+        constraints: BoxConstraints(maxWidth: 500),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           decoration: BoxDecoration(
@@ -435,7 +434,9 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
           width: double.infinity,
           child: _buildLuxuryButton(
             onPressed: _pickImage,
-            label: (_selectedImage != null || _selectedImageBytes != null) ? 'Retake Photo' : 'Capture Photo',
+            label: (_selectedImage != null || _selectedImageBytes != null)
+                ? 'Retake Photo'
+                : 'Capture Photo',
             isPrimary: false,
           ),
         ),
@@ -498,12 +499,12 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.richGold,
-                width: 2,
-              ),
+              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 14,
+            ),
           ),
         ),
       ],
@@ -551,7 +552,9 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
                   height: 20,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 )
               else if (_currentPosition != null)
@@ -575,14 +578,14 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
                       _isCapturingLocation
                           ? 'Capturing location...'
                           : _currentPosition != null
-                              ? 'Location captured successfully'
-                              : 'Location capture failed',
+                          ? 'Location captured successfully'
+                          : 'Location capture failed',
                       style: TextStyle(
                         color: _isCapturingLocation
                             ? ChoiceLuxTheme.platinumSilver
                             : _currentPosition != null
-                                ? ChoiceLuxTheme.successColor
-                                : ChoiceLuxTheme.errorColor,
+                            ? ChoiceLuxTheme.successColor
+                            : ChoiceLuxTheme.errorColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),

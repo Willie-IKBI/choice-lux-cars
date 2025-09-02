@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 
 /// Repository for quote-related data operations
-/// 
+///
 /// Encapsulates all Supabase queries and returns domain models.
 /// This layer separates data access from business logic.
 class QuotesRepository {
@@ -19,14 +19,14 @@ class QuotesRepository {
   Future<Result<List<Quote>>> fetchQuotes() async {
     try {
       Log.d('Fetching quotes from database');
-      
+
       final response = await _supabase
           .from('quotes')
           .select()
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} quotes from database');
-      
+
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);
     } catch (error) {
@@ -39,7 +39,7 @@ class QuotesRepository {
   Future<Result<Map<String, dynamic>>> createQuote(Quote quote) async {
     try {
       Log.d('Creating quote for client: ${quote.clientId}');
-      
+
       final response = await _supabase
           .from('quotes')
           .insert(quote.toJson())
@@ -58,11 +58,8 @@ class QuotesRepository {
   Future<Result<void>> updateQuote(Quote quote) async {
     try {
       Log.d('Updating quote: ${quote.id}');
-      
-      await _supabase
-          .from('quotes')
-          .update(quote.toJson())
-          .eq('id', quote.id);
+
+      await _supabase.from('quotes').update(quote.toJson()).eq('id', quote.id);
 
       Log.d('Quote updated successfully');
       return const Result.success(null);
@@ -76,11 +73,8 @@ class QuotesRepository {
   Future<Result<void>> deleteQuote(String quoteId) async {
     try {
       Log.d('Deleting quote: $quoteId');
-      
-      await _supabase
-          .from('quotes')
-          .delete()
-          .eq('id', quoteId);
+
+      await _supabase.from('quotes').delete().eq('id', quoteId);
 
       Log.d('Quote deleted successfully');
       return const Result.success(null);
@@ -94,7 +88,7 @@ class QuotesRepository {
   Future<Result<Quote?>> getQuoteById(String quoteId) async {
     try {
       Log.d('Fetching quote by ID: $quoteId');
-      
+
       final response = await _supabase
           .from('quotes')
           .select()
@@ -119,7 +113,7 @@ class QuotesRepository {
   Future<Result<List<Quote>>> fetchQuotesByUser(String userId) async {
     try {
       Log.d('Fetching quotes by user: $userId');
-      
+
       final response = await _supabase
           .from('quotes')
           .select()
@@ -127,7 +121,7 @@ class QuotesRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} quotes by user: $userId');
-      
+
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);
     } catch (error) {
@@ -142,10 +136,12 @@ class QuotesRepository {
   }
 
   /// Fetch quote transport details
-  Future<Result<List<Map<String, dynamic>>>> fetchQuoteTransportDetails(String quoteId) async {
+  Future<Result<List<Map<String, dynamic>>>> fetchQuoteTransportDetails(
+    String quoteId,
+  ) async {
     try {
       Log.d('Fetching transport details for quote: $quoteId');
-      
+
       final response = await _supabase
           .from('quote_transport_details')
           .select()
@@ -153,7 +149,7 @@ class QuotesRepository {
           .order('created_at', ascending: true);
 
       Log.d('Fetched ${response.length} transport details for quote: $quoteId');
-      
+
       return Result.success(response);
     } catch (error) {
       Log.e('Error fetching quote transport details: $error');
@@ -162,10 +158,14 @@ class QuotesRepository {
   }
 
   /// Create quote transport detail
-  Future<Result<Map<String, dynamic>>> createQuoteTransportDetail(Map<String, dynamic> transportDetail) async {
+  Future<Result<Map<String, dynamic>>> createQuoteTransportDetail(
+    Map<String, dynamic> transportDetail,
+  ) async {
     try {
-      Log.d('Creating transport detail for quote: ${transportDetail['quote_id']}');
-      
+      Log.d(
+        'Creating transport detail for quote: ${transportDetail['quote_id']}',
+      );
+
       final response = await _supabase
           .from('quote_transport_details')
           .insert(transportDetail)
@@ -181,10 +181,12 @@ class QuotesRepository {
   }
 
   /// Update quote transport detail
-  Future<Result<void>> updateQuoteTransportDetail(Map<String, dynamic> transportDetail) async {
+  Future<Result<void>> updateQuoteTransportDetail(
+    Map<String, dynamic> transportDetail,
+  ) async {
     try {
       Log.d('Updating transport detail: ${transportDetail['id']}');
-      
+
       await _supabase
           .from('quote_transport_details')
           .update(transportDetail)
@@ -199,10 +201,12 @@ class QuotesRepository {
   }
 
   /// Delete quote transport detail
-  Future<Result<void>> deleteQuoteTransportDetail(String transportDetailId) async {
+  Future<Result<void>> deleteQuoteTransportDetail(
+    String transportDetailId,
+  ) async {
     try {
       Log.d('Deleting transport detail: $transportDetailId');
-      
+
       await _supabase
           .from('quote_transport_details')
           .delete()
@@ -220,7 +224,7 @@ class QuotesRepository {
   Future<Result<List<Quote>>> getQuotesByClient(String clientId) async {
     try {
       Log.d('Fetching quotes for client: $clientId');
-      
+
       final response = await _supabase
           .from('quotes')
           .select()
@@ -228,7 +232,7 @@ class QuotesRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} quotes for client: $clientId');
-      
+
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);
     } catch (error) {
@@ -241,7 +245,7 @@ class QuotesRepository {
   Future<Result<List<Quote>>> getQuotesByStatus(String status) async {
     try {
       Log.d('Fetching quotes with status: $status');
-      
+
       final response = await _supabase
           .from('quotes')
           .select()
@@ -249,7 +253,7 @@ class QuotesRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} quotes with status: $status');
-      
+
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);
     } catch (error) {
@@ -262,7 +266,7 @@ class QuotesRepository {
   Future<Result<void>> updateQuoteStatus(String quoteId, String status) async {
     try {
       Log.d('Updating quote status: $quoteId to $status');
-      
+
       await _supabase
           .from('quotes')
           .update({'status': status})
@@ -280,7 +284,7 @@ class QuotesRepository {
   Future<Result<List<Quote>>> searchQuotes(String query) async {
     try {
       Log.d('Searching quotes with query: $query');
-      
+
       // This would need to be adjusted based on the actual quote table structure
       final response = await _supabase
           .from('quotes')
@@ -289,7 +293,7 @@ class QuotesRepository {
           .order('created_at', ascending: false);
 
       Log.d('Found ${response.length} quotes matching query: $query');
-      
+
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);
     } catch (error) {
@@ -304,20 +308,20 @@ class QuotesRepository {
       return Result.failure(AuthException(error.message));
     } else if (error is PostgrestException) {
       // Check if it's a network-related error
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout') ||
           error.message.contains('connection')) {
         return Result.failure(NetworkException(error.message));
       }
       // Check if it's an auth-related error
-      if (error.message.contains('JWT') || 
+      if (error.message.contains('JWT') ||
           error.message.contains('unauthorized') ||
           error.message.contains('forbidden')) {
         return Result.failure(AuthException(error.message));
       }
       return Result.failure(UnknownException(error.message));
     } else if (error is StorageException) {
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout')) {
         return Result.failure(NetworkException(error.message));
       }

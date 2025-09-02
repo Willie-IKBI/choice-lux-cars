@@ -10,11 +10,7 @@ class AddEditAgentScreen extends ConsumerStatefulWidget {
   final String clientId;
   final Agent? agent; // null for add, non-null for edit
 
-  const AddEditAgentScreen({
-    super.key,
-    required this.clientId,
-    this.agent,
-  });
+  const AddEditAgentScreen({super.key, required this.clientId, this.agent});
 
   @override
   ConsumerState<AddEditAgentScreen> createState() => _AddEditAgentScreenState();
@@ -26,7 +22,6 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
   final _contactEmailController = TextEditingController();
   final _contactNumberController = TextEditingController();
 
-  
   bool _isLoading = false;
 
   @override
@@ -51,7 +46,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
   @override
   Widget build(BuildContext context) {
     final isEditMode = widget.agent != null;
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: isEditMode ? 'Edit Agent' : 'Add Agent',
@@ -67,7 +62,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
           child: LayoutBuilder(
             builder: (context, constraints) {
               final isMobile = constraints.maxWidth < 600;
-              
+
               return Column(
                 children: [
                   // Form Content
@@ -91,8 +86,6 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
     );
   }
 
-
-
   Widget _buildForm(bool isMobile) {
     return Form(
       key: _formKey,
@@ -101,13 +94,13 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
         children: [
           // Agent Avatar Section
           _buildAvatarSection(isMobile),
-          
+
           const SizedBox(height: 24),
-          
+
           // Agent Information
           _buildSectionTitle('Agent Information', isMobile),
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _agentNameController,
             label: 'Agent Name',
@@ -121,17 +114,15 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
             },
             isMobile: isMobile,
           ),
-          
-          const SizedBox(height: 16),
-          
 
-          
+          const SizedBox(height: 16),
+
           const SizedBox(height: 24),
-          
+
           // Contact Information
           _buildSectionTitle('Contact Information', isMobile),
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _contactEmailController,
             label: 'Email Address',
@@ -142,16 +133,18 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
               if (value == null || value.trim().isEmpty) {
                 return 'Email is required';
               }
-              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+              if (!RegExp(
+                r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+              ).hasMatch(value)) {
                 return 'Please enter a valid email address';
               }
               return null;
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 16),
-          
+
           _buildTextField(
             controller: _contactNumberController,
             label: 'Phone Number',
@@ -166,9 +159,9 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
             },
             isMobile: isMobile,
           ),
-          
+
           const SizedBox(height: 32),
-          
+
           // Save Button (Mobile)
           if (isMobile) ...[
             SizedBox(
@@ -268,21 +261,14 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
       decoration: InputDecoration(
         labelText: label,
         hintText: hint,
-        prefixIcon: Icon(
-          icon,
-          color: ChoiceLuxTheme.platinumSilver,
-        ),
+        prefixIcon: Icon(icon, color: ChoiceLuxTheme.platinumSilver),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.platinumSilver,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.platinumSilver,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -293,9 +279,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(
-            color: ChoiceLuxTheme.errorColor,
-          ),
+          borderSide: const BorderSide(color: ChoiceLuxTheme.errorColor),
         ),
         filled: true,
         fillColor: ChoiceLuxTheme.charcoalGray,
@@ -336,16 +320,20 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
 
       if (widget.agent == null) {
         // Add new agent
-        await ref.read(agentsNotifierProvider(widget.clientId).notifier)
+        await ref
+            .read(agentsNotifierProvider(widget.clientId).notifier)
             .addAgent(agent);
       } else {
         // Update existing agent
-        await ref.read(agentsNotifierProvider(widget.clientId).notifier)
+        await ref
+            .read(agentsNotifierProvider(widget.clientId).notifier)
             .updateAgent(agent);
       }
 
       // Force a refresh to ensure the UI updates with the latest data
-      await ref.read(agentsNotifierProvider(widget.clientId).notifier).refresh();
+      await ref
+          .read(agentsNotifierProvider(widget.clientId).notifier)
+          .refresh();
 
       // Navigate back immediately after successful operation
       if (mounted) {
@@ -368,4 +356,4 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
       }
     }
   }
-} 
+}

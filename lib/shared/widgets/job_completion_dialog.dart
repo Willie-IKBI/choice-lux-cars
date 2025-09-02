@@ -29,32 +29,24 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
   @override
   void initState() {
     super.initState();
-    
+
     // Initialize animations
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOutBack,
-    ));
-    
-    _fadeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    ));
-    
+
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOutBack),
+    );
+
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeOut),
+    );
+
     // Start animations
     _animationController.forward();
-    
+
     // Auto-close after 3 seconds
     _autoCloseTimer = Timer(const Duration(seconds: 3), () {
       _closeDialog();
@@ -137,9 +129,9 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                         color: ChoiceLuxTheme.successColor,
                       ),
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Title
                     Text(
                       'Job Completed!',
@@ -151,9 +143,9 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 16),
-                    
+
                     // Job Details
                     Container(
                       padding: const EdgeInsets.all(16),
@@ -188,9 +180,9 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                         ],
                       ),
                     ),
-                    
+
                     const SizedBox(height: 20),
-                    
+
                     // Message
                     Text(
                       'Your job has been successfully completed. You will be redirected to jobs management.',
@@ -201,9 +193,9 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                       ),
                       textAlign: TextAlign.center,
                     ),
-                    
+
                     const SizedBox(height: 24),
-                    
+
                     // Progress indicator
                     SizedBox(
                       width: 40,

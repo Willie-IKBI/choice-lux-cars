@@ -49,16 +49,16 @@ class LuxuryButton extends StatelessWidget {
         ),
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : onPressed,
-          icon: isLoading 
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                ),
-              )
-            : Icon(icon, color: Colors.black, size: 20),
+          icon: isLoading
+              ? const SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
+                )
+              : Icon(icon, color: Colors.black, size: 20),
           label: Text(
             isLoading ? 'Processing...' : label,
             style: const TextStyle(
@@ -70,7 +70,12 @@ class LuxuryButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: padding ?? EdgeInsets.symmetric(horizontal: context.spacing, vertical: context.spacing * 0.75),
+            padding:
+                padding ??
+                EdgeInsets.symmetric(
+                  horizontal: context.spacing,
+                  vertical: context.spacing * 0.75,
+                ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(context.radiusMd),
             ),
@@ -91,16 +96,18 @@ class LuxuryButton extends StatelessWidget {
         ),
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : onPressed,
-          icon: isLoading 
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(context.brandGold),
-                ),
-              )
-            : Icon(icon, color: context.brandGold, size: 20),
+          icon: isLoading
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      context.brandGold,
+                    ),
+                  ),
+                )
+              : Icon(icon, color: context.brandGold, size: 20),
           label: Text(
             isLoading ? 'Processing...' : label,
             style: TextStyle(
@@ -112,7 +119,12 @@ class LuxuryButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: padding ?? EdgeInsets.symmetric(horizontal: context.spacing, vertical: context.spacing * 0.75),
+            padding:
+                padding ??
+                EdgeInsets.symmetric(
+                  horizontal: context.spacing,
+                  vertical: context.spacing * 0.75,
+                ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(context.radiusMd),
             ),

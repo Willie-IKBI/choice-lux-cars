@@ -16,7 +16,7 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   Future<List<Quote>> build() async {
     _quotesRepository = ref.watch(quotesRepositoryProvider);
     currentUser = ref.watch(currentUserProfileProvider);
-    
+
     if (currentUser != null) {
       return _fetchQuotes();
     }
@@ -27,7 +27,7 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   Future<List<Quote>> _fetchQuotes() async {
     try {
       List<Quote> quotes;
-      
+
       if (currentUser == null) {
         return [];
       }
@@ -66,10 +66,14 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   }
 
   // Get quotes by status
-  List<Quote> get openQuotes => (state.value ?? []).where((quote) => quote.isOpen).toList();
-  List<Quote> get acceptedQuotes => (state.value ?? []).where((quote) => quote.isAccepted).toList();
-  List<Quote> get expiredQuotes => (state.value ?? []).where((quote) => quote.isExpired).toList();
-  List<Quote> get closedQuotes => (state.value ?? []).where((quote) => quote.isClosed).toList();
+  List<Quote> get openQuotes =>
+      (state.value ?? []).where((quote) => quote.isOpen).toList();
+  List<Quote> get acceptedQuotes =>
+      (state.value ?? []).where((quote) => quote.isAccepted).toList();
+  List<Quote> get expiredQuotes =>
+      (state.value ?? []).where((quote) => quote.isExpired).toList();
+  List<Quote> get closedQuotes =>
+      (state.value ?? []).where((quote) => quote.isClosed).toList();
 
   // Create new quote
   Future<Map<String, dynamic>> createQuote(Quote quote) async {
@@ -157,20 +161,28 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
     if (currentUser == null) return false;
     final userRole = currentUser.role?.toLowerCase();
 
-    return userRole == 'administrator' || 
-           userRole == 'manager' || 
-           userRole == 'driver_manager';
+    return userRole == 'administrator' ||
+        userRole == 'manager' ||
+        userRole == 'driver_manager';
   }
 
   // Get transport details for a quote
-  Future<List<QuoteTransportDetail>> getQuoteTransportDetails(String quoteId) async {
+  Future<List<QuoteTransportDetail>> getQuoteTransportDetails(
+    String quoteId,
+  ) async {
     try {
-      final result = await _quotesRepository.fetchQuoteTransportDetails(quoteId);
+      final result = await _quotesRepository.fetchQuoteTransportDetails(
+        quoteId,
+      );
       if (result.isSuccess) {
         // Convert Map<String, dynamic> to QuoteTransportDetail objects
-        return result.data!.map((json) => QuoteTransportDetail.fromMap(json)).toList();
+        return result.data!
+            .map((json) => QuoteTransportDetail.fromMap(json))
+            .toList();
       } else {
-        Log.e('Error getting quote transport details: ${result.error!.message}');
+        Log.e(
+          'Error getting quote transport details: ${result.error!.message}',
+        );
         return [];
       }
     } catch (error) {
@@ -183,10 +195,16 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   Future<void> refresh() async {
     ref.invalidateSelf();
   }
+
+  Future<void> fetchQuotes() async {
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async => await _fetchQuotes());
+  }
 }
 
 /// Notifier for managing quote transport details using AsyncNotifier
-class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransportDetail>, String> {
+class QuoteTransportDetailsNotifier
+    extends FamilyAsyncNotifier<List<QuoteTransportDetail>, String> {
   late final QuotesRepository _quotesRepository;
 
   @override
@@ -196,15 +214,23 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
   }
 
   // Fetch transport details for a specific quote
-  Future<List<QuoteTransportDetail>> _fetchTransportDetails(String quoteId) async {
+  Future<List<QuoteTransportDetail>> _fetchTransportDetails(
+    String quoteId,
+  ) async {
     try {
-      final result = await _quotesRepository.fetchQuoteTransportDetails(quoteId);
+      final result = await _quotesRepository.fetchQuoteTransportDetails(
+        quoteId,
+      );
       if (result.isSuccess) {
         // Convert Map<String, dynamic> to QuoteTransportDetail objects
-        final transportDetails = result.data!.map((json) => QuoteTransportDetail.fromMap(json)).toList();
+        final transportDetails = result.data!
+            .map((json) => QuoteTransportDetail.fromMap(json))
+            .toList();
         return transportDetails;
       } else {
-        Log.e('Error fetching quote transport details: ${result.error!.message}');
+        Log.e(
+          'Error fetching quote transport details: ${result.error!.message}',
+        );
         throw Exception(result.error!.message);
       }
     } catch (error) {
@@ -216,7 +242,9 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
   // Add transport detail to quote
   Future<void> addTransportDetail(QuoteTransportDetail transportDetail) async {
     try {
-      final result = await _quotesRepository.createQuoteTransportDetail(transportDetail.toMap());
+      final result = await _quotesRepository.createQuoteTransportDetail(
+        transportDetail.toMap(),
+      );
       if (result.isSuccess) {
         ref.invalidateSelf();
       } else {
@@ -230,13 +258,19 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
   }
 
   // Update transport detail
-  Future<void> updateTransportDetail(QuoteTransportDetail transportDetail) async {
+  Future<void> updateTransportDetail(
+    QuoteTransportDetail transportDetail,
+  ) async {
     try {
-      final result = await _quotesRepository.updateQuoteTransportDetail(transportDetail.toMap());
+      final result = await _quotesRepository.updateQuoteTransportDetail(
+        transportDetail.toMap(),
+      );
       if (result.isSuccess) {
         ref.invalidateSelf();
       } else {
-        Log.e('Error updating quote transport detail: ${result.error!.message}');
+        Log.e(
+          'Error updating quote transport detail: ${result.error!.message}',
+        );
         throw Exception(result.error!.message);
       }
     } catch (error) {
@@ -248,11 +282,15 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
   // Delete transport detail
   Future<void> deleteTransportDetail(String transportDetailId) async {
     try {
-      final result = await _quotesRepository.deleteQuoteTransportDetail(transportDetailId);
+      final result = await _quotesRepository.deleteQuoteTransportDetail(
+        transportDetailId,
+      );
       if (result.isSuccess) {
         ref.invalidateSelf();
       } else {
-        Log.e('Error deleting quote transport detail: ${result.error!.message}');
+        Log.e(
+          'Error deleting quote transport detail: ${result.error!.message}',
+        );
         throw Exception(result.error!.message);
       }
     } catch (error) {
@@ -263,7 +301,10 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
 
   // Calculate total amount
   double get totalAmount {
-    return (state.value ?? []).fold(0.0, (sum, transport) => sum + transport.amount);
+    return (state.value ?? []).fold(
+      0.0,
+      (sum, transport) => sum + transport.amount,
+    );
   }
 
   /// Refresh transport details data
@@ -278,7 +319,12 @@ class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransp
 }
 
 /// Provider for QuotesNotifier using AsyncNotifierProvider
-final quotesProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(() => QuotesNotifier());
+final quotesProvider = AsyncNotifierProvider<QuotesNotifier, List<Quote>>(QuotesNotifier.new);
 
 /// Provider for QuoteTransportDetailsNotifier using AsyncNotifierProvider.family
-final quoteTransportDetailsProvider = AsyncNotifierProvider.family<QuoteTransportDetailsNotifier, List<QuoteTransportDetail>, String>((quoteId) => QuoteTransportDetailsNotifier());
+final quoteTransportDetailsProvider =
+    AsyncNotifierProvider.family<
+      QuoteTransportDetailsNotifier,
+      List<QuoteTransportDetail>,
+      String
+    >(QuoteTransportDetailsNotifier.new);

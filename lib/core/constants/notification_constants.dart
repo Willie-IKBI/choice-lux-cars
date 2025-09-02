@@ -15,14 +15,21 @@ class NotificationConstants {
   static const String priorityUrgent = 'urgent';
 
   // Notification Messages
-  static String getJobAssignmentMessage(String jobNumber, {bool isReassignment = false}) {
+  static String getJobAssignmentMessage(
+    String jobNumber, {
+    bool isReassignment = false,
+  }) {
     if (isReassignment) {
       return 'Job $jobNumber has been reassigned to you. Please confirm your assignment.';
     }
     return 'New job $jobNumber has been assigned to you. Please confirm your assignment.';
   }
 
-  static String getJobStatusChangeMessage(String jobNumber, String oldStatus, String newStatus) {
+  static String getJobStatusChangeMessage(
+    String jobNumber,
+    String oldStatus,
+    String newStatus,
+  ) {
     return 'Job $jobNumber status changed from $oldStatus to $newStatus.';
   }
 
@@ -48,8 +55,10 @@ class NotificationConstants {
   static String getJobPaymentRoute(int jobId) => '/jobs/$jobId/payment';
 
   // Error Messages
-  static const String errorJobAssignmentFailed = 'Failed to assign job to driver';
-  static const String errorNotificationCreationFailed = 'Failed to create notification';
+  static const String errorJobAssignmentFailed =
+      'Failed to assign job to driver';
+  static const String errorNotificationCreationFailed =
+      'Failed to create notification';
   static const String errorJobNotFound = 'Job not found';
   static const String errorInvalidJobId = 'Invalid job ID format';
 }

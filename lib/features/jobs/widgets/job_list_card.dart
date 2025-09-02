@@ -42,9 +42,21 @@ class JobListCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final padding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0;
-    final spacing = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
-    final cornerRadius = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
+    final padding = isSmallMobile
+        ? 12.0
+        : isMobile
+        ? 16.0
+        : 20.0;
+    final spacing = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 16.0;
+    final cornerRadius = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 16.0;
 
     return Card(
       elevation: 2,
@@ -58,26 +70,26 @@ class JobListCard extends ConsumerWidget {
           children: [
             // 1. Top Bar: Status + Urgency
             _buildTopBar(context, spacing),
-            
+
             SizedBox(height: spacing),
-            
+
             // 2. Client Details (Primary)
             _buildClientDetails(context, spacing),
-            
+
             SizedBox(height: spacing),
-            
+
             // 3. Travel Details (Secondary)
             _buildTravelDetails(context, spacing),
-            
+
             SizedBox(height: spacing),
-            
+
             // 4. Confirmation State
             _buildConfirmationState(context, spacing),
-            
+
             SizedBox(height: spacing),
-            
-                         // 5. Action Buttons
-             _buildActionButtons(context, ref, spacing),
+
+            // 5. Action Buttons
+            _buildActionButtons(context, ref, spacing),
           ],
         ),
       ),
@@ -88,7 +100,7 @@ class JobListCard extends ConsumerWidget {
   Widget _buildTopBar(BuildContext context, double spacing) {
     final isUrgent = job.daysUntilStart != null && job.daysUntilStart! <= 3;
     final statusColor = StatusColorUtils.getJobStatusColor(job.statusEnum);
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: spacing * 0.75,
@@ -104,10 +116,7 @@ class JobListCard extends ConsumerWidget {
           end: Alignment.centerRight,
         ),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: statusColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
+        border: Border.all(color: statusColor.withValues(alpha: 0.2), width: 1),
       ),
       child: Row(
         children: [
@@ -135,7 +144,7 @@ class JobListCard extends ConsumerWidget {
               ],
             ),
           ),
-          
+
           // Right: Urgency Indicator
           if (isUrgent)
             Container(
@@ -174,7 +183,11 @@ class JobListCard extends ConsumerWidget {
         Text(
           job.passengerName ?? 'No Passenger Name',
           style: TextStyle(
-            fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+            fontSize: isSmallMobile
+                ? 16
+                : isMobile
+                ? 18
+                : 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
             height: 1.2,
@@ -182,9 +195,9 @@ class JobListCard extends ConsumerWidget {
           maxLines: 2,
           overflow: TextOverflow.ellipsis,
         ),
-        
+
         SizedBox(height: spacing * 0.5),
-        
+
         // Location (Secondary)
         Row(
           children: [
@@ -207,9 +220,9 @@ class JobListCard extends ConsumerWidget {
             ),
           ],
         ),
-        
+
         SizedBox(height: spacing * 0.25),
-        
+
         // Date (Tertiary)
         Row(
           children: [
@@ -220,7 +233,7 @@ class JobListCard extends ConsumerWidget {
             ),
             SizedBox(width: spacing * 0.25),
             Text(
-                             app_date_utils.DateUtils.formatDate(job.jobStartDate),
+              app_date_utils.DateUtils.formatDate(job.jobStartDate),
               style: TextStyle(
                 fontSize: isSmallMobile ? 11 : 12,
                 color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
@@ -242,10 +255,7 @@ class JobListCard extends ConsumerWidget {
       decoration: BoxDecoration(
         color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Row(
         children: [
@@ -256,9 +266,9 @@ class JobListCard extends ConsumerWidget {
             '${job.pasCount} pax',
             spacing,
           ),
-          
+
           SizedBox(width: spacing * 0.5),
-          
+
           // Luggage Count
           _buildTravelChip(
             context,
@@ -266,10 +276,10 @@ class JobListCard extends ConsumerWidget {
             '${job.luggageCount} bags',
             spacing,
           ),
-          
+
           if (vehicle?.model != null) ...[
             SizedBox(width: spacing * 0.5),
-            
+
             // Vehicle Info
             _buildTravelChip(
               context,
@@ -312,11 +322,12 @@ class JobListCard extends ConsumerWidget {
 
   // 4. Confirmation State
   Widget _buildConfirmationState(BuildContext context, double spacing) {
-    final isConfirmed = job.isConfirmed == true || job.driverConfirmation == true;
+    final isConfirmed =
+        job.isConfirmed == true || job.driverConfirmation == true;
     final confirmationColor = isConfirmed ? Colors.green : Colors.orange;
     final confirmationText = isConfirmed ? 'Confirmed' : 'Not Confirmed';
     final confirmationIcon = isConfirmed ? Icons.check_circle : Icons.pending;
-    
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: spacing * 0.75,
@@ -352,7 +363,11 @@ class JobListCard extends ConsumerWidget {
   }
 
   // 5. Action Buttons
-  Widget _buildActionButtons(BuildContext context, WidgetRef ref, double spacing) {
+  Widget _buildActionButtons(
+    BuildContext context,
+    WidgetRef ref,
+    double spacing,
+  ) {
     return Column(
       children: [
         // Primary Action: View Details
@@ -381,9 +396,9 @@ class JobListCard extends ConsumerWidget {
             ),
           ),
         ),
-        
+
         SizedBox(height: spacing),
-        
+
         // Secondary Actions Row
         Row(
           children: [
@@ -392,55 +407,63 @@ class JobListCard extends ConsumerWidget {
               currentUserId: ref.read(currentUserProfileProvider)?.id,
               jobDriverId: job.driverId,
               jobStatus: job.statusEnum,
-              isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
+              isJobConfirmed:
+                  job.isConfirmed == true || job.driverConfirmation == true,
             ))
-               Expanded(
-                 child: ElevatedButton.icon(
-                   onPressed: () => _handleDriverFlow(context, ref),
-                   icon: Icon(DriverFlowUtils.getDriverFlowIcon(job.statusEnum), size: 16),
-                   label: Text(
-                     DriverFlowUtils.getDriverFlowText(job.statusEnum),
-                     style: TextStyle(fontSize: isSmallMobile ? 12 : 14),
-                   ),
-                   style: ElevatedButton.styleFrom(
-                     backgroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum),
-                     foregroundColor: Colors.white,
-                     padding: EdgeInsets.symmetric(
-                       horizontal: spacing,
-                       vertical: spacing * 0.75,
-                     ),
-                     shape: RoundedRectangleBorder(
-                       borderRadius: BorderRadius.circular(8),
-                     ),
-                   ),
-                 ),
-               ),
-            
-                         // Voucher Actions
-             if (canCreateVoucher) ...[
-               if (DriverFlowUtils.shouldShowDriverFlowButton(
-               currentUserId: ref.read(currentUserProfileProvider)?.id,
-               jobDriverId: job.driverId,
-               jobStatus: job.statusEnum,
-               isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
-             )) SizedBox(width: spacing),
-               Expanded(
-                 child: _buildVoucherSection(context, spacing),
-               ),
-             ],
-             
-             // Invoice Actions
-             if (canCreateInvoice) ...[
-                               if (DriverFlowUtils.shouldShowDriverFlowButton(
-                  currentUserId: ref.read(currentUserProfileProvider)?.id,
-                  jobDriverId: job.driverId,
-                  jobStatus: job.statusEnum,
-                  isJobConfirmed: job.isConfirmed == true || job.driverConfirmation == true,
-                ) || canCreateVoucher) SizedBox(width: spacing),
-               Expanded(
-                 child: _buildInvoiceSection(context, spacing),
-               ),
-             ],
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleDriverFlow(context, ref),
+                  icon: Icon(
+                    DriverFlowUtils.getDriverFlowIcon(job.statusEnum),
+                    size: 16,
+                  ),
+                  label: Text(
+                    DriverFlowUtils.getDriverFlowText(job.statusEnum),
+                    style: TextStyle(fontSize: isSmallMobile ? 12 : 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: DriverFlowUtils.getDriverFlowColor(
+                      job.statusEnum,
+                    ),
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacing,
+                      vertical: spacing * 0.75,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
+            // Voucher Actions
+            if (canCreateVoucher) ...[
+              if (DriverFlowUtils.shouldShowDriverFlowButton(
+                currentUserId: ref.read(currentUserProfileProvider)?.id,
+                jobDriverId: job.driverId,
+                jobStatus: job.statusEnum,
+                isJobConfirmed:
+                    job.isConfirmed == true || job.driverConfirmation == true,
+              ))
+                SizedBox(width: spacing),
+              Expanded(child: _buildVoucherSection(context, spacing)),
+            ],
+
+            // Invoice Actions
+            if (canCreateInvoice) ...[
+              if (DriverFlowUtils.shouldShowDriverFlowButton(
+                    currentUserId: ref.read(currentUserProfileProvider)?.id,
+                    jobDriverId: job.driverId,
+                    jobStatus: job.statusEnum,
+                    isJobConfirmed:
+                        job.isConfirmed == true ||
+                        job.driverConfirmation == true,
+                  ) ||
+                  canCreateVoucher)
+                SizedBox(width: spacing),
+              Expanded(child: _buildInvoiceSection(context, spacing)),
+            ],
           ],
         ),
       ],
@@ -450,21 +473,17 @@ class JobListCard extends ConsumerWidget {
   // Voucher Section
   Widget _buildVoucherSection(BuildContext context, double spacing) {
     final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
-    
+
     return Container(
       padding: EdgeInsets.all(spacing * 0.75),
       decoration: BoxDecoration(
         color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           // Voucher Actions
           VoucherActionButtons(
             jobId: job.id.toString(),
@@ -472,7 +491,7 @@ class JobListCard extends ConsumerWidget {
             voucherData: null,
             canCreateVoucher: canCreateVoucher,
           ),
-          
+
           // Status Text
           if (hasVoucher)
             Padding(
@@ -493,21 +512,17 @@ class JobListCard extends ConsumerWidget {
   // Invoice Section
   Widget _buildInvoiceSection(BuildContext context, double spacing) {
     final hasInvoice = job.invoicePdf != null && job.invoicePdf!.isNotEmpty;
-    
+
     return Container(
       padding: EdgeInsets.all(spacing * 0.75),
       decoration: BoxDecoration(
         color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: Colors.grey.withValues(alpha: 0.1),
-          width: 1,
-        ),
+        border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          
           // Invoice Actions
           InvoiceActionButtons(
             jobId: job.id.toString(),
@@ -515,7 +530,7 @@ class JobListCard extends ConsumerWidget {
             invoiceData: null,
             canCreateInvoice: canCreateInvoice,
           ),
-          
+
           // Status Text
           if (hasInvoice)
             Padding(
@@ -535,16 +550,14 @@ class JobListCard extends ConsumerWidget {
 
   // Helper Methods
 
-
-
-
-
-
   Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref) async {
     try {
       // Navigate to the appropriate screen based on job status
-             final route = DriverFlowUtils.getDriverFlowRoute(int.parse(job.id.toString()), job.statusEnum);
-      
+      final route = DriverFlowUtils.getDriverFlowRoute(
+        int.parse(job.id.toString()),
+        job.statusEnum,
+      );
+
       if (context.mounted) {
         context.go(route);
       }
@@ -559,6 +572,4 @@ class JobListCard extends ConsumerWidget {
       }
     }
   }
-
-
 }

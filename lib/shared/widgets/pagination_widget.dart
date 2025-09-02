@@ -43,7 +43,7 @@ class PaginationWidget extends StatelessWidget {
               ),
             ),
           ),
-          
+
           // Pagination controls
           Row(
             children: [
@@ -51,12 +51,14 @@ class PaginationWidget extends StatelessWidget {
               _buildNavigationButton(
                 icon: Icons.chevron_left,
                 isEnabled: currentPage > 1,
-                onPressed: currentPage > 1 ? () => onPageChanged(currentPage - 1) : null,
+                onPressed: currentPage > 1
+                    ? () => onPageChanged(currentPage - 1)
+                    : null,
                 isMobile: isMobile,
               ),
-              
+
               const SizedBox(width: 8),
-              
+
               // Page numbers (hidden on mobile)
               if (!isMobile) ...[
                 ..._buildPageNumbers(),
@@ -64,7 +66,10 @@ class PaginationWidget extends StatelessWidget {
               ] else ...[
                 // Mobile: show current page indicator
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: tokens.brandGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
@@ -84,12 +89,14 @@ class PaginationWidget extends StatelessWidget {
                 ),
                 const SizedBox(width: 8),
               ],
-              
+
               // Next button
               _buildNavigationButton(
                 icon: Icons.chevron_right,
                 isEnabled: currentPage < totalPages,
-                onPressed: currentPage < totalPages ? () => onPageChanged(currentPage + 1) : null,
+                onPressed: currentPage < totalPages
+                    ? () => onPageChanged(currentPage + 1)
+                    : null,
                 isMobile: isMobile,
               ),
             ],
@@ -108,22 +115,24 @@ class PaginationWidget extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        boxShadow: isEnabled ? [
-          BoxShadow(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ] : null,
+        boxShadow: isEnabled
+            ? [
+                BoxShadow(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: ElevatedButton(
         onPressed: onPressed,
         style: ElevatedButton.styleFrom(
-          backgroundColor: isEnabled 
-              ? ChoiceLuxTheme.richGold 
+          backgroundColor: isEnabled
+              ? ChoiceLuxTheme.richGold
               : ChoiceLuxTheme.charcoalGray,
-          foregroundColor: isEnabled 
-              ? Colors.black 
+          foregroundColor: isEnabled
+              ? Colors.black
               : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
           elevation: isEnabled ? 1 : 0,
           padding: isMobile
@@ -131,7 +140,7 @@ class PaginationWidget extends StatelessWidget {
               : const EdgeInsets.all(12),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: isEnabled 
+            side: isEnabled
                 ? BorderSide.none
                 : BorderSide(
                     color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
@@ -139,10 +148,7 @@ class PaginationWidget extends StatelessWidget {
                   ),
           ),
         ),
-        child: Icon(
-          icon,
-          size: isMobile ? 16 : 20,
-        ),
+        child: Icon(icon, size: isMobile ? 16 : 20),
       ),
     );
   }
@@ -150,7 +156,7 @@ class PaginationWidget extends StatelessWidget {
   List<Widget> _buildPageNumbers() {
     final List<Widget> pageNumbers = [];
     const int maxVisiblePages = 5;
-    
+
     if (totalPages <= maxVisiblePages) {
       // Show all pages if total is small
       for (int i = 1; i <= totalPages; i++) {
@@ -197,38 +203,40 @@ class PaginationWidget extends StatelessWidget {
         pageNumbers.add(_buildPageButton(totalPages));
       }
     }
-    
+
     return pageNumbers;
   }
 
   Widget _buildPageButton(int page) {
     final isCurrentPage = page == currentPage;
-    
+
     return Container(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(8),
-        boxShadow: isCurrentPage ? [
-          BoxShadow(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-            blurRadius: 4,
-            offset: const Offset(0, 1),
-          ),
-        ] : null,
+        boxShadow: isCurrentPage
+            ? [
+                BoxShadow(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
+              ]
+            : null,
       ),
       child: ElevatedButton(
         onPressed: () => onPageChanged(page),
         style: ElevatedButton.styleFrom(
-          backgroundColor: isCurrentPage 
-              ? ChoiceLuxTheme.richGold 
+          backgroundColor: isCurrentPage
+              ? ChoiceLuxTheme.richGold
               : ChoiceLuxTheme.charcoalGray,
-          foregroundColor: isCurrentPage 
-              ? Colors.black 
+          foregroundColor: isCurrentPage
+              ? Colors.black
               : ChoiceLuxTheme.platinumSilver,
           elevation: isCurrentPage ? 1 : 0,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(8),
-            side: isCurrentPage 
+            side: isCurrentPage
                 ? BorderSide.none
                 : BorderSide(
                     color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
@@ -260,4 +268,4 @@ class PaginationWidget extends StatelessWidget {
       ),
     );
   }
-} 
+}

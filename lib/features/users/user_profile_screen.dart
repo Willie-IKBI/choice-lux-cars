@@ -23,7 +23,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   late TextEditingController _addressController;
   late TextEditingController _kinController;
   late TextEditingController _kinNumberController;
-  
+
   String? _profileImage;
   bool _isLoading = false;
   bool _isUploading = false;
@@ -36,7 +36,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     _addressController = TextEditingController();
     _kinController = TextEditingController();
     _kinNumberController = TextEditingController();
-    
+
     // Load user data after build
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadUserData();
@@ -57,7 +57,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final userProfile = ref.read(currentUserProfileProvider);
     if (userProfile != null) {
       // Get full user data from Supabase
-      final userData = await SupabaseService.instance.getProfile(userProfile.id);
+      final userData = await SupabaseService.instance.getProfile(
+        userProfile.id,
+      );
       if (userData != null) {
         setState(() {
           _displayNameController.text = userData['display_name'] ?? '';
@@ -79,10 +81,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       maxHeight: 800,
       imageQuality: 85,
     );
-    
+
     if (picked != null) {
       setState(() => _isUploading = true);
-      
+
       try {
         final bytes = await picked.readAsBytes();
         final userProfile = ref.read(currentUserProfileProvider);
@@ -93,21 +95,23 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             'profiles',
             '${userProfile.id}/profile.jpg',
           );
-          
+
           // Update profile image in database
           await SupabaseService.instance.updateProfile(
             userId: userProfile.id,
             data: {'profile_image': url},
           );
-          
+
           setState(() {
             _profileImage = url;
             _isUploading = false;
           });
-          
+
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Profile image updated successfully')),
+              const SnackBar(
+                content: Text('Profile image updated successfully'),
+              ),
             );
           }
         }
@@ -126,7 +130,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
-    
+
     try {
       final userProfile = ref.read(currentUserProfileProvider);
       if (userProfile != null) {
@@ -140,10 +144,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             'kin_number': _kinNumberController.text.trim(),
           },
         );
-        
+
         // Refresh user profile
         await ref.read(userProfileProvider.notifier).updateProfile({});
-        
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('Profile updated successfully')),
@@ -189,9 +193,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final isWide = MediaQuery.of(context).size.width > 900;
 
     if (userProfile == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
@@ -228,12 +230,18 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       margin: const EdgeInsets.only(bottom: 24),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+                        side: BorderSide(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
                       ),
                       elevation: 4,
                       shadowColor: Colors.black.withOpacity(0.08),
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 16,
+                        ),
                         child: Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -243,21 +251,31 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                 CircleAvatar(
                                   radius: isWide ? 52 : 44,
                                   backgroundColor: Colors.grey[800],
-                                  backgroundImage: _profileImage != null && _profileImage!.isNotEmpty
+                                  backgroundImage:
+                                      _profileImage != null &&
+                                          _profileImage!.isNotEmpty
                                       ? NetworkImage(_profileImage!)
                                       : null,
-                                  child: _profileImage == null || _profileImage!.isEmpty
+                                  child:
+                                      _profileImage == null ||
+                                          _profileImage!.isEmpty
                                       ? Text(
                                           _displayNameController.text.isNotEmpty
-                                              ? _displayNameController.text[0].toUpperCase()
+                                              ? _displayNameController.text[0]
+                                                    .toUpperCase()
                                               : '?',
-                                          style: const TextStyle(fontSize: 32, color: Colors.white),
+                                          style: const TextStyle(
+                                            fontSize: 32,
+                                            color: Colors.white,
+                                          ),
                                         )
                                       : null,
                                 ),
                                 if (_isUploading)
                                   const Positioned.fill(
-                                    child: Center(child: CircularProgressIndicator()),
+                                    child: Center(
+                                      child: CircularProgressIndicator(),
+                                    ),
                                   ),
                               ],
                             ),
@@ -265,7 +283,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             TextButton.icon(
                               icon: const Icon(Icons.camera_alt_outlined),
                               label: const Text('Change Profile Image'),
-                              onPressed: _isUploading ? null : _pickAndUploadImage,
+                              onPressed: _isUploading
+                                  ? null
+                                  : _pickAndUploadImage,
                             ),
                           ],
                         ),
@@ -276,7 +296,10 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                     Card(
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+                        side: BorderSide(
+                          color: Colors.white.withOpacity(0.2),
+                          width: 1,
+                        ),
                       ),
                       elevation: 4,
                       shadowColor: Colors.black.withOpacity(0.08),
@@ -288,15 +311,20 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                             // Section Header
                             Row(
                               children: [
-                                const Icon(Icons.person, size: 22, color: ChoiceLuxTheme.richGold),
+                                const Icon(
+                                  Icons.person,
+                                  size: 22,
+                                  color: ChoiceLuxTheme.richGold,
+                                ),
                                 const SizedBox(width: 8),
                                 Text(
                                   'Personal Information',
-                                  style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 18,
-                                    color: ChoiceLuxTheme.softWhite,
-                                  ),
+                                  style: Theme.of(context).textTheme.titleMedium
+                                      ?.copyWith(
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 18,
+                                        color: ChoiceLuxTheme.softWhite,
+                                      ),
                                 ),
                               ],
                             ),
@@ -313,22 +341,40 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                       children: [
                                         TextFormField(
                                           controller: _displayNameController,
-                                          decoration: _modernInputDecoration('Full Name'),
-                                          style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
-                                          validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                                          decoration: _modernInputDecoration(
+                                            'Full Name',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: ChoiceLuxTheme.softWhite,
+                                          ),
+                                          validator: (val) =>
+                                              val == null || val.isEmpty
+                                              ? 'Required'
+                                              : null,
                                         ),
                                         const SizedBox(height: 16),
                                         TextFormField(
                                           controller: _numberController,
-                                          decoration: _modernInputDecoration('Contact Number'),
-                                          style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                          decoration: _modernInputDecoration(
+                                            'Contact Number',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: ChoiceLuxTheme.softWhite,
+                                          ),
                                           keyboardType: TextInputType.phone,
                                         ),
                                         const SizedBox(height: 16),
                                         TextFormField(
                                           controller: _addressController,
-                                          decoration: _modernInputDecoration('Address'),
-                                          style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                          decoration: _modernInputDecoration(
+                                            'Address',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: ChoiceLuxTheme.softWhite,
+                                          ),
                                           maxLines: 3,
                                         ),
                                       ],
@@ -340,14 +386,24 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                       children: [
                                         TextFormField(
                                           controller: _kinController,
-                                          decoration: _modernInputDecoration('Emergency Contact (Next of Kin)'),
-                                          style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                          decoration: _modernInputDecoration(
+                                            'Emergency Contact (Next of Kin)',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: ChoiceLuxTheme.softWhite,
+                                          ),
                                         ),
                                         const SizedBox(height: 16),
                                         TextFormField(
                                           controller: _kinNumberController,
-                                          decoration: _modernInputDecoration('Emergency Contact Number'),
-                                          style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                          decoration: _modernInputDecoration(
+                                            'Emergency Contact Number',
+                                          ),
+                                          style: const TextStyle(
+                                            fontSize: 15,
+                                            color: ChoiceLuxTheme.softWhite,
+                                          ),
                                           keyboardType: TextInputType.phone,
                                         ),
                                       ],
@@ -360,34 +416,57 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                               TextFormField(
                                 controller: _displayNameController,
                                 decoration: _modernInputDecoration('Full Name'),
-                                style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
-                                validator: (val) => val == null || val.isEmpty ? 'Required' : null,
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
+                                validator: (val) => val == null || val.isEmpty
+                                    ? 'Required'
+                                    : null,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _numberController,
-                                decoration: _modernInputDecoration('Contact Number'),
-                                style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                decoration: _modernInputDecoration(
+                                  'Contact Number',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 keyboardType: TextInputType.phone,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _addressController,
                                 decoration: _modernInputDecoration('Address'),
-                                style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 maxLines: 3,
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _kinController,
-                                decoration: _modernInputDecoration('Emergency Contact (Next of Kin)'),
-                                style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                decoration: _modernInputDecoration(
+                                  'Emergency Contact (Next of Kin)',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                               ),
                               const SizedBox(height: 16),
                               TextFormField(
                                 controller: _kinNumberController,
-                                decoration: _modernInputDecoration('Emergency Contact Number'),
-                                style: const TextStyle(fontSize: 15, color: ChoiceLuxTheme.softWhite),
+                                decoration: _modernInputDecoration(
+                                  'Emergency Contact Number',
+                                ),
+                                style: const TextStyle(
+                                  fontSize: 15,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 keyboardType: TextInputType.phone,
                               ),
                             ],
@@ -403,14 +482,20 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                     ? const SizedBox(
                                         width: 20,
                                         height: 20,
-                                        child: CircularProgressIndicator(strokeWidth: 2),
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                        ),
                                       )
                                     : const Icon(Icons.save),
-                                label: Text(_isLoading ? 'Saving...' : 'Save Changes'),
+                                label: Text(
+                                  _isLoading ? 'Saving...' : 'Save Changes',
+                                ),
                                 style: FilledButton.styleFrom(
                                   backgroundColor: ChoiceLuxTheme.richGold,
                                   foregroundColor: ChoiceLuxTheme.jetBlack,
-                                  padding: const EdgeInsets.symmetric(vertical: 16),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 16,
+                                  ),
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -430,4 +515,4 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       ),
     );
   }
-} 
+}

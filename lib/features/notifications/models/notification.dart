@@ -40,24 +40,24 @@ class AppNotification {
       isRead: json['is_read'] as bool? ?? false,
       isHidden: json['is_hidden'] as bool? ?? false,
       notificationType: json['notification_type']?.toString() ?? 'unknown',
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'].toString())
           : DateTime.now(),
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at'].toString()) 
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'].toString())
           : null,
-      readAt: json['read_at'] != null 
-          ? DateTime.parse(json['read_at'].toString()) 
+      readAt: json['read_at'] != null
+          ? DateTime.parse(json['read_at'].toString())
           : null,
-      dismissedAt: json['dismissed_at'] != null 
-          ? DateTime.parse(json['dismissed_at'].toString()) 
+      dismissedAt: json['dismissed_at'] != null
+          ? DateTime.parse(json['dismissed_at'].toString())
           : null,
       priority: json['priority']?.toString() ?? 'normal',
-      actionData: json['action_data'] != null 
+      actionData: json['action_data'] != null
           ? Map<String, dynamic>.from(json['action_data'] as Map)
           : null,
-      expiresAt: json['expires_at'] != null 
-          ? DateTime.parse(json['expires_at'].toString()) 
+      expiresAt: json['expires_at'] != null
+          ? DateTime.parse(json['expires_at'].toString())
           : null,
     );
   }
@@ -159,22 +159,23 @@ class AppNotification {
   }
 
   // Helper methods
-  bool get isExpired => expiresAt != null && expiresAt!.isBefore(DateTime.now());
+  bool get isExpired =>
+      expiresAt != null && expiresAt!.isBefore(DateTime.now());
   bool get isDismissed => dismissedAt != null;
   bool get isUnread => !isRead && !isDismissed && !isExpired;
-  
+
   // Get action route for deep linking
   String? get actionRoute => actionData?['route'] as String?;
-  
+
   // Get action type
   String? get actionType => actionData?['action'] as String?;
-  
+
   // Get job number from action data
   String? get jobNumber => actionData?['job_number'] as String?;
-  
+
   // Check if notification is high priority
   bool get isHighPriority => priority == 'high' || priority == 'urgent';
-  
+
   // Check if notification is urgent
   bool get isUrgent => priority == 'urgent';
-} 
+}

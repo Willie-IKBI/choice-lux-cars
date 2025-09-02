@@ -26,17 +26,14 @@ class StatusPill extends StatelessWidget {
     final effectiveFontSize = fontSize ?? (height * 0.4);
     final dotSize = height * 0.25;
     final iconSize = height * 0.6;
-    
+
     return Container(
       height: height,
       padding: padding,
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(height / 2),
-        border: Border.all(
-          color: color.withValues(alpha: 0.3),
-          width: 1,
-        ),
+        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -48,10 +45,7 @@ class StatusPill extends StatelessWidget {
             Container(
               width: dotSize,
               height: dotSize,
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-              ),
+              decoration: BoxDecoration(color: color, shape: BoxShape.circle),
             ),
             SizedBox(width: height * 0.25),
           ],
@@ -90,7 +84,7 @@ class JobStatusPill extends StatelessWidget {
     // This would need to be imported from the job model
     // For now, we'll use a simple mapping
     final (color, label) = _getStatusInfo(status);
-    
+
     return StatusPill(
       color: color,
       text: label,
@@ -139,7 +133,7 @@ class DriverConfirmationPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, text) = _getConfirmationInfo(isConfirmed);
-    
+
     return StatusPill(
       color: color,
       text: text,
@@ -181,7 +175,7 @@ class TimeStatusPill extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (color, text, icon) = _getTimeInfo(daysUntilStart, isSmallScreen);
-    
+
     return StatusPill(
       color: color,
       text: text,
@@ -193,31 +187,34 @@ class TimeStatusPill extends StatelessWidget {
     );
   }
 
-  (Color, String, IconData) _getTimeInfo(int? daysUntilStart, bool isSmallScreen) {
+  (Color, String, IconData) _getTimeInfo(
+    int? daysUntilStart,
+    bool isSmallScreen,
+  ) {
     if (daysUntilStart == null) {
       return (Colors.grey, 'Unknown', Icons.schedule);
     }
-    
+
     final isStarted = daysUntilStart < 0;
     final isToday = daysUntilStart == 0;
     final isSoon = daysUntilStart <= 3 && daysUntilStart > 0;
-    
+
     if (isStarted) {
-      final text = isSmallScreen 
-        ? '${daysUntilStart.abs()}d ago' 
-        : 'Started ${daysUntilStart.abs()}d ago';
+      final text = isSmallScreen
+          ? '${daysUntilStart.abs()}d ago'
+          : 'Started ${daysUntilStart.abs()}d ago';
       return (Colors.grey, text, Icons.schedule);
     } else if (isToday) {
       return (Colors.orange, 'TODAY', Icons.today);
     } else if (isSoon) {
-      final text = isSmallScreen 
-        ? '${daysUntilStart}d' 
-        : 'URGENT ${daysUntilStart}d';
+      final text = isSmallScreen
+          ? '${daysUntilStart}d'
+          : 'URGENT ${daysUntilStart}d';
       return (Colors.red, text, Icons.warning);
     } else {
-      final text = isSmallScreen 
-        ? '${daysUntilStart}d' 
-        : 'In ${daysUntilStart}d';
+      final text = isSmallScreen
+          ? '${daysUntilStart}d'
+          : 'In ${daysUntilStart}d';
       return (Colors.green, text, Icons.calendar_today);
     }
   }

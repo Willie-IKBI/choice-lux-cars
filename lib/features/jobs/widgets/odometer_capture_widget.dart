@@ -51,11 +51,7 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.speed,
-                  color: Colors.orange[700],
-                  size: 24,
-                ),
+                Icon(Icons.speed, color: Colors.orange[700], size: 24),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -71,13 +67,13 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
               const SizedBox(height: 8),
               Text(
                 widget.description!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
             ],
             const SizedBox(height: 16),
-            
+
             // Odometer reading input
             TextField(
               controller: _readingController,
@@ -90,15 +86,15 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
                 suffixText: 'km',
               ),
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // Image capture section
             if (_capturedImage != null) ...[
               _buildImagePreview(),
               const SizedBox(height: 16),
             ],
-            
+
             if (_errorMessage != null) ...[
               Container(
                 padding: const EdgeInsets.all(12),
@@ -122,7 +118,7 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
               ),
               const SizedBox(height: 16),
             ],
-            
+
             // Action buttons
             Row(
               children: [
@@ -136,7 +132,9 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
                             child: CircularProgressIndicator(strokeWidth: 2),
                           )
                         : const Icon(Icons.camera_alt),
-                    label: Text(_isCapturing ? 'Capturing...' : 'Capture Image'),
+                    label: Text(
+                      _isCapturing ? 'Capturing...' : 'Capture Image',
+                    ),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue[600],
                       foregroundColor: Colors.white,
@@ -256,7 +254,7 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
 
     final reading = double.parse(_readingController.text);
     final imagePath = _capturedImage!.path;
-    
+
     widget.onOdometerCaptured(reading, imagePath);
   }
 }
@@ -284,9 +282,9 @@ class OdometerDisplayWidget extends StatelessWidget {
             if (title != null) ...[
               Text(
                 title!,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
             ],

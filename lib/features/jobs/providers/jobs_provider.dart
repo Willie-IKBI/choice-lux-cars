@@ -21,13 +21,14 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   void _checkPermissions() {
     final userProfile = _ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
-    
-    final canCreate = userRole == 'administrator' || 
-                     userRole == 'admin' ||
-                     userRole == 'manager' ||
-                     userRole == 'driver_manager' ||
-                     userRole == 'drivermanager';
-    
+
+    final canCreate =
+        userRole == 'administrator' ||
+        userRole == 'admin' ||
+        userRole == 'manager' ||
+        userRole == 'driver_manager' ||
+        userRole == 'drivermanager';
+
     // Note: canCreateJobs is now handled in the UI layer based on user role
   }
 
@@ -35,9 +36,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<List<Job>> _fetchJobs() async {
     try {
       Log.d('Fetching jobs...');
-      
+
       final result = await _jobsRepository.fetchJobs();
-      
+
       if (result.isSuccess) {
         final jobs = result.data!;
         Log.d('Fetched ${jobs.length} jobs successfully');
@@ -56,9 +57,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<Map<String, dynamic>?> createJob(Job job) async {
     try {
       Log.d('Creating job: ${job.passengerName}');
-      
+
       final result = await _jobsRepository.createJob(job);
-      
+
       if (result.isSuccess) {
         // Refresh jobs list
         ref.invalidateSelf();
@@ -78,13 +79,15 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> updateJob(Job job) async {
     try {
       Log.d('Updating job: ${job.id}');
-      
+
       final result = await _jobsRepository.updateJob(job);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
-        final updatedJobs = currentJobs.map((j) => j.id == job.id ? job : j).toList();
+        final updatedJobs = currentJobs
+            .map((j) => j.id == job.id ? job : j)
+            .toList();
         state = AsyncValue.data(updatedJobs);
         Log.d('Job updated successfully');
       } else {
@@ -101,9 +104,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> updateJobStatus(String jobId, String status) async {
     try {
       Log.d('Updating job status: $jobId to $status');
-      
+
       final result = await _jobsRepository.updateJobStatus(jobId, status);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
@@ -113,7 +116,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
           }
           return job;
         }).toList();
-        
+
         state = AsyncValue.data(updatedJobs);
         Log.d('Job status updated successfully');
       } else {
@@ -130,9 +133,12 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> updateJobPaymentAmount(String jobId, double amount) async {
     try {
       Log.d('Updating job payment amount: $jobId to $amount');
-      
-      final result = await _jobsRepository.updateJobPaymentAmount(jobId, amount);
-      
+
+      final result = await _jobsRepository.updateJobPaymentAmount(
+        jobId,
+        amount,
+      );
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
@@ -142,7 +148,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
           }
           return job;
         }).toList();
-        
+
         state = AsyncValue.data(updatedJobs);
         Log.d('Job payment amount updated successfully');
       } else {
@@ -159,13 +165,15 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> deleteJob(String jobId) async {
     try {
       Log.d('Deleting job: $jobId');
-      
+
       final result = await _jobsRepository.deleteJob(jobId);
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
-        final updatedJobs = currentJobs.where((job) => job.id != jobId).toList();
+        final updatedJobs = currentJobs
+            .where((job) => job.id != jobId)
+            .toList();
         state = AsyncValue.data(updatedJobs);
         Log.d('Job deleted successfully');
       } else {
@@ -182,11 +190,11 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<List<Job>> getJobsByStatus(String status) async {
     try {
       Log.d('Getting jobs by status: $status');
-      
+
       if (status == 'all') {
         return state.value ?? [];
       }
-      
+
       final result = await _jobsRepository.getJobsByStatus(status);
       if (result.isSuccess) {
         return result.data!;
@@ -204,7 +212,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<List<Job>> getJobsByDriver(String driverId) async {
     try {
       Log.d('Getting jobs by driver: $driverId');
-      
+
       final result = await _jobsRepository.getJobsByDriver(driverId);
       if (result.isSuccess) {
         return result.data!;
@@ -222,7 +230,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<List<Job>> getJobsByClient(String clientId) async {
     try {
       Log.d('Getting jobs by client: $clientId');
-      
+
       final result = await _jobsRepository.getJobsByClient(clientId);
       if (result.isSuccess) {
         return result.data!;
@@ -241,25 +249,34 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     ref.invalidateSelf();
   }
 
+  /// Convenience alias for old call sites
+  Future<void> fetchJobs() async => refreshJobs?.call() ?? _refreshCompat();
+
+  Future<void> _refreshCompat() async {
+    // Fallback refresh if refreshJobs() does not exist yet
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async => await build());
+  }
+
   /// Check if current user can create jobs
   bool get canCreateJobs {
     final userProfile = _ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
-    
-    return userRole == 'administrator' || 
-           userRole == 'admin' ||
-           userRole == 'manager' ||
-           userRole == 'driver_manager' ||
-           userRole == 'drivermanager';
+
+    return userRole == 'administrator' ||
+        userRole == 'admin' ||
+        userRole == 'manager' ||
+        userRole == 'driver_manager' ||
+        userRole == 'drivermanager';
   }
 
   /// Fetch a single job by ID
   Future<Job?> fetchJobById(String jobId) async {
     try {
       Log.d('Fetching job by ID: $jobId');
-      
+
       final result = await _jobsRepository.fetchJobById(jobId);
-      
+
       if (result.isSuccess) {
         final job = result.data;
         Log.d('Job fetched successfully: ${job?.passengerName}');
@@ -278,9 +295,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   Future<void> confirmJob(String jobId) async {
     try {
       Log.d('Confirming job: $jobId');
-      
+
       final result = await _jobsRepository.updateJobStatus(jobId, 'confirmed');
-      
+
       if (result.isSuccess) {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
@@ -304,4 +321,4 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 }
 
 /// Provider for JobsNotifier using AsyncNotifierProvider
-final jobsProvider = AsyncNotifierProvider<JobsNotifier, List<Job>>(() => JobsNotifier()); 
+final jobsProvider = AsyncNotifierProvider<JobsNotifier, List<Job>>(JobsNotifier.new);

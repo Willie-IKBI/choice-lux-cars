@@ -17,9 +17,9 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
   Future<List<Client>> _fetchClients() async {
     try {
       Log.d('Fetching clients...');
-      
+
       final result = await _clientsRepository.fetchClients();
-      
+
       if (result.isSuccess) {
         final clients = result.data!;
         Log.d('Fetched ${clients.length} clients successfully');
@@ -129,9 +129,9 @@ class InactiveClientsNotifier extends AsyncNotifier<List<Client>> {
   Future<List<Client>> _fetchInactiveClients() async {
     try {
       Log.d('Fetching inactive clients...');
-      
+
       final result = await _clientsRepository.fetchInactiveClients();
-      
+
       if (result.isSuccess) {
         final clients = result.data!;
         Log.d('Fetched ${clients.length} inactive clients successfully');
@@ -161,13 +161,13 @@ class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
   Future<List<Client>> build(String query) async {
     _clientsRepository = ref.watch(clientsRepositoryProvider);
     this.query = query;
-    
+
     if (query.isEmpty) {
       // If query is empty, return all active clients
       final clientsNotifier = ref.read(clientsProvider.notifier);
       return clientsNotifier.state.value ?? [];
     }
-    
+
     return _searchClients();
   }
 
@@ -175,9 +175,9 @@ class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
   Future<List<Client>> _searchClients() async {
     try {
       Log.d('Searching clients with query: $query');
-      
+
       final result = await _clientsRepository.searchClients(query);
-      
+
       if (result.isSuccess) {
         // Filter out inactive clients from search results
         final activeClients = result.data!
@@ -217,9 +217,9 @@ class SingleClientNotifier extends FamilyAsyncNotifier<Client?, String> {
   Future<Client?> _fetchClientById() async {
     try {
       Log.d('Fetching client by ID: $clientId');
-      
+
       final result = await _clientsRepository.fetchClientById(clientId);
-      
+
       if (result.isSuccess) {
         Log.d('Fetched client successfully: ${result.data?.companyName}');
         return result.data;
@@ -240,7 +240,8 @@ class SingleClientNotifier extends FamilyAsyncNotifier<Client?, String> {
 }
 
 /// Notifier for managing client with agents using FamilyAsyncNotifier
-class ClientWithAgentsNotifier extends FamilyAsyncNotifier<Map<String, dynamic>?, String> {
+class ClientWithAgentsNotifier
+    extends FamilyAsyncNotifier<Map<String, dynamic>?, String> {
   late final ClientsRepository _clientsRepository;
   late final String clientId;
 
@@ -255,9 +256,9 @@ class ClientWithAgentsNotifier extends FamilyAsyncNotifier<Map<String, dynamic>?
   Future<Map<String, dynamic>?> _fetchClientWithAgents() async {
     try {
       Log.d('Fetching client with agents: $clientId');
-      
+
       final result = await _clientsRepository.fetchClientWithAgents(clientId);
-      
+
       if (result.isSuccess) {
         Log.d('Fetched client with agents successfully');
         return result.data;
@@ -278,16 +279,32 @@ class ClientWithAgentsNotifier extends FamilyAsyncNotifier<Map<String, dynamic>?
 }
 
 /// Provider for ClientsNotifier using AsyncNotifierProvider
-final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(() => ClientsNotifier());
+final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(
+  () => ClientsNotifier(),
+);
 
 /// Provider for inactive clients using AsyncNotifierProvider
-final inactiveClientsProvider = AsyncNotifierProvider<InactiveClientsNotifier, List<Client>>(() => InactiveClientsNotifier());
+final inactiveClientsProvider =
+    AsyncNotifierProvider<InactiveClientsNotifier, List<Client>>(
+      () => InactiveClientsNotifier(),
+    );
 
 /// Provider for client search using AsyncNotifierProvider.family
-final clientSearchProvider = AsyncNotifierProvider.family<ClientSearchNotifier, List<Client>, String>(ClientSearchNotifier.new);
+final clientSearchProvider =
+    AsyncNotifierProvider.family<ClientSearchNotifier, List<Client>, String>(
+      ClientSearchNotifier.new,
+    );
 
 /// Provider for single client using AsyncNotifierProvider.family
-final clientProvider = AsyncNotifierProvider.family<SingleClientNotifier, Client?, String>(SingleClientNotifier.new);
+final clientProvider =
+    AsyncNotifierProvider.family<SingleClientNotifier, Client?, String>(
+      SingleClientNotifier.new,
+    );
 
 /// Provider for client with agents using AsyncNotifierProvider.family
-final clientWithAgentsProvider = AsyncNotifierProvider.family<ClientWithAgentsNotifier, Map<String, dynamic>?, String>(ClientWithAgentsNotifier.new); 
+final clientWithAgentsProvider =
+    AsyncNotifierProvider.family<
+      ClientWithAgentsNotifier,
+      Map<String, dynamic>?,
+      String
+    >(ClientWithAgentsNotifier.new);

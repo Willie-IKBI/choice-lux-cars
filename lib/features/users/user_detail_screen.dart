@@ -24,9 +24,7 @@ class UserDetailScreen extends ConsumerWidget {
       user = null;
     }
     if (usersList.isEmpty) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
     if (user == null) {
       return Scaffold(
@@ -58,13 +56,19 @@ class UserDetailScreen extends ConsumerWidget {
                 canDeactivate: canDeactivate,
                 onDeactivate: canDeactivate
                     ? () async {
-                        Log.d('Deactivate button clicked for user: ${user!.id}');
+                        Log.d(
+                          'Deactivate button clicked for user: ${user!.id}',
+                        );
                         try {
-                          await ref.read(usersProvider.notifier).deactivateUser(user!.id);
+                          await ref
+                              .read(usersProvider.notifier)
+                              .deactivateUser(user!.id);
                           Log.d('User deactivated successfully');
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('User deactivated successfully')),
+                              const SnackBar(
+                                content: Text('User deactivated successfully'),
+                              ),
                             );
                           }
                         } catch (error) {
@@ -72,7 +76,9 @@ class UserDetailScreen extends ConsumerWidget {
                           if (context.mounted) {
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text('Error deactivating user: $error'),
+                                content: Text(
+                                  'Error deactivating user: $error',
+                                ),
                                 backgroundColor: Colors.red,
                               ),
                             );
@@ -93,4 +99,4 @@ class UserDetailScreen extends ConsumerWidget {
       ),
     );
   }
-} 
+}

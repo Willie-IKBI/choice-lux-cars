@@ -7,7 +7,8 @@ class DriverFlowApiService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Start a job - marks the job as started and records the start time
-  static Future<void> startJob(int jobId, {
+  static Future<void> startJob(
+    int jobId, {
     required double odoStartReading,
     required String pdpStartImage,
     required double gpsLat,
@@ -17,19 +18,19 @@ class DriverFlowApiService {
     try {
       Log.d('=== STARTING JOB ===');
       Log.d('Job ID: $jobId');
-      
+
       // Get the driver for this job
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id, client_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       // Update job status to started
       await _supabase
           .from('jobs')
@@ -39,26 +40,24 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
-      
+
       // Create driver_flow record
-      await _supabase
-          .from('driver_flow')
-          .upsert({
-            'job_id': jobId,
-            'driver_user': driverId,
-            'current_step': 'pickup_arrival',
-            'job_started_at': SATimeUtils.getCurrentSATimeISO(),
-            'odo_start_reading': odoStartReading,
-            'pdp_start_image': pdpStartImage,
-            'vehicle_collected': true,
-            'vehicle_collected_at': SATimeUtils.getCurrentSATimeISO(),
-            'progress_percentage': 17,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          }, onConflict: 'job_id');
-      
+      await _supabase.from('driver_flow').upsert({
+        'job_id': jobId,
+        'driver_user': driverId,
+        'current_step': 'pickup_arrival',
+        'job_started_at': SATimeUtils.getCurrentSATimeISO(),
+        'odo_start_reading': odoStartReading,
+        'pdp_start_image': pdpStartImage,
+        'vehicle_collected': true,
+        'vehicle_collected_at': SATimeUtils.getCurrentSATimeISO(),
+        'progress_percentage': 17,
+        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      }, onConflict: 'job_id');
+
       Log.d('=== JOB STARTED SUCCESSFULLY ===');
-      
+
       // Send notification
       try {
         final jobDetailsResponse = await _supabase
@@ -66,24 +65,25 @@ class DriverFlowApiService {
             .select('passenger_name')
             .eq('id', jobId)
             .single();
-        
+
         final clientResponse = await _supabase
             .from('clients')
             .select('company_name')
             .eq('id', jobResponse['client_id'])
             .single();
-        
+
         final driverResponse = await _supabase
             .from('profiles')
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendJobStartNotification(
           jobId: jobId,
           driverName: driverResponse['display_name'] ?? 'Unknown Driver',
           clientName: clientResponse['company_name'] ?? 'Unknown Client',
-          passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+          passengerName:
+              jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
@@ -97,7 +97,8 @@ class DriverFlowApiService {
   }
 
   /// Record vehicle collection
-  static Future<void> collectVehicle(int jobId, {
+  static Future<void> collectVehicle(
+    int jobId, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -105,18 +106,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== COLLECTING VEHICLE ===');
       Log.d('Job ID: $jobId');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -128,9 +129,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== VEHICLE COLLECTION RECORDED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -138,7 +139,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'vehicle_collection',
@@ -156,7 +157,9 @@ class DriverFlowApiService {
   }
 
   /// Record arrival at pickup location
-  static Future<void> arriveAtPickup(int jobId, int tripIndex, {
+  static Future<void> arriveAtPickup(
+    int jobId,
+    int tripIndex, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -164,18 +167,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== ARRIVE AT PICKUP ===');
       Log.d('Job ID: $jobId, Trip Index: $tripIndex');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -185,9 +188,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== ARRIVAL AT PICKUP RECORDED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -195,7 +198,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'pickup_arrival',
@@ -213,7 +216,9 @@ class DriverFlowApiService {
   }
 
   /// Record passenger onboard
-  static Future<void> passengerOnboard(int jobId, int tripIndex, {
+  static Future<void> passengerOnboard(
+    int jobId,
+    int tripIndex, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -221,18 +226,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== PASSENGER ONBOARD ===');
       Log.d('Job ID: $jobId, Trip Index: $tripIndex');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -242,9 +247,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== PASSENGER ONBOARD RECORDED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -252,7 +257,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'passenger_pickup',
@@ -270,7 +275,9 @@ class DriverFlowApiService {
   }
 
   /// Record arrival at dropoff location
-  static Future<void> arriveAtDropoff(int jobId, int tripIndex, {
+  static Future<void> arriveAtDropoff(
+    int jobId,
+    int tripIndex, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -278,18 +285,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== ARRIVE AT DROPOFF ===');
       Log.d('Job ID: $jobId, Trip Index: $tripIndex');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -299,9 +306,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== ARRIVAL AT DROPOFF RECORDED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -309,7 +316,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'dropoff_arrival',
@@ -327,7 +334,9 @@ class DriverFlowApiService {
   }
 
   /// Complete a trip
-  static Future<void> completeTrip(int jobId, int tripIndex, {
+  static Future<void> completeTrip(
+    int jobId,
+    int tripIndex, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -335,18 +344,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== COMPLETE TRIP ===');
       Log.d('Job ID: $jobId, Trip Index: $tripIndex');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -356,9 +365,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== TRIP COMPLETED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -366,7 +375,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'trip_completion',
@@ -384,7 +393,8 @@ class DriverFlowApiService {
   }
 
   /// Return vehicle
-  static Future<void> returnVehicle(int jobId, {
+  static Future<void> returnVehicle(
+    int jobId, {
     required double odoEndReading,
     required String pdpEndImage,
     required double gpsLat,
@@ -394,18 +404,18 @@ class DriverFlowApiService {
     try {
       Log.d('=== RETURN VEHICLE ===');
       Log.d('Job ID: $jobId');
-      
+
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
       }
-      
+
       await _supabase
           .from('driver_flow')
           .update({
@@ -417,9 +427,9 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('=== VEHICLE RETURNED ===');
-      
+
       // Send notification
       try {
         final driverResponse = await _supabase
@@ -427,7 +437,7 @@ class DriverFlowApiService {
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
           stepName: 'vehicle_return',
@@ -449,7 +459,7 @@ class DriverFlowApiService {
     try {
       Log.d('=== UPDATING JOB STATUS TO COMPLETED ===');
       Log.d('Job ID: $jobId');
-      
+
       await _supabase
           .from('jobs')
           .update({
@@ -457,7 +467,7 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
-      
+
       Log.d('Job status updated to completed');
       Log.d('=== JOB STATUS UPDATE COMPLETED ===');
     } catch (e) {
@@ -472,16 +482,16 @@ class DriverFlowApiService {
     try {
       Log.d('=== CLOSING JOB ===');
       Log.d('Job ID: $jobId');
-      
+
       // Get the driver for this job
       final jobResponse = await _supabase
           .from('jobs')
           .select('driver_id')
           .eq('id', jobId)
           .single();
-      
+
       final driverId = jobResponse['driver_id'];
-      
+
       // Update job status to completed
       await _supabase
           .from('jobs')
@@ -490,7 +500,7 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', jobId);
-      
+
       // Update driver_flow to mark as completed
       await _supabase
           .from('driver_flow')
@@ -501,10 +511,10 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
-      
+
       Log.d('Job closed successfully');
       Log.d('=== JOB CLOSED ===');
-      
+
       // Send job completion notification
       try {
         final jobDetailsResponse = await _supabase
@@ -512,24 +522,25 @@ class DriverFlowApiService {
             .select('passenger_name, job_number, client_id')
             .eq('id', jobId)
             .single();
-        
+
         final driverResponse = await _supabase
             .from('profiles')
             .select('display_name')
             .eq('id', driverId)
             .single();
-        
+
         final clientResponse = await _supabase
             .from('clients')
             .select('company_name')
             .eq('id', jobDetailsResponse['client_id'])
             .single();
-        
+
         await NotificationService.sendJobCompletionNotification(
           jobId: jobId,
           driverName: driverResponse['display_name'] ?? 'Unknown Driver',
           clientName: clientResponse['company_name'] ?? 'Unknown Client',
-          passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+          passengerName:
+              jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
@@ -547,22 +558,22 @@ class DriverFlowApiService {
     try {
       Log.d('=== GETTING JOB ADDRESSES ===');
       Log.d('Job ID: $jobId');
-      
+
       // Get transport details for this job
       final transportResponse = await _supabase
           .from('transport')
           .select('pickup_location, dropoff_location')
           .eq('job_id', jobId)
           .maybeSingle();
-      
+
       String? pickupAddress;
       String? dropoffAddress;
-      
+
       if (transportResponse != null) {
         pickupAddress = transportResponse['pickup_location']?.toString();
         dropoffAddress = transportResponse['dropoff_location']?.toString();
       }
-      
+
       // Fallback to job location if no transport details
       if (pickupAddress == null || pickupAddress.isEmpty) {
         final jobResponse = await _supabase
@@ -570,26 +581,20 @@ class DriverFlowApiService {
             .select('location')
             .eq('id', jobId)
             .maybeSingle();
-        
+
         if (jobResponse != null) {
           pickupAddress = jobResponse['location']?.toString();
         }
       }
-      
-      final addresses = {
-        'pickup': pickupAddress,
-        'dropoff': dropoffAddress,
-      };
-      
+
+      final addresses = {'pickup': pickupAddress, 'dropoff': dropoffAddress};
+
       Log.d('Job addresses: $addresses');
       return addresses;
     } catch (e) {
       Log.e('=== ERROR GETTING JOB ADDRESSES ===');
       Log.e('Error: $e');
-      return {
-        'pickup': null,
-        'dropoff': null,
-      };
+      return {'pickup': null, 'dropoff': null};
     }
   }
 }

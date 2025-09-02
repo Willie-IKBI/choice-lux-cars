@@ -4,9 +4,9 @@
 /// that can occur in the application.
 sealed class AppException implements Exception {
   final String message;
-  
+
   const AppException(this.message);
-  
+
   @override
   String toString() => 'AppException: $message';
 }
@@ -14,7 +14,7 @@ sealed class AppException implements Exception {
 /// Exception for network-related errors
 class NetworkException extends AppException {
   const NetworkException(super.message);
-  
+
   @override
   String toString() => 'NetworkException: $message';
 }
@@ -22,7 +22,7 @@ class NetworkException extends AppException {
 /// Exception for authentication-related errors
 class AuthException extends AppException {
   const AuthException(super.message);
-  
+
   @override
   String toString() => 'AuthException: $message';
 }
@@ -30,7 +30,7 @@ class AuthException extends AppException {
 /// Exception for unknown or unexpected errors
 class UnknownException extends AppException {
   const UnknownException(super.message);
-  
+
   @override
   String toString() => 'UnknownException: $message';
 }

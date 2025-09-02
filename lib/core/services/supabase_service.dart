@@ -2,12 +2,12 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Service for Supabase initialization and session management
-/// 
+///
 /// This service focuses only on:
 /// - Initialization and configuration
 /// - Session management and authentication
 /// - Profile management for current user
-/// 
+///
 /// All data access is now handled by feature-specific repositories.
 class SupabaseService {
   static SupabaseService? _instance;
@@ -46,7 +46,7 @@ class SupabaseService {
   Future<Map<String, dynamic>?> getProfile(String userId) async {
     try {
       Log.d('Getting profile for user: $userId');
-      
+
       final response = await supabase
           .from('profiles')
           .select()
@@ -73,11 +73,8 @@ class SupabaseService {
   }) async {
     try {
       Log.d('Updating profile for user: $userId');
-      
-      await supabase
-          .from('profiles')
-          .update(data)
-          .eq('id', userId);
+
+      await supabase.from('profiles').update(data).eq('id', userId);
 
       Log.d('Profile updated successfully for user: $userId');
     } catch (error) {
@@ -90,19 +87,20 @@ class SupabaseService {
   Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
 
   /// Listen to user changes
-  Stream<User?> get userChanges => supabase.auth.onAuthStateChange.map((event) => event.session?.user);
+  Stream<User?> get userChanges =>
+      supabase.auth.onAuthStateChange.map((event) => event.session?.user);
 
   /// Get user by ID from auth (if they exist in auth)
   Future<User?> getUserById(String userId) async {
     try {
       Log.d('Getting user by ID from auth: $userId');
-      
+
       // Note: This is limited to auth users only
       // For full user profiles, use the UsersRepository
       if (currentUser?.id == userId) {
         return currentUser;
       }
-      
+
       Log.d('User not found in current auth session: $userId');
       return null;
     } catch (error) {
@@ -167,9 +165,7 @@ class SupabaseService {
   Future<void> updatePassword({required String newPassword}) async {
     try {
       Log.d('Updating password for user: ${currentUser?.id}');
-      await supabase.auth.updateUser(
-        UserAttributes(password: newPassword),
-      );
+      await supabase.auth.updateUser(UserAttributes(password: newPassword));
       Log.d('Password updated successfully');
     } catch (error) {
       Log.e('Error updating password: $error');
@@ -188,9 +184,15 @@ class SupabaseService {
   }
 
   /// Get completed jobs by client (compat shim)
-  Future<List<Map<String, dynamic>>> getCompletedJobsByClient(String clientId) async {
+  Future<List<Map<String, dynamic>>> getCompletedJobsByClient(
+    String clientId,
+  ) async {
     final c = Supabase.instance.client;
-    return await c.from('jobs').select().eq('client_id', clientId).eq('job_status', 'completed');
+    return await c
+        .from('jobs')
+        .select()
+        .eq('client_id', clientId)
+        .eq('job_status', 'completed');
   }
 
   /// Get quotes by client (compat shim)
@@ -202,8 +204,15 @@ class SupabaseService {
   /// Get completed jobs revenue by client (compat shim)
   Future<double> getCompletedJobsRevenueByClient(String clientId) async {
     final c = Supabase.instance.client;
-    final rows = await c.from('jobs').select('amount, job_status').eq('client_id', clientId).eq('job_status', 'completed');
-    return rows.fold<double>(0.0, (sum, r) => sum + ((r['amount'] ?? 0) as num).toDouble());
+    final rows = await c
+        .from('jobs')
+        .select('amount, job_status')
+        .eq('client_id', clientId)
+        .eq('job_status', 'completed');
+    return rows.fold<double>(
+      0.0,
+      (sum, r) => sum + ((r['amount'] ?? 0) as num).toDouble(),
+    );
   }
 
   /// Get client by ID (compat shim)
@@ -233,4 +242,4 @@ class SupabaseService {
     final rows = await c.from('users').select().eq('id', userId).limit(1);
     return rows.isEmpty ? null : rows.first;
   }
-} 
+}

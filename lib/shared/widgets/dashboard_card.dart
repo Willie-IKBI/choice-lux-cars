@@ -39,13 +39,9 @@ class _DashboardCardState extends State<DashboardCard>
       duration: const Duration(milliseconds: 200),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 1.02,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeInOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
+    );
   }
 
   @override
@@ -68,25 +64,40 @@ class _DashboardCardState extends State<DashboardCard>
   @override
   Widget build(BuildContext context) {
     final iconColor = widget.iconColor ?? context.brandGold;
-    final backgroundColor = widget.backgroundColor ?? ChoiceLuxTheme.charcoalGray;
-    
+    final backgroundColor =
+        widget.backgroundColor ?? ChoiceLuxTheme.charcoalGray;
+
     // Responsive sizing based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    
+
     // Debug: Print card sizing info
-    debugPrint('DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile');
-    
+    debugPrint(
+      'DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile',
+    );
+
     // Mobile-optimized sizing with better touch targets
-    final iconSize = isSmallMobile ? 24.0 : isMobile ? 28.0 : 36.0;
-    final iconContainerPadding = isSmallMobile ? 8.0 : isMobile ? 10.0 : 16.0;
-    final cardPadding = isSmallMobile 
+    final iconSize = isSmallMobile
+        ? 24.0
+        : isMobile
+        ? 28.0
+        : 36.0;
+    final iconContainerPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 10.0
+        : 16.0;
+    final cardPadding = isSmallMobile
         ? const EdgeInsets.all(12.0)
-        : isMobile 
-            ? const EdgeInsets.all(16.0)
-            : const EdgeInsets.all(24.0);
-    final titleSpacing = isSmallMobile ? 8.0 : isMobile ? 10.0 : 16.0;
+        : isMobile
+        ? const EdgeInsets.all(16.0)
+        : const EdgeInsets.all(24.0);
+    final titleSpacing = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 10.0
+        : 16.0;
     final borderRadius = isMobile ? context.radiusMd : 20.0;
 
     return MouseRegion(
@@ -122,8 +133,8 @@ class _DashboardCardState extends State<DashboardCard>
                     ),
                 ],
                 border: Border.all(
-                  color: _isHovered 
-                      ? iconColor.withValues(alpha: 0.3) 
+                  color: _isHovered
+                      ? iconColor.withValues(alpha: 0.3)
                       : Colors.white.withValues(alpha: 0.1),
                   width: _isHovered ? 1.5 : 1,
                 ),
@@ -146,7 +157,9 @@ class _DashboardCardState extends State<DashboardCard>
                               padding: EdgeInsets.all(iconContainerPadding),
                               decoration: BoxDecoration(
                                 color: iconColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(borderRadius * 0.8),
+                                borderRadius: BorderRadius.circular(
+                                  borderRadius * 0.8,
+                                ),
                                 border: Border.all(
                                   color: iconColor.withValues(alpha: 0.2),
                                   width: 1,
@@ -164,11 +177,17 @@ class _DashboardCardState extends State<DashboardCard>
                                 top: 0,
                                 right: 0,
                                 child: Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.red,
                                     borderRadius: BorderRadius.circular(10),
-                                    border: Border.all(color: Colors.white, width: 1),
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 1,
+                                    ),
                                   ),
                                   child: Text(
                                     widget.badge!,
@@ -183,30 +202,36 @@ class _DashboardCardState extends State<DashboardCard>
                           ],
                         ),
                         SizedBox(height: titleSpacing),
-                        
+
                         // Title - simplified for mobile
                         Text(
                           widget.title,
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: ChoiceLuxTheme.softWhite,
-                            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
-                          ),
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: ChoiceLuxTheme.softWhite,
+                                fontSize: isSmallMobile
+                                    ? 14
+                                    : isMobile
+                                    ? 16
+                                    : 18,
+                              ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        
+
                         // Subtitle - only show on larger screens for cleaner mobile experience
                         if (widget.subtitle != null && !isMobile) ...[
                           SizedBox(height: 6),
                           Text(
                             widget.subtitle!,
-                            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: ChoiceLuxTheme.platinumSilver,
-                              fontWeight: FontWeight.w400,
-                              fontSize: 12,
-                            ),
+                            style: Theme.of(context).textTheme.bodySmall
+                                ?.copyWith(
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: 12,
+                                ),
                             textAlign: TextAlign.center,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
@@ -223,4 +248,4 @@ class _DashboardCardState extends State<DashboardCard>
       ),
     );
   }
-} 
+}

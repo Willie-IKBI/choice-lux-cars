@@ -24,14 +24,14 @@ class JobCardConstants {
   static const double spacingMultiplier = 0.75;
   static const double iconSizeMultiplier = 0.8;
   static const double baseFontSize = 12.0;
-  
+
   // Card styling
   static const double cardElevationMobile = 2.0;
   static const double cardElevationDesktop = 1.0;
   static const double shadowAlpha = 0.1;
   static const double borderAlpha = 0.15;
   static const double borderWidth = 0.5;
-  
+
   // Chip styling
   static const double chipHeightSmallMobile = 16.0;
   static const double chipHeightMobile = 18.0;
@@ -43,7 +43,7 @@ class JobCardConstants {
   static const double chipSpacingSmallMobile = 2.0;
   static const double chipSpacingMobile = 3.0;
   static const double chipSpacingDesktop = 4.0;
-  
+
   // Container styling
   static const double containerBackgroundAlpha = 0.06;
   static const double containerBorderAlpha = 0.15;
@@ -56,14 +56,14 @@ class JobCardConstants {
   static const double containerInnerSpacingSmallMobile = 2.0;
   static const double containerInnerSpacingMobile = 3.0;
   static const double containerInnerSpacingDesktop = 4.0;
-  
+
   // Button styling
   static const double buttonPaddingVertical = 6.0;
   static const double buttonPaddingHorizontal = 8.0;
   static const double buttonBorderRadius = 4.0;
   static const double buttonIconSizeMultiplier = 0.8;
   static const double buttonFontSizeOffset = 1.0;
-  
+
   // Confirmation styling
   static const double confirmationPaddingVertical = 4.0;
   static const double confirmationPaddingHorizontal = 8.0;
@@ -72,14 +72,14 @@ class JobCardConstants {
   static const double confirmationSpacing = 4.0;
   static const double confirmationBackgroundAlpha = 0.1;
   static const double confirmationBorderAlpha = 0.3;
-  
+
   // Text styling
   static const double titleFontSizeOffset = 1.0;
   static const double titleLineHeight = 1.1;
   static const double detailFontSizeOffset = 1.0;
   static const double detailIconAlpha = 0.7;
   static const double detailLabelAlpha = 0.6;
-  
+
   // Metric styling
   static const double metricBackgroundAlpha = 0.08;
   static const double metricBorderAlpha = 0.2;
@@ -107,7 +107,7 @@ class JobCardConstants {
   static const double metricTileBorderRadiusDesktop = 6.0;
   static const double metricTileIconSizeMultiplier = 0.8;
   static const double metricTileValueAlpha = 0.7;
-  
+
   // Spacing
   static const double actionButtonSpacing = 6.0;
   static const double confirmationButtonSpacing = 8.0;
@@ -117,12 +117,12 @@ class JobCardConstants {
   static const double footerPaddingVerticalSmallMobile = 2.0;
   static const double footerPaddingVerticalMobile = 3.0;
   static const double footerPaddingVerticalDesktop = 4.0;
-  
+
   // Error handling
   static const Duration snackBarDurationShort = Duration(seconds: 2);
   static const Duration snackBarDurationMedium = Duration(seconds: 3);
   static const Duration snackBarDurationLong = Duration(seconds: 4);
-  
+
   // Default values
   static const String defaultPassengerName = 'Unnamed Job';
   static const String defaultClientName = 'Unknown Client';
@@ -153,18 +153,31 @@ class JobCard extends ConsumerWidget {
         final screenWidth = constraints.maxWidth;
         final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
         final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-        
+
         // Get responsive design tokens - use smaller values to prevent overflow
-        final padding = ResponsiveTokens.getPadding(screenWidth) * JobCardConstants.paddingMultiplier;
-        final spacing = ResponsiveTokens.getSpacing(screenWidth) * JobCardConstants.spacingMultiplier;
+        final padding =
+            ResponsiveTokens.getPadding(screenWidth) *
+            JobCardConstants.paddingMultiplier;
+        final spacing =
+            ResponsiveTokens.getSpacing(screenWidth) *
+            JobCardConstants.spacingMultiplier;
         final cornerRadius = ResponsiveTokens.getCornerRadius(screenWidth);
-        final iconSize = ResponsiveTokens.getIconSize(screenWidth) * JobCardConstants.iconSizeMultiplier;
-        final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: JobCardConstants.baseFontSize);
-        
+        final iconSize =
+            ResponsiveTokens.getIconSize(screenWidth) *
+            JobCardConstants.iconSizeMultiplier;
+        final fontSize = ResponsiveTokens.getFontSize(
+          screenWidth,
+          baseSize: JobCardConstants.baseFontSize,
+        );
+
         return Card(
           margin: EdgeInsets.all(spacing * 0.5),
-          elevation: isMobile ? JobCardConstants.cardElevationMobile : JobCardConstants.cardElevationDesktop,
-          shadowColor: Colors.black.withValues(alpha: JobCardConstants.shadowAlpha),
+          elevation: isMobile
+              ? JobCardConstants.cardElevationMobile
+              : JobCardConstants.cardElevationDesktop,
+          shadowColor: Colors.black.withValues(
+            alpha: JobCardConstants.shadowAlpha,
+          ),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(cornerRadius),
           ),
@@ -174,7 +187,9 @@ class JobCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(cornerRadius),
               gradient: ChoiceLuxTheme.cardGradient,
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withValues(alpha: JobCardConstants.borderAlpha),
+                color: ChoiceLuxTheme.richGold.withValues(
+                  alpha: JobCardConstants.borderAlpha,
+                ),
                 width: JobCardConstants.borderWidth,
               ),
             ),
@@ -186,38 +201,57 @@ class JobCard extends ConsumerWidget {
                 children: [
                   // Status row: chips + date badge - More compact
                   _buildStatusRow(isMobile, isSmallMobile, iconSize, fontSize),
-                  
+
                   SizedBox(height: spacing * 0.5),
-                  
+
                   // Title row: passenger/job title
                   _buildTitleRow(isMobile, isSmallMobile, fontSize),
-                  
+
                   SizedBox(height: spacing * 0.5),
-                  
+
                   // Details block: key fields - Use Flexible instead of Expanded
                   Flexible(
-                    child: _buildDetailsBlock(isMobile, isSmallMobile, iconSize, fontSize),
+                    child: _buildDetailsBlock(
+                      isMobile,
+                      isSmallMobile,
+                      iconSize,
+                      fontSize,
+                    ),
                   ),
-                  
+
                   SizedBox(height: spacing * 0.5),
-                  
+
                   // Metrics row: stat tiles - More compact
                   _buildMetricsRow(isMobile, isSmallMobile, iconSize, fontSize),
-                  
+
                   SizedBox(height: spacing * 0.5),
-                  
+
                   // Progress row: show current step and progress for in-progress jobs
-                  if (job.statusEnum == JobStatus.started || job.statusEnum == JobStatus.inProgress)
-                    _buildProgressRow(isMobile, isSmallMobile, iconSize, fontSize),
-                  
-                  if (job.statusEnum == JobStatus.started || job.statusEnum == JobStatus.inProgress)
+                  if (job.statusEnum == JobStatus.started ||
+                      job.statusEnum == JobStatus.inProgress)
+                    _buildProgressRow(
+                      isMobile,
+                      isSmallMobile,
+                      iconSize,
+                      fontSize,
+                    ),
+
+                  if (job.statusEnum == JobStatus.started ||
+                      job.statusEnum == JobStatus.inProgress)
                     SizedBox(height: spacing * 0.5),
-                  
+
                   // Action row: buttons - More compact
-                  _buildActionRow(context, ref, isMobile, isSmallMobile, iconSize, fontSize),
-                  
+                  _buildActionRow(
+                    context,
+                    ref,
+                    isMobile,
+                    isSmallMobile,
+                    iconSize,
+                    fontSize,
+                  ),
+
                   SizedBox(height: spacing * 0.5),
-                  
+
                   // Footer row: voucher state - More compact
                   _buildVoucherFooter(ref, isMobile, isSmallMobile, fontSize),
                 ],
@@ -230,26 +264,31 @@ class JobCard extends ConsumerWidget {
   }
 
   // Status row: chips + date badge
-  Widget _buildStatusRow(bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
-    final chipHeight = isSmallMobile 
-        ? JobCardConstants.chipHeightSmallMobile 
-        : isMobile 
-            ? JobCardConstants.chipHeightMobile 
-            : JobCardConstants.chipHeightDesktop;
+  Widget _buildStatusRow(
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
+    final chipHeight = isSmallMobile
+        ? JobCardConstants.chipHeightSmallMobile
+        : isMobile
+        ? JobCardConstants.chipHeightMobile
+        : JobCardConstants.chipHeightDesktop;
     final chipPadding = EdgeInsets.symmetric(
-      horizontal: isSmallMobile 
+      horizontal: isSmallMobile
           ? JobCardConstants.chipPaddingHorizontalSmallMobile
-          : isMobile 
-              ? JobCardConstants.chipPaddingHorizontalMobile
-              : JobCardConstants.chipPaddingHorizontalDesktop,
+          : isMobile
+          ? JobCardConstants.chipPaddingHorizontalMobile
+          : JobCardConstants.chipPaddingHorizontalDesktop,
     );
     final chipFontSize = fontSize - JobCardConstants.chipFontSizeOffset;
-    final chipSpacing = isSmallMobile 
+    final chipSpacing = isSmallMobile
         ? JobCardConstants.chipSpacingSmallMobile
-        : isMobile 
-            ? JobCardConstants.chipSpacingMobile
-            : JobCardConstants.chipSpacingDesktop;
-    
+        : isMobile
+        ? JobCardConstants.chipSpacingMobile
+        : JobCardConstants.chipSpacingDesktop;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
@@ -271,7 +310,7 @@ class JobCard extends ConsumerWidget {
                     fontSize: chipFontSize,
                     showDot: true,
                   ),
-                  if (!isMobile) 
+                  if (!isMobile)
                     DriverConfirmationPill(
                       isConfirmed: job.driverConfirmation,
                       height: chipHeight,
@@ -309,10 +348,10 @@ class JobCard extends ConsumerWidget {
   // Title row: passenger/job title (1 line, ellipsis)
   Widget _buildTitleRow(bool isMobile, bool isSmallMobile, double fontSize) {
     // Add null safety for passenger name
-    final passenger = job.passengerName?.trim().isNotEmpty == true 
-      ? job.passengerName! 
-      : JobCardConstants.defaultPassengerName;
-      
+    final passenger = job.passengerName?.trim().isNotEmpty == true
+        ? job.passengerName!
+        : JobCardConstants.defaultPassengerName;
+
     return Text(
       passenger,
       style: TextStyle(
@@ -327,30 +366,39 @@ class JobCard extends ConsumerWidget {
   }
 
   // Details block: 3-4 key fields (each 1 line, ellipsis)
-  Widget _buildDetailsBlock(bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
-    final blockPadding = isSmallMobile 
+  Widget _buildDetailsBlock(
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
+    final blockPadding = isSmallMobile
         ? JobCardConstants.containerPaddingSmallMobile
-        : isMobile 
-            ? JobCardConstants.containerPaddingMobile
-            : JobCardConstants.containerPaddingDesktop;
-    final innerSpacing = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.containerPaddingMobile
+        : JobCardConstants.containerPaddingDesktop;
+    final innerSpacing = isSmallMobile
         ? JobCardConstants.containerInnerSpacingSmallMobile
-        : isMobile 
-            ? JobCardConstants.containerInnerSpacingMobile
-            : JobCardConstants.containerInnerSpacingDesktop;
-    final borderRadius = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.containerInnerSpacingMobile
+        : JobCardConstants.containerInnerSpacingDesktop;
+    final borderRadius = isSmallMobile
         ? JobCardConstants.containerBorderRadiusSmallMobile
-        : isMobile 
-            ? JobCardConstants.containerBorderRadiusMobile
-            : JobCardConstants.containerBorderRadiusDesktop;
-    
+        : isMobile
+        ? JobCardConstants.containerBorderRadiusMobile
+        : JobCardConstants.containerBorderRadiusDesktop;
+
     return Container(
       padding: EdgeInsets.all(blockPadding),
       decoration: BoxDecoration(
-        color: Colors.grey.withValues(alpha: JobCardConstants.containerBackgroundAlpha),
+        color: Colors.grey.withValues(
+          alpha: JobCardConstants.containerBackgroundAlpha,
+        ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: Colors.grey.withValues(alpha: JobCardConstants.containerBorderAlpha),
+          color: Colors.grey.withValues(
+            alpha: JobCardConstants.containerBorderAlpha,
+          ),
           width: JobCardConstants.borderWidth,
         ),
       ),
@@ -368,44 +416,46 @@ class JobCard extends ConsumerWidget {
           ),
           SizedBox(height: innerSpacing),
           _buildDetailRow(
-            Icons.business, 
-            'Client', 
-            client?.companyName ?? JobCardConstants.defaultClientName, 
-            isMobile, 
-            isSmallMobile, 
-            iconSize, 
-            fontSize
+            Icons.business,
+            'Client',
+            client?.companyName ?? JobCardConstants.defaultClientName,
+            isMobile,
+            isSmallMobile,
+            iconSize,
+            fontSize,
           ),
           SizedBox(height: innerSpacing),
           _buildDetailRow(
-            Icons.person, 
-            'Driver', 
-            driver?.displayName ?? JobCardConstants.defaultDriverName, 
-            isMobile, 
-            isSmallMobile, 
-            iconSize, 
-            fontSize
+            Icons.person,
+            'Driver',
+            driver?.displayName ?? JobCardConstants.defaultDriverName,
+            isMobile,
+            isSmallMobile,
+            iconSize,
+            fontSize,
           ),
           SizedBox(height: innerSpacing),
           _buildDetailRow(
-            Icons.directions_car, 
-            'Vehicle', 
-            vehicle != null ? '${vehicle!.make} ${vehicle!.model}' : JobCardConstants.defaultVehicleName, 
-            isMobile, 
-            isSmallMobile, 
-            iconSize, 
-            fontSize
+            Icons.directions_car,
+            'Vehicle',
+            vehicle != null
+                ? '${vehicle!.make} ${vehicle!.model}'
+                : JobCardConstants.defaultVehicleName,
+            isMobile,
+            isSmallMobile,
+            iconSize,
+            fontSize,
           ),
           if (!isMobile) ...[
             SizedBox(height: innerSpacing),
             _buildDetailRow(
-              Icons.tag, 
-              'Job Number', 
-              '${JobCardConstants.defaultJobNumberPrefix}${job.id}', 
-              isMobile, 
-              isSmallMobile, 
-              iconSize, 
-              fontSize
+              Icons.tag,
+              'Job Number',
+              '${JobCardConstants.defaultJobNumberPrefix}${job.id}',
+              isMobile,
+              isSmallMobile,
+              iconSize,
+              fontSize,
             ),
           ],
         ],
@@ -414,18 +464,41 @@ class JobCard extends ConsumerWidget {
   }
 
   // Metrics row: two small stat tiles (Passengers/Bags)
-  Widget _buildMetricsRow(bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
+  Widget _buildMetricsRow(
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
     // These fields are not nullable in the Job model
     final pax = job.pasCount;
     final bags = job.luggageCount;
-    
+
     if (isMobile) {
       // Mobile: collapse into small pills
       return Row(
         children: [
-          _buildCompactMetricPill(Icons.people, '$pax pax', isMobile, isSmallMobile, iconSize, fontSize),
-          SizedBox(width: isSmallMobile ? JobCardConstants.chipSpacingSmallMobile : JobCardConstants.chipSpacingMobile),
-          _buildCompactMetricPill(Icons.work, '$bags bags', isMobile, isSmallMobile, iconSize, fontSize),
+          _buildCompactMetricPill(
+            Icons.people,
+            '$pax pax',
+            isMobile,
+            isSmallMobile,
+            iconSize,
+            fontSize,
+          ),
+          SizedBox(
+            width: isSmallMobile
+                ? JobCardConstants.chipSpacingSmallMobile
+                : JobCardConstants.chipSpacingMobile,
+          ),
+          _buildCompactMetricPill(
+            Icons.work,
+            '$bags bags',
+            isMobile,
+            isSmallMobile,
+            iconSize,
+            fontSize,
+          ),
         ],
       );
     } else {
@@ -463,7 +536,12 @@ class JobCard extends ConsumerWidget {
   }
 
   // Progress row: show current step and progress percentage for in-progress jobs
-  Widget _buildProgressRow(bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
+  Widget _buildProgressRow(
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
     return FutureBuilder<Map<String, dynamic>>(
       future: DriverFlowApiService.getJobProgress(job.id),
       builder: (context, snapshot) {
@@ -474,10 +552,16 @@ class JobCard extends ConsumerWidget {
               horizontal: JobCardConstants.metricPaddingHorizontalMobile,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(JobCardConstants.metricBackgroundAlpha),
-              borderRadius: BorderRadius.circular(JobCardConstants.metricBorderRadiusMobile),
+              color: ChoiceLuxTheme.richGold.withOpacity(
+                JobCardConstants.metricBackgroundAlpha,
+              ),
+              borderRadius: BorderRadius.circular(
+                JobCardConstants.metricBorderRadiusMobile,
+              ),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(JobCardConstants.metricBorderAlpha),
+                color: ChoiceLuxTheme.richGold.withOpacity(
+                  JobCardConstants.metricBorderAlpha,
+                ),
                 width: JobCardConstants.borderWidth,
               ),
             ),
@@ -488,7 +572,9 @@ class JobCard extends ConsumerWidget {
                   height: iconSize * JobCardConstants.metricIconSizeMultiplier,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 ),
                 SizedBox(width: JobCardConstants.metricTileInnerSpacingMobile),
@@ -510,9 +596,11 @@ class JobCard extends ConsumerWidget {
         }
 
         final progressData = snapshot.data!;
-        final currentStep = progressData['current_step']?.toString() ?? 'vehicle_collection';
-        final progressPercentage = progressData['progress_percentage']?.toDouble() ?? 0.0;
-        
+        final currentStep =
+            progressData['current_step']?.toString() ?? 'vehicle_collection';
+        final progressPercentage =
+            progressData['progress_percentage']?.toDouble() ?? 0.0;
+
         final stepTitle = DriverFlowUtils.getStepTitle(currentStep);
         final stepIcon = DriverFlowUtils.getStepIcon(currentStep);
 
@@ -522,10 +610,16 @@ class JobCard extends ConsumerWidget {
             horizontal: JobCardConstants.metricPaddingHorizontalMobile,
           ),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withOpacity(JobCardConstants.metricBackgroundAlpha),
-            borderRadius: BorderRadius.circular(JobCardConstants.metricBorderRadiusMobile),
+            color: ChoiceLuxTheme.richGold.withOpacity(
+              JobCardConstants.metricBackgroundAlpha,
+            ),
+            borderRadius: BorderRadius.circular(
+              JobCardConstants.metricBorderRadiusMobile,
+            ),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(JobCardConstants.metricBorderAlpha),
+              color: ChoiceLuxTheme.richGold.withOpacity(
+                JobCardConstants.metricBorderAlpha,
+              ),
               width: JobCardConstants.borderWidth,
             ),
           ),
@@ -539,12 +633,15 @@ class JobCard extends ConsumerWidget {
                     size: iconSize * JobCardConstants.metricIconSizeMultiplier,
                     color: ChoiceLuxTheme.richGold,
                   ),
-                  SizedBox(width: JobCardConstants.metricTileInnerSpacingMobile),
+                  SizedBox(
+                    width: JobCardConstants.metricTileInnerSpacingMobile,
+                  ),
                   Expanded(
                     child: Text(
                       stepTitle,
                       style: TextStyle(
-                        fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
+                        fontSize:
+                            fontSize - JobCardConstants.metricFontSizeOffset,
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.w600,
                       ),
@@ -553,7 +650,8 @@ class JobCard extends ConsumerWidget {
                   Text(
                     '${progressPercentage.toInt()}%',
                     style: TextStyle(
-                      fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
+                      fontSize:
+                          fontSize - JobCardConstants.metricFontSizeOffset,
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.w600,
                     ),
@@ -564,7 +662,9 @@ class JobCard extends ConsumerWidget {
               LinearProgressIndicator(
                 value: progressPercentage / 100.0,
                 backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
                 minHeight: 4,
               ),
             ],
@@ -575,11 +675,19 @@ class JobCard extends ConsumerWidget {
   }
 
   // Action row: Primary (Start Job), secondary (View)
-  Widget _buildActionRow(BuildContext context, WidgetRef ref, bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
+  Widget _buildActionRow(
+    BuildContext context,
+    WidgetRef ref,
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
     final isAssignedDriver = _isAssignedDriver(ref);
-    final isConfirmed = job.isConfirmed == true || job.driverConfirmation == true;
+    final isConfirmed =
+        job.isConfirmed == true || job.driverConfirmation == true;
     final needsConfirmation = isAssignedDriver && !isConfirmed;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       mainAxisSize: MainAxisSize.min,
@@ -588,18 +696,28 @@ class JobCard extends ConsumerWidget {
         if (isAssignedDriver) ...[
           Container(
             padding: EdgeInsets.symmetric(
-              vertical: JobCardConstants.confirmationPaddingVertical, 
-              horizontal: JobCardConstants.confirmationPaddingHorizontal
+              vertical: JobCardConstants.confirmationPaddingVertical,
+              horizontal: JobCardConstants.confirmationPaddingHorizontal,
             ),
             decoration: BoxDecoration(
-              color: isConfirmed 
-                  ? ChoiceLuxTheme.successColor.withValues(alpha: JobCardConstants.confirmationBackgroundAlpha)
-                  : ChoiceLuxTheme.orange.withValues(alpha: JobCardConstants.confirmationBackgroundAlpha),
-              borderRadius: BorderRadius.circular(JobCardConstants.confirmationBorderRadius),
+              color: isConfirmed
+                  ? ChoiceLuxTheme.successColor.withValues(
+                      alpha: JobCardConstants.confirmationBackgroundAlpha,
+                    )
+                  : ChoiceLuxTheme.orange.withValues(
+                      alpha: JobCardConstants.confirmationBackgroundAlpha,
+                    ),
+              borderRadius: BorderRadius.circular(
+                JobCardConstants.confirmationBorderRadius,
+              ),
               border: Border.all(
-                color: isConfirmed 
-                    ? ChoiceLuxTheme.successColor.withValues(alpha: JobCardConstants.confirmationBorderAlpha)
-                    : ChoiceLuxTheme.orange.withValues(alpha: JobCardConstants.confirmationBorderAlpha),
+                color: isConfirmed
+                    ? ChoiceLuxTheme.successColor.withValues(
+                        alpha: JobCardConstants.confirmationBorderAlpha,
+                      )
+                    : ChoiceLuxTheme.orange.withValues(
+                        alpha: JobCardConstants.confirmationBorderAlpha,
+                      ),
                 width: JobCardConstants.borderWidth,
               ),
             ),
@@ -608,15 +726,21 @@ class JobCard extends ConsumerWidget {
               children: [
                 Icon(
                   isConfirmed ? Icons.check_circle : Icons.pending,
-                  size: iconSize * JobCardConstants.confirmationIconSizeMultiplier,
-                  color: isConfirmed ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.orange,
+                  size:
+                      iconSize *
+                      JobCardConstants.confirmationIconSizeMultiplier,
+                  color: isConfirmed
+                      ? ChoiceLuxTheme.successColor
+                      : ChoiceLuxTheme.orange,
                 ),
                 SizedBox(width: JobCardConstants.confirmationSpacing),
                 Text(
                   isConfirmed ? 'Job Confirmed' : 'Awaiting Confirmation',
                   style: TextStyle(
                     fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
-                    color: isConfirmed ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.orange,
+                    color: isConfirmed
+                        ? ChoiceLuxTheme.successColor
+                        : ChoiceLuxTheme.orange,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -625,29 +749,41 @@ class JobCard extends ConsumerWidget {
           ),
           SizedBox(height: JobCardConstants.confirmationButtonSpacing),
         ],
-        
+
         // Confirm Button - Show only for assigned driver who hasn't confirmed
         if (needsConfirmation) ...[
           ElevatedButton.icon(
             key: Key('confirmJobBtn_${job.id}'),
             onPressed: () => _handleDriverConfirmation(context, ref),
-            icon: Icon(Icons.check_circle, size: iconSize * JobCardConstants.buttonIconSizeMultiplier),
-            label: Text('Confirm Job', style: TextStyle(fontSize: fontSize - JobCardConstants.buttonFontSizeOffset)),
+            icon: Icon(
+              Icons.check_circle,
+              size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
+            ),
+            label: Text(
+              'Confirm Job',
+              style: TextStyle(
+                fontSize: fontSize - JobCardConstants.buttonFontSizeOffset,
+              ),
+            ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.orange.withValues(alpha: JobCardConstants.confirmationBackgroundAlpha),
+              backgroundColor: ChoiceLuxTheme.orange.withValues(
+                alpha: JobCardConstants.confirmationBackgroundAlpha,
+              ),
               foregroundColor: ChoiceLuxTheme.orange,
               padding: const EdgeInsets.symmetric(
-                vertical: JobCardConstants.buttonPaddingVertical, 
-                horizontal: JobCardConstants.buttonPaddingHorizontal
+                vertical: JobCardConstants.buttonPaddingVertical,
+                horizontal: JobCardConstants.buttonPaddingHorizontal,
               ),
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(JobCardConstants.buttonBorderRadius),
+                borderRadius: BorderRadius.circular(
+                  JobCardConstants.buttonBorderRadius,
+                ),
               ),
             ),
           ),
           SizedBox(height: JobCardConstants.confirmationButtonSpacing),
         ],
-        
+
         // Action buttons row
         Row(
           children: [
@@ -674,25 +810,37 @@ class JobCard extends ConsumerWidget {
                     size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
                   ),
                   label: Text(
-                    DriverFlowUtils.getDriverFlowText(job.statusEnum), 
-                    style: TextStyle(fontSize: fontSize - JobCardConstants.buttonFontSizeOffset)
+                    DriverFlowUtils.getDriverFlowText(job.statusEnum),
+                    style: TextStyle(
+                      fontSize:
+                          fontSize - JobCardConstants.buttonFontSizeOffset,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum).withValues(alpha: JobCardConstants.confirmationBackgroundAlpha),
-                    foregroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum),
+                    backgroundColor:
+                        DriverFlowUtils.getDriverFlowColor(
+                          job.statusEnum,
+                        ).withValues(
+                          alpha: JobCardConstants.confirmationBackgroundAlpha,
+                        ),
+                    foregroundColor: DriverFlowUtils.getDriverFlowColor(
+                      job.statusEnum,
+                    ),
                     padding: const EdgeInsets.symmetric(
-                      vertical: JobCardConstants.buttonPaddingVertical, 
-                      horizontal: JobCardConstants.buttonPaddingHorizontal
+                      vertical: JobCardConstants.buttonPaddingVertical,
+                      horizontal: JobCardConstants.buttonPaddingHorizontal,
                     ),
                     shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(JobCardConstants.buttonBorderRadius),
+                      borderRadius: BorderRadius.circular(
+                        JobCardConstants.buttonBorderRadius,
+                      ),
                     ),
                   ),
                 ),
               ),
               SizedBox(width: JobCardConstants.actionButtonSpacing),
             ],
-            
+
             // View Button
             Expanded(
               child: TextButton.icon(
@@ -700,19 +848,33 @@ class JobCard extends ConsumerWidget {
                 onPressed: () {
                   context.go('/jobs/${job.id}/summary');
                 },
-                icon: Icon(Icons.arrow_forward, size: iconSize * JobCardConstants.buttonIconSizeMultiplier),
-                label: Text(_getActionText(job.statusEnum), style: TextStyle(fontSize: fontSize - JobCardConstants.buttonFontSizeOffset)),
+                icon: Icon(
+                  Icons.arrow_forward,
+                  size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
+                ),
+                label: Text(
+                  _getActionText(job.statusEnum),
+                  style: TextStyle(
+                    fontSize: fontSize - JobCardConstants.buttonFontSizeOffset,
+                  ),
+                ),
                 style: TextButton.styleFrom(
                   foregroundColor: job.statusEnum.color,
-                  backgroundColor: job.statusEnum.color.withValues(alpha: JobCardConstants.confirmationBackgroundAlpha),
+                  backgroundColor: job.statusEnum.color.withValues(
+                    alpha: JobCardConstants.confirmationBackgroundAlpha,
+                  ),
                   padding: const EdgeInsets.symmetric(
-                    vertical: JobCardConstants.buttonPaddingVertical, 
-                    horizontal: JobCardConstants.buttonPaddingHorizontal
+                    vertical: JobCardConstants.buttonPaddingVertical,
+                    horizontal: JobCardConstants.buttonPaddingHorizontal,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(JobCardConstants.buttonBorderRadius),
+                    borderRadius: BorderRadius.circular(
+                      JobCardConstants.buttonBorderRadius,
+                    ),
                     side: BorderSide(
-                      color: job.statusEnum.color.withValues(alpha: JobCardConstants.confirmationBorderAlpha),
+                      color: job.statusEnum.color.withValues(
+                        alpha: JobCardConstants.confirmationBorderAlpha,
+                      ),
                       width: JobCardConstants.borderWidth,
                     ),
                   ),
@@ -726,19 +888,24 @@ class JobCard extends ConsumerWidget {
   }
 
   // Footer row: Voucher state chip
-  Widget _buildVoucherFooter(WidgetRef ref, bool isMobile, bool isSmallMobile, double fontSize) {
+  Widget _buildVoucherFooter(
+    WidgetRef ref,
+    bool isMobile,
+    bool isSmallMobile,
+    double fontSize,
+  ) {
     final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
-    final marginTop = isSmallMobile 
+    final marginTop = isSmallMobile
         ? JobCardConstants.footerMarginTopSmallMobile
-        : isMobile 
-            ? JobCardConstants.footerMarginTopMobile
-            : JobCardConstants.footerMarginTopDesktop;
-    final paddingVertical = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.footerMarginTopMobile
+        : JobCardConstants.footerMarginTopDesktop;
+    final paddingVertical = isSmallMobile
         ? JobCardConstants.footerPaddingVerticalSmallMobile
-        : isMobile 
-            ? JobCardConstants.footerPaddingVerticalMobile
-            : JobCardConstants.footerPaddingVerticalDesktop;
-    
+        : isMobile
+        ? JobCardConstants.footerPaddingVerticalMobile
+        : JobCardConstants.footerPaddingVerticalDesktop;
+
     return Container(
       margin: EdgeInsets.only(top: marginTop),
       padding: EdgeInsets.symmetric(vertical: paddingVertical),
@@ -751,21 +918,37 @@ class JobCard extends ConsumerWidget {
   }
 
   // Helper methods
-  Widget _buildDetailRow(IconData icon, String label, String value, bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
-    final iconSpacing = isSmallMobile ? JobCardConstants.chipSpacingSmallMobile : isMobile ? JobCardConstants.chipSpacingMobile : JobCardConstants.chipSpacingDesktop;
-    
+  Widget _buildDetailRow(
+    IconData icon,
+    String label,
+    String value,
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
+    final iconSpacing = isSmallMobile
+        ? JobCardConstants.chipSpacingSmallMobile
+        : isMobile
+        ? JobCardConstants.chipSpacingMobile
+        : JobCardConstants.chipSpacingDesktop;
+
     return Row(
       children: [
         Icon(
           icon,
           size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
-          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: JobCardConstants.detailIconAlpha),
+          color: ChoiceLuxTheme.platinumSilver.withValues(
+            alpha: JobCardConstants.detailIconAlpha,
+          ),
         ),
         SizedBox(width: iconSpacing),
         Text(
           '$label: ',
           style: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: JobCardConstants.detailLabelAlpha),
+            color: ChoiceLuxTheme.platinumSilver.withValues(
+              alpha: JobCardConstants.detailLabelAlpha,
+            ),
             fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
             fontWeight: FontWeight.w500,
           ),
@@ -786,34 +969,49 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildCompactMetricPill(IconData icon, String text, bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
-    final paddingHorizontal = isSmallMobile 
+  Widget _buildCompactMetricPill(
+    IconData icon,
+    String text,
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
+    final paddingHorizontal = isSmallMobile
         ? JobCardConstants.metricPaddingHorizontalSmallMobile
-        : isMobile 
-            ? JobCardConstants.metricPaddingHorizontalMobile
-            : JobCardConstants.metricPaddingHorizontalDesktop;
-    final paddingVertical = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.metricPaddingHorizontalMobile
+        : JobCardConstants.metricPaddingHorizontalDesktop;
+    final paddingVertical = isSmallMobile
         ? JobCardConstants.metricPaddingVerticalSmallMobile
-        : isMobile 
-            ? JobCardConstants.metricPaddingVerticalMobile
-            : JobCardConstants.metricPaddingVerticalDesktop;
-    final borderRadius = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.metricPaddingVerticalMobile
+        : JobCardConstants.metricPaddingVerticalDesktop;
+    final borderRadius = isSmallMobile
         ? JobCardConstants.metricBorderRadiusSmallMobile
-        : isMobile 
-            ? JobCardConstants.metricBorderRadiusMobile
-            : JobCardConstants.metricBorderRadiusDesktop;
-    final iconSpacing = isSmallMobile ? JobCardConstants.chipSpacingSmallMobile : isMobile ? JobCardConstants.chipSpacingMobile : JobCardConstants.chipSpacingDesktop;
-    
+        : isMobile
+        ? JobCardConstants.metricBorderRadiusMobile
+        : JobCardConstants.metricBorderRadiusDesktop;
+    final iconSpacing = isSmallMobile
+        ? JobCardConstants.chipSpacingSmallMobile
+        : isMobile
+        ? JobCardConstants.chipSpacingMobile
+        : JobCardConstants.chipSpacingDesktop;
+
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: paddingHorizontal,
         vertical: paddingVertical,
       ),
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.infoColor.withValues(alpha: JobCardConstants.metricBackgroundAlpha),
+        color: ChoiceLuxTheme.infoColor.withValues(
+          alpha: JobCardConstants.metricBackgroundAlpha,
+        ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: ChoiceLuxTheme.infoColor.withValues(alpha: JobCardConstants.metricBorderAlpha),
+          color: ChoiceLuxTheme.infoColor.withValues(
+            alpha: JobCardConstants.metricBorderAlpha,
+          ),
           width: JobCardConstants.borderWidth,
         ),
       ),
@@ -821,9 +1019,9 @@ class JobCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            icon, 
+            icon,
             size: iconSize * JobCardConstants.metricIconSizeMultiplier,
-            color: ChoiceLuxTheme.infoColor
+            color: ChoiceLuxTheme.infoColor,
           ),
           SizedBox(width: iconSpacing),
           Text(
@@ -839,28 +1037,41 @@ class JobCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricTile(IconData icon, String label, String value, Color color, bool isMobile, bool isSmallMobile, double iconSize, double fontSize) {
-    final padding = isSmallMobile 
+  Widget _buildMetricTile(
+    IconData icon,
+    String label,
+    String value,
+    Color color,
+    bool isMobile,
+    bool isSmallMobile,
+    double iconSize,
+    double fontSize,
+  ) {
+    final padding = isSmallMobile
         ? JobCardConstants.metricTilePaddingSmallMobile
-        : isMobile 
-            ? JobCardConstants.metricTilePaddingMobile
-            : JobCardConstants.metricTilePaddingDesktop;
-    final borderRadius = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.metricTilePaddingMobile
+        : JobCardConstants.metricTilePaddingDesktop;
+    final borderRadius = isSmallMobile
         ? JobCardConstants.metricTileBorderRadiusSmallMobile
-        : isMobile 
-            ? JobCardConstants.metricTileBorderRadiusMobile
-            : JobCardConstants.metricTileBorderRadiusDesktop;
-    final innerSpacing = isSmallMobile 
+        : isMobile
+        ? JobCardConstants.metricTileBorderRadiusMobile
+        : JobCardConstants.metricTileBorderRadiusDesktop;
+    final innerSpacing = isSmallMobile
         ? JobCardConstants.metricTileInnerSpacingSmallMobile
         : JobCardConstants.metricTileInnerSpacingMobile;
-    
+
     return Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: JobCardConstants.metricTileBackgroundAlpha),
+        color: color.withValues(
+          alpha: JobCardConstants.metricTileBackgroundAlpha,
+        ),
         borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(
-          color: color.withValues(alpha: JobCardConstants.metricTileBorderAlpha),
+          color: color.withValues(
+            alpha: JobCardConstants.metricTileBorderAlpha,
+          ),
           width: JobCardConstants.borderWidth,
         ),
       ),
@@ -868,9 +1079,9 @@ class JobCard extends ConsumerWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            icon, 
+            icon,
             size: iconSize * JobCardConstants.metricTileIconSizeMultiplier,
-            color: color
+            color: color,
           ),
           SizedBox(height: innerSpacing),
           Text(
@@ -884,7 +1095,9 @@ class JobCard extends ConsumerWidget {
           Text(
             label,
             style: TextStyle(
-              color: color.withValues(alpha: JobCardConstants.metricTileValueAlpha),
+              color: color.withValues(
+                alpha: JobCardConstants.metricTileValueAlpha,
+              ),
               fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
               fontWeight: FontWeight.w500,
             ),
@@ -911,13 +1124,16 @@ class JobCard extends ConsumerWidget {
   }
 
   // Handle driver confirmation with safe integer parsing and proper error handling
-  Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref) async {
+  Future<void> _handleDriverConfirmation(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
     Log.d('=== JOB CARD: _handleDriverConfirmation() called ===');
     Log.d('Job ID: ${job.id}');
     Log.d('Job Status: ${job.status}');
     Log.d('Is Confirmed: ${job.isConfirmed}');
     Log.d('Driver Confirmation: ${job.driverConfirmation}');
-    
+
     final jobId = int.tryParse(job.id);
     if (jobId == null) {
       Log.d('Invalid job ID: ${job.id}');
@@ -931,7 +1147,7 @@ class JobCard extends ConsumerWidget {
       );
       return;
     }
-    
+
     try {
       // Show loading state
       if (!context.mounted) return;
@@ -942,7 +1158,10 @@ class JobCard extends ConsumerWidget {
               SizedBox(
                 width: 16,
                 height: 16,
-                child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation<Color>(Colors.white)),
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
               ),
               SizedBox(width: 12),
               Text('Confirming job...'),
@@ -952,14 +1171,14 @@ class JobCard extends ConsumerWidget {
           duration: Duration(seconds: 2),
         ),
       );
-      
+
       Log.d('Calling jobsProvider.confirmJob from job card...');
       // Use the proper jobsProvider.confirmJob method
       await ref.read(jobsProvider.notifier).confirmJob(job.id, ref: ref);
       Log.d('jobsProvider.confirmJob completed from job card');
-      
+
       if (!context.mounted) return;
-      
+
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -974,14 +1193,14 @@ class JobCard extends ConsumerWidget {
           duration: JobCardConstants.snackBarDurationMedium,
         ),
       );
-      
+
       // Refresh job data and notifications
       await ref.read(jobsProvider.notifier).refreshJob(job.id);
       ref.invalidate(notificationProvider);
-      
+
       // Also refresh all jobs to help with state synchronization
       await ref.read(jobsProvider.notifier).fetchJobs();
-      
+
       // Optional: Navigate to job progress after confirmation
       // context.go('/jobs/${job.id}/progress');
     } catch (e) {

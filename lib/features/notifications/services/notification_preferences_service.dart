@@ -14,10 +14,10 @@ class NotificationPreferencesService {
       }
 
       final response = await _supabase
-        .from('user_notification_preferences')
-        .select()
-        .eq('user_id', currentUser.id)
-        .single();
+          .from('user_notification_preferences')
+          .select()
+          .eq('user_id', currentUser.id)
+          .single();
 
       return response ?? _getDefaultPreferences();
     } catch (e) {
@@ -34,13 +34,11 @@ class NotificationPreferencesService {
         throw Exception('User not authenticated');
       }
 
-      await _supabase
-        .from('user_notification_preferences')
-        .upsert({
-          'user_id': currentUser.id,
-          ...preferences,
-          'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        });
+      await _supabase.from('user_notification_preferences').upsert({
+        'user_id': currentUser.id,
+        ...preferences,
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      });
 
       Log.d('Notification preferences saved successfully');
     } catch (e) {
@@ -58,18 +56,16 @@ class NotificationPreferencesService {
       }
 
       // Create a test notification
-      await _supabase
-        .from('notifications')
-        .insert({
-          'user_id': currentUser.id,
-          'message': 'This is a test notification to verify your settings.',
-          'notification_type': 'system_alert',
-          'priority': 'normal',
-          'action_data': {
-            'action': 'test_notification',
-            'message': 'Test notification sent successfully',
-          },
-        });
+      await _supabase.from('notifications').insert({
+        'user_id': currentUser.id,
+        'message': 'This is a test notification to verify your settings.',
+        'notification_type': 'system_alert',
+        'priority': 'normal',
+        'action_data': {
+          'action': 'test_notification',
+          'message': 'Test notification sent successfully',
+        },
+      });
 
       Log.d('Test notification sent successfully');
     } catch (e) {
@@ -87,9 +83,9 @@ class NotificationPreferencesService {
       }
 
       await _supabase
-        .from('notifications')
-        .delete()
-        .eq('user_id', currentUser.id);
+          .from('notifications')
+          .delete()
+          .eq('user_id', currentUser.id);
 
       Log.d('All notifications cleared successfully');
     } catch (e) {

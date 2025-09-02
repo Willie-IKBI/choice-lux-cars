@@ -27,7 +27,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vehiclesProvider);
-    
+
     return state.when(
       loading: () => _buildLoadingState(),
       error: (error, stackTrace) => _buildErrorState(error),
@@ -36,8 +36,10 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   }
 
   Widget _buildContent(List<Vehicle> vehicles) {
-    final filteredVehicles = vehicles.where((v) => v.make.toLowerCase().contains(_search.toLowerCase())).toList();
-    
+    final filteredVehicles = vehicles
+        .where((v) => v.make.toLowerCase().contains(_search.toLowerCase()))
+        .toList();
+
     // Responsive breakpoints - consistent with our design system
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
@@ -45,7 +47,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     final isTablet = screenWidth >= 600 && screenWidth < 800;
     final isDesktop = screenWidth >= 800;
     final isLargeDesktop = screenWidth >= 1200;
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: 'Vehicles',
@@ -84,20 +86,32 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         ),
         child: SafeArea(
           child: Padding(
-            padding: EdgeInsets.all(isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 12.0
+                  : isMobile
+                  ? 16.0
+                  : 24.0,
+            ),
             child: Column(
               children: [
                 // Responsive search bar
                 _buildResponsiveSearchBar(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
                 Expanded(
                   child: _buildResponsiveVehicleGrid(
-                    filteredVehicles, 
-                    isMobile, 
-                    isSmallMobile, 
-                    isTablet, 
-                    isDesktop, 
-                    isLargeDesktop
+                    filteredVehicles,
+                    isMobile,
+                    isSmallMobile,
+                    isTablet,
+                    isDesktop,
+                    isLargeDesktop,
                   ),
                 ),
               ],
@@ -128,7 +142,9 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       child: TextField(
         onChanged: (val) => setState(() => _search = val),
         decoration: InputDecoration(
-          hintText: isMobile ? 'Search vehicles...' : 'Search vehicles by make, model, or plate...',
+          hintText: isMobile
+              ? 'Search vehicles...'
+              : 'Search vehicles by make, model, or plate...',
           hintStyle: TextStyle(
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
             fontSize: isMobile ? 14 : 16,
@@ -164,12 +180,12 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   }
 
   Widget _buildResponsiveVehicleGrid(
-    List<Vehicle> vehicles, 
-    bool isMobile, 
-    bool isSmallMobile, 
-    bool isTablet, 
-    bool isDesktop, 
-    bool isLargeDesktop
+    List<Vehicle> vehicles,
+    bool isMobile,
+    bool isSmallMobile,
+    bool isTablet,
+    bool isDesktop,
+    bool isLargeDesktop,
   ) {
     // Responsive grid configuration
     int crossAxisCount;
@@ -235,7 +251,13 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         children: [
           // Loading animation
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 20
+                  : 24,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -245,21 +267,41 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
               strokeWidth: isMobile ? 2.0 : 3.0,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           // Loading text
           Text(
             'Loading vehicles...',
             style: TextStyle(
-              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontSize: isSmallMobile
+                  ? 14
+                  : isMobile
+                  ? 16
+                  : 18,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             'Please wait while we fetch your fleet',
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
@@ -297,18 +339,10 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   }
 
   Widget _buildLoadingState() {
-    return const Scaffold(
-      body: Center(
-        child: CircularProgressIndicator(),
-      ),
-    );
+    return const Scaffold(body: Center(child: CircularProgressIndicator()));
   }
 
   Widget _buildErrorState(Object error) {
-    return Scaffold(
-      body: Center(
-        child: Text('Error: $error'),
-      ),
-    );
+    return Scaffold(body: Center(child: Text('Error: $error')));
   }
-} 
+}

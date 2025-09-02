@@ -32,11 +32,7 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
           children: [
             Row(
               children: [
-                Icon(
-                  Icons.location_on,
-                  color: Colors.blue[700],
-                  size: 24,
-                ),
+                Icon(Icons.location_on, color: Colors.blue[700], size: 24),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -52,9 +48,9 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
               const SizedBox(height: 8),
               Text(
                 widget.description!,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Colors.grey[600],
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               ),
             ],
             const SizedBox(height: 16),
@@ -135,10 +131,22 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
             ],
           ),
           const SizedBox(height: 8),
-          _buildInfoRow('Latitude', _currentPosition!.latitude.toStringAsFixed(6)),
-          _buildInfoRow('Longitude', _currentPosition!.longitude.toStringAsFixed(6)),
-          _buildInfoRow('Accuracy', '${_currentPosition!.accuracy.toStringAsFixed(1)}m'),
-          _buildInfoRow('Timestamp', _formatTimestamp(_currentPosition!.timestamp)),
+          _buildInfoRow(
+            'Latitude',
+            _currentPosition!.latitude.toStringAsFixed(6),
+          ),
+          _buildInfoRow(
+            'Longitude',
+            _currentPosition!.longitude.toStringAsFixed(6),
+          ),
+          _buildInfoRow(
+            'Accuracy',
+            '${_currentPosition!.accuracy.toStringAsFixed(1)}m',
+          ),
+          _buildInfoRow(
+            'Timestamp',
+            _formatTimestamp(_currentPosition!.timestamp),
+          ),
         ],
       ),
     );
@@ -164,10 +172,7 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
           Expanded(
             child: Text(
               value,
-              style: const TextStyle(
-                fontSize: 12,
-                fontFamily: 'monospace',
-              ),
+              style: const TextStyle(fontSize: 12, fontFamily: 'monospace'),
             ),
           ),
         ],
@@ -203,7 +208,9 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
       }
 
       if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied. Please enable in settings.');
+        throw Exception(
+          'Location permissions are permanently denied. Please enable in settings.',
+        );
       }
 
       // Get current position with high accuracy
@@ -219,7 +226,6 @@ class _GpsCaptureWidgetState extends State<GpsCaptureWidget> {
 
       // Call the callback with the captured location
       widget.onLocationCaptured(position);
-
     } catch (e) {
       setState(() {
         _errorMessage = e.toString();
@@ -233,11 +239,8 @@ class LocationDisplayWidget extends StatelessWidget {
   final Position position;
   final String? title;
 
-  const LocationDisplayWidget({
-    Key? key,
-    required this.position,
-    this.title,
-  }) : super(key: key);
+  const LocationDisplayWidget({Key? key, required this.position, this.title})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -250,9 +253,9 @@ class LocationDisplayWidget extends StatelessWidget {
             if (title != null) ...[
               Text(
                 title!,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.w600),
               ),
               const SizedBox(height: 12),
             ],
@@ -278,10 +281,7 @@ class LocationDisplayWidget extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'Accuracy: ${position.accuracy.toStringAsFixed(1)}m',
-                  style: TextStyle(
-                    color: Colors.green[700],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.green[700], fontSize: 12),
                 ),
               ],
             ),

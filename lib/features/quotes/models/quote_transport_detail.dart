@@ -23,10 +23,14 @@ class QuoteTransportDetail {
     return QuoteTransportDetail(
       id: map['id']?.toString() ?? '',
       quoteId: map['quote_id']?.toString() ?? '',
-      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
+      pickupDate: DateTime.parse(
+        map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
       pickupLocation: map['pickup_location']?.toString() ?? '',
       dropoffLocation: map['dropoff_location']?.toString() ?? '',
-      amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
+      amount: (map['amount'] is num)
+          ? (map['amount'] as num).toDouble()
+          : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
       notes: map['notes']?.toString(),
     );
   }
@@ -73,8 +77,18 @@ class QuoteTransportDetail {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }

@@ -75,8 +75,6 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
     }
   }
 
-
-
   Future<void> _saveTrip() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -99,11 +97,13 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
         pickupDate: combinedDateTime,
         pickupLocation: _pickupLocationController.text.trim(),
         dropoffLocation: _dropoffLocationController.text.trim(),
-        notes: _notesController.text.trim().isEmpty ? null : _notesController.text.trim(),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
         amount: double.tryParse(_amountController.text) ?? 0.0,
       );
 
-              await ref.read(tripsByJobProvider(jobId).notifier).addTrip(newTrip);
+      await ref.read(tripsByJobProvider(jobId).notifier).addTrip(newTrip);
 
       if (mounted) {
         Navigator.of(context).pop();
@@ -175,7 +175,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                 ],
               ),
             ),
-            
+
             // Form
             Flexible(
               child: SingleChildScrollView(
@@ -200,9 +200,9 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Dropoff Location
                       TextFormField(
                         controller: _dropoffLocationController,
@@ -218,9 +218,9 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                           return null;
                         },
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
+
                       // Date and Time Row
                       Row(
                         children: [
@@ -259,22 +259,22 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                           ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 16),
-                      
-                                             // Amount
-                       TextFormField(
-                         controller: _amountController,
-                         decoration: const InputDecoration(
-                           labelText: 'Amount (R)',
-                           border: OutlineInputBorder(),
-                           prefixIcon: Icon(Icons.attach_money),
-                         ),
-                         keyboardType: TextInputType.number,
-                       ),
-                      
+
+                      // Amount
+                      TextFormField(
+                        controller: _amountController,
+                        decoration: const InputDecoration(
+                          labelText: 'Amount (R)',
+                          border: OutlineInputBorder(),
+                          prefixIcon: Icon(Icons.attach_money),
+                        ),
+                        keyboardType: TextInputType.number,
+                      ),
+
                       const SizedBox(height: 16),
-                      
+
                       // Notes
                       TextFormField(
                         controller: _notesController,
@@ -285,14 +285,12 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                         ),
                         maxLines: 3,
                       ),
-                      
-                      
                     ],
                   ),
                 ),
               ),
             ),
-            
+
             // Action Buttons
             Container(
               padding: const EdgeInsets.all(20),
@@ -300,7 +298,9 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                 children: [
                   Expanded(
                     child: OutlinedButton(
-                      onPressed: _isLoading ? null : () => Navigator.of(context).pop(),
+                      onPressed: _isLoading
+                          ? null
+                          : () => Navigator.of(context).pop(),
                       child: const Text('Cancel'),
                     ),
                   ),
@@ -318,7 +318,9 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
                               width: 20,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor: AlwaysStoppedAnimation<Color>(
+                                  Colors.white,
+                                ),
                               ),
                             )
                           : const Text('Add Trip'),

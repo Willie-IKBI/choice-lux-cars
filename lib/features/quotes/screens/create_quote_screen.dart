@@ -14,11 +14,8 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
   final String? quoteId; // null for create, non-null for edit
-  
-  const CreateQuoteScreen({
-    super.key,
-    this.quoteId,
-  });
+
+  const CreateQuoteScreen({super.key, this.quoteId});
 
   @override
   ConsumerState<CreateQuoteScreen> createState() => _CreateQuoteScreenState();
@@ -27,7 +24,7 @@ class CreateQuoteScreen extends ConsumerStatefulWidget {
 class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _scrollController = ScrollController();
-  
+
   // Controllers
   final _passengerNameController = TextEditingController();
   final _passengerContactController = TextEditingController();
@@ -37,7 +34,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   final _quoteTitleController = TextEditingController();
   final _quoteDescriptionController = TextEditingController();
   final _clientSearchController = TextEditingController();
-  
+
   // Focus nodes for better mobile keyboard handling
   final _passengerNameFocus = FocusNode();
   final _passengerContactFocus = FocusNode();
@@ -46,7 +43,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   final _quoteTitleFocus = FocusNode();
   final _quoteDescriptionFocus = FocusNode();
   final _notesFocus = FocusNode();
-  
+
   // Form values
   String? _selectedClientId;
   String? _selectedAgentId;
@@ -55,11 +52,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
   DateTime? _selectedJobDate;
   String _selectedVehicleType = '';
-  
+
   // Loading states
   bool _isLoading = false;
   bool _isSubmitting = false;
-  
+
   // Search states
   String _clientSearchQuery = '';
   bool _showClientDropdown = false;
@@ -68,7 +65,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   double get _completionPercentage {
     int completedFields = 0;
     int totalFields = 8; // Required fields for quote creation
-    
+
     if (_selectedClientId != null) completedFields++;
     if (_selectedVehicleId != null) completedFields++;
     if (_selectedDriverId != null) completedFields++;
@@ -77,14 +74,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     if (_pasCountController.text.isNotEmpty) completedFields++;
     if (_luggageController.text.isNotEmpty) completedFields++;
     if (_selectedVehicleType.isNotEmpty) completedFields++;
-    
+
     return completedFields / totalFields;
   }
 
   // Get progress message for mobile
   String _getProgressMessage() {
     final completedFields = (_completionPercentage * 8).toInt();
-    
+
     if (completedFields == 0) {
       return 'Start by selecting a client and vehicle';
     } else if (completedFields <= 2) {
@@ -123,7 +120,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     _quoteTitleController.dispose();
     _quoteDescriptionController.dispose();
     _clientSearchController.dispose();
-    
+
     // Dispose focus nodes
     _passengerNameFocus.dispose();
     _passengerContactFocus.dispose();
@@ -132,13 +129,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     _quoteTitleFocus.dispose();
     _quoteDescriptionFocus.dispose();
     _notesFocus.dispose();
-    
+
     // Dispose scroll controller
     _scrollController.dispose();
-    
+
     super.dispose();
   }
-  
+
   // Scroll to submit button for mobile keyboard handling
   void _scrollToSubmitButton() {
     if (_scrollController.hasClients) {
@@ -157,25 +154,25 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
     );
-    
+
     if (picked != null) {
       setState(() {
         _selectedJobDate = picked;
       });
     }
   }
-  
+
   Future<void> _createQuote() async {
     if (!_formKey.currentState!.validate()) return;
-    
+
     setState(() => _isSubmitting = true);
-    
+
     try {
       final currentUser = ref.read(currentUserProfileProvider);
       if (currentUser == null) throw Exception('User not authenticated');
-      
+
       final isEditing = widget.quoteId != null;
-      
+
       if (isEditing) {
         // TODO: Update existing quote
         // This will be implemented when we add quote editing functionality
@@ -192,36 +189,40 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           quoteStatus: 'draft',
           pasCount: double.parse(_pasCountController.text),
           luggage: _luggageController.text.trim(),
-          passengerName: _passengerNameController.text.trim().isEmpty 
-              ? null 
+          passengerName: _passengerNameController.text.trim().isEmpty
+              ? null
               : _passengerNameController.text.trim(),
-          passengerContact: _passengerContactController.text.trim().isEmpty 
-              ? null 
+          passengerContact: _passengerContactController.text.trim().isEmpty
+              ? null
               : _passengerContactController.text.trim(),
-          notes: _notesController.text.trim().isEmpty 
-              ? null 
+          notes: _notesController.text.trim().isEmpty
+              ? null
               : _notesController.text.trim(),
           quotePdf: null, // Will be generated later
           quoteDate: DateTime.now(),
           quoteAmount: null, // Will be calculated from transport details
-          quoteTitle: _quoteTitleController.text.trim().isEmpty 
-              ? null 
+          quoteTitle: _quoteTitleController.text.trim().isEmpty
+              ? null
               : _quoteTitleController.text.trim(),
-          quoteDescription: _quoteDescriptionController.text.trim().isEmpty 
-              ? null 
+          quoteDescription: _quoteDescriptionController.text.trim().isEmpty
+              ? null
               : _quoteDescriptionController.text.trim(),
           location: _selectedLocation,
           // createdBy: currentUser.id, // Remove created_by field as it doesn't exist in database
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         );
-        
-        final createdQuote = await ref.read(quotesProvider.notifier).createQuote(quote);
-        
+
+        final createdQuote = await ref
+            .read(quotesProvider.notifier)
+            .createQuote(quote);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Quote created successfully! Moving to transport details...'),
+              content: Text(
+                'Quote created successfully! Moving to transport details...',
+              ),
               backgroundColor: ChoiceLuxTheme.successColor,
             ),
           );
@@ -254,15 +255,17 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     final isTablet = screenWidth >= 600 && screenWidth < 800;
     final isDesktop = screenWidth >= 800;
     final isLargeDesktop = screenWidth >= 1200;
-    
+
     final maxWidth = _getMaxWidth(screenWidth);
-    
+
     return Scaffold(
       appBar: LuxuryAppBar(
         title: widget.quoteId != null ? 'Edit Quote' : 'Create New Quote',
-        subtitle: widget.quoteId != null ? 'Update Quote Details' : 'Step 1: Quote Details',
+        subtitle: widget.quoteId != null
+            ? 'Update Quote Details'
+            : 'Step 1: Quote Details',
         showBackButton: true,
-        onBackPressed: () => widget.quoteId != null 
+        onBackPressed: () => widget.quoteId != null
             ? context.go('/quotes/${widget.quoteId}/summary')
             : context.go('/quotes'),
       ),
@@ -271,35 +274,57 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           final clientsAsync = ref.watch(clientsProvider);
           final vehiclesState = ref.watch(vehiclesProvider);
           final users = ref.watch(usersProvider);
-          
+
           return clientsAsync.when(
             data: (clients) => vehiclesState.when(
               data: (vehicles) => users.when(
-                data: (usersList) => _buildForm(clients, vehicles, usersList, isMobile, isSmallMobile),
-                loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-                error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
+                data: (usersList) => _buildForm(
+                  clients,
+                  vehicles,
+                  usersList,
+                  isMobile,
+                  isSmallMobile,
+                ),
+                loading: () =>
+                    _buildMobileLoadingState(isMobile, isSmallMobile),
+                error: (error, stack) =>
+                    _buildErrorState(error, isMobile, isSmallMobile),
               ),
               loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-              error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
+              error: (error, stack) =>
+                  _buildErrorState(error, isMobile, isSmallMobile),
             ),
             loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-            error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
+            error: (error, stack) =>
+                _buildErrorState(error, isMobile, isSmallMobile),
           );
         },
       ),
     );
   }
 
-  Widget _buildForm(List<dynamic> clients, List<dynamic> vehicles, List<dynamic> users, bool isMobile, bool isSmallMobile) {
+  Widget _buildForm(
+    List<dynamic> clients,
+    List<dynamic> vehicles,
+    List<dynamic> users,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     final screenWidth = MediaQuery.of(context).size.width;
     final maxWidth = _getMaxWidth(screenWidth);
-    
+
     return Center(
       child: ConstrainedBox(
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: SingleChildScrollView(
           controller: _scrollController,
-          padding: EdgeInsets.all(isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0),
+          padding: EdgeInsets.all(
+            isSmallMobile
+                ? 12.0
+                : isMobile
+                ? 16.0
+                : 24.0,
+          ),
           child: Form(
             key: _formKey,
             child: Column(
@@ -307,39 +332,93 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               children: [
                 // Progress indicator
                 _buildMobileProgressIndicator(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Client Selection
                 _buildClientSelection(clients, isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Agent Selection (auto-populated from client)
                 _buildAgentSelection(clients, isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Vehicle Selection
                 _buildVehicleSelection(vehicles, isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Driver Selection
                 _buildDriverSelection(users, isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Location and Date
                 _buildLocationAndDateSection(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Passenger Details
                 _buildPassengerDetails(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Quote Details
                 _buildQuoteDetails(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
 
                 // Notes
                 _buildNotesSection(isMobile, isSmallMobile),
-                SizedBox(height: isSmallMobile ? 20.0 : isMobile ? 24.0 : 28.0),
+                SizedBox(
+                  height: isSmallMobile
+                      ? 20.0
+                      : isMobile
+                      ? 24.0
+                      : 28.0,
+                ),
 
                 // Submit Button
                 _buildMobileSubmitButton(isMobile, isSmallMobile),
@@ -350,8 +429,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       ),
     );
   }
-
-
 
   double _getMaxWidth(double screenWidth) {
     // Responsive max-width calculations for optimal form display
@@ -394,14 +471,18 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   Widget _buildMobileProgressIndicator(bool isMobile, bool isSmallMobile) {
     final completionPercent = (_completionPercentage * 100).toInt();
     final isComplete = completionPercent == 100;
-    
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // Progress bar with animation
         Container(
           width: double.infinity,
-          height: isSmallMobile ? 6 : isMobile ? 8 : 10,
+          height: isSmallMobile
+              ? 6
+              : isMobile
+              ? 8
+              : 10,
           decoration: BoxDecoration(
             color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
             borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
@@ -422,14 +503,24 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 child: Container(
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: isComplete 
-                          ? [ChoiceLuxTheme.successColor, ChoiceLuxTheme.successColor.withOpacity(0.8)]
-                          : [ChoiceLuxTheme.richGold, ChoiceLuxTheme.richGold.withOpacity(0.8)],
+                      colors: isComplete
+                          ? [
+                              ChoiceLuxTheme.successColor,
+                              ChoiceLuxTheme.successColor.withOpacity(0.8),
+                            ]
+                          : [
+                              ChoiceLuxTheme.richGold,
+                              ChoiceLuxTheme.richGold.withOpacity(0.8),
+                            ],
                     ),
                     borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
                     boxShadow: [
                       BoxShadow(
-                        color: (isComplete ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.richGold).withOpacity(0.3),
+                        color:
+                            (isComplete
+                                    ? ChoiceLuxTheme.successColor
+                                    : ChoiceLuxTheme.richGold)
+                                .withOpacity(0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
@@ -452,7 +543,9 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         ],
                         stops: const [0.0, 0.5, 1.0],
                       ),
-                      borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
+                      borderRadius: BorderRadius.circular(
+                        isSmallMobile ? 3 : 4,
+                      ),
                     ),
                   ),
                 ),
@@ -460,18 +553,24 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           ),
         ),
         SizedBox(height: isSmallMobile ? 6 : 8),
-        
+
         // Progress text with status
         Row(
           children: [
             Expanded(
               child: Text(
-                isComplete 
-                    ? 'Form Complete! Ready to submit' 
+                isComplete
+                    ? 'Form Complete! Ready to submit'
                     : '$completionPercent% Complete',
                 style: TextStyle(
-                  fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
-                  color: isComplete ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.platinumSilver,
+                  fontSize: isSmallMobile
+                      ? 11
+                      : isMobile
+                      ? 12
+                      : 14,
+                  color: isComplete
+                      ? ChoiceLuxTheme.successColor
+                      : ChoiceLuxTheme.platinumSilver,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -481,18 +580,26 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               Icon(
                 Icons.check_circle,
                 color: ChoiceLuxTheme.successColor,
-                size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+                size: isSmallMobile
+                    ? 16
+                    : isMobile
+                    ? 18
+                    : 20,
               ),
           ],
         ),
-        
+
         // Progress details for mobile
         if (isMobile && !isComplete) ...[
           SizedBox(height: isSmallMobile ? 4 : 6),
           Text(
             _getProgressMessage(),
             style: TextStyle(
-              fontSize: isSmallMobile ? 10 : isMobile ? 11 : 12,
+              fontSize: isSmallMobile
+                  ? 10
+                  : isMobile
+                  ? 11
+                  : 12,
               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
               fontStyle: FontStyle.italic,
             ),
@@ -509,7 +616,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 20
+                  : 24,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -519,20 +632,40 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               strokeWidth: isMobile ? 2.0 : 3.0,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           Text(
             'Loading form data...',
             style: TextStyle(
-              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontSize: isSmallMobile
+                  ? 14
+                  : isMobile
+                  ? 16
+                  : 18,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             'Please wait while we prepare the quote form',
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
@@ -549,36 +682,72 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 20 : isMobile ? 24 : 28),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 20
+                  : isMobile
+                  ? 24
+                  : 28,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.error_outline,
-              size: isSmallMobile ? 40 : isMobile ? 48 : 56,
+              size: isSmallMobile
+                  ? 40
+                  : isMobile
+                  ? 48
+                  : 56,
               color: ChoiceLuxTheme.errorColor,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           Text(
             'Error loading form data',
             style: TextStyle(
-              fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              fontSize: isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 18
+                  : 20,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             error.toString(),
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           ElevatedButton.icon(
             onPressed: () {
               // Refresh data
@@ -587,20 +756,36 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             },
             icon: Icon(
               Icons.refresh,
-              size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              size: isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 18
+                  : 20,
             ),
             label: Text(
               'Retry',
               style: TextStyle(
-                fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                fontSize: isSmallMobile
+                    ? 14
+                    : isMobile
+                    ? 16
+                    : 18,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: ChoiceLuxTheme.richGold,
               foregroundColor: Colors.black,
               padding: EdgeInsets.symmetric(
-                horizontal: isSmallMobile ? 16 : isMobile ? 20 : 24,
-                vertical: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                horizontal: isSmallMobile
+                    ? 16
+                    : isMobile
+                    ? 20
+                    : 24,
+                vertical: isSmallMobile
+                    ? 12
+                    : isMobile
+                    ? 14
+                    : 16,
               ),
             ),
           ),
@@ -610,10 +795,16 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   }
 
   // Mobile-optimized client selection with search functionality
-  Widget _buildClientSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
+  Widget _buildClientSelection(
+    List<dynamic> clients,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     final filteredClients = clients.where((client) {
       if (_clientSearchQuery.isEmpty) return true;
-      return client.companyName.toLowerCase().contains(_clientSearchQuery.toLowerCase());
+      return client.companyName.toLowerCase().contains(
+        _clientSearchQuery.toLowerCase(),
+      );
     }).toList();
 
     return Column(
@@ -622,12 +813,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Client *',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         Container(
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
@@ -656,23 +857,36 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   hintText: 'Search for a client...',
                   hintStyle: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
-                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
                   ),
                   prefixIcon: Icon(
                     Icons.search,
                     color: ChoiceLuxTheme.platinumSilver,
-                    size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                    size: isSmallMobile
+                        ? 18
+                        : isMobile
+                        ? 20
+                        : 24,
                   ),
                   suffixIcon: _selectedClientId != null
                       ? IconButton(
                           icon: Icon(
                             Icons.clear,
-                            size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                            size: isSmallMobile
+                                ? 18
+                                : isMobile
+                                ? 20
+                                : 24,
                           ),
                           onPressed: () {
                             setState(() {
                               _selectedClientId = null;
-                              _selectedAgentId = null; // Reset agent when client changes
+                              _selectedAgentId =
+                                  null; // Reset agent when client changes
                               _clientSearchController.clear();
                               _clientSearchQuery = '';
                             });
@@ -692,7 +906,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   return null;
                 },
               ),
-              
+
               // Selected client display
               if (_selectedClientId != null)
                 Container(
@@ -711,27 +925,41 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       Icon(
                         Icons.business,
                         color: ChoiceLuxTheme.richGold,
-                        size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                        size: isSmallMobile
+                            ? 18
+                            : isMobile
+                            ? 20
+                            : 24,
                       ),
                       SizedBox(width: isSmallMobile ? 8 : 12),
                       Expanded(
                         child: Text(
-                          clients.firstWhere((c) => c.id.toString() == _selectedClientId).companyName,
+                          clients
+                              .firstWhere(
+                                (c) => c.id.toString() == _selectedClientId,
+                              )
+                              .companyName,
                           style: TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
-                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                            fontSize: isSmallMobile
+                                ? 13
+                                : isMobile
+                                ? 14
+                                : 16,
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-              
+
               // Dropdown list
               if (_showClientDropdown && filteredClients.isNotEmpty)
                 Container(
-                  constraints: BoxConstraints(maxHeight: isSmallMobile ? 150 : 200),
+                  constraints: BoxConstraints(
+                    maxHeight: isSmallMobile ? 150 : 200,
+                  ),
                   decoration: BoxDecoration(
                     color: ChoiceLuxTheme.charcoalGray,
                     border: Border(
@@ -750,19 +978,28 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         leading: Icon(
                           Icons.business,
                           color: ChoiceLuxTheme.platinumSilver,
-                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                          size: isSmallMobile
+                              ? 18
+                              : isMobile
+                              ? 20
+                              : 24,
                         ),
                         title: Text(
                           client.companyName,
                           style: TextStyle(
                             color: ChoiceLuxTheme.softWhite,
-                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                            fontSize: isSmallMobile
+                                ? 13
+                                : isMobile
+                                ? 14
+                                : 16,
                           ),
                         ),
                         onTap: () {
                           setState(() {
                             _selectedClientId = client.id.toString();
-                            _selectedAgentId = null; // Reset agent when client changes
+                            _selectedAgentId =
+                                null; // Reset agent when client changes
                             _clientSearchController.text = client.companyName;
                             _showClientDropdown = false;
                           });
@@ -779,7 +1016,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   }
 
   // Mobile-optimized agent selection
-  Widget _buildAgentSelection(List<dynamic> clients, bool isMobile, bool isSmallMobile) {
+  Widget _buildAgentSelection(
+    List<dynamic> clients,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     if (_selectedClientId == null) {
       return Container(
         padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
@@ -796,7 +1037,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             Icon(
               Icons.info_outline,
               color: ChoiceLuxTheme.platinumSilver,
-              size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+              size: isSmallMobile
+                  ? 18
+                  : isMobile
+                  ? 20
+                  : 24,
             ),
             SizedBox(width: isSmallMobile ? 8 : 12),
             Expanded(
@@ -804,7 +1049,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 'Please select a client first to choose an agent',
                 style: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,
-                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  fontSize: isSmallMobile
+                      ? 13
+                      : isMobile
+                      ? 14
+                      : 16,
                 ),
               ),
             ),
@@ -815,8 +1064,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
     return Consumer(
       builder: (context, ref, child) {
-        final agentsAsync = ref.watch(agentsByClientProvider(_selectedClientId!));
-        
+        final agentsAsync = ref.watch(
+          agentsByClientProvider(_selectedClientId!),
+        );
+
         return agentsAsync.when(
           data: (agents) => Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -824,12 +1075,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               Text(
                 'Agent',
                 style: TextStyle(
-                  fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                  fontSize: isSmallMobile
+                      ? 14
+                      : isMobile
+                      ? 16
+                      : 18,
                   fontWeight: FontWeight.w600,
                   color: ChoiceLuxTheme.softWhite,
                 ),
               ),
-              SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+              SizedBox(
+                height: isSmallMobile
+                    ? 4
+                    : isMobile
+                    ? 6
+                    : 8,
+              ),
               _buildResponsiveDropdown(
                 value: _selectedAgentId,
                 hintText: 'Select an agent (optional)',
@@ -839,7 +1100,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     child: Text(
                       agent.agentName,
                       style: TextStyle(
-                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                        fontSize: isSmallMobile
+                            ? 13
+                            : isMobile
+                            ? 14
+                            : 16,
                       ),
                     ),
                   );
@@ -867,11 +1132,21 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             child: Row(
               children: [
                 SizedBox(
-                  width: isSmallMobile ? 18 : isMobile ? 20 : 24,
-                  height: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                  width: isSmallMobile
+                      ? 18
+                      : isMobile
+                      ? 20
+                      : 24,
+                  height: isSmallMobile
+                      ? 18
+                      : isMobile
+                      ? 20
+                      : 24,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
                   ),
                 ),
                 SizedBox(width: isSmallMobile ? 8 : 12),
@@ -879,7 +1154,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   'Loading agents...',
                   style: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver,
-                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
                   ),
                 ),
               ],
@@ -900,7 +1179,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 Icon(
                   Icons.error_outline,
                   color: ChoiceLuxTheme.errorColor,
-                  size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                  size: isSmallMobile
+                      ? 18
+                      : isMobile
+                      ? 20
+                      : 24,
                 ),
                 SizedBox(width: isSmallMobile ? 8 : 12),
                 Expanded(
@@ -908,7 +1191,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     'Error loading agents',
                     style: TextStyle(
                       color: ChoiceLuxTheme.errorColor,
-                      fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                      fontSize: isSmallMobile
+                          ? 13
+                          : isMobile
+                          ? 14
+                          : 16,
                     ),
                   ),
                 ),
@@ -921,26 +1208,41 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   }
 
   // Mobile-optimized vehicle selection
-  Widget _buildVehicleSelection(List<dynamic> vehicles, bool isMobile, bool isSmallMobile) {
+  Widget _buildVehicleSelection(
+    List<dynamic> vehicles,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
           'Vehicle *',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         _buildResponsiveDropdown(
           value: _selectedVehicleId,
           hintText: 'Select a vehicle',
           items: vehicles.map((vehicle) {
-            final isExpired = vehicle.licenseExpiryDate != null && 
+            final isExpired =
+                vehicle.licenseExpiryDate != null &&
                 vehicle.licenseExpiryDate.isBefore(DateTime.now());
-            
+
             return DropdownMenuItem(
               value: vehicle.id.toString(),
               child: Row(
@@ -950,7 +1252,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       '${vehicle.make} ${vehicle.model} (${vehicle.regPlate})',
                       style: TextStyle(
                         color: isExpired ? ChoiceLuxTheme.errorColor : null,
-                        fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                        fontSize: isSmallMobile
+                            ? 13
+                            : isMobile
+                            ? 14
+                            : 16,
                       ),
                     ),
                   ),
@@ -958,7 +1264,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     Icon(
                       Icons.warning,
                       color: ChoiceLuxTheme.errorColor,
-                      size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      size: isSmallMobile
+                          ? 14
+                          : isMobile
+                          ? 16
+                          : 18,
                     ),
                 ],
               ),
@@ -969,8 +1279,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               _selectedVehicleId = value;
               // Auto-set vehicle type
               if (value != null) {
-                final selectedVehicle = vehicles.firstWhere((v) => v.id.toString() == value);
-                _selectedVehicleType = '${selectedVehicle.make} ${selectedVehicle.model}';
+                final selectedVehicle = vehicles.firstWhere(
+                  (v) => v.id.toString() == value,
+                );
+                _selectedVehicleType =
+                    '${selectedVehicle.make} ${selectedVehicle.model}';
               }
             });
           },
@@ -988,13 +1301,20 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   }
 
   // Mobile-optimized driver selection
-  Widget _buildDriverSelection(List<dynamic> users, bool isMobile, bool isSmallMobile) {
+  Widget _buildDriverSelection(
+    List<dynamic> users,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
     // Include all users as potential drivers, excluding unassigned and deactivated
-    final drivers = users.where((user) => 
-        user.status != 'deactivated' && 
-        user.status != 'unassigned' &&
-        user.displayName.isNotEmpty
-    ).toList();
+    final drivers = users
+        .where(
+          (user) =>
+              user.status != 'deactivated' &&
+              user.status != 'unassigned' &&
+              user.displayName.isNotEmpty,
+        )
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1002,21 +1322,33 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Driver *',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         _buildResponsiveDropdown(
           value: _selectedDriverId,
           hintText: 'Select a driver (any user)',
           items: drivers.map((driver) {
-            final isPdpExpired = driver.pdpExp != null && 
+            final isPdpExpired =
+                driver.pdpExp != null &&
                 driver.pdpExp!.isBefore(DateTime.now());
-            final isLicenseExpired = driver.driverLicExp != null && 
+            final isLicenseExpired =
+                driver.driverLicExp != null &&
                 driver.driverLicExp!.isBefore(DateTime.now());
-            
+
             return DropdownMenuItem(
               value: driver.id.toString(),
               child: Row(
@@ -1028,8 +1360,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         Text(
                           driver.displayName,
                           style: TextStyle(
-                            color: (isPdpExpired || isLicenseExpired) ? ChoiceLuxTheme.errorColor : null,
-                            fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                            color: (isPdpExpired || isLicenseExpired)
+                                ? ChoiceLuxTheme.errorColor
+                                : null,
+                            fontSize: isSmallMobile
+                                ? 13
+                                : isMobile
+                                ? 14
+                                : 16,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -1037,8 +1375,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                           Text(
                             '(${driver.role})',
                             style: TextStyle(
-                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
-                              fontSize: isSmallMobile ? 11 : isMobile ? 12 : 13,
+                              color: ChoiceLuxTheme.platinumSilver.withOpacity(
+                                0.7,
+                              ),
+                              fontSize: isSmallMobile
+                                  ? 11
+                                  : isMobile
+                                  ? 12
+                                  : 13,
                             ),
                           ),
                       ],
@@ -1048,7 +1392,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     Icon(
                       Icons.warning,
                       color: ChoiceLuxTheme.errorColor,
-                      size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      size: isSmallMobile
+                          ? 14
+                          : isMobile
+                          ? 16
+                          : 18,
                     ),
                 ],
               ),
@@ -1103,12 +1451,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Location *',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         _buildResponsiveDropdown(
           value: _selectedLocation,
           hintText: 'Select location',
@@ -1143,12 +1501,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Job Date *',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         InkWell(
           onTap: _selectJobDate,
           child: _buildResponsiveInputDecorator(
@@ -1159,7 +1527,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               hintText: 'Select job date',
               suffixIcon: Icon(
                 Icons.calendar_today,
-                size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                size: isSmallMobile
+                    ? 18
+                    : isMobile
+                    ? 20
+                    : 24,
                 color: ChoiceLuxTheme.platinumSilver,
               ),
             ),
@@ -1168,8 +1540,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   ? '${_selectedJobDate!.day}/${_selectedJobDate!.month}/${_selectedJobDate!.year}'
                   : '',
               style: TextStyle(
-                color: _selectedJobDate != null ? ChoiceLuxTheme.softWhite : ChoiceLuxTheme.platinumSilver,
-                fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                color: _selectedJobDate != null
+                    ? ChoiceLuxTheme.softWhite
+                    : ChoiceLuxTheme.platinumSilver,
+                fontSize: isSmallMobile
+                    ? 13
+                    : isMobile
+                    ? 14
+                    : 16,
               ),
             ),
             isMobile: isMobile,
@@ -1188,12 +1566,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Passenger Details',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        SizedBox(
+          height: isSmallMobile
+              ? 8
+              : isMobile
+              ? 12
+              : 16,
+        ),
         if (isMobile) ...[
           // Stack vertically on mobile with enhanced keyboard flow
           _buildResponsiveTextField(
@@ -1204,7 +1592,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             isMobile: isMobile,
             isSmallMobile: isSmallMobile,
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 12
+                : 16,
+          ),
           _buildResponsiveTextField(
             controller: _passengerContactController,
             labelText: 'Contact Number',
@@ -1218,7 +1612,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             isMobile: isMobile,
             isSmallMobile: isSmallMobile,
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 12
+                : 16,
+          ),
           _buildResponsiveTextField(
             controller: _pasCountController,
             labelText: 'Number of Passengers *',
@@ -1241,7 +1641,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             isMobile: isMobile,
             isSmallMobile: isSmallMobile,
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 12
+                : 16,
+          ),
           _buildResponsiveTextField(
             controller: _luggageController,
             labelText: 'Luggage Description *',
@@ -1271,25 +1677,37 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   isSmallMobile: isSmallMobile,
                 ),
               ),
-                        SizedBox(width: isSmallMobile ? 8 : isMobile ? 12 : 16),
-          Expanded(
-            child: _buildResponsiveTextField(
-              controller: _passengerContactController,
-              labelText: 'Contact Number',
-              keyboardType: TextInputType.phone,
-              focusNode: _passengerContactFocus,
-              textInputAction: TextInputAction.next,
-              inputFormatters: [
-                FilteringTextInputFormatter.digitsOnly,
-                LengthLimitingTextInputFormatter(10),
-              ],
-              isMobile: isMobile,
-              isSmallMobile: isSmallMobile,
-            ),
+              SizedBox(
+                width: isSmallMobile
+                    ? 8
+                    : isMobile
+                    ? 12
+                    : 16,
+              ),
+              Expanded(
+                child: _buildResponsiveTextField(
+                  controller: _passengerContactController,
+                  labelText: 'Contact Number',
+                  keyboardType: TextInputType.phone,
+                  focusNode: _passengerContactFocus,
+                  textInputAction: TextInputAction.next,
+                  inputFormatters: [
+                    FilteringTextInputFormatter.digitsOnly,
+                    LengthLimitingTextInputFormatter(10),
+                  ],
+                  isMobile: isMobile,
+                  isSmallMobile: isSmallMobile,
+                ),
+              ),
+            ],
           ),
-        ],
-      ),
-      SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 12
+                : 16,
+          ),
           Row(
             children: [
               Expanded(
@@ -1316,7 +1734,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   isSmallMobile: isSmallMobile,
                 ),
               ),
-              SizedBox(width: isSmallMobile ? 8 : isMobile ? 12 : 16),
+              SizedBox(
+                width: isSmallMobile
+                    ? 8
+                    : isMobile
+                    ? 12
+                    : 16,
+              ),
               Expanded(
                 child: _buildResponsiveTextField(
                   controller: _luggageController,
@@ -1349,12 +1773,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Quote Details',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        SizedBox(
+          height: isSmallMobile
+              ? 8
+              : isMobile
+              ? 12
+              : 16,
+        ),
         _buildResponsiveTextField(
           controller: _quoteTitleController,
           labelText: 'Quote Title',
@@ -1365,7 +1799,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           isMobile: isMobile,
           isSmallMobile: isSmallMobile,
         ),
-        SizedBox(height: isSmallMobile ? 8 : isMobile ? 12 : 16),
+        SizedBox(
+          height: isSmallMobile
+              ? 8
+              : isMobile
+              ? 12
+              : 16,
+        ),
         _buildResponsiveTextField(
           controller: _quoteDescriptionController,
           labelText: 'Quote Description',
@@ -1389,12 +1829,22 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         Text(
           'Additional Notes',
           style: TextStyle(
-            fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
         _buildResponsiveTextField(
           controller: _notesController,
           labelText: 'Notes',
@@ -1416,7 +1866,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       children: [
         // Validation summary for mobile
         if (isMobile) _buildMobileValidationSummary(isMobile, isSmallMobile),
-        SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+        SizedBox(
+          height: isSmallMobile
+              ? 16
+              : isMobile
+              ? 20
+              : 24,
+        ),
         SizedBox(
           width: double.infinity,
           child: ElevatedButton(
@@ -1425,26 +1881,51 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               backgroundColor: ChoiceLuxTheme.richGold,
               foregroundColor: Colors.black,
               padding: EdgeInsets.symmetric(
-                vertical: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                vertical: isSmallMobile
+                    ? 14
+                    : isMobile
+                    ? 16
+                    : 18,
               ),
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
               ),
-              minimumSize: Size(0, isSmallMobile ? 44 : isMobile ? 48 : 52),
+              minimumSize: Size(
+                0,
+                isSmallMobile
+                    ? 44
+                    : isMobile
+                    ? 48
+                    : 52,
+              ),
             ),
             child: _isSubmitting
                 ? SizedBox(
-                    height: isSmallMobile ? 18 : isMobile ? 20 : 22,
-                    width: isSmallMobile ? 18 : isMobile ? 20 : 22,
+                    height: isSmallMobile
+                        ? 18
+                        : isMobile
+                        ? 20
+                        : 22,
+                    width: isSmallMobile
+                        ? 18
+                        : isMobile
+                        ? 20
+                        : 22,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
                   )
                 : Text(
-                    isMobile ? 'Create Quote & Continue' : 'Create Quote & Continue to Transport Details',
+                    isMobile
+                        ? 'Create Quote & Continue'
+                        : 'Create Quote & Continue to Transport Details',
                     style: TextStyle(
-                      fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                      fontSize: isSmallMobile
+                          ? 14
+                          : isMobile
+                          ? 16
+                          : 18,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -1465,11 +1946,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   }
 
   // Mobile-specific validation helpers
-  String? _validateRequiredField(String? value, String fieldName, bool isMobile) {
+  String? _validateRequiredField(
+    String? value,
+    String fieldName,
+    bool isMobile,
+  ) {
     if (value == null || value.trim().isEmpty) {
-      return isMobile 
-          ? '$fieldName is required' 
-          : 'Please enter $fieldName';
+      return isMobile ? '$fieldName is required' : 'Please enter $fieldName';
     }
     return null;
   }
@@ -1477,10 +1960,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   String? _validateNumberField(String? value, String fieldName, bool isMobile) {
     final requiredError = _validateRequiredField(value, fieldName, isMobile);
     if (requiredError != null) return requiredError;
-    
+
     if (double.tryParse(value!) == null) {
-      return isMobile 
-          ? '$fieldName must be a valid number' 
+      return isMobile
+          ? '$fieldName must be a valid number'
           : 'Please enter a valid number for $fieldName';
     }
     return null;
@@ -1488,12 +1971,12 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
   String? _validatePhoneField(String? value, String fieldName, bool isMobile) {
     if (value == null || value.trim().isEmpty) return null; // Optional field
-    
+
     // Basic phone validation for South African numbers
     final phoneRegex = RegExp(r'^(\+27|0)[6-8][0-9]{8}$');
     if (!phoneRegex.hasMatch(value.replaceAll(RegExp(r'[\s\-\(\)]'), ''))) {
-      return isMobile 
-          ? 'Please enter a valid SA phone number' 
+      return isMobile
+          ? 'Please enter a valid SA phone number'
           : 'Please enter a valid South African phone number';
     }
     return null;
@@ -1501,14 +1984,12 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
   String? _validateDateField(DateTime? value, String fieldName, bool isMobile) {
     if (value == null) {
-      return isMobile 
-          ? '$fieldName is required' 
-          : 'Please select $fieldName';
+      return isMobile ? '$fieldName is required' : 'Please select $fieldName';
     }
-    
+
     if (value.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
-      return isMobile 
-          ? '$fieldName cannot be in the past' 
+      return isMobile
+          ? '$fieldName cannot be in the past'
           : 'Please select a future date for $fieldName';
     }
     return null;
@@ -1529,7 +2010,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       builder: (FormFieldState<String> field) {
         final hasError = field.hasError;
         final errorText = field.errorText;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1538,14 +2019,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 color: ChoiceLuxTheme.charcoalGray,
                 borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
                 border: Border.all(
-                  color: hasError 
-                      ? ChoiceLuxTheme.errorColor 
+                  color: hasError
+                      ? ChoiceLuxTheme.errorColor
                       : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
                   width: hasError ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: hasError 
+                    color: hasError
                         ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
                         : Colors.black.withOpacity(0.1),
                     blurRadius: hasError ? 8 : 4,
@@ -1556,37 +2037,54 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               child: DropdownButtonFormField<String>(
                 value: value,
                 isExpanded: true,
-                menuMaxHeight: 200, // Limit dropdown menu height to prevent overflow
+                menuMaxHeight:
+                    200, // Limit dropdown menu height to prevent overflow
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: isSmallMobile ? 12 : 16,
                     vertical: isSmallMobile ? 12 : 16,
                   ),
-                  suffixIcon: hasError 
+                  suffixIcon: hasError
                       ? Icon(
                           Icons.error_outline,
                           color: ChoiceLuxTheme.errorColor,
-                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                          size: isSmallMobile
+                              ? 18
+                              : isMobile
+                              ? 20
+                              : 24,
                         )
                       : null,
                 ),
                 dropdownColor: ChoiceLuxTheme.charcoalGray,
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
-                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  fontSize: isSmallMobile
+                      ? 13
+                      : isMobile
+                      ? 14
+                      : 16,
                 ),
                 icon: Icon(
                   Icons.arrow_drop_down,
-                  color: hasError 
+                  color: hasError
                       ? ChoiceLuxTheme.errorColor
                       : ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                  size: isSmallMobile ? 20 : isMobile ? 24 : 28,
+                  size: isSmallMobile
+                      ? 20
+                      : isMobile
+                      ? 24
+                      : 28,
                 ),
                 items: items,
                 onChanged: (newValue) {
@@ -1603,7 +2101,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   Icon(
                     Icons.error_outline,
                     color: ChoiceLuxTheme.errorColor,
-                    size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                    size: isSmallMobile
+                        ? 14
+                        : isMobile
+                        ? 16
+                        : 18,
                   ),
                   SizedBox(width: isSmallMobile ? 6 : 8),
                   Expanded(
@@ -1611,7 +2113,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       errorText,
                       style: TextStyle(
                         color: ChoiceLuxTheme.errorColor,
-                        fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                        fontSize: isSmallMobile
+                            ? 11
+                            : isMobile
+                            ? 12
+                            : 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1649,7 +2155,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       builder: (FormFieldState<String> field) {
         final hasError = field.hasError;
         final errorText = field.errorText;
-        
+
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1658,14 +2164,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 color: ChoiceLuxTheme.charcoalGray,
                 borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
                 border: Border.all(
-                  color: hasError 
-                      ? ChoiceLuxTheme.errorColor 
+                  color: hasError
+                      ? ChoiceLuxTheme.errorColor
                       : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
                   width: hasError ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: hasError 
+                    color: hasError
                         ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
                         : Colors.black.withOpacity(0.1),
                     blurRadius: hasError ? 8 : 4,
@@ -1689,35 +2195,55 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   hintText: hintText,
                   counterText: counterText,
                   labelStyle: TextStyle(
-                    color: hasError 
+                    color: hasError
                         ? ChoiceLuxTheme.errorColor
                         : ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
-                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
                   ),
                   hintStyle: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                    fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
                   ),
                   counterStyle: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                    fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                    fontSize: isSmallMobile
+                        ? 11
+                        : isMobile
+                        ? 12
+                        : 14,
                   ),
                   border: InputBorder.none,
                   contentPadding: EdgeInsets.symmetric(
                     horizontal: isSmallMobile ? 12 : 16,
                     vertical: isSmallMobile ? 12 : 16,
                   ),
-                  suffixIcon: hasError 
+                  suffixIcon: hasError
                       ? Icon(
                           Icons.error_outline,
                           color: ChoiceLuxTheme.errorColor,
-                          size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                          size: isSmallMobile
+                              ? 18
+                              : isMobile
+                              ? 20
+                              : 24,
                         )
                       : null,
                 ),
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
-                  fontSize: isSmallMobile ? 13 : isMobile ? 14 : 16,
+                  fontSize: isSmallMobile
+                      ? 13
+                      : isMobile
+                      ? 14
+                      : 16,
                 ),
                 onChanged: (value) {
                   field.didChange(value);
@@ -1746,7 +2272,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   Icon(
                     Icons.error_outline,
                     color: ChoiceLuxTheme.errorColor,
-                    size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                    size: isSmallMobile
+                        ? 14
+                        : isMobile
+                        ? 16
+                        : 18,
                   ),
                   SizedBox(width: isSmallMobile ? 6 : 8),
                   Expanded(
@@ -1754,7 +2284,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       errorText,
                       style: TextStyle(
                         color: ChoiceLuxTheme.errorColor,
-                        fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                        fontSize: isSmallMobile
+                            ? 11
+                            : isMobile
+                            ? 12
+                            : 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
@@ -1785,14 +2319,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             color: ChoiceLuxTheme.charcoalGray,
             borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
             border: Border.all(
-              color: hasError 
-                  ? ChoiceLuxTheme.errorColor 
+              color: hasError
+                  ? ChoiceLuxTheme.errorColor
                   : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
               width: hasError ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: hasError 
+                color: hasError
                     ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
                     : Colors.black.withOpacity(0.1),
                 blurRadius: hasError ? 8 : 4,
@@ -1807,11 +2341,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 horizontal: isSmallMobile ? 12 : 16,
                 vertical: isSmallMobile ? 12 : 16,
               ),
-              suffixIcon: hasError 
+              suffixIcon: hasError
                   ? Icon(
                       Icons.error_outline,
                       color: ChoiceLuxTheme.errorColor,
-                      size: isSmallMobile ? 18 : isMobile ? 20 : 24,
+                      size: isSmallMobile
+                          ? 18
+                          : isMobile
+                          ? 20
+                          : 24,
                     )
                   : decoration.suffixIcon,
             ),
@@ -1825,7 +2363,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               Icon(
                 Icons.error_outline,
                 color: ChoiceLuxTheme.errorColor,
-                size: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                size: isSmallMobile
+                    ? 14
+                    : isMobile
+                    ? 16
+                    : 18,
               ),
               SizedBox(width: isSmallMobile ? 6 : 8),
               Expanded(
@@ -1833,7 +2375,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   errorText,
                   style: TextStyle(
                     color: ChoiceLuxTheme.errorColor,
-                    fontSize: isSmallMobile ? 11 : isMobile ? 12 : 14,
+                    fontSize: isSmallMobile
+                        ? 11
+                        : isMobile
+                        ? 12
+                        : 14,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

@@ -21,9 +21,9 @@ class StepIndicator extends StatelessWidget {
           children: [
             Text(
               'Job Progress',
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.bold,
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
             ),
             const SizedBox(height: 16),
             ...steps.asMap().entries.map((entry) {
@@ -45,7 +45,10 @@ class StepIndicator extends StatelessWidget {
                           shape: BoxShape.circle,
                           color: _getStepColor(isCompleted, isCurrentStep),
                           border: Border.all(
-                            color: _getStepBorderColor(isCompleted, isCurrentStep),
+                            color: _getStepBorderColor(
+                              isCompleted,
+                              isCurrentStep,
+                            ),
                             width: 2,
                           ),
                         ),
@@ -63,17 +66,25 @@ class StepIndicator extends StatelessWidget {
                           children: [
                             Text(
                               step.title,
-                              style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: _getStepTextColor(isCompleted, isCurrentStep),
-                              ),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w600,
+                                    color: _getStepTextColor(
+                                      isCompleted,
+                                      isCurrentStep,
+                                    ),
+                                  ),
                             ),
                             const SizedBox(height: 4),
                             Text(
                               step.description,
-                              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                color: _getStepDescriptionColor(isCompleted, isCurrentStep),
-                              ),
+                              style: Theme.of(context).textTheme.bodyMedium
+                                  ?.copyWith(
+                                    color: _getStepDescriptionColor(
+                                      isCompleted,
+                                      isCurrentStep,
+                                    ),
+                                  ),
                             ),
                           ],
                         ),
@@ -109,7 +120,11 @@ class StepIndicator extends StatelessWidget {
                   // Connector line (except for last step)
                   if (!isLast)
                     Padding(
-                      padding: const EdgeInsets.only(left: 19, top: 8, bottom: 8),
+                      padding: const EdgeInsets.only(
+                        left: 19,
+                        top: 8,
+                        bottom: 8,
+                      ),
                       child: Container(
                         width: 2,
                         height: 20,
@@ -155,5 +170,3 @@ class StepIndicator extends StatelessWidget {
     return Colors.grey[500]!;
   }
 }
-
-

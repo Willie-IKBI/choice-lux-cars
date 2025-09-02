@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class ActiveJobsSummary extends StatelessWidget {
   final Map<String, dynamic> summary;
 
-  const ActiveJobsSummary({
-    Key? key,
-    required this.summary,
-  }) : super(key: key);
+  const ActiveJobsSummary({Key? key, required this.summary}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -29,14 +26,14 @@ class ActiveJobsSummary extends StatelessWidget {
                 const SizedBox(width: 8),
                 Text(
                   'System Overview',
-                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.bold),
                 ),
               ],
             ),
             const SizedBox(height: 16),
-            
+
             // Jobs Overview
             Row(
               children: [
@@ -47,7 +44,11 @@ class ActiveJobsSummary extends StatelessWidget {
                     Icons.work,
                     Colors.blue,
                     [
-                      _buildStatusRow('Very Recent', veryRecentJobs, Colors.green),
+                      _buildStatusRow(
+                        'Very Recent',
+                        veryRecentJobs,
+                        Colors.green,
+                      ),
                       _buildStatusRow('Recent', recentJobs, Colors.orange),
                       _buildStatusRow('Stale', staleJobs, Colors.red),
                     ],
@@ -62,16 +63,24 @@ class ActiveJobsSummary extends StatelessWidget {
                     Colors.green,
                     [
                       _buildStatusRow('Active', activeDrivers, Colors.green),
-                      _buildStatusRow('Recent', summary['recent_drivers'] ?? 0, Colors.blue),
-                      _buildStatusRow('Inactive', summary['inactive_drivers'] ?? 0, Colors.grey),
+                      _buildStatusRow(
+                        'Recent',
+                        summary['recent_drivers'] ?? 0,
+                        Colors.blue,
+                      ),
+                      _buildStatusRow(
+                        'Inactive',
+                        summary['inactive_drivers'] ?? 0,
+                        Colors.grey,
+                      ),
                     ],
                   ),
                 ),
               ],
             ),
-            
+
             const SizedBox(height: 16),
-            
+
             // System Health Indicator
             _buildSystemHealthIndicator(),
           ],
@@ -135,19 +144,10 @@ class ActiveJobsSummary extends StatelessWidget {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: color,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: color, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.grey[600],
-            ),
-          ),
+          Text(label, style: TextStyle(fontSize: 12, color: Colors.grey[600])),
           const Spacer(),
           Text(
             count.toString(),
@@ -170,12 +170,12 @@ class ActiveJobsSummary extends StatelessWidget {
 
     // Calculate system health score (0-100)
     double healthScore = 100.0;
-    
+
     // Deduct points for stale jobs
     if (totalActiveJobs > 0) {
       healthScore -= (staleJobs / totalActiveJobs) * 30;
     }
-    
+
     // Deduct points for inactive drivers
     if (totalDrivers > 0) {
       final inactiveRatio = (totalDrivers - activeDrivers) / totalDrivers;
@@ -183,11 +183,11 @@ class ActiveJobsSummary extends StatelessWidget {
     }
 
     healthScore = healthScore.clamp(0.0, 100.0);
-    
+
     Color healthColor;
     String healthStatus;
     IconData healthIcon;
-    
+
     if (healthScore >= 80) {
       healthColor = Colors.green;
       healthStatus = 'Excellent';
@@ -254,10 +254,7 @@ class ActiveJobsSummary extends StatelessWidget {
               ),
               Text(
                 'Health Score',
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
+                style: TextStyle(fontSize: 12, color: Colors.grey[600]),
               ),
             ],
           ),

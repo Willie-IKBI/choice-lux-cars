@@ -41,7 +41,7 @@ class VoucherData {
     return VoucherData(
       jobId: json['job_id'] as int,
       quoteNo: json['quote_no']?.toString(),
-      quoteDate: json['quote_date'] != null 
+      quoteDate: json['quote_date'] != null
           ? DateTime.tryParse(json['quote_date'].toString())
           : null,
       companyName: json['company_name']?.toString() ?? 'Choice Lux Cars',
@@ -49,17 +49,23 @@ class VoucherData {
       agentName: json['agent_name']?.toString() ?? 'Not available',
       agentContact: json['agent_contact']?.toString() ?? 'Not available',
       passengerName: json['passenger_name']?.toString() ?? 'Not specified',
-      passengerContact: json['passenger_contact']?.toString() ?? 'Not specified',
-      numberPassengers: (json['number_passangers'] is num) 
-          ? (json['number_passangers'] as num).toInt() 
+      passengerContact:
+          json['passenger_contact']?.toString() ?? 'Not specified',
+      numberPassengers: (json['number_passangers'] is num)
+          ? (json['number_passangers'] as num).toInt()
           : int.tryParse(json['number_passangers']?.toString() ?? '0') ?? 0,
       luggage: json['luggage']?.toString() ?? 'Not specified',
       driverName: json['driver_name']?.toString() ?? 'Not assigned',
       driverContact: json['driver_contact']?.toString() ?? 'Not available',
       vehicleType: json['vehicle_type']?.toString() ?? 'Not assigned',
-      transport: (json['transport'] as List<dynamic>?)
-          ?.map((item) => TransportDetail.fromJson(item as Map<String, dynamic>))
-          .toList() ?? [],
+      transport:
+          (json['transport'] as List<dynamic>?)
+              ?.map(
+                (item) =>
+                    TransportDetail.fromJson(item as Map<String, dynamic>),
+              )
+              .toList() ??
+          [],
       notes: json['notes']?.toString() ?? '',
     );
   }
@@ -89,7 +95,7 @@ class VoucherData {
   bool get hasLogo => companyLogo != null && companyLogo!.isNotEmpty;
   bool get hasTransportDetails => transport.isNotEmpty;
   bool get hasNotes => notes.isNotEmpty && notes != 'Not specified';
-  
+
   String get formattedQuoteDate {
     if (quoteDate == null) return 'Not specified';
     return '${quoteDate!.day.toString().padLeft(2, '0')} ${_getMonthName(quoteDate!.month)} ${quoteDate!.year}';
@@ -97,8 +103,18 @@ class VoucherData {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -182,7 +198,7 @@ class TransportDetail {
 
   factory TransportDetail.fromJson(Map<String, dynamic> json) {
     return TransportDetail(
-      pickupDate: json['pickup_date'] != null 
+      pickupDate: json['pickup_date'] != null
           ? DateTime.tryParse(json['pickup_date'].toString())
           : null,
       pickupTime: json['pickup_time']?.toString(),
@@ -212,8 +228,18 @@ class TransportDetail {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }

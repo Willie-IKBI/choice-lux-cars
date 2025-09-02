@@ -42,7 +42,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final userProfile = ref.watch(currentUserProfileProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final tokens = Theme.of(context).extension<AppTokens>()!;
-    
+
     // Get display name from profile, fallback to email, then to 'User'
     String displayName = 'User';
     if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
@@ -50,7 +50,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     } else if (currentUser?.email != null) {
       displayName = currentUser!.email!.split('@')[0];
     }
-    
+
     return Container(
       height: isMobile ? 64 : 72,
       decoration: BoxDecoration(
@@ -81,15 +81,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 _buildBackButton(context)
               else
                 _buildMenuButton(context),
-              
+
               const SizedBox(width: 16),
-              
+
               // Brand Icon with Enhanced Glow
-              if (showLogo) ...[
-                _buildBrandIcon(),
-                const SizedBox(width: 16),
-              ],
-              
+              if (showLogo) ...[_buildBrandIcon(), const SizedBox(width: 16)],
+
               // Title Section with Subtitle
               Expanded(
                 child: Column(
@@ -111,7 +108,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                       Text(
                         subtitle!,
                         style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                          color: ChoiceLuxTheme.platinumSilver.withValues(
+                            alpha: 0.8,
+                          ),
                           fontSize: isMobile ? 12 : 14,
                           fontWeight: FontWeight.w400,
                         ),
@@ -121,15 +120,15 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   ],
                 ),
               ),
-              
+
               const SizedBox(width: 12),
-              
-                             // Notification Icon with Enhanced Badge
-               if (onNotificationTap != null) ...[
-                 _buildNotificationButton(),
-                 const SizedBox(width: 16),
-               ],
-              
+
+              // Notification Icon with Enhanced Badge
+              if (onNotificationTap != null) ...[
+                _buildNotificationButton(),
+                const SizedBox(width: 16),
+              ],
+
               // User Profile Section
               if (showProfile && currentUser != null) ...[
                 if (isMobile)
@@ -138,11 +137,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   _buildDesktopUserMenu(context, displayName, userProfile),
                 const SizedBox(width: 8),
               ],
-              
+
               // Custom Actions
-              if (actions != null) ...[
-                ...actions!,
-              ],
+              if (actions != null) ...[...actions!],
             ],
           ),
         ),
@@ -166,22 +163,24 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           color: ChoiceLuxTheme.richGold,
           size: 20,
         ),
-        onPressed: onBackPressed ?? () {
-          Log.d('Back button pressed - attempting to pop context');
-          try {
-            if (Navigator.of(context).canPop()) {
-              context.pop();
-              Log.d('Context pop successful');
-            } else {
-              Log.d('Cannot pop - navigating to dashboard');
-              context.go('/dashboard');
-            }
-          } catch (e) {
-            Log.d('Error popping context: $e');
-            // Fallback to go to dashboard
-            context.go('/dashboard');
-          }
-        },
+        onPressed:
+            onBackPressed ??
+            () {
+              Log.d('Back button pressed - attempting to pop context');
+              try {
+                if (Navigator.of(context).canPop()) {
+                  context.pop();
+                  Log.d('Context pop successful');
+                } else {
+                  Log.d('Cannot pop - navigating to dashboard');
+                  context.go('/dashboard');
+                }
+              } catch (e) {
+                Log.d('Error popping context: $e');
+                // Fallback to go to dashboard
+                context.go('/dashboard');
+              }
+            },
         style: IconButton.styleFrom(
           padding: const EdgeInsets.all(8),
           minimumSize: const Size(40, 40),
@@ -206,9 +205,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           color: ChoiceLuxTheme.richGold,
           size: 20,
         ),
-        onPressed: onMenuTap ?? () {
-          Scaffold.of(context).openDrawer();
-        },
+        onPressed:
+            onMenuTap ??
+            () {
+              Scaffold.of(context).openDrawer();
+            },
         style: IconButton.styleFrom(
           padding: const EdgeInsets.all(8),
           minimumSize: const Size(40, 40),
@@ -262,29 +263,31 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildMobileUserMenu(BuildContext context, String displayName, userProfile) {
+  Widget _buildMobileUserMenu(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     // Hide profile menu for unassigned users
     if (userProfile?.role == null || userProfile!.role == 'unassigned') {
       return Container();
     }
-    
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: ChoiceLuxTheme.charcoalGray,
       elevation: 8,
       child: Container(
         padding: const EdgeInsets.all(8),
-                 decoration: BoxDecoration(
-           color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-           borderRadius: BorderRadius.circular(10),
-           border: Border.all(
-             color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-             width: 1,
-           ),
-         ),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
         child: Stack(
           children: [
             Icon(
@@ -417,29 +420,31 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
-  Widget _buildDesktopUserMenu(BuildContext context, String displayName, userProfile) {
+  Widget _buildDesktopUserMenu(
+    BuildContext context,
+    String displayName,
+    userProfile,
+  ) {
     // Hide profile menu for unassigned users
     if (userProfile?.role == null || userProfile!.role == 'unassigned') {
       return Container();
     }
-    
+
     return PopupMenuButton<String>(
       offset: const Offset(0, 8),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: ChoiceLuxTheme.charcoalGray,
       elevation: 8,
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                 decoration: BoxDecoration(
-           color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-           borderRadius: BorderRadius.circular(24),
-           border: Border.all(
-             color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-             width: 1,
-           ),
-         ),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+            width: 1,
+          ),
+        ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -596,8 +601,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           children: [
             Icon(
               icon,
-              color: isDestructive 
-                  ? ChoiceLuxTheme.errorColor 
+              color: isDestructive
+                  ? ChoiceLuxTheme.errorColor
                   : ChoiceLuxTheme.richGold,
               size: 22,
             ),
@@ -605,8 +610,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             Text(
               title,
               style: TextStyle(
-                color: isDestructive 
-                    ? ChoiceLuxTheme.errorColor 
+                color: isDestructive
+                    ? ChoiceLuxTheme.errorColor
                     : ChoiceLuxTheme.softWhite,
                 fontWeight: FontWeight.w500,
                 fontSize: 15,
@@ -680,14 +685,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
               ),
               child: const Text(
                 'Sign Out',
-                style: TextStyle(
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
               ),
             ),
           ],
@@ -702,4 +707,4 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   @override
   Size get preferredSize => const Size.fromHeight(72);
-} 
+}

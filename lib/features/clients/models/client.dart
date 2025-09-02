@@ -1,9 +1,4 @@
-enum ClientStatus {
-  active,
-  pending,
-  vip,
-  inactive,
-}
+enum ClientStatus { active, pending, vip, inactive }
 
 class Client {
   final int? id;
@@ -40,13 +35,13 @@ class Client {
       contactEmail: json['contact_email'] as String,
       companyLogo: json['company_logo'] as String?,
       status: _parseStatus(json['status'] as String?),
-      createdAt: json['created_at'] != null 
+      createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
           : null,
-      updatedAt: json['updated_at'] != null 
+      updatedAt: json['updated_at'] != null
           ? DateTime.parse(json['updated_at'] as String)
           : null,
-      deletedAt: json['deleted_at'] != null 
+      deletedAt: json['deleted_at'] != null
           ? DateTime.parse(json['deleted_at'] as String)
           : null,
     );
@@ -122,4 +117,4 @@ class Client {
   String toString() {
     return 'Client(id: $id, companyName: $companyName, contactPerson: $contactPerson)';
   }
-} 
+}

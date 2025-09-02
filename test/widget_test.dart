@@ -12,11 +12,7 @@ import 'package:choice_lux_cars/app/app.dart';
 void main() {
   testWidgets('App smoke test', (WidgetTester tester) async {
     // Build our app and trigger a frame.
-    await tester.pumpWidget(
-      const ProviderScope(
-        child: ChoiceLuxCarsApp(),
-      ),
-    );
+    await tester.pumpWidget(const ProviderScope(child: ChoiceLuxCarsApp()));
 
     // Verify that the app starts with the login screen
     expect(find.text('Login'), findsOneWidget);

@@ -4,7 +4,13 @@ import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 
 // Job status enum for type-safe status handling
 enum JobStatus {
-  open, assigned, started, inProgress, readyToClose, completed, cancelled
+  open,
+  assigned,
+  started,
+  inProgress,
+  readyToClose,
+  completed,
+  cancelled,
 }
 
 // Extension for JobStatus to provide labels and colors
@@ -79,7 +85,8 @@ class Job {
   final String createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
-  final bool? driverConfirmation; // Whether driver confirmed receiving the job (legacy field)
+  final bool?
+  driverConfirmation; // Whether driver confirmed receiving the job (legacy field)
   final bool? isConfirmed; // New confirmation field
   final DateTime? confirmedAt; // When the job was confirmed
   final String? confirmedBy; // Who confirmed the job
@@ -133,15 +140,23 @@ class Job {
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString() ?? '',
       driverId: map['driver_id']?.toString() ?? '',
-      jobStartDate: DateTime.parse(map['job_start_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
-      orderDate: DateTime.parse(map['order_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
+      jobStartDate: DateTime.parse(
+        map['job_start_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
+      orderDate: DateTime.parse(
+        map['order_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
       passengerName: map['passenger_name']?.toString(),
       passengerContact: map['passenger_contact']?.toString(),
-      pasCount: (map['pax'] is num) ? (map['pax'] as num).toDouble() : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
+      pasCount: (map['pax'] is num)
+          ? (map['pax'] as num).toDouble()
+          : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
       luggageCount: map['number_bags']?.toString() ?? '',
       notes: map['notes']?.toString(),
       collectPayment: map['amount_collect'] == true,
-      paymentAmount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? ''),
+      paymentAmount: (map['amount'] is num)
+          ? (map['amount'] as num).toDouble()
+          : double.tryParse(map['amount']?.toString() ?? ''),
       status: map['job_status']?.toString() ?? 'open',
       quoteNo: map['quote_no']?.toString(),
       voucherPdf: map['voucher_pdf']?.toString(),
@@ -149,14 +164,20 @@ class Job {
       cancelReason: map['cancel_reason']?.toString(),
       location: map['location']?.toString(),
       createdBy: map['created_by']?.toString() ?? '',
-      createdAt: DateTime.parse(map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
-      updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()) 
+      createdAt: DateTime.parse(
+        map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(
+              map['updated_at']?.toString() ??
+                  SATimeUtils.getCurrentSATimeISO(),
+            )
           : null,
       driverConfirmation: map['driver_confirm_ind'] == true,
-      isConfirmed: map['is_confirmed'] == true || map['driver_confirm_ind'] == true,
-      confirmedAt: map['confirmed_at'] != null 
-          ? DateTime.parse(map['confirmed_at'].toString()) 
+      isConfirmed:
+          map['is_confirmed'] == true || map['driver_confirm_ind'] == true,
+      confirmedAt: map['confirmed_at'] != null
+          ? DateTime.parse(map['confirmed_at'].toString())
           : null,
       confirmedBy: map['confirmed_by']?.toString(),
       jobNumber: map['job_number']?.toString(),
@@ -190,7 +211,8 @@ class Job {
       'location': location,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
+      'updated_at':
+          updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
       'driver_confirm_ind': driverConfirmation,
       'is_confirmed': isConfirmed,
       if (confirmedAt != null) 'confirmed_at': confirmedAt!.toIso8601String(),
@@ -265,14 +287,17 @@ class Job {
   // Helper methods
   bool get isOpen => status == 'open' || status == 'assigned';
   bool get isClosed => status == 'completed' || status == 'cancelled';
-  bool get isInProgress => status == 'started' || status == 'in_progress' || status == 'ready_to_close';
+  bool get isInProgress =>
+      status == 'started' ||
+      status == 'in_progress' ||
+      status == 'ready_to_close';
   bool get isStarted => status == 'started';
   bool get isReadyToClose => status == 'ready_to_close';
-  
-  bool get hasCompletePassengerDetails => 
-      passengerName != null && 
-      passengerName!.isNotEmpty && 
-      passengerContact != null && 
+
+  bool get hasCompletePassengerDetails =>
+      passengerName != null &&
+      passengerName!.isNotEmpty &&
+      passengerContact != null &&
       passengerContact!.isNotEmpty;
 
   String get daysUntilStartText {
@@ -281,4 +306,4 @@ class Job {
     if (daysUntilStart! < 0) return 'Started ${daysUntilStart!.abs()} days ago';
     return 'Starts in ${daysUntilStart!} days';
   }
-} 
+}

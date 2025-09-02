@@ -56,24 +56,38 @@ class Quote {
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString(),
       driverId: map['driver_id']?.toString(),
-      jobDate: DateTime.parse(map['job_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
+      jobDate: DateTime.parse(
+        map['job_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
       vehicleType: map['vehicle_type']?.toString(),
       quoteStatus: map['quote_status']?.toString() ?? 'draft',
-      pasCount: (map['pax'] is num) ? (map['pax'] as num).toDouble() : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
+      pasCount: (map['pax'] is num)
+          ? (map['pax'] as num).toDouble()
+          : double.tryParse(map['pax']?.toString() ?? '0') ?? 0.0,
       luggage: map['luggage']?.toString() ?? '',
       passengerName: map['passenger_name']?.toString(),
       passengerContact: map['passenger_contact']?.toString(),
       notes: map['notes']?.toString(),
       quotePdf: map['quote_pdf']?.toString(),
-      quoteDate: DateTime.parse(map['quote_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
-      quoteAmount: (map['quote_amount'] is num) ? (map['quote_amount'] as num).toDouble() : double.tryParse(map['quote_amount']?.toString() ?? ''),
+      quoteDate: DateTime.parse(
+        map['quote_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
+      quoteAmount: (map['quote_amount'] is num)
+          ? (map['quote_amount'] as num).toDouble()
+          : double.tryParse(map['quote_amount']?.toString() ?? ''),
       quoteTitle: map['quote_title']?.toString(),
       quoteDescription: map['quote_description']?.toString(),
       location: map['location']?.toString(),
-      createdBy: null, // Remove created_by field as it doesn't exist in database
-      createdAt: DateTime.parse(map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
-      updatedAt: map['updated_at'] != null 
-          ? DateTime.parse(map['updated_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO()) 
+      createdBy:
+          null, // Remove created_by field as it doesn't exist in database
+      createdAt: DateTime.parse(
+        map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
+      updatedAt: map['updated_at'] != null
+          ? DateTime.parse(
+              map['updated_at']?.toString() ??
+                  SATimeUtils.getCurrentSATimeISO(),
+            )
           : null,
     );
   }
@@ -85,7 +99,8 @@ class Quote {
       if (id.isNotEmpty) 'id': int.tryParse(id) ?? id,
       'client_id': int.tryParse(clientId) ?? clientId,
       if (agentId != null) 'agent_id': int.tryParse(agentId!) ?? agentId,
-      if (vehicleId != null) 'vehicle_id': int.tryParse(vehicleId!) ?? vehicleId,
+      if (vehicleId != null)
+        'vehicle_id': int.tryParse(vehicleId!) ?? vehicleId,
       if (driverId != null) 'driver_id': driverId,
       'job_date': jobDate.toIso8601String(),
       'vehicle_type': vehicleType,
@@ -103,7 +118,8 @@ class Quote {
       'location': location,
       // 'created_by': createdBy, // Remove created_by field as it doesn't exist in database
       'created_at': createdAt.toIso8601String(),
-      'updated_at': updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
+      'updated_at':
+          updatedAt?.toIso8601String() ?? SATimeUtils.getCurrentSATimeISO(),
     };
   }
 
@@ -164,11 +180,11 @@ class Quote {
   bool get isAccepted => quoteStatus == 'accepted';
   bool get isExpired => quoteStatus == 'expired';
   bool get isClosed => quoteStatus == 'closed' || quoteStatus == 'rejected';
-  
-  bool get hasCompletePassengerDetails => 
-      passengerName != null && 
-      passengerName!.isNotEmpty && 
-      passengerContact != null && 
+
+  bool get hasCompletePassengerDetails =>
+      passengerName != null &&
+      passengerName!.isNotEmpty &&
+      passengerContact != null &&
       passengerContact!.isNotEmpty;
 
   int get daysUntilJobDate {

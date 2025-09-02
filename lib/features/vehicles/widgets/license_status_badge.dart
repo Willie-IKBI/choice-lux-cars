@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 
 class LicenseStatusBadge extends StatelessWidget {
   final DateTime expiryDate;
-  const LicenseStatusBadge({Key? key, required this.expiryDate}) : super(key: key);
+  const LicenseStatusBadge({Key? key, required this.expiryDate})
+    : super(key: key);
 
   @override
   Widget build(BuildContext context) {
@@ -11,7 +12,7 @@ class LicenseStatusBadge extends StatelessWidget {
     Color color;
     String text;
     IconData icon;
-    
+
     if (expiryDate.isBefore(now)) {
       color = Colors.red;
       text = 'Expired';
@@ -25,7 +26,7 @@ class LicenseStatusBadge extends StatelessWidget {
       text = 'Valid';
       icon = Icons.check_circle;
     }
-    
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
@@ -45,10 +46,10 @@ class LicenseStatusBadge extends StatelessWidget {
           Icon(icon, color: Colors.white, size: 14),
           const SizedBox(width: 4),
           Text(
-            text, 
+            text,
             style: const TextStyle(
-              color: Colors.white, 
-              fontSize: 10, 
+              color: Colors.white,
+              fontSize: 10,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -56,4 +57,4 @@ class LicenseStatusBadge extends StatelessWidget {
       ),
     );
   }
-} 
+}

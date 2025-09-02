@@ -2,14 +2,14 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Router guards for authentication and authorization
-/// 
+///
 /// This class provides centralized logic for route protection and access control.
 /// It handles:
 /// - Authentication checks
 /// - Email verification requirements
 /// - Role-based access control
 /// - Password recovery flows
-/// 
+///
 /// Usage:
 /// ```dart
 /// // In your GoRouter configuration:
@@ -21,7 +21,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 ///   isPasswordRecovery: authNotifier.isPasswordRecovery,
 ///   userRole: userProfile?.role,
 /// ),
-/// 
+///
 /// // For specific route protection:
 /// if (!RouterGuards.isAuthenticated(user)) {
 ///   return '/login';
@@ -38,7 +38,7 @@ class RouterGuards {
   /// This method checks if the user has confirmed their email
   static bool isEmailVerified(User? user) {
     if (user == null) return false;
-    
+
     // Check if email is confirmed (Supabase sets this after email verification)
     return user.emailConfirmedAt != null;
   }
@@ -63,12 +63,14 @@ class RouterGuards {
       Log.d('Router Guard - Authentication required, redirecting to login');
       return '/login';
     }
-    
+
     if (!isEmailVerified(user)) {
-      Log.d('Router Guard - Email verification required, redirecting to pending approval');
+      Log.d(
+        'Router Guard - Email verification required, redirecting to pending approval',
+      );
       return '/pending-approval';
     }
-    
+
     return null;
   }
 
@@ -78,7 +80,7 @@ class RouterGuards {
       Log.d('Router Guard - Authentication required, redirecting to login');
       return '/login';
     }
-    
+
     // For now, we'll assume users need an assigned role to access the app
     // This can be enhanced later with more granular role checking
     return null;
@@ -100,25 +102,32 @@ class RouterGuards {
   }
 
   /// Handle password recovery deep links
-  static String? handlePasswordRecovery(User? user, bool isPasswordRecovery, String currentRoute) {
+  static String? handlePasswordRecovery(
+    User? user,
+    bool isPasswordRecovery,
+    String currentRoute,
+  ) {
     if (!isAuthenticated(user)) {
       return null; // Let the main auth guard handle this
     }
-    
+
     if (isPasswordRecovery && currentRoute != '/reset-password') {
-      Log.d('Router Guard - Password recovery mode, redirecting to reset password');
+      Log.d(
+        'Router Guard - Password recovery mode, redirecting to reset password',
+      );
       return '/reset-password';
     }
-    
+
     return null;
   }
 
   /// Handle deep link routing
   static String? handleDeepLink(String? deepLink, User? user) {
     if (deepLink == null) return null;
-    
+
     // Handle password recovery deep links
-    if (deepLink.contains('recovery_token') || deepLink.contains('reset-password')) {
+    if (deepLink.contains('recovery_token') ||
+        deepLink.contains('reset-password')) {
       if (isAuthenticated(user)) {
         return '/reset-password';
       } else {
@@ -126,10 +135,10 @@ class RouterGuards {
         return '/login';
       }
     }
-    
+
     // Handle other deep link types here
     // Example: email verification, invite links, etc.
-    
+
     return null;
   }
 
@@ -153,7 +162,11 @@ class RouterGuards {
     }
 
     // Handle password recovery first
-    final recoveryRedirect = handlePasswordRecovery(user, isPasswordRecovery, currentRoute);
+    final recoveryRedirect = handlePasswordRecovery(
+      user,
+      isPasswordRecovery,
+      currentRoute,
+    );
     if (recoveryRedirect != null) {
       return recoveryRedirect;
     }
@@ -180,13 +193,18 @@ class RouterGuards {
       if (currentRoute == '/pending-approval') {
         return null; // Allow access to pending approval route
       }
-      Log.d('Router Guard - User not assigned, redirecting to pending approval');
+      Log.d(
+        'Router Guard - User not assigned, redirecting to pending approval',
+      );
       return '/pending-approval';
     }
 
     // If user is assigned but on auth routes, redirect to dashboard
-    if (publicRoutes.contains(currentRoute) || currentRoute == '/pending-approval') {
-      Log.d('Router Guard - Authenticated user on auth route, redirecting to dashboard');
+    if (publicRoutes.contains(currentRoute) ||
+        currentRoute == '/pending-approval') {
+      Log.d(
+        'Router Guard - Authenticated user on auth route, redirecting to dashboard',
+      );
       return '/';
     }
 

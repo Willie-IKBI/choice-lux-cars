@@ -37,21 +37,24 @@ class VoucherRepository {
       final path = 'vouchers/voucher_$jobId.pdf';
 
       // Upload the PDF file
-      await _supabase.storage.from(bucket).uploadBinary(
-        path,
-        bytes,
-        fileOptions: const FileOptions(
-          contentType: 'application/pdf',
-          upsert: true,
-        ),
-      );
+      await _supabase.storage
+          .from(bucket)
+          .uploadBinary(
+            path,
+            bytes,
+            fileOptions: const FileOptions(
+              contentType: 'application/pdf',
+              upsert: true,
+            ),
+          );
 
       // Get the public URL
       final publicUrl = _supabase.storage.from(bucket).getPublicUrl(path);
-      
+
       // Add cache buster to prevent stale caching
-      final cacheBustedUrl = '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
-      
+      final cacheBustedUrl =
+          '$publicUrl?t=${DateTime.now().millisecondsSinceEpoch}';
+
       return cacheBustedUrl;
     } on StorageException catch (e) {
       throw Exception('Storage upload error: ${e.message}');
@@ -66,10 +69,7 @@ class VoucherRepository {
     required String url,
   }) async {
     try {
-      await _supabase
-          .from('jobs')
-          .update({'voucher_pdf': url})
-          .eq('id', jobId);
+      await _supabase.from('jobs').update({'voucher_pdf': url}).eq('id', jobId);
     } on PostgrestException catch (e) {
       throw Exception('Database update error: ${e.message}');
     } catch (e) {
@@ -85,10 +85,10 @@ class VoucherRepository {
     try {
       // Upload the PDF
       final url = await uploadVoucherBytes(jobId: jobId, bytes: bytes);
-      
+
       // Link to job
       await linkVoucherUrlToJob(jobId: jobId, url: url);
-      
+
       return url;
     } catch (e) {
       throw Exception('Failed to upload and link voucher: $e');
@@ -100,7 +100,7 @@ class VoucherRepository {
     try {
       const bucket = 'pdfdocuments';
       final path = 'vouchers/voucher_$jobId.pdf';
-      
+
       return _supabase.storage.from(bucket).getPublicUrl(path);
     } catch (e) {
       throw Exception('Failed to get voucher URL: $e');
@@ -116,8 +116,8 @@ class VoucherRepository {
           .eq('id', jobId)
           .single();
 
-      return response['voucher_pdf'] != null && 
-             response['voucher_pdf'].toString().isNotEmpty;
+      return response['voucher_pdf'] != null &&
+          response['voucher_pdf'].toString().isNotEmpty;
     } catch (e) {
       return false;
     }
@@ -128,7 +128,7 @@ class VoucherRepository {
     try {
       const bucket = 'pdfdocuments';
       final path = 'vouchers/voucher_$jobId.pdf';
-      
+
       await _supabase.storage.from(bucket).remove([path]);
     } on StorageException catch (e) {
       // Ignore if file doesn't exist

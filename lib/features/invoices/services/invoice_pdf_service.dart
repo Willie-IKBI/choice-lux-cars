@@ -7,10 +7,11 @@ import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
 
 class InvoicePdfService {
-  static const String logoUrl = 'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
+  static const String logoUrl =
+      'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
 
   // ---- THEME / TOKENS -------------------------------------------------------
-  
+
   // Using shared PdfTheme for consistent styling across all documents
 
   // ---- PUBLIC API -----------------------------------------------------------
@@ -24,7 +25,9 @@ class InvoicePdfService {
         if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
           logoImage = pw.MemoryImage(response.bodyBytes);
         }
-      } catch (_) {/* ignore */ }
+      } catch (_) {
+        /* ignore */
+      }
 
       final currency = NumberFormat.currency(locale: 'en_ZA', symbol: 'R');
       final dateFormat = DateFormat('dd/MM/yyyy');
@@ -38,10 +41,18 @@ class InvoicePdfService {
       doc.addPage(
         pw.MultiPage(
           pageTheme: pageTheme,
-                     header: (context) => context.pageNumber == 1
-               ? PdfTheme.buildHeroHeader(logo: logoImage, companyName: 'Choice Lux Cars') // page 1
-               : PdfTheme.buildCompactHeader(logo: logoImage, documentNumber: data.invoiceNumber.replaceFirst('INV-', '')), // page 2+
-          footer: (context) => PdfTheme.buildFooter('www.choiceluxcars.com | bookings@choiceluxcars.com'),
+          header: (context) => context.pageNumber == 1
+              ? PdfTheme.buildHeroHeader(
+                  logo: logoImage,
+                  companyName: 'Choice Lux Cars',
+                ) // page 1
+              : PdfTheme.buildCompactHeader(
+                  logo: logoImage,
+                  documentNumber: data.invoiceNumber.replaceFirst('INV-', ''),
+                ), // page 2+
+          footer: (context) => PdfTheme.buildFooter(
+            'www.choiceluxcars.com | bookings@choiceluxcars.com',
+          ),
           build: (context) => [
             _sectionInvoiceSummary(data, dateFormat),
             pw.SizedBox(height: PdfTheme.spacing20),
@@ -70,11 +81,11 @@ class InvoicePdfService {
   }
 
   // ---- WATERMARK ------------------------------------------------------------
-  
+
   // Using shared PdfTheme.buildInvoiceWatermark() instead
 
   // ---- HEADERS / FOOTER -----------------------------------------------------
-  
+
   // Using shared PdfTheme.buildHeroHeader() and PdfTheme.buildCompactHeader() instead
 
   // ---- SECTION CARDS --------------------------------------------------------
@@ -121,7 +132,7 @@ class InvoicePdfService {
     );
   }
 
-    // ---- SECTIONS -------------------------------------------------------------
+  // ---- SECTIONS -------------------------------------------------------------
 
   // Simple section header for long sections
   pw.Widget _sectionHeader(String title) {
@@ -139,23 +150,34 @@ class InvoicePdfService {
             child: pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.start,
               children: [
-                                 pw.Text(
-                   'Transport Services',
-                   style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 14, color: PdfTheme.grey700),
-                 ),
-                 pw.SizedBox(height: 6),
-                 pw.Text(
-                   'Professional chauffeur service for ${data.numberPassengers} passenger(s)',
-                   style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey700, lineSpacing: 2),
-                 ),
-               ],
-             ),
-           ),
-           pw.SizedBox(width: PdfTheme.spacing20),
+                pw.Text(
+                  'Transport Services',
+                  style: pw.TextStyle(
+                    font: PdfTheme.fontBold,
+                    fontSize: 14,
+                    color: PdfTheme.grey700,
+                  ),
+                ),
+                pw.SizedBox(height: 6),
+                pw.Text(
+                  'Professional chauffeur service for ${data.numberPassengers} passenger(s)',
+                  style: pw.TextStyle(
+                    fontSize: 11,
+                    color: PdfTheme.grey700,
+                    lineSpacing: 2,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          pw.SizedBox(width: PdfTheme.spacing20),
           pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.end,
             children: [
-              _kv('Invoice Number', data.invoiceNumber.replaceFirst('INV-', '')),
+              _kv(
+                'Invoice Number',
+                data.invoiceNumber.replaceFirst('INV-', ''),
+              ),
               _kv('Invoice Date', dateFormat.format(data.invoiceDate)),
               _kv('Due Date', dateFormat.format(data.dueDate)),
             ],
@@ -190,7 +212,7 @@ class InvoicePdfService {
                 ),
               ),
             ),
-                         pw.SizedBox(width: PdfTheme.spacing16),
+            pw.SizedBox(width: PdfTheme.spacing16),
             // Service
             pw.Expanded(
               child: pw.Container(
@@ -224,37 +246,46 @@ class InvoicePdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            ...data.transport.map((trip) => pw.Padding(
-              padding: const pw.EdgeInsets.only(bottom: 12),
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(12),
-                decoration: _innerBox(),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    pw.Row(
-                      children: [
-                        pw.Container(
-                          margin: const pw.EdgeInsets.only(right: 8),
-                          width: 8,
-                          height: 8,
-                                                   decoration: pw.BoxDecoration(color: PdfTheme.gold400, shape: pw.BoxShape.circle),
-                       ),
-                       pw.Text(
-                         'Trip ${data.transport.indexOf(trip) + 1}',
-                         style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 12, color: PdfTheme.grey800),
-                       ),
-                      ],
-                    ),
-                    pw.SizedBox(height: 8),
-                    _infoRow('Date', trip.formattedDate),
-                    _infoRow('Time', trip.time),
-                    _infoRow('Pickup Location', trip.pickupLocation),
-                    _infoRow('Dropoff Location', trip.dropoffLocation),
-                  ],
+            ...data.transport.map(
+              (trip) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 12),
+                child: pw.Container(
+                  padding: const pw.EdgeInsets.all(12),
+                  decoration: _innerBox(),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Row(
+                        children: [
+                          pw.Container(
+                            margin: const pw.EdgeInsets.only(right: 8),
+                            width: 8,
+                            height: 8,
+                            decoration: pw.BoxDecoration(
+                              color: PdfTheme.gold400,
+                              shape: pw.BoxShape.circle,
+                            ),
+                          ),
+                          pw.Text(
+                            'Trip ${data.transport.indexOf(trip) + 1}',
+                            style: pw.TextStyle(
+                              font: PdfTheme.fontBold,
+                              fontSize: 12,
+                              color: PdfTheme.grey800,
+                            ),
+                          ),
+                        ],
+                      ),
+                      pw.SizedBox(height: 8),
+                      _infoRow('Date', trip.formattedDate),
+                      _infoRow('Time', trip.time),
+                      _infoRow('Pickup Location', trip.pickupLocation),
+                      _infoRow('Dropoff Location', trip.dropoffLocation),
+                    ],
+                  ),
                 ),
               ),
-            )),
+            ),
           ],
         ),
       ],
@@ -272,47 +303,71 @@ class InvoicePdfService {
             pw.Row(
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
-                                 pw.Text('Subtotal:', style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600)),
-                 pw.Text(data.formattedSubtotal, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
-               ],
-             ),
-             pw.SizedBox(height: 6),
-             pw.Row(
-               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-               children: [
-                 pw.Text('VAT (15%):', style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600)),
-                 pw.Text(data.formattedTaxAmount, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
-               ],
-             ),
-             pw.SizedBox(height: 8),
-             pw.Container(height: 0.5, color: PdfTheme.grey300),
-             pw.SizedBox(height: 8),
-             pw.Row(
-               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-               children: [
-                 pw.Text(
-                   'Total Amount:',
-                   style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 14, color: PdfTheme.grey800),
-                 ),
-                 pw.Text(
-                   data.formattedTotalAmount,
-                   style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 14, color: PdfTheme.grey800),
-                 ),
-               ],
-             ),
-             pw.SizedBox(height: 12),
-             pw.Container(
-               padding: const pw.EdgeInsets.all(12),
-               decoration: pw.BoxDecoration(
-                 color: PdfTheme.gold50,
-                 borderRadius: pw.BorderRadius.circular(6),
-                 border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
-               ),
-               child: pw.Text(
-                 'Payment Terms: ${data.paymentTerms}',
-                 style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 11, color: PdfTheme.gold700),
-               ),
-             ),
+                pw.Text(
+                  'Subtotal:',
+                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600),
+                ),
+                pw.Text(
+                  data.formattedSubtotal,
+                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 6),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'VAT (15%):',
+                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600),
+                ),
+                pw.Text(
+                  data.formattedTaxAmount,
+                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 8),
+            pw.Container(height: 0.5, color: PdfTheme.grey300),
+            pw.SizedBox(height: 8),
+            pw.Row(
+              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+              children: [
+                pw.Text(
+                  'Total Amount:',
+                  style: pw.TextStyle(
+                    font: PdfTheme.fontBold,
+                    fontSize: 14,
+                    color: PdfTheme.grey800,
+                  ),
+                ),
+                pw.Text(
+                  data.formattedTotalAmount,
+                  style: pw.TextStyle(
+                    font: PdfTheme.fontBold,
+                    fontSize: 14,
+                    color: PdfTheme.grey800,
+                  ),
+                ),
+              ],
+            ),
+            pw.SizedBox(height: 12),
+            pw.Container(
+              padding: const pw.EdgeInsets.all(12),
+              decoration: pw.BoxDecoration(
+                color: PdfTheme.gold50,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
+              ),
+              child: pw.Text(
+                'Payment Terms: ${data.paymentTerms}',
+                style: pw.TextStyle(
+                  font: PdfTheme.fontBold,
+                  fontSize: 11,
+                  color: PdfTheme.gold700,
+                ),
+              ),
+            ),
           ],
         ),
       ],
@@ -337,15 +392,19 @@ class InvoicePdfService {
             pw.SizedBox(height: 12),
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
-                             decoration: pw.BoxDecoration(
-                 color: PdfTheme.gold50,
-                 borderRadius: pw.BorderRadius.circular(6),
-                 border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
-               ),
-               child: pw.Text(
-                 'Note: Please use Invoice Number as payment reference',
-                 style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 11, color: PdfTheme.gold700),
-               ),
+              decoration: pw.BoxDecoration(
+                color: PdfTheme.gold50,
+                borderRadius: pw.BorderRadius.circular(6),
+                border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
+              ),
+              child: pw.Text(
+                'Note: Please use Invoice Number as payment reference',
+                style: pw.TextStyle(
+                  font: PdfTheme.fontBold,
+                  fontSize: 11,
+                  color: PdfTheme.gold700,
+                ),
+              ),
             ),
           ],
         ),
@@ -363,9 +422,18 @@ class InvoicePdfService {
           children: [
             _numberedTerm(1, 'Payment is due within 30 days of invoice date.'),
             _numberedTerm(2, 'Late payments may incur additional charges.'),
-            _numberedTerm(3, 'All prices include VAT and are quoted in South African Rands (ZAR).'),
-            _numberedTerm(4, 'For any queries regarding this invoice, please contact the agent listed.'),
-            _numberedTerm(5, 'Thank you for choosing Choice Lux Cars for your transportation needs.'),
+            _numberedTerm(
+              3,
+              'All prices include VAT and are quoted in South African Rands (ZAR).',
+            ),
+            _numberedTerm(
+              4,
+              'For any queries regarding this invoice, please contact the agent listed.',
+            ),
+            _numberedTerm(
+              5,
+              'Thank you for choosing Choice Lux Cars for your transportation needs.',
+            ),
           ],
         ),
       ],
@@ -375,26 +443,37 @@ class InvoicePdfService {
   // ---- SMALL HELPERS --------------------------------------------------------
 
   pw.BoxDecoration _innerBox() => pw.BoxDecoration(
-        color: PdfColors.white,
-        borderRadius: pw.BorderRadius.circular(6),
-        border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-      );
+    color: PdfColors.white,
+    borderRadius: pw.BorderRadius.circular(6),
+    border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
+  );
 
   pw.Widget _subTitle(String text) => pw.Text(
-        text,
-        style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 14, color: PdfTheme.grey800),
-      );
+    text,
+    style: pw.TextStyle(
+      font: PdfTheme.fontBold,
+      fontSize: 14,
+      color: PdfTheme.grey800,
+    ),
+  );
 
   pw.Widget _kv(String k, String v) => pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 4),
-        child: pw.Row(
-          mainAxisSize: pw.MainAxisSize.min,
-          children: [
-            pw.Text('$k: ', style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 11, color: PdfTheme.grey600)),
-            pw.Text(v, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
-          ],
+    padding: const pw.EdgeInsets.only(bottom: 4),
+    child: pw.Row(
+      mainAxisSize: pw.MainAxisSize.min,
+      children: [
+        pw.Text(
+          '$k: ',
+          style: pw.TextStyle(
+            font: PdfTheme.fontBold,
+            fontSize: 11,
+            color: PdfTheme.grey600,
+          ),
         ),
-      );
+        pw.Text(v, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
+      ],
+    ),
+  );
 
   pw.Widget _infoRow(String label, String value) {
     return PdfTheme.buildInfoRow(label, value);
@@ -417,14 +496,22 @@ class InvoicePdfService {
             child: pw.Center(
               child: pw.Text(
                 '$n',
-                style: pw.TextStyle(font: PdfTheme.fontBold, fontSize: 8, color: PdfColors.white),
+                style: pw.TextStyle(
+                  font: PdfTheme.fontBold,
+                  fontSize: 8,
+                  color: PdfColors.white,
+                ),
               ),
             ),
           ),
           pw.Expanded(
             child: pw.Text(
               text,
-              style: pw.TextStyle(fontSize: 9, color: PdfTheme.grey700, lineSpacing: 1.2),
+              style: pw.TextStyle(
+                fontSize: 9,
+                color: PdfTheme.grey700,
+                lineSpacing: 1.2,
+              ),
               softWrap: true,
               overflow: pw.TextOverflow.visible,
             ),

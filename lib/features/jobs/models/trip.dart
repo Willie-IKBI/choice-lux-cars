@@ -29,17 +29,27 @@ class Trip {
     return Trip(
       id: map['id']?.toString() ?? '',
       jobId: int.tryParse(map['job_id']?.toString() ?? '0') ?? 0,
-      pickupDate: DateTime.parse(map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO()),
+      pickupDate: DateTime.parse(
+        map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
+      ),
       pickupLocation: map['pickup_location']?.toString() ?? '',
       dropoffLocation: map['dropoff_location']?.toString() ?? '',
-      clientPickupTime: map['client_pickup_time'] != null 
-          ? DateTime.parse(map['client_pickup_time']?.toString() ?? SATimeUtils.getCurrentSATimeISO())
+      clientPickupTime: map['client_pickup_time'] != null
+          ? DateTime.parse(
+              map['client_pickup_time']?.toString() ??
+                  SATimeUtils.getCurrentSATimeISO(),
+            )
           : null,
-      clientDropoffTime: map['client_dropoff_time'] != null 
-          ? DateTime.parse(map['client_dropoff_time']?.toString() ?? SATimeUtils.getCurrentSATimeISO())
+      clientDropoffTime: map['client_dropoff_time'] != null
+          ? DateTime.parse(
+              map['client_dropoff_time']?.toString() ??
+                  SATimeUtils.getCurrentSATimeISO(),
+            )
           : null,
       notes: map['notes']?.toString(),
-      amount: (map['amount'] is num) ? (map['amount'] as num).toDouble() : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
+      amount: (map['amount'] is num)
+          ? (map['amount'] as num).toDouble()
+          : double.tryParse(map['amount']?.toString() ?? '0') ?? 0.0,
       status: map['status']?.toString(),
     );
   }
@@ -58,12 +68,12 @@ class Trip {
       'amount': amount,
       'status': status,
     };
-    
+
     // Only include ID if it's not empty (for updates)
     if (id.isNotEmpty) {
       map['id'] = int.tryParse(id) ?? id;
     }
-    
+
     return map;
   }
 
@@ -98,13 +108,15 @@ class Trip {
   // Helper methods
   String get shortSummary {
     final date = '${pickupDate.day}/${pickupDate.month}/${pickupDate.year}';
-    final time = '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
+    final time =
+        '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
     return '$date at $time - ${pickupLocation.split(',').first} to ${dropoffLocation.split(',').first}';
   }
 
   String get formattedDateTime {
     final date = '${pickupDate.day}/${pickupDate.month}/${pickupDate.year}';
-    final time = '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
+    final time =
+        '${pickupDate.hour.toString().padLeft(2, '0')}:${pickupDate.minute.toString().padLeft(2, '0')}';
     return '$date at $time';
   }
-} 
+}

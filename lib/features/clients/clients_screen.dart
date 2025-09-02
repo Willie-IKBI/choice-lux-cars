@@ -34,7 +34,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     final isSmallMobile = screenWidth < 400;
     final isTablet = screenWidth >= 600 && screenWidth < 800;
     final isDesktop = screenWidth >= 800;
-    
+
     final clientsAsync = _searchQuery.isEmpty
         ? ref.watch(clientsProvider)
         : ref.watch(clientSearchProvider(_searchQuery));
@@ -81,14 +81,25 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         child: SafeArea(
           child: Column(
             children: [
-
               // Responsive Search Bar with Filter
               Padding(
-                padding: EdgeInsets.all(isSmallMobile ? 12.0 : isMobile ? 16.0 : 24.0),
+                padding: EdgeInsets.all(
+                  isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 24.0,
+                ),
                 child: _buildResponsiveSearchAndFilter(isMobile, isSmallMobile),
               ),
 
-              SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
+              SizedBox(
+                height: isSmallMobile
+                    ? 12.0
+                    : isMobile
+                    ? 16.0
+                    : 20.0,
+              ),
 
               // Clients List
               Expanded(
@@ -109,8 +120,10 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                       child: _buildClientsGrid(clients),
                     );
                   },
-                  loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-                  error: (error, stackTrace) => _buildErrorState(error, isMobile, isSmallMobile),
+                  loading: () =>
+                      _buildMobileLoadingState(isMobile, isSmallMobile),
+                  error: (error, stackTrace) =>
+                      _buildErrorState(error, isMobile, isSmallMobile),
                 ),
               ),
             ],
@@ -127,7 +140,13 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         children: [
           // Loading animation
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 16 : isMobile ? 20 : 24),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 20
+                  : 24,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
@@ -137,21 +156,41 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               strokeWidth: isMobile ? 2.0 : 3.0,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           // Loading text
           Text(
             'Loading clients...',
             style: TextStyle(
-              fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+              fontSize: isSmallMobile
+                  ? 14
+                  : isMobile
+                  ? 16
+                  : 18,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             'Please wait while we fetch client data',
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
@@ -167,56 +206,108 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
-            padding: EdgeInsets.all(isSmallMobile ? 20 : isMobile ? 24 : 28),
+            padding: EdgeInsets.all(
+              isSmallMobile
+                  ? 20
+                  : isMobile
+                  ? 24
+                  : 28,
+            ),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
               Icons.error_outline,
-              size: isSmallMobile ? 40 : isMobile ? 48 : 56,
+              size: isSmallMobile
+                  ? 40
+                  : isMobile
+                  ? 48
+                  : 56,
               color: ChoiceLuxTheme.errorColor,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           Text(
             'Error loading clients',
             style: TextStyle(
-              fontSize: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              fontSize: isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 18
+                  : 20,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(height: isSmallMobile ? 8 : isMobile ? 10 : 12),
+          SizedBox(
+            height: isSmallMobile
+                ? 8
+                : isMobile
+                ? 10
+                : 12,
+          ),
           Text(
             error.toString(),
             style: TextStyle(
-              fontSize: isSmallMobile ? 12 : isMobile ? 13 : 14,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 13
+                  : 14,
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
           ),
-          SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
+          SizedBox(
+            height: isSmallMobile
+                ? 16
+                : isMobile
+                ? 20
+                : 24,
+          ),
           ElevatedButton.icon(
             onPressed: () {
               ref.invalidate(clientsProvider);
             },
             icon: Icon(
               Icons.refresh,
-              size: isSmallMobile ? 16 : isMobile ? 18 : 20,
+              size: isSmallMobile
+                  ? 16
+                  : isMobile
+                  ? 18
+                  : 20,
             ),
             label: Text(
               'Retry',
               style: TextStyle(
-                fontSize: isSmallMobile ? 14 : isMobile ? 16 : 18,
+                fontSize: isSmallMobile
+                    ? 14
+                    : isMobile
+                    ? 16
+                    : 18,
               ),
             ),
             style: ElevatedButton.styleFrom(
               backgroundColor: ChoiceLuxTheme.richGold,
               foregroundColor: Colors.black,
               padding: EdgeInsets.symmetric(
-                horizontal: isSmallMobile ? 16 : isMobile ? 20 : 24,
-                vertical: isSmallMobile ? 12 : isMobile ? 14 : 16,
+                horizontal: isSmallMobile
+                    ? 16
+                    : isMobile
+                    ? 20
+                    : 24,
+                vertical: isSmallMobile
+                    ? 12
+                    : isMobile
+                    ? 14
+                    : 16,
               ),
             ),
           ),
@@ -270,11 +361,11 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   }
 
   Widget _buildClientsGrid(List<Client> clients) {
-    final clientCards = clients.map((client) => _buildSwipeableClientCard(client)).toList();
+    final clientCards = clients
+        .map((client) => _buildSwipeableClientCard(client))
+        .toList();
 
-    return ResponsiveGrid(
-      children: clientCards,
-    );
+    return ResponsiveGrid(children: clientCards);
   }
 
   Widget _buildSwipeableClientCard(Client client) {
@@ -324,10 +415,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           SnackBar(
             content: Row(
               children: [
-                Icon(
-                  Icons.archive,
-                  color: ChoiceLuxTheme.softWhite,
-                ),
+                Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('${client.companyName} has been deactivated'),
@@ -343,7 +431,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               label: 'Undo',
               textColor: ChoiceLuxTheme.softWhite,
               onPressed: () {
-                ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
+                ref
+                    .read(clientsProvider.notifier)
+                    .restoreClient(client.id.toString());
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${client.companyName} has been restored'),
@@ -360,10 +450,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         decoration: BoxDecoration(
           color: Colors.orange.withOpacity(0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: Colors.orange.withOpacity(0.3),
-            width: 1,
-          ),
+          border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
         ),
         child: Align(
           alignment: Alignment.centerRight,
@@ -372,11 +459,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(
-                  Icons.archive,
-                  color: Colors.orange,
-                  size: 24,
-                ),
+                Icon(Icons.archive, color: Colors.orange, size: 24),
                 const SizedBox(width: 8),
                 Text(
                   'Deactivate',
@@ -414,9 +497,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Row(
           children: [
             Container(
@@ -425,11 +506,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 color: Colors.orange.withOpacity(0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
-                Icons.archive,
-                color: Colors.orange,
-                size: 24,
-              ),
+              child: Icon(Icons.archive, color: Colors.orange, size: 24),
             ),
             const SizedBox(width: 12),
             Expanded(
@@ -450,10 +527,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           children: [
             Text(
               'Are you sure you want to deactivate this client?',
-              style: TextStyle(
-                color: ChoiceLuxTheme.softWhite,
-                fontSize: 16,
-              ),
+              style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
             ),
             const SizedBox(height: 8),
             Container(
@@ -461,17 +535,11 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               decoration: BoxDecoration(
                 color: Colors.orange.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: Colors.orange.withOpacity(0.3),
-                ),
+                border: Border.all(color: Colors.orange.withOpacity(0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.business,
-                    color: Colors.orange,
-                    size: 20,
-                  ),
+                  Icon(Icons.business, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -537,18 +605,19 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ref.read(clientsProvider.notifier).deleteClient(client.id.toString());
+              ref
+                  .read(clientsProvider.notifier)
+                  .deleteClient(client.id.toString());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
                     children: [
-                      Icon(
-                        Icons.archive,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
+                      Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
                       const SizedBox(width: 8),
                       Expanded(
-                        child: Text('${client.companyName} has been deactivated'),
+                        child: Text(
+                          '${client.companyName} has been deactivated',
+                        ),
                       ),
                     ],
                   ),
@@ -561,10 +630,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     label: 'Undo',
                     textColor: ChoiceLuxTheme.softWhite,
                     onPressed: () {
-                      ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
+                      ref
+                          .read(clientsProvider.notifier)
+                          .restoreClient(client.id.toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
-                          content: Text('${client.companyName} has been restored'),
+                          content: Text(
+                            '${client.companyName} has been restored',
+                          ),
                           backgroundColor: ChoiceLuxTheme.successColor,
                         ),
                       );
@@ -605,9 +678,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       // Desktop: Horizontal layout
       return Row(
         children: [
-          Expanded(
-            child: _buildResponsiveSearchBar(isMobile, isSmallMobile),
-          ),
+          Expanded(child: _buildResponsiveSearchBar(isMobile, isSmallMobile)),
           const SizedBox(width: 12),
           _buildDesktopFilterButton(),
         ],
@@ -639,7 +710,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           });
         },
         decoration: InputDecoration(
-          hintText: isMobile ? 'Search clients...' : 'Search clients by name, company, or email...',
+          hintText: isMobile
+              ? 'Search clients...'
+              : 'Search clients by name, company, or email...',
           hintStyle: TextStyle(
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
             fontSize: isMobile ? 14 : 16,
@@ -684,11 +757,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(
-          Icons.filter_list,
-          color: ChoiceLuxTheme.richGold,
-          size: 20,
-        ),
+        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
         label: Text(
           'Filter clients',
           style: TextStyle(
@@ -768,7 +837,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
-            
+
             // Title
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
@@ -791,7 +860,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 ],
               ),
             ),
-            
+
             // Filter options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -827,7 +896,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 ],
               ),
             ),
-            
+
             const SizedBox(height: 24),
           ],
         ),
@@ -850,7 +919,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           borderRadius: BorderRadius.circular(12),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            constraints: const BoxConstraints(minHeight: 48), // Ensure minimum 44px touch target
+            constraints: const BoxConstraints(
+              minHeight: 48,
+            ), // Ensure minimum 44px touch target
             decoration: BoxDecoration(
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(12),
@@ -861,11 +932,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             ),
             child: Row(
               children: [
-                Icon(
-                  icon,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 20,
-                ),
+                Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -925,4 +992,4 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       );
     }
   }
-} 
+}

@@ -15,7 +15,8 @@ class AdminMonitoringScreen extends ConsumerStatefulWidget {
   const AdminMonitoringScreen({Key? key}) : super(key: key);
 
   @override
-  ConsumerState<AdminMonitoringScreen> createState() => _AdminMonitoringScreenState();
+  ConsumerState<AdminMonitoringScreen> createState() =>
+      _AdminMonitoringScreenState();
 }
 
 class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
@@ -46,11 +47,13 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
       setState(() => _isLoading = true);
 
       // Load active jobs
-      final activeJobs = await DriverFlowApiService.getActiveJobsForMonitoring();
-      
+      final activeJobs =
+          await DriverFlowApiService.getActiveJobsForMonitoring();
+
       // Load driver activity
-      final driverActivity = await DriverFlowApiService.getDriverActivitySummary();
-      
+      final driverActivity =
+          await DriverFlowApiService.getDriverActivitySummary();
+
       // Calculate summary
       final summary = _calculateSummary(activeJobs, driverActivity);
 
@@ -83,19 +86,25 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
     List<Map<String, dynamic>> driverActivity,
   ) {
     int totalActiveJobs = activeJobs.length;
-    int veryRecentJobs = activeJobs.where((job) => 
-      job['activity_recency'] == 'very_recent').length;
-    int recentJobs = activeJobs.where((job) => 
-      job['activity_recency'] == 'recent').length;
-    int staleJobs = activeJobs.where((job) => 
-      job['activity_recency'] == 'stale').length;
-    
-    int activeDrivers = driverActivity.where((driver) => 
-      driver['driver_status'] == 'active').length;
-    int recentDrivers = driverActivity.where((driver) => 
-      driver['driver_status'] == 'recent').length;
-    int inactiveDrivers = driverActivity.where((driver) => 
-      driver['driver_status'] == 'inactive').length;
+    int veryRecentJobs = activeJobs
+        .where((job) => job['activity_recency'] == 'very_recent')
+        .length;
+    int recentJobs = activeJobs
+        .where((job) => job['activity_recency'] == 'recent')
+        .length;
+    int staleJobs = activeJobs
+        .where((job) => job['activity_recency'] == 'stale')
+        .length;
+
+    int activeDrivers = driverActivity
+        .where((driver) => driver['driver_status'] == 'active')
+        .length;
+    int recentDrivers = driverActivity
+        .where((driver) => driver['driver_status'] == 'recent')
+        .length;
+    int inactiveDrivers = driverActivity
+        .where((driver) => driver['driver_status'] == 'inactive')
+        .length;
 
     return {
       'total_active_jobs': totalActiveJobs,
@@ -148,7 +157,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
                     height: 20,
                     child: CircularProgressIndicator(
                       strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        ChoiceLuxTheme.richGold,
+                      ),
                     ),
                   )
                 : const Icon(Icons.refresh_rounded),
@@ -222,7 +233,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
         children: [
           ActiveJobsSummary(summary: _summary),
           const SizedBox(height: 24),
-          
+
           // Quick Stats Cards
           Row(
             children: [
@@ -267,9 +278,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
               ),
             ],
           ),
-          
+
           const SizedBox(height: 24),
-          
+
           // Recent Activity Timeline
           Card(
             child: Padding(
@@ -326,10 +337,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
         final job = _activeJobs[index];
         return Padding(
           padding: const EdgeInsets.only(bottom: 12.0),
-          child: JobMonitoringCard(
-            job: job,
-            onTap: () => _showJobDetails(job),
-          ),
+          child: JobMonitoringCard(job: job, onTap: () => _showJobDetails(job)),
         );
       },
     );
@@ -373,7 +381,12 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
     );
   }
 
-  Widget _buildStatCard(String title, String value, IconData icon, Color color) {
+  Widget _buildStatCard(
+    String title,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -391,9 +404,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
             const SizedBox(height: 4),
             Text(
               title,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Colors.grey[600],
-              ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
               textAlign: TextAlign.center,
             ),
           ],
@@ -410,7 +423,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
     Color statusColor;
     IconData statusIcon;
-    
+
     switch (recency) {
       case 'very_recent':
         statusColor = Colors.green;
@@ -445,18 +458,12 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
                 ),
                 Text(
                   'Step: $currentStep',
-                  style: TextStyle(
-                    color: Colors.grey[600],
-                    fontSize: 12,
-                  ),
+                  style: TextStyle(color: Colors.grey[600], fontSize: 12),
                 ),
                 if (lastActivity != null)
                   Text(
                     'Last activity: ${_formatTimestamp(lastActivity)}',
-                    style: TextStyle(
-                      color: Colors.grey[500],
-                      fontSize: 11,
-                    ),
+                    style: TextStyle(color: Colors.grey[500], fontSize: 11),
                   ),
               ],
             ),
@@ -488,14 +495,14 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
   void _showJobDetails(Map<String, dynamic> job) {
     // Navigate to job details screen
-            Navigator.of(context).push(
-          MaterialPageRoute(
-            builder: (context) => JobProgressScreen(
-              jobId: int.parse(job['job_id']),
-              job: Job.fromMap(job),
-            ),
-          ),
-        );
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => JobProgressScreen(
+          jobId: int.parse(job['job_id']),
+          job: Job.fromMap(job),
+        ),
+      ),
+    );
   }
 
   void _showDriverDetails(Map<String, dynamic> driver) {
@@ -512,7 +519,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
             Text('Status: ${driver['driver_status']}'),
             Text('Assigned Jobs: ${driver['assigned_jobs']}'),
             Text('Active Jobs: ${driver['active_jobs']}'),
-            Text('Last Activity: ${_formatTimestamp(driver['last_activity'] ?? '')}'),
+            Text(
+              'Last Activity: ${_formatTimestamp(driver['last_activity'] ?? '')}',
+            ),
           ],
         ),
         actions: [

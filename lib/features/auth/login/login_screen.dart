@@ -17,7 +17,8 @@ class LoginScreen extends ConsumerStatefulWidget {
   ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderStateMixin {
+class _LoginScreenState extends ConsumerState<LoginScreen>
+    with TickerProviderStateMixin {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -26,7 +27,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
   bool _isHoveringSignUp = false;
   bool _isHoveringForgotPassword = false;
   bool _isHoveringLogo = false;
-  
+
   late AnimationController _buttonAnimationController;
   late Animation<double> _buttonScaleAnimation;
   late AnimationController _shakeAnimationController;
@@ -39,25 +40,23 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
       duration: const Duration(milliseconds: 150),
       vsync: this,
     );
-    _buttonScaleAnimation = Tween<double>(
-      begin: 1.0,
-      end: 0.95,
-    ).animate(CurvedAnimation(
-      parent: _buttonAnimationController,
-      curve: Curves.easeInOut,
-    ));
-    
+    _buttonScaleAnimation = Tween<double>(begin: 1.0, end: 0.95).animate(
+      CurvedAnimation(
+        parent: _buttonAnimationController,
+        curve: Curves.easeInOut,
+      ),
+    );
+
     _shakeAnimationController = AnimationController(
       duration: const Duration(milliseconds: 500),
       vsync: this,
     );
-    _shakeAnimation = Tween<double>(
-      begin: 0.0,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _shakeAnimationController,
-      curve: Curves.elasticOut,
-    ));
+    _shakeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(
+        parent: _shakeAnimationController,
+        curve: Curves.elasticOut,
+      ),
+    );
   }
 
   @override
@@ -91,12 +90,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
       _buttonAnimationController.forward().then((_) {
         _buttonAnimationController.reverse();
       });
-      
+
       try {
-        await ref.read(authProvider.notifier).signIn(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
+        await ref
+            .read(authProvider.notifier)
+            .signIn(
+              email: _emailController.text.trim(),
+              password: _passwordController.text,
+            );
       } catch (e) {
         Log.e('Unexpected sign in error in UI: $e');
         // Show a generic error message
@@ -111,7 +112,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
     required bool shouldShake,
   }) {
     if (!shouldShake) return child;
-    
+
     return AnimatedBuilder(
       animation: _shakeAnimation,
       builder: (context, child) {
@@ -145,16 +146,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           ref.read(authProvider.notifier).clearError();
         }
       },
-      style: const TextStyle(
-        color: ChoiceLuxTheme.softWhite,
-        fontSize: 16,
-      ),
+      style: const TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(
-          icon,
-          color: ChoiceLuxTheme.platinumSilver,
-        ),
+        prefixIcon: Icon(icon, color: ChoiceLuxTheme.platinumSilver),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: Colors.white.withOpacity(0.05),
@@ -168,10 +163,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(
-            color: ChoiceLuxTheme.richGold,
-            width: 2,
-          ),
+          borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -184,7 +176,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
         labelStyle: TextStyle(
           color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 16,
+        ),
       ),
     );
   }
@@ -194,22 +189,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
     final authState = ref.watch(authProvider);
 
     // Handle authentication state changes with error protection
-    ref.listen(authProvider, (previous, next) {
-      if (next.hasError) {
-        Log.d('Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}');
-        Log.d('Next error: ${next.error}');
-        
-        // Clear any existing error messages
-        _clearErrorMessages();
-        
-        // Show error message
-        if (next.error != null) {
-          _showErrorSnackBar(next.error.toString());
+    ref.listen(
+      authProvider,
+      (previous, next) {
+        if (next.hasError) {
+          Log.d(
+            'Auth state changed - Previous: ${previous?.hasError}, Next: ${next.hasError}',
+          );
+          Log.d('Next error: ${next.error}');
+
+          // Clear any existing error messages
+          _clearErrorMessages();
+
+          // Show error message
+          if (next.error != null) {
+            _showErrorSnackBar(next.error.toString());
+          }
         }
-      }
-    }, onError: (error, stackTrace) {
-      Log.e('Error in auth state listener: $error');
-    });
+      },
+      onError: (error, stackTrace) {
+        Log.e('Error in auth state listener: $error');
+      },
+    );
 
     return Scaffold(
       body: Container(
@@ -217,20 +218,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
           gradient: LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF0A0A0A),
-              Color(0xFF1A1A1A),
-              Color(0xFF0A0A0A),
-            ],
+            colors: [Color(0xFF0A0A0A), Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
           ),
         ),
         child: Stack(
           children: [
             // Subtle background pattern
             Positioned.fill(
-              child: CustomPaint(
-                painter: BackgroundPatternPainter(),
-              ),
+              child: CustomPaint(painter: BackgroundPatternPainter()),
             ),
             SafeArea(
               child: Center(
@@ -261,10 +256,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final isMobile = constraints.maxWidth < 400;
-                              final padding = isMobile 
+                              final padding = isMobile
                                   ? const EdgeInsets.all(24.0)
                                   : const EdgeInsets.all(40.0);
-                              
+
                               return Padding(
                                 padding: padding,
                                 child: Form(
@@ -274,26 +269,43 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                     children: [
                                       // Logo and Title
                                       MouseRegion(
-                                        onEnter: (_) => setState(() => _isHoveringLogo = true),
-                                        onExit: (_) => setState(() => _isHoveringLogo = false),
+                                        onEnter: (_) => setState(
+                                          () => _isHoveringLogo = true,
+                                        ),
+                                        onExit: (_) => setState(
+                                          () => _isHoveringLogo = false,
+                                        ),
                                         child: AnimatedContainer(
-                                          duration: const Duration(milliseconds: 400),
+                                          duration: const Duration(
+                                            milliseconds: 400,
+                                          ),
                                           curve: Curves.easeInOut,
                                           width: 72,
                                           height: 72,
-                                          transform: Matrix4.identity()..scale(_isHoveringLogo ? 1.05 : 1.0),
+                                          transform: Matrix4.identity()
+                                            ..scale(
+                                              _isHoveringLogo ? 1.05 : 1.0,
+                                            ),
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: Colors.black.withOpacity(0.7),
+                                            color: Colors.black.withOpacity(
+                                              0.7,
+                                            ),
                                             border: Border.all(
                                               color: ChoiceLuxTheme.richGold,
                                               width: 2,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                                                blurRadius: _isHoveringLogo ? 15 : 10,
-                                                offset: Offset(0, _isHoveringLogo ? 6 : 4),
+                                                color: ChoiceLuxTheme.richGold
+                                                    .withOpacity(0.3),
+                                                blurRadius: _isHoveringLogo
+                                                    ? 15
+                                                    : 10,
+                                                offset: Offset(
+                                                  0,
+                                                  _isHoveringLogo ? 6 : 4,
+                                                ),
                                               ),
                                             ],
                                           ),
@@ -309,10 +321,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       const SizedBox(height: 24),
                                       LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final isMobile = constraints.maxWidth < 400;
-                                          final titleSize = isMobile ? 24.0 : 28.0;
-                                          final subtitleSize = isMobile ? 10.0 : 12.0;
-                                          
+                                          final isMobile =
+                                              constraints.maxWidth < 400;
+                                          final titleSize = isMobile
+                                              ? 24.0
+                                              : 28.0;
+                                          final subtitleSize = isMobile
+                                              ? 10.0
+                                              : 12.0;
+
                                           return Column(
                                             children: [
                                               Text(
@@ -320,7 +337,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                 style: GoogleFonts.outfit(
                                                   fontSize: titleSize,
                                                   fontWeight: FontWeight.w700,
-                                                  color: ChoiceLuxTheme.richGold,
+                                                  color:
+                                                      ChoiceLuxTheme.richGold,
                                                   letterSpacing: 0.5,
                                                 ),
                                               ),
@@ -331,7 +349,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                   letterSpacing: 1.2,
                                                   fontSize: subtitleSize,
                                                   fontWeight: FontWeight.w500,
-                                                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                                                  color: ChoiceLuxTheme
+                                                      .platinumSilver
+                                                      .withOpacity(0.8),
                                                 ),
                                               ),
                                             ],
@@ -347,12 +367,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           controller: _emailController,
                                           label: 'Email Address',
                                           icon: Icons.email_outlined,
-                                          keyboardType: TextInputType.emailAddress,
+                                          keyboardType:
+                                              TextInputType.emailAddress,
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter your email';
                                             }
-                                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                            if (!RegExp(
+                                              r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$',
+                                            ).hasMatch(value)) {
                                               return 'Please enter a valid email';
                                             }
                                             return null;
@@ -371,20 +395,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           obscureText: _obscurePassword,
                                           suffixIcon: IconButton(
                                             icon: Icon(
-                                              _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                                              color: ChoiceLuxTheme.platinumSilver,
+                                              _obscurePassword
+                                                  ? Icons.visibility_outlined
+                                                  : Icons
+                                                        .visibility_off_outlined,
+                                              color:
+                                                  ChoiceLuxTheme.platinumSilver,
                                             ),
                                             onPressed: () {
                                               setState(() {
-                                                _obscurePassword = !_obscurePassword;
+                                                _obscurePassword =
+                                                    !_obscurePassword;
                                               });
                                             },
                                           ),
                                           validator: (value) {
-                                            if (value == null || value.isEmpty) {
+                                            if (value == null ||
+                                                value.isEmpty) {
                                               return 'Please enter your password';
                                             }
-                                            if (value.length < AppConstants.minPasswordLength) {
+                                            if (value.length <
+                                                AppConstants
+                                                    .minPasswordLength) {
                                               return 'Password must be at least ${AppConstants.minPasswordLength} characters';
                                             }
                                             return null;
@@ -393,8 +425,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       ),
                                       LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final isMobile = constraints.maxWidth < 400;
-                                          return SizedBox(height: isMobile ? 16.0 : 20.0);
+                                          final isMobile =
+                                              constraints.maxWidth < 400;
+                                          return SizedBox(
+                                            height: isMobile ? 16.0 : 20.0,
+                                          );
                                         },
                                       ),
 
@@ -402,47 +437,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       if (authState.hasError)
                                         Container(
                                           padding: const EdgeInsets.all(16),
-                                          margin: const EdgeInsets.only(bottom: 20),
+                                          margin: const EdgeInsets.only(
+                                            bottom: 20,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(12),
+                                            color: ChoiceLuxTheme.errorColor
+                                                .withOpacity(0.1),
+                                            borderRadius: BorderRadius.circular(
+                                              12,
+                                            ),
                                             border: Border.all(
-                                              color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                                              color: ChoiceLuxTheme.errorColor
+                                                  .withOpacity(0.3),
                                               width: 1,
                                             ),
                                           ),
                                           child: Row(
                                             children: [
                                               Container(
-                                                padding: const EdgeInsets.all(8),
+                                                padding: const EdgeInsets.all(
+                                                  8,
+                                                ),
                                                 decoration: BoxDecoration(
-                                                  color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
-                                                  borderRadius: BorderRadius.circular(8),
+                                                  color: ChoiceLuxTheme
+                                                      .errorColor
+                                                      .withOpacity(0.2),
+                                                  borderRadius:
+                                                      BorderRadius.circular(8),
                                                 ),
                                                 child: Icon(
                                                   Icons.error_outline_rounded,
-                                                  color: ChoiceLuxTheme.errorColor,
+                                                  color:
+                                                      ChoiceLuxTheme.errorColor,
                                                   size: 20,
                                                 ),
                                               ),
                                               const SizedBox(width: 12),
                                               Expanded(
                                                 child: Column(
-                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.start,
                                                   children: [
                                                     Text(
                                                       'Login Error',
                                                       style: TextStyle(
-                                                        color: ChoiceLuxTheme.errorColor,
+                                                        color: ChoiceLuxTheme
+                                                            .errorColor,
                                                         fontSize: 14,
-                                                        fontWeight: FontWeight.w600,
+                                                        fontWeight:
+                                                            FontWeight.w600,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 4),
                                                     Text(
-                                                      _getErrorMessage(authState.error),
+                                                      _getErrorMessage(
+                                                        authState.error,
+                                                      ),
                                                       style: TextStyle(
-                                                        color: ChoiceLuxTheme.platinumSilver,
+                                                        color: ChoiceLuxTheme
+                                                            .platinumSilver,
                                                         fontSize: 13,
                                                         height: 1.3,
                                                       ),
@@ -454,14 +507,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                 onPressed: _clearError,
                                                 icon: Icon(
                                                   Icons.close_rounded,
-                                                  color: ChoiceLuxTheme.platinumSilver,
+                                                  color: ChoiceLuxTheme
+                                                      .platinumSilver,
                                                   size: 20,
                                                 ),
                                                 padding: EdgeInsets.zero,
-                                                constraints: const BoxConstraints(
-                                                  minWidth: 32,
-                                                  minHeight: 32,
-                                                ),
+                                                constraints:
+                                                    const BoxConstraints(
+                                                      minWidth: 32,
+                                                      minHeight: 32,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -470,12 +525,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       // Remember Me and Forgot Password
                                       LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final isMobile = constraints.maxWidth < 400;
-                                          
+                                          final isMobile =
+                                              constraints.maxWidth < 400;
+
                                           if (isMobile) {
                                             // Stack vertically on mobile
                                             return Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
                                               children: [
                                                 Row(
                                                   children: [
@@ -488,16 +545,28 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                             _rememberMe = value;
                                                           });
                                                         },
-                                                        activeColor: ChoiceLuxTheme.richGold,
-                                                        activeTrackColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                                                        inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                                                        activeColor:
+                                                            ChoiceLuxTheme
+                                                                .richGold,
+                                                        activeTrackColor:
+                                                            ChoiceLuxTheme
+                                                                .richGold
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                        inactiveTrackColor:
+                                                            Colors.grey
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Text(
                                                       'Remember me',
                                                       style: TextStyle(
-                                                        color: ChoiceLuxTheme.platinumSilver,
+                                                        color: ChoiceLuxTheme
+                                                            .platinumSilver,
                                                         fontSize: 14,
                                                       ),
                                                     ),
@@ -505,25 +574,42 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                 ),
                                                 const SizedBox(height: 12),
                                                 MouseRegion(
-                                                  onEnter: (_) => setState(() => _isHoveringForgotPassword = true),
-                                                  onExit: (_) => setState(() => _isHoveringForgotPassword = false),
+                                                  onEnter: (_) => setState(
+                                                    () =>
+                                                        _isHoveringForgotPassword =
+                                                            true,
+                                                  ),
+                                                  onExit: (_) => setState(
+                                                    () =>
+                                                        _isHoveringForgotPassword =
+                                                            false,
+                                                  ),
                                                   child: TextButton(
                                                     onPressed: () {
-                                                      context.push('/forgot-password');
+                                                      context.push(
+                                                        '/forgot-password',
+                                                      );
                                                     },
                                                     style: TextButton.styleFrom(
-                                                      foregroundColor: _isHoveringForgotPassword 
-                                                          ? ChoiceLuxTheme.richGold 
-                                                          : ChoiceLuxTheme.platinumSilver,
+                                                      foregroundColor:
+                                                          _isHoveringForgotPassword
+                                                          ? ChoiceLuxTheme
+                                                                .richGold
+                                                          : ChoiceLuxTheme
+                                                                .platinumSilver,
                                                       padding: EdgeInsets.zero,
                                                       minimumSize: Size.zero,
-                                                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                                                      tapTargetSize:
+                                                          MaterialTapTargetSize
+                                                              .shrinkWrap,
                                                     ),
                                                     child: Text(
                                                       'Forgot Password?',
                                                       style: TextStyle(
-                                                        decoration: _isHoveringForgotPassword 
-                                                            ? TextDecoration.underline 
+                                                        decoration:
+                                                            _isHoveringForgotPassword
+                                                            ? TextDecoration
+                                                                  .underline
                                                             : null,
                                                         fontSize: 14,
                                                       ),
@@ -535,7 +621,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                           } else {
                                             // Side by side on larger screens
                                             return Row(
-                                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                              mainAxisAlignment:
+                                                  MainAxisAlignment
+                                                      .spaceBetween,
                                               children: [
                                                 Row(
                                                   children: [
@@ -548,38 +636,65 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                             _rememberMe = value;
                                                           });
                                                         },
-                                                        activeColor: ChoiceLuxTheme.richGold,
-                                                        activeTrackColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                                                        inactiveTrackColor: Colors.grey.withOpacity(0.3),
+                                                        activeColor:
+                                                            ChoiceLuxTheme
+                                                                .richGold,
+                                                        activeTrackColor:
+                                                            ChoiceLuxTheme
+                                                                .richGold
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
+                                                        inactiveTrackColor:
+                                                            Colors.grey
+                                                                .withOpacity(
+                                                                  0.3,
+                                                                ),
                                                       ),
                                                     ),
                                                     const SizedBox(width: 8),
                                                     Text(
                                                       'Remember me',
                                                       style: TextStyle(
-                                                        color: ChoiceLuxTheme.platinumSilver,
+                                                        color: ChoiceLuxTheme
+                                                            .platinumSilver,
                                                         fontSize: 14,
                                                       ),
                                                     ),
                                                   ],
                                                 ),
                                                 MouseRegion(
-                                                  onEnter: (_) => setState(() => _isHoveringForgotPassword = true),
-                                                  onExit: (_) => setState(() => _isHoveringForgotPassword = false),
+                                                  onEnter: (_) => setState(
+                                                    () =>
+                                                        _isHoveringForgotPassword =
+                                                            true,
+                                                  ),
+                                                  onExit: (_) => setState(
+                                                    () =>
+                                                        _isHoveringForgotPassword =
+                                                            false,
+                                                  ),
                                                   child: TextButton(
                                                     onPressed: () {
-                                                      context.push('/forgot-password');
+                                                      context.push(
+                                                        '/forgot-password',
+                                                      );
                                                     },
                                                     style: TextButton.styleFrom(
-                                                      foregroundColor: _isHoveringForgotPassword 
-                                                          ? ChoiceLuxTheme.richGold 
-                                                          : ChoiceLuxTheme.platinumSilver,
+                                                      foregroundColor:
+                                                          _isHoveringForgotPassword
+                                                          ? ChoiceLuxTheme
+                                                                .richGold
+                                                          : ChoiceLuxTheme
+                                                                .platinumSilver,
                                                     ),
                                                     child: Text(
                                                       'Forgot Password?',
                                                       style: TextStyle(
-                                                        decoration: _isHoveringForgotPassword 
-                                                            ? TextDecoration.underline 
+                                                        decoration:
+                                                            _isHoveringForgotPassword
+                                                            ? TextDecoration
+                                                                  .underline
                                                             : null,
                                                       ),
                                                     ),
@@ -592,8 +707,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       ),
                                       LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final isMobile = constraints.maxWidth < 400;
-                                          return SizedBox(height: isMobile ? 24.0 : 32.0);
+                                          final isMobile =
+                                              constraints.maxWidth < 400;
+                                          return SizedBox(
+                                            height: isMobile ? 24.0 : 32.0,
+                                          );
                                         },
                                       ),
 
@@ -607,35 +725,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                               width: double.infinity,
                                               height: 56,
                                               child: ElevatedButton(
-                                                onPressed: authState.isLoading ? null : _signIn,
+                                                onPressed: authState.isLoading
+                                                    ? null
+                                                    : _signIn,
                                                 style: ElevatedButton.styleFrom(
-                                                  backgroundColor: ChoiceLuxTheme.richGold,
+                                                  backgroundColor:
+                                                      ChoiceLuxTheme.richGold,
                                                   foregroundColor: Colors.black,
                                                   elevation: 8,
-                                                  shadowColor: ChoiceLuxTheme.richGold.withOpacity(0.4),
+                                                  shadowColor: ChoiceLuxTheme
+                                                      .richGold
+                                                      .withOpacity(0.4),
                                                   shape: RoundedRectangleBorder(
-                                                    borderRadius: BorderRadius.circular(16),
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          16,
+                                                        ),
                                                   ),
                                                 ),
                                                 child: authState.isLoading
                                                     ? Row(
-                                                        mainAxisAlignment: MainAxisAlignment.center,
+                                                        mainAxisAlignment:
+                                                            MainAxisAlignment
+                                                                .center,
                                                         children: [
                                                           SizedBox(
                                                             height: 20,
                                                             width: 20,
                                                             child: CircularProgressIndicator(
                                                               strokeWidth: 2,
-                                                              valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                                              valueColor:
+                                                                  AlwaysStoppedAnimation<
+                                                                    Color
+                                                                  >(
+                                                                    Colors
+                                                                        .black,
+                                                                  ),
                                                             ),
                                                           ),
-                                                          const SizedBox(width: 12),
+                                                          const SizedBox(
+                                                            width: 12,
+                                                          ),
                                                           Text(
                                                             'Signing In...',
                                                             style: TextStyle(
                                                               fontSize: 16,
-                                                              fontWeight: FontWeight.w600,
-                                                              color: Colors.black,
+                                                              fontWeight:
+                                                                  FontWeight
+                                                                      .w600,
+                                                              color:
+                                                                  Colors.black,
                                                             ),
                                                           ),
                                                         ],
@@ -644,7 +783,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                                         'Sign In',
                                                         style: TextStyle(
                                                           fontSize: 16,
-                                                          fontWeight: FontWeight.w600,
+                                                          fontWeight:
+                                                              FontWeight.w600,
                                                           color: Colors.black,
                                                         ),
                                                       ),
@@ -655,38 +795,51 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
                                       ),
                                       LayoutBuilder(
                                         builder: (context, constraints) {
-                                          final isMobile = constraints.maxWidth < 400;
-                                          return SizedBox(height: isMobile ? 24.0 : 32.0);
+                                          final isMobile =
+                                              constraints.maxWidth < 400;
+                                          return SizedBox(
+                                            height: isMobile ? 24.0 : 32.0,
+                                          );
                                         },
                                       ),
 
                                       // Sign Up Link
                                       Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.center,
                                         children: [
                                           Text(
                                             "Don't have an account? ",
                                             style: TextStyle(
-                                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                                              color: ChoiceLuxTheme
+                                                  .platinumSilver
+                                                  .withOpacity(0.8),
                                               fontSize: 14,
                                             ),
                                           ),
                                           MouseRegion(
-                                            onEnter: (_) => setState(() => _isHoveringSignUp = true),
-                                            onExit: (_) => setState(() => _isHoveringSignUp = false),
+                                            onEnter: (_) => setState(
+                                              () => _isHoveringSignUp = true,
+                                            ),
+                                            onExit: (_) => setState(
+                                              () => _isHoveringSignUp = false,
+                                            ),
                                             child: TextButton(
-                                              onPressed: () => context.go('/signup'),
+                                              onPressed: () =>
+                                                  context.go('/signup'),
                                               style: TextButton.styleFrom(
-                                                foregroundColor: _isHoveringSignUp 
-                                                    ? ChoiceLuxTheme.richGold 
-                                                    : ChoiceLuxTheme.richGold.withOpacity(0.8),
+                                                foregroundColor:
+                                                    _isHoveringSignUp
+                                                    ? ChoiceLuxTheme.richGold
+                                                    : ChoiceLuxTheme.richGold
+                                                          .withOpacity(0.8),
                                               ),
                                               child: Text(
                                                 'Sign Up',
                                                 style: TextStyle(
                                                   fontWeight: FontWeight.w600,
-                                                  decoration: _isHoveringSignUp 
-                                                      ? TextDecoration.underline 
+                                                  decoration: _isHoveringSignUp
+                                                      ? TextDecoration.underline
                                                       : null,
                                                 ),
                                               ),
@@ -751,4 +904,4 @@ class BackgroundPatternPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-} 
+}

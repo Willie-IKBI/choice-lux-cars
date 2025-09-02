@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 
 /// Repository for trip-related data operations
-/// 
+///
 /// Encapsulates all Supabase queries and returns domain models.
 /// This layer separates data access from business logic.
 class TripsRepository {
@@ -19,14 +19,14 @@ class TripsRepository {
   Future<Result<List<Trip>>> fetchTrips() async {
     try {
       Log.d('Fetching trips from database');
-      
+
       final response = await _supabase
           .from('trips')
           .select()
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} trips from database');
-      
+
       final trips = response.map((json) => Trip.fromJson(json)).toList();
       return Result.success(trips);
     } catch (error) {
@@ -39,7 +39,7 @@ class TripsRepository {
   Future<Result<List<Trip>>> fetchTripsForJob(String jobId) async {
     try {
       Log.d('Fetching trips for job: $jobId');
-      
+
       final response = await _supabase
           .from('trips')
           .select()
@@ -47,7 +47,7 @@ class TripsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} trips for job: $jobId');
-      
+
       final trips = response.map((json) => Trip.fromJson(json)).toList();
       return Result.success(trips);
     } catch (error) {
@@ -60,7 +60,7 @@ class TripsRepository {
   Future<Result<Map<String, dynamic>>> createTrip(Trip trip) async {
     try {
       Log.d('Creating trip for job: ${trip.jobId}');
-      
+
       final response = await _supabase
           .from('trips')
           .insert(trip.toJson())
@@ -79,11 +79,8 @@ class TripsRepository {
   Future<Result<void>> updateTrip(Trip trip) async {
     try {
       Log.d('Updating trip: ${trip.id}');
-      
-      await _supabase
-          .from('trips')
-          .update(trip.toJson())
-          .eq('id', trip.id);
+
+      await _supabase.from('trips').update(trip.toJson()).eq('id', trip.id);
 
       Log.d('Trip updated successfully');
       return const Result.success(null);
@@ -97,11 +94,8 @@ class TripsRepository {
   Future<Result<void>> updateTripStatus(String tripId, String status) async {
     try {
       Log.d('Updating trip status: $tripId to $status');
-      
-      await _supabase
-          .from('trips')
-          .update({'status': status})
-          .eq('id', tripId);
+
+      await _supabase.from('trips').update({'status': status}).eq('id', tripId);
 
       Log.d('Trip status updated successfully');
       return const Result.success(null);
@@ -115,11 +109,8 @@ class TripsRepository {
   Future<Result<void>> deleteTrip(String tripId) async {
     try {
       Log.d('Deleting trip: $tripId');
-      
-      await _supabase
-          .from('trips')
-          .delete()
-          .eq('id', tripId);
+
+      await _supabase.from('trips').delete().eq('id', tripId);
 
       Log.d('Trip deleted successfully');
       return const Result.success(null);
@@ -133,7 +124,7 @@ class TripsRepository {
   Future<Result<List<Trip>>> getTripsByStatus(String status) async {
     try {
       Log.d('Fetching trips with status: $status');
-      
+
       final response = await _supabase
           .from('trips')
           .select()
@@ -141,7 +132,7 @@ class TripsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} trips with status: $status');
-      
+
       final trips = response.map((json) => Trip.fromJson(json)).toList();
       return Result.success(trips);
     } catch (error) {
@@ -154,7 +145,7 @@ class TripsRepository {
   Future<Result<List<Trip>>> getTripsByDriver(String driverId) async {
     try {
       Log.d('Fetching trips for driver: $driverId');
-      
+
       final response = await _supabase
           .from('trips')
           .select()
@@ -162,7 +153,7 @@ class TripsRepository {
           .order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} trips for driver: $driverId');
-      
+
       final trips = response.map((json) => Trip.fromJson(json)).toList();
       return Result.success(trips);
     } catch (error) {
@@ -177,20 +168,20 @@ class TripsRepository {
       return Result.failure(AuthException(error.message));
     } else if (error is PostgrestException) {
       // Check if it's a network-related error
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout') ||
           error.message.contains('connection')) {
         return Result.failure(NetworkException(error.message));
       }
       // Check if it's an auth-related error
-      if (error.message.contains('JWT') || 
+      if (error.message.contains('JWT') ||
           error.message.contains('unauthorized') ||
           error.message.contains('forbidden')) {
         return Result.failure(AuthException(error.message));
       }
       return Result.failure(UnknownException(error.message));
     } else if (error is StorageException) {
-      if (error.message.contains('network') || 
+      if (error.message.contains('network') ||
           error.message.contains('timeout')) {
         return Result.failure(NetworkException(error.message));
       }

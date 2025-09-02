@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 /// Image picker mixin to eliminate duplicate image picker functions
 mixin ImagePickerMixin<T extends StatefulWidget> on State<T> {
   final ImagePicker _picker = ImagePicker();
-  
+
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   bool _isUploading = false;
@@ -106,7 +106,7 @@ mixin ImagePickerMixin<T extends StatefulWidget> on State<T> {
 
     try {
       String imageUrl;
-      
+
       if (kIsWeb && _selectedImageBytes != null) {
         // Upload bytes for web
         imageUrl = await UploadService.uploadImageBytes(
@@ -159,7 +159,8 @@ mixin ImagePickerMixin<T extends StatefulWidget> on State<T> {
   }
 
   /// Check if image is selected
-  bool get hasSelectedImage => _selectedImage != null || _selectedImageBytes != null;
+  bool get hasSelectedImage =>
+      _selectedImage != null || _selectedImageBytes != null;
 
   /// Get image widget for display
   Widget get imageWidget {
@@ -184,11 +185,7 @@ mixin ImagePickerMixin<T extends StatefulWidget> on State<T> {
           borderRadius: BorderRadius.circular(12),
         ),
         child: const Center(
-          child: Icon(
-            Icons.camera_alt,
-            size: 48,
-            color: Colors.grey,
-          ),
+          child: Icon(Icons.camera_alt, size: 48, color: Colors.grey),
         ),
       );
     }

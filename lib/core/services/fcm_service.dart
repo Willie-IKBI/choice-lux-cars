@@ -11,7 +11,7 @@ class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   static String? _currentToken;
   static bool _isInitialized = false;
-  
+
   /// Initialize FCM service
   static Future<bool> initialize(WidgetRef ref) async {
     if (_isInitialized) {
@@ -21,7 +21,7 @@ class FCMService {
 
     try {
       Log.d('FCMService: Initializing...');
-      
+
       // Request permission
       NotificationSettings settings = await _messaging.requestPermission(
         alert: true,
@@ -36,12 +36,13 @@ class FCMService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        
         // Get FCM token and save to user profile
         _currentToken = await _messaging.getToken();
         if (_currentToken != null) {
           await _saveFCMToken(_currentToken!);
-          Log.d('FCMService: Token saved: ${_currentToken!.substring(0, 20)}...');
+          Log.d(
+            'FCMService: Token saved: ${_currentToken!.substring(0, 20)}...',
+          );
         }
 
         // Handle token refresh
@@ -53,7 +54,7 @@ class FCMService {
 
         // Set up message handlers
         _setupMessageHandlers(ref);
-        
+
         _isInitialized = true;
         Log.d('FCMService: Initialization complete');
         return true;
@@ -99,7 +100,7 @@ class FCMService {
         Log.d('FCMService: No current user found for FCM token save');
         return;
       }
-      
+
       // Save token to user profile in Supabase
       await SupabaseService.instance.updateProfile(
         userId: currentUser.id,
@@ -117,15 +118,16 @@ class FCMService {
   /// Handle foreground messages
   static void _handleForegroundMessage(RemoteMessage message, WidgetRef ref) {
     Log.d('FCMService: Foreground message received: ${message.data}');
-    
+
     final action = message.data['action'];
     final notificationType = message.data['notification_type'];
     final jobId = message.data['job_id'];
-    final messageText = message.notification?.body ?? 'New notification received';
-    
+    final messageText =
+        message.notification?.body ?? 'New notification received';
+
     // Update notification count in provider
     ref.read(notificationProvider.notifier).updateUnreadCount();
-    
+
     // Show in-app notification based on type
     switch (action) {
       case 'new_job_assigned':
@@ -152,11 +154,11 @@ class FCMService {
   /// Handle notification taps
   static void _handleNotificationTap(RemoteMessage message, WidgetRef ref) {
     Log.d('FCMService: Notification tapped: ${message.data}');
-    
+
     final action = message.data['action'];
     final jobId = message.data['job_id'];
     final route = message.data['route'];
-    
+
     // Navigate based on action data
     if (route != null) {
       _navigateToRoute(route, ref);
@@ -171,7 +173,12 @@ class FCMService {
   }
 
   /// Show job-related notification
-  static void _showJobNotification(String message, String? jobId, WidgetRef ref, String actionText) {
+  static void _showJobNotification(
+    String message,
+    String? jobId,
+    WidgetRef ref,
+    String actionText,
+  ) {
     final context = ref.context;
     if (context == null) return;
 
@@ -186,7 +193,9 @@ class FCMService {
         ),
         action: SnackBarAction(
           label: actionText,
-          onPressed: () => jobId != null ? _navigateToJobDetail(jobId, ref) : _navigateToNotifications(ref),
+          onPressed: () => jobId != null
+              ? _navigateToJobDetail(jobId, ref)
+              : _navigateToNotifications(ref),
         ),
         duration: const Duration(seconds: 8),
         backgroundColor: Colors.blue,
@@ -197,7 +206,11 @@ class FCMService {
   }
 
   /// Show payment notification
-  static void _showPaymentNotification(String message, String? jobId, WidgetRef ref) {
+  static void _showPaymentNotification(
+    String message,
+    String? jobId,
+    WidgetRef ref,
+  ) {
     final context = ref.context;
     if (context == null) return;
 
@@ -212,7 +225,9 @@ class FCMService {
         ),
         action: SnackBarAction(
           label: 'View Payment',
-          onPressed: () => jobId != null ? _navigateToJobDetail(jobId, ref) : _navigateToNotifications(ref),
+          onPressed: () => jobId != null
+              ? _navigateToJobDetail(jobId, ref)
+              : _navigateToNotifications(ref),
         ),
         duration: const Duration(seconds: 8),
         backgroundColor: Colors.orange,
@@ -274,7 +289,7 @@ class FCMService {
   static void _navigateToRoute(String route, WidgetRef ref) {
     final context = ref.context;
     if (context == null) return;
-    
+
     try {
       context.go(route);
       Log.d('FCMService: Navigated to route: $route');
@@ -289,7 +304,7 @@ class FCMService {
   static void _navigateToJobDetail(String jobId, WidgetRef ref) {
     final context = ref.context;
     if (context == null) return;
-    
+
     try {
       context.go('/jobs/$jobId/summary');
       Log.d('FCMService: Navigated to job: $jobId');
@@ -303,7 +318,7 @@ class FCMService {
   static void _navigateToNotifications(WidgetRef ref) {
     final context = ref.context;
     if (context == null) return;
-    
+
     try {
       context.go('/notifications');
       Log.d('FCMService: Navigated to notifications');
@@ -368,11 +383,11 @@ class FCMService {
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   Log.d('FCMService: Background message received: ${message.data}');
-  
+
   // Handle different notification types in background
   final action = message.data['action'];
   final notificationType = message.data['notification_type'];
-  
+
   switch (action) {
     case 'new_job_assigned':
     case 'job_reassigned':
@@ -393,7 +408,7 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
     default:
       Log.d('FCMService: Background generic notification');
   }
-  
+
   // You could show a local notification here if needed
   // await _showLocalNotification(message);
-} 
+}
