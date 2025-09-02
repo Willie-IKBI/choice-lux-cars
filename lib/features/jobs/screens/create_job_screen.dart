@@ -950,8 +950,42 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
     return Consumer(
       builder: (context, ref, child) {
+        // Guard against null client ID
+        if (_selectedClientId == null) {
+          return Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: ChoiceLuxTheme.platinumSilver,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Please select a client first to choose an agent',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontSize: 14,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
         final agentsAsync = ref.watch(
-          agentsByClientProvider(_selectedClientId!),
+          agentsForClientProvider(_selectedClientId!),
         );
 
         return agentsAsync.when(

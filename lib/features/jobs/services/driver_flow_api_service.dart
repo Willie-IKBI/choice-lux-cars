@@ -597,4 +597,18 @@ class DriverFlowApiService {
       return {'pickup': null, 'dropoff': null};
     }
   }
+
+  /// Static wrapper for job progress
+  static Future<List<Map<String, dynamic>>> getJobProgress(int jobId) async {
+    // TODO: Implement fetchJobProgress method or map to existing functionality
+    Log.d('Getting job progress for job ID: $jobId');
+    return [];
+  }
+
+  /// Static wrapper for trip progress
+  static Future<List<Map<String, dynamic>>> getTripProgress(int jobId) async {
+    // TODO: Implement fetchTripProgress method or map to existing functionality
+    Log.d('Getting trip progress for job ID: $jobId');
+    return [];
+  }
 }

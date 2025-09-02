@@ -577,9 +577,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     try {
       setState(() => _isUpdating = true);
 
+      final position = await _getCurrentLocation();
+      final lat = position.latitude;
+      final lng = position.longitude;
+
       await DriverFlowApiService.passengerOnboard(
         int.parse(widget.jobId),
         _currentTripIndex,
+        gpsLat: lat,
+        gpsLng: lng,
       );
 
       if (mounted) {
@@ -646,9 +652,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     try {
       setState(() => _isUpdating = true);
 
+      final position = await _getCurrentLocation();
+      final lat = position.latitude;
+      final lng = position.longitude;
+
       await DriverFlowApiService.completeTrip(
         int.parse(widget.jobId),
         _currentTripIndex,
+        gpsLat: lat,
+        gpsLng: lng,
       );
 
       if (mounted) {

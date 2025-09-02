@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -99,7 +100,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         showBackButton: true,
         onBackPressed: () => context.go('/'),
         onSignOut: () async {
-          await ref.read(authProvider.notifier).signOut();
+          await Supabase.instance.client.auth.signOut();
         },
         actions: [
           IconButton(

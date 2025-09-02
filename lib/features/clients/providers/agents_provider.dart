@@ -36,3 +36,16 @@ class AgentsNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
 final agentsNotifierProvider = AsyncNotifierProvider.family<AgentsNotifier, List<Agent>, String>(
   AgentsNotifier.new,
 );
+
+/// Canonical provider for fetching agents by client ID
+/// Returns AsyncValue&lt;List&lt;Agent&gt;&gt; for a given client
+final agentsForClientProvider = FutureProvider.family<List<Agent>, String>(
+  (ref, clientId) async {
+    final repository = ref.read(agentsRepositoryProvider);
+    return repository.fetchAgentsByClient(clientId);
+  },
+);
+
+/// Compatibility alias for existing call sites
+/// @deprecated Use agentsForClientProvider instead
+final agentsByClientProvider = agentsForClientProvider;
