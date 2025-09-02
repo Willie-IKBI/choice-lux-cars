@@ -4,8 +4,10 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 class AuthError implements Exception {
   final String message;
   final String? originalError;
+  final String? code;
+  final String? field;
   
-  AuthError(this.message, [this.originalError]);
+  AuthError(this.message, [this.originalError, this.code, this.field]);
   
   @override
   String toString() => message;
@@ -53,5 +55,24 @@ class AuthErrorUtils {
       Log.e('Error in AuthErrorUtils.getFieldError: $e');
       return null;
     }
+  }
+
+  /// Parse string errors
+  static AuthError _parseStringError(String error) {
+    return AuthError(error, error);
+  }
+
+  /// Parse map errors
+  static AuthError _parseMapError(Map<String, dynamic> error) {
+    final message = error['message']?.toString() ?? 'Unknown error';
+    final code = error['code']?.toString();
+    final field = error['field']?.toString();
+    return AuthError(message, null, code, field);
+  }
+
+  /// Parse generic errors
+  static AuthError _parseGenericError(dynamic error) {
+    final message = error?.toString() ?? 'Unknown error';
+    return AuthError(message, message);
   }
 }

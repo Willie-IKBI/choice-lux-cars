@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_tokens.dart';
 
 class PaginationWidget extends StatelessWidget {
   final int currentPage;
@@ -24,6 +25,7 @@ class PaginationWidget extends StatelessWidget {
     if (totalPages <= 1) return const SizedBox.shrink();
 
     final isMobile = MediaQuery.of(context).size.width < 768;
+    final tokens = Theme.of(context).extension<AppTokens>()!;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -64,17 +66,17 @@ class PaginationWidget extends StatelessWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                    color: tokens.brandGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                      color: tokens.brandGold.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
                   child: Text(
                     '$currentPage / $totalPages',
                     style: TextStyle(
-                      color: ChoiceLuxTheme.richGold,
+                      color: tokens.brandGold,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),

@@ -36,7 +36,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     final isDesktop = screenWidth >= 800;
     
     final clientsAsync = _searchQuery.isEmpty
-        ? ref.watch(clientsNotifierProvider)
+        ? ref.watch(clientsProvider)
         : ref.watch(clientSearchProvider(_searchQuery));
 
     return Scaffold(
@@ -99,7 +99,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     }
                     return RefreshIndicator(
                       onRefresh: () async {
-                        ref.invalidate(clientsNotifierProvider);
+                        ref.invalidate(clientsProvider);
                         if (_searchQuery.isNotEmpty) {
                           ref.invalidate(clientSearchProvider(_searchQuery));
                         }
@@ -199,7 +199,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           SizedBox(height: isSmallMobile ? 16 : isMobile ? 20 : 24),
           ElevatedButton.icon(
             onPressed: () {
-              ref.invalidate(clientsNotifierProvider);
+              ref.invalidate(clientsProvider);
             },
             icon: Icon(
               Icons.refresh,
@@ -319,7 +319,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         );
       },
       onDismissed: (direction) {
-        ref.read(clientsNotifierProvider.notifier).deleteClient(client.id.toString());
+        ref.read(clientsProvider.notifier).deleteClient(client.id.toString());
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
@@ -343,7 +343,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               label: 'Undo',
               textColor: ChoiceLuxTheme.softWhite,
               onPressed: () {
-                ref.read(clientsNotifierProvider.notifier).restoreClient(client.id.toString());
+                ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('${client.companyName} has been restored'),
@@ -537,7 +537,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ref.read(clientsNotifierProvider.notifier).deleteClient(client.id.toString());
+              ref.read(clientsProvider.notifier).deleteClient(client.id.toString());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(
@@ -561,7 +561,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     label: 'Undo',
                     textColor: ChoiceLuxTheme.softWhite,
                     onPressed: () {
-                      ref.read(clientsNotifierProvider.notifier).restoreClient(client.id.toString());
+                      ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
                       ScaffoldMessenger.of(context).showSnackBar(
                         SnackBar(
                           content: Text('${client.companyName} has been restored'),

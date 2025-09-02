@@ -3,15 +3,15 @@ import 'package:choice_lux_cars/features/clients/data/agents_repository.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
-/// Notifier for managing agents by client using AsyncNotifier
-class AgentsByClientNotifier extends AsyncNotifier<List<Agent>> {
+/// Notifier for managing agents by client using FamilyAsyncNotifier
+class AgentsByClientNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   late final AgentsRepository _agentsRepository;
   late final String clientId;
 
   @override
-  Future<List<Agent>> build() async {
+  Future<List<Agent>> build(String clientId) async {
     _agentsRepository = ref.watch(agentsRepositoryProvider);
-    clientId = ref.arg;
+    this.clientId = clientId;
     return _fetchAgentsByClient();
   }
 
@@ -44,7 +44,8 @@ class AgentsByClientNotifier extends AsyncNotifier<List<Agent>> {
       final result = await _agentsRepository.createAgent(agent);
       
       if (result.isSuccess) {
-        final createdAgent = result.data!;
+        final createdAgentData = result.data!;
+        final createdAgent = Agent.fromJson(createdAgentData);
         Log.d('addAgent - created agent object: ${createdAgent.agentName}, id: ${createdAgent.id}');
         
         // Update the current state to include the new agent
@@ -69,12 +70,11 @@ class AgentsByClientNotifier extends AsyncNotifier<List<Agent>> {
       final result = await _agentsRepository.updateAgent(agent);
       
       if (result.isSuccess) {
-        final updatedAgent = result.data!;
-        Log.d('updateAgent - updated agent object: ${updatedAgent.agentName}, id: ${updatedAgent.id}');
+        Log.d('updateAgent - agent updated successfully: ${agent.agentName}, id: ${agent.id}');
         
         // Update the current state to replace the old agent with the updated one
         final currentAgents = state.value ?? [];
-        final updatedAgents = currentAgents.map((a) => a.id == agent.id ? updatedAgent : a).toList();
+        final updatedAgents = currentAgents.map((a) => a.id == agent.id ? agent : a).toList();
         state = AsyncValue.data(updatedAgents);
       } else {
         Log.e('updateAgent error: ${result.error!.message}');
@@ -117,15 +117,15 @@ class AgentsByClientNotifier extends AsyncNotifier<List<Agent>> {
   }
 }
 
-/// Notifier for managing single agent using AsyncNotifier
-class SingleAgentNotifier extends AsyncNotifier<Agent?> {
+/// Notifier for managing single agent using FamilyAsyncNotifier
+class SingleAgentNotifier extends FamilyAsyncNotifier<Agent?, String> {
   late final AgentsRepository _agentsRepository;
   late final String agentId;
 
   @override
-  Future<Agent?> build() async {
+  Future<Agent?> build(String agentId) async {
     _agentsRepository = ref.watch(agentsRepositoryProvider);
-    agentId = ref.arg;
+    this.agentId = agentId;
     return _fetchAgentById();
   }
 
@@ -156,7 +156,7 @@ class SingleAgentNotifier extends AsyncNotifier<Agent?> {
 }
 
 /// Provider for agents by client using AsyncNotifierProvider.family
-final agentsByClientProvider = AsyncNotifierProvider.family<AgentsByClientNotifier, List<Agent>, String>((clientId) => AgentsByClientNotifier());
+final agentsByClientProvider = AsyncNotifierProvider.family<AgentsByClientNotifier, List<Agent>, String>(AgentsByClientNotifier.new);
 
 /// Provider for single agent using AsyncNotifierProvider.family
-final agentProvider = AsyncNotifierProvider.family<SingleAgentNotifier, Agent?, String>((agentId) => SingleAgentNotifier()); 
+final agentProvider = AsyncNotifierProvider.family<SingleAgentNotifier, Agent?, String>(SingleAgentNotifier.new); 

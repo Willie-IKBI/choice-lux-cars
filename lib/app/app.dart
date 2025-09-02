@@ -33,11 +33,10 @@ import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
-import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import '../shared/widgets/luxury_app_bar.dart';
 import '../core/services/fcm_service.dart';
-import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/router/guards.dart';
 
 class ChoiceLuxCarsApp extends ConsumerStatefulWidget {
   const ChoiceLuxCarsApp({super.key});
@@ -74,68 +73,15 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
     return GoRouter(
       initialLocation: '/login',
       redirect: (context, state) {
-        // Handle authentication and role-based routing
-        if (authState.isLoading) {
-          return null; // Still loading, don't redirect
-        }
-
-        // Check for errors first
-        if (authState.hasError) {
-          return null; // Don't redirect on error, let the UI handle it
-        }
-
-                 final isAuthenticated = authState.value != null;
-         final isLoginRoute = state.matchedLocation == '/login';
-         final isSignupRoute = state.matchedLocation == '/signup';
-         final isForgotPasswordRoute = state.matchedLocation == '/forgot-password';
-         final isResetPasswordRoute = state.matchedLocation == '/reset-password';
-         final isPendingApprovalRoute = state.matchedLocation == '/pending-approval';
-
-         // If not authenticated, redirect to login (except for auth routes)
-         if (!isAuthenticated) {
-           if (isLoginRoute || isSignupRoute || isForgotPasswordRoute) {
-             return null; // Allow access to auth routes
-           }
-           return '/login';
-         }
-
-         // If authenticated, check role
-         if (isAuthenticated && userProfile != null) {
-           final userRole = userProfile.role;
-           final isUnassigned = userRole == null || userRole == 'unassigned';
-
-           // If user is unassigned, redirect to pending approval (except for pending approval route)
-           if (isUnassigned) {
-             if (isPendingApprovalRoute) {
-               return null; // Allow access to pending approval route
-             }
-             return '/pending-approval';
-           }
-
-           // If user is assigned but on auth routes, redirect to dashboard
-           if (isLoginRoute || isSignupRoute || isForgotPasswordRoute || isPendingApprovalRoute) {
-             return '/';
-           }
-         }
-
-                  // Check if user is in password recovery mode
-         if (authNotifier.isPasswordRecovery && isAuthenticated) {
-           // If user is in password recovery and not on reset password page, redirect there
-           if (!isResetPasswordRoute) {
-             Log.d('Router - Redirecting to reset password due to password recovery state');
-             return '/reset-password';
-           }
-           // Don't clear the recovery state here - let the reset password screen handle it
-           // after successful password reset or when user navigates away
-           return null; // Allow access to reset password page
-         }
-
-         // Allow access to reset-password route for authenticated users (password recovery flow)
-         if (isResetPasswordRoute && isAuthenticated) {
-           return null;
-         }
-
-         return null; // No redirect needed
+        // Use router guards for cleaner, more maintainable logic
+        return RouterGuards.guardRoute(
+          user: authState.value,
+          currentRoute: state.matchedLocation,
+          isLoading: authState.isLoading,
+          hasError: authState.hasError,
+          isPasswordRecovery: authNotifier.isPasswordRecovery,
+          userRole: userProfile?.role,
+        );
       },
       routes: [
         // Authentication routes

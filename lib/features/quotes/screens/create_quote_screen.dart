@@ -272,16 +272,16 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           final vehiclesState = ref.watch(vehiclesProvider);
           final users = ref.watch(usersProvider);
           
-          if (vehiclesState.isLoading || users.isEmpty) {
-            return _buildMobileLoadingState(isMobile, isSmallMobile);
-          }
-          
-          if (vehiclesState.error != null) {
-            return _buildErrorState(vehiclesState.error!, isMobile, isSmallMobile);
-          }
-          
           return clientsAsync.when(
-            data: (clients) => _buildForm(clients, vehiclesState.vehicles, users, isMobile, isSmallMobile),
+            data: (clients) => vehiclesState.when(
+              data: (vehicles) => users.when(
+                data: (usersList) => _buildForm(clients, vehicles, usersList, isMobile, isSmallMobile),
+                loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
+                error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
+              ),
+              loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
+              error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
+            ),
             loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
             error: (error, stack) => _buildErrorState(error, isMobile, isSmallMobile),
           );
@@ -583,7 +583,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             onPressed: () {
               // Refresh data
               ref.invalidate(vehiclesProvider);
-              ref.invalidate(clientsNotifierProvider);
+              ref.invalidate(clientsProvider);
             },
             icon: Icon(
               Icons.refresh,
@@ -874,7 +874,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
                   ),
                 ),
-                const SizedBox(width: isSmallMobile ? 8 : 12),
+                SizedBox(width: isSmallMobile ? 8 : 12),
                 Text(
                   'Loading agents...',
                   style: TextStyle(
@@ -902,7 +902,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   color: ChoiceLuxTheme.errorColor,
                   size: isSmallMobile ? 18 : isMobile ? 20 : 24,
                 ),
-                const SizedBox(width: isSmallMobile ? 8 : 12),
+                SizedBox(width: isSmallMobile ? 8 : 12),
                 Expanded(
                   child: Text(
                     'Error loading agents',
@@ -933,7 +933,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        const SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
+        SizedBox(height: isSmallMobile ? 4 : isMobile ? 6 : 8),
         _buildResponsiveDropdown(
           value: _selectedVehicleId,
           hintText: 'Select a vehicle',
@@ -1433,7 +1433,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               minimumSize: Size(0, isSmallMobile ? 44 : isMobile ? 48 : 52),
             ),
             child: _isSubmitting
-                ? const SizedBox(
+                ? SizedBox(
                     height: isSmallMobile ? 18 : isMobile ? 20 : 22,
                     width: isSmallMobile ? 18 : isMobile ? 20 : 22,
                     child: CircularProgressIndicator(

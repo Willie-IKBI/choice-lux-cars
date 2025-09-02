@@ -119,8 +119,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     
     try {
       // Load the job data
-      final jobs = ref.read(jobsProvider);
-      final job = jobs.firstWhere((j) => j.id == widget.jobId);
+      final jobsState = ref.read(jobsProvider);
+      if (!jobsState.hasValue) {
+        throw Exception('Jobs not loaded');
+      }
+      final job = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
       
       // Populate form fields
       _selectedClientId = job.clientId;
@@ -200,8 +203,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       
       if (isEditing) {
         // Update existing job
-        final jobs = ref.read(jobsProvider);
-        final existingJob = jobs.firstWhere((j) => j.id == widget.jobId);
+        final jobsState = ref.read(jobsProvider);
+        if (!jobsState.hasValue) {
+          throw Exception('Jobs not loaded');
+        }
+        final existingJob = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
         
         // Check if driver is being changed
         final isDriverChanged = _selectedDriverId != existingJob.driverId;
@@ -295,7 +301,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           // Use a small delay to ensure SnackBar is shown before navigation
           await Future.delayed(const Duration(milliseconds: 100));
           
-          if (mounted) {
+          if (mounted && createdJob != null && createdJob['id'] != null) {
             // Navigate to trip management screen for Step 2
             context.go('/jobs/${createdJob['id']}/trip-management');
           }
@@ -342,7 +348,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           final vehiclesState = ref.watch(vehiclesProvider);
           final users = ref.watch(usersProvider);
           
-          if (vehiclesState.isLoading || users.isEmpty) {
+          if (vehiclesState.isLoading || !users.hasValue) {
             return const Center(
               child: CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
@@ -370,8 +376,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           
           return clientsAsync.when(
             data: (clients) {
-              final vehicles = vehiclesState.vehicles;
-              final allUsers = users.toList(); // Show all users regardless of role
+              final vehicles = vehiclesState.value ?? [];
+              final allUsers = users.value ?? []; // Show all users regardless of role
               
               return Form(
                 key: _formKey,

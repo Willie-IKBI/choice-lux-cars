@@ -66,10 +66,14 @@ class AgentsRepository {
     try {
       Log.d('Updating agent: ${agent.id}');
       
+      if (agent.id == null) {
+        return const Result.failure(UnknownException('Agent ID is required for update'));
+      }
+      
       await _supabase
           .from('agents')
           .update(agent.toJson())
-          .eq('id', agent.id);
+          .eq('id', agent.id!);
 
       Log.d('Agent updated successfully');
       return const Result.success(null);

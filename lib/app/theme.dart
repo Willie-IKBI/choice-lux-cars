@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:choice_lux_cars/app/theme_tokens.dart';
 
 class ChoiceLuxTheme {
   // Luxury brand colors from design.md
@@ -304,6 +305,14 @@ class ChoiceLuxTheme {
         dayOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
         yearOverlayColor: MaterialStateProperty.all(richGold.withOpacity(0.1)),
       ),
+      extensions: [
+        const AppTokens(
+          brandGold: richGold,
+          brandBlack: jetBlack,
+          radiusMd: 12.0,
+          spacing: 16.0,
+        ),
+      ],
     );
   }
 

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
 
 class DashboardCard extends StatefulWidget {
   final IconData icon;
@@ -66,7 +67,7 @@ class _DashboardCardState extends State<DashboardCard>
 
   @override
   Widget build(BuildContext context) {
-    final iconColor = widget.iconColor ?? ChoiceLuxTheme.richGold;
+    final iconColor = widget.iconColor ?? context.brandGold;
     final backgroundColor = widget.backgroundColor ?? ChoiceLuxTheme.charcoalGray;
     
     // Responsive sizing based on screen width
@@ -86,7 +87,7 @@ class _DashboardCardState extends State<DashboardCard>
             ? const EdgeInsets.all(16.0)
             : const EdgeInsets.all(24.0);
     final titleSpacing = isSmallMobile ? 8.0 : isMobile ? 10.0 : 16.0;
-    final borderRadius = isMobile ? 12.0 : 20.0;
+    final borderRadius = isMobile ? context.radiusMd : 20.0;
 
     return MouseRegion(
       onEnter: (_) => _onHover(true),

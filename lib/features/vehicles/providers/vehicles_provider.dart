@@ -149,6 +149,11 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
   Future<void> refresh() async {
     ref.invalidateSelf();
   }
+
+  /// Fetch vehicles manually (for UI refresh)
+  Future<void> fetchVehicles() async {
+    ref.invalidateSelf();
+  }
 }
 
 /// Provider for VehiclesNotifier using AsyncNotifierProvider

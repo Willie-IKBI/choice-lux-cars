@@ -65,10 +65,14 @@ class ClientsRepository {
     try {
       Log.d('Updating client: ${client.id}');
       
+      if (client.id == null) {
+        return const Result.failure(UnknownException('Client ID is required for update'));
+      }
+      
       await _supabase
           .from('clients')
           .update(client.toJson())
-          .eq('id', client.id);
+          .eq('id', client.id!);
 
       Log.d('Client updated successfully');
       return const Result.success(null);

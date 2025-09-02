@@ -186,19 +186,17 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
 }
 
 /// Notifier for managing quote transport details using AsyncNotifier
-class QuoteTransportDetailsNotifier extends AsyncNotifier<List<QuoteTransportDetail>> {
+class QuoteTransportDetailsNotifier extends FamilyAsyncNotifier<List<QuoteTransportDetail>, String> {
   late final QuotesRepository _quotesRepository;
-  late final String quoteId;
 
   @override
-  Future<List<QuoteTransportDetail>> build() async {
+  Future<List<QuoteTransportDetail>> build(String quoteId) async {
     _quotesRepository = ref.watch(quotesRepositoryProvider);
-    quoteId = ref.arg;
-    return _fetchTransportDetails();
+    return _fetchTransportDetails(quoteId);
   }
 
   // Fetch transport details for a specific quote
-  Future<List<QuoteTransportDetail>> _fetchTransportDetails() async {
+  Future<List<QuoteTransportDetail>> _fetchTransportDetails(String quoteId) async {
     try {
       final result = await _quotesRepository.fetchQuoteTransportDetails(quoteId);
       if (result.isSuccess) {
@@ -270,6 +268,11 @@ class QuoteTransportDetailsNotifier extends AsyncNotifier<List<QuoteTransportDet
 
   /// Refresh transport details data
   Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
+
+  /// Fetch transport details manually (for UI refresh)
+  Future<void> fetchTransportDetails() async {
     ref.invalidateSelf();
   }
 }

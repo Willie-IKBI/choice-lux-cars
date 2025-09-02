@@ -712,6 +712,25 @@ class _LoginScreenState extends ConsumerState<LoginScreen> with TickerProviderSt
       ),
     );
   }
+
+  /// Show error message in a snackbar
+  void _showErrorSnackBar(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Clear error messages from the UI
+  void _clearErrorMessages() {
+    // Clear any error states in the form
+    setState(() {
+      // Reset any error-related state variables if needed
+    });
+  }
 }
 
 class BackgroundPatternPainter extends CustomPainter {

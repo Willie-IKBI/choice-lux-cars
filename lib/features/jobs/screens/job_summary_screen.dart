@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
@@ -62,17 +63,24 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     
     try {
       // Try to find job in local state first
-      final jobs = ref.read(jobsProvider);
+      final jobsState = ref.read(jobsProvider);
       Job? job;
       
-      try {
-        job = jobs.firstWhere((job) => job.id == widget.jobId);
-        Log.d('Found job ${widget.jobId} in local state');
-      } catch (e) {
+      if (jobsState.hasValue) {
+        try {
+          job = jobsState.value!.firstWhere((job) => job.id == widget.jobId);
+          Log.d('Found job ${widget.jobId} in local state');
+        } catch (e) {
+          Log.d('Job ${widget.jobId} not found in local state');
+        }
+      }
+      
+      if (job == null) {
         Log.d('Job ${widget.jobId} not found in local state, fetching from database...');
         // If not found locally, fetch from database
-        final fetchedJob = await ref.read(jobsProvider.notifier).fetchJobById(int.parse(widget.jobId));
+        final fetchedJob = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId);
         if (fetchedJob != null) {
+          job = fetchedJob;
           Log.d('Successfully fetched job ${widget.jobId} from database');
         } else {
           Log.d('Job ${widget.jobId} not found in database');
@@ -84,12 +92,23 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       _job = job;
       
-      // Load trips for this job using the tripsProvider
+      // Load trips for this job using the tripsByJobProvider
       Log.d('Loading trips for job ${widget.jobId}...');
-      await ref.read(tripsProvider.notifier).fetchTripsForJob(int.parse(widget.jobId));
-      final trips = ref.read(tripsProvider);
-      _trips = trips;
-      Log.d('Loaded ${trips.length} trips for job ${widget.jobId}');
+      try {
+        final tripsNotifier = ref.read(tripsByJobProvider(widget.jobId).notifier);
+        await tripsNotifier.refresh();
+        final tripsState = ref.read(tripsByJobProvider(widget.jobId));
+        if (tripsState.hasValue) {
+          _trips = tripsState.value!;
+          Log.d('Loaded ${_trips.length} trips for job ${widget.jobId}');
+        } else {
+          _trips = [];
+          Log.d('No trips found for job ${widget.jobId}');
+        }
+      } catch (e) {
+        Log.e('Error loading trips: $e');
+        _trips = [];
+      }
       
       // Load step completion times
       await _loadStepCompletionData();
@@ -511,7 +530,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Widget _buildJobDetailsContent() {
     return Column(
       children: [
-        _buildDetailRow('Job ID', _job!.id, Icons.tag),
+        _buildDetailRow('Job ID', _job!.id.toString(), Icons.tag),
         _buildDetailRow('Status', _getStatusText(_job!.status), Icons.info),
         _buildDetailRow('Job Start Date', _formatDate(_job!.jobStartDate), Icons.calendar_today),
         _buildDetailRow('Order Date', _formatDate(_job!.orderDate), Icons.schedule),
@@ -1420,7 +1439,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       
       Log.d('Calling jobsProvider.confirmJob...');
       // Confirm the job using the single source of truth
-      await ref.read(jobsProvider.notifier).confirmJob(int.parse(widget.jobId), ref);
+      await ref.read(jobsProvider.notifier).confirmJob(widget.jobId);
       Log.d('jobsProvider.confirmJob completed successfully');
       
       // Refresh all jobs to help with state synchronization

@@ -236,8 +236,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     }
   }
 
-  /// Refresh jobs data
-  Future<void> refresh() async {
+  /// Refresh jobs data (alias for refresh)
+  Future<void> refreshJobs() async {
     ref.invalidateSelf();
   }
 
@@ -251,6 +251,55 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
            userRole == 'manager' ||
            userRole == 'driver_manager' ||
            userRole == 'drivermanager';
+  }
+
+  /// Fetch a single job by ID
+  Future<Job?> fetchJobById(String jobId) async {
+    try {
+      Log.d('Fetching job by ID: $jobId');
+      
+      final result = await _jobsRepository.fetchJobById(jobId);
+      
+      if (result.isSuccess) {
+        final job = result.data;
+        Log.d('Job fetched successfully: ${job?.passengerName}');
+        return job;
+      } else {
+        Log.e('Error fetching job by ID: ${result.error!.message}');
+        return null;
+      }
+    } catch (error) {
+      Log.e('Error fetching job by ID: $error');
+      return null;
+    }
+  }
+
+  /// Confirm a job (change status to confirmed)
+  Future<void> confirmJob(String jobId) async {
+    try {
+      Log.d('Confirming job: $jobId');
+      
+      final result = await _jobsRepository.updateJobStatus(jobId, 'confirmed');
+      
+      if (result.isSuccess) {
+        // Update local state optimistically
+        final currentJobs = state.value ?? [];
+        final updatedJobs = currentJobs.map((job) {
+          if (job.id == jobId) {
+            return job.copyWith(status: 'confirmed');
+          }
+          return job;
+        }).toList();
+        state = AsyncValue.data(updatedJobs);
+        Log.d('Job confirmed successfully');
+      } else {
+        Log.e('Error confirming job: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error confirming job: $error');
+      return null;
+    }
   }
 }
 

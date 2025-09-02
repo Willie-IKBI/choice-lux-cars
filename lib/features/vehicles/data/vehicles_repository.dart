@@ -67,10 +67,14 @@ class VehiclesRepository {
     try {
       Log.d('Updating vehicle: ${vehicle.id}');
       
+      if (vehicle.id == null) {
+        return const Result.failure(UnknownException('Vehicle ID is required for update'));
+      }
+      
       await _supabase
           .from('vehicles')
           .update(vehicle.toJson())
-          .eq('id', vehicle.id);
+          .eq('id', vehicle.id!);
 
       Log.d('Vehicle updated successfully');
       return const Result.success(null);

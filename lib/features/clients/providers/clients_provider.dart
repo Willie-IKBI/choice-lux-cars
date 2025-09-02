@@ -152,15 +152,15 @@ class InactiveClientsNotifier extends AsyncNotifier<List<Client>> {
   }
 }
 
-/// Notifier for managing client search using AsyncNotifier
-class ClientSearchNotifier extends AsyncNotifier<List<Client>> {
+/// Notifier for managing client search using FamilyAsyncNotifier
+class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
   late final ClientsRepository _clientsRepository;
   late final String query;
 
   @override
-  Future<List<Client>> build() async {
+  Future<List<Client>> build(String query) async {
     _clientsRepository = ref.watch(clientsRepositoryProvider);
-    query = ref.arg;
+    this.query = query;
     
     if (query.isEmpty) {
       // If query is empty, return all active clients
@@ -181,7 +181,7 @@ class ClientSearchNotifier extends AsyncNotifier<List<Client>> {
       if (result.isSuccess) {
         // Filter out inactive clients from search results
         final activeClients = result.data!
-            .where((client) => client.status != 'inactive')
+            .where((client) => client.status != ClientStatus.inactive)
             .toList();
         Log.d('Found ${activeClients.length} active clients for query: $query');
         return activeClients;
@@ -201,15 +201,15 @@ class ClientSearchNotifier extends AsyncNotifier<List<Client>> {
   }
 }
 
-/// Notifier for managing single client using AsyncNotifier
-class SingleClientNotifier extends AsyncNotifier<Client?> {
+/// Notifier for managing single client using FamilyAsyncNotifier
+class SingleClientNotifier extends FamilyAsyncNotifier<Client?, String> {
   late final ClientsRepository _clientsRepository;
   late final String clientId;
 
   @override
-  Future<Client?> build() async {
+  Future<Client?> build(String clientId) async {
     _clientsRepository = ref.watch(clientsRepositoryProvider);
-    clientId = ref.arg;
+    this.clientId = clientId;
     return _fetchClientById();
   }
 
@@ -239,15 +239,15 @@ class SingleClientNotifier extends AsyncNotifier<Client?> {
   }
 }
 
-/// Notifier for managing client with agents using AsyncNotifier
-class ClientWithAgentsNotifier extends AsyncNotifier<Map<String, dynamic>?> {
+/// Notifier for managing client with agents using FamilyAsyncNotifier
+class ClientWithAgentsNotifier extends FamilyAsyncNotifier<Map<String, dynamic>?, String> {
   late final ClientsRepository _clientsRepository;
   late final String clientId;
 
   @override
-  Future<Map<String, dynamic>?> build() async {
+  Future<Map<String, dynamic>?> build(String clientId) async {
     _clientsRepository = ref.watch(clientsRepositoryProvider);
-    clientId = ref.arg;
+    this.clientId = clientId;
     return _fetchClientWithAgents();
   }
 
@@ -284,11 +284,10 @@ final clientsProvider = AsyncNotifierProvider<ClientsNotifier, List<Client>>(() 
 final inactiveClientsProvider = AsyncNotifierProvider<InactiveClientsNotifier, List<Client>>(() => InactiveClientsNotifier());
 
 /// Provider for client search using AsyncNotifierProvider.family
-final clientSearchProvider = AsyncNotifierProvider.family<ClientSearchNotifier, List<Client>, String>((query) => ClientSearchNotifier());
+final clientSearchProvider = AsyncNotifierProvider.family<ClientSearchNotifier, List<Client>, String>(ClientSearchNotifier.new);
 
 /// Provider for single client using AsyncNotifierProvider.family
-final clientProvider = AsyncNotifierProvider.family<SingleClientNotifier, Client?, String>((clientId) => SingleClientNotifier());
+final clientProvider = AsyncNotifierProvider.family<SingleClientNotifier, Client?, String>(SingleClientNotifier.new);
 
 /// Provider for client with agents using AsyncNotifierProvider.family
-final clientWithAgentsProvider = AsyncNotifierProvider.family<ClientWithAgentsNotifier, Map<String, dynamic>?, String>((clientId) => ClientWithAgentsNotifier()); 
-}); 
+final clientWithAgentsProvider = AsyncNotifierProvider.family<ClientWithAgentsNotifier, Map<String, dynamic>?, String>(ClientWithAgentsNotifier.new); 

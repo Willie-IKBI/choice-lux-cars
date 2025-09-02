@@ -90,7 +90,7 @@ class SupabaseService {
   Stream<AuthState> get authStateChanges => supabase.auth.onAuthStateChange;
 
   /// Listen to user changes
-  Stream<User?> get userChanges => supabase.auth.onUserChange;
+  Stream<User?> get userChanges => supabase.auth.onAuthStateChange.map((event) => event.session?.user);
 
   /// Get user by ID from auth (if they exist in auth)
   Future<User?> getUserById(String userId) async {
@@ -109,5 +109,128 @@ class SupabaseService {
       Log.e('Error getting user by ID: $error');
       return null;
     }
+  }
+
+  /// Sign in with email and password
+  Future<AuthResponse> signIn({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      Log.d('Signing in user: $email');
+      final response = await supabase.auth.signInWithPassword(
+        email: email,
+        password: password,
+      );
+      Log.d('User signed in successfully: ${response.user?.id}');
+      return response;
+    } catch (error) {
+      Log.e('Error signing in: $error');
+      rethrow;
+    }
+  }
+
+  /// Sign up with email and password
+  Future<AuthResponse> signUp({
+    required String email,
+    required String password,
+    Map<String, dynamic>? userData,
+  }) async {
+    try {
+      Log.d('Signing up user: $email');
+      final response = await supabase.auth.signUp(
+        email: email,
+        password: password,
+        data: userData,
+      );
+      Log.d('User signed up successfully: ${response.user?.id}');
+      return response;
+    } catch (error) {
+      Log.e('Error signing up: $error');
+      rethrow;
+    }
+  }
+
+  /// Reset password
+  Future<void> resetPassword({required String email}) async {
+    try {
+      Log.d('Resetting password for: $email');
+      await supabase.auth.resetPasswordForEmail(email);
+      Log.d('Password reset email sent successfully');
+    } catch (error) {
+      Log.e('Error resetting password: $error');
+      rethrow;
+    }
+  }
+
+  /// Update password
+  Future<void> updatePassword({required String newPassword}) async {
+    try {
+      Log.d('Updating password for user: ${currentUser?.id}');
+      await supabase.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
+      Log.d('Password updated successfully');
+    } catch (error) {
+      Log.e('Error updating password: $error');
+      rethrow;
+    }
+  }
+
+  // ===== BACKWARDS-COMPAT SHIMS =====
+  // These methods provide compatibility with existing code while we transition to repositories
+  // They are best-effort queries; adjust table/column names if needed
+
+  /// Get jobs by client (compat shim)
+  Future<List<Map<String, dynamic>>> getJobsByClient(String clientId) async {
+    final c = Supabase.instance.client;
+    return await c.from('jobs').select().eq('client_id', clientId);
+  }
+
+  /// Get completed jobs by client (compat shim)
+  Future<List<Map<String, dynamic>>> getCompletedJobsByClient(String clientId) async {
+    final c = Supabase.instance.client;
+    return await c.from('jobs').select().eq('client_id', clientId).eq('job_status', 'completed');
+  }
+
+  /// Get quotes by client (compat shim)
+  Future<List<Map<String, dynamic>>> getQuotesByClient(String clientId) async {
+    final c = Supabase.instance.client;
+    return await c.from('quotes').select().eq('client_id', clientId);
+  }
+
+  /// Get completed jobs revenue by client (compat shim)
+  Future<double> getCompletedJobsRevenueByClient(String clientId) async {
+    final c = Supabase.instance.client;
+    final rows = await c.from('jobs').select('amount, job_status').eq('client_id', clientId).eq('job_status', 'completed');
+    return rows.fold<double>(0.0, (sum, r) => sum + ((r['amount'] ?? 0) as num).toDouble());
+  }
+
+  /// Get client by ID (compat shim)
+  Future<Map<String, dynamic>?> getClient(String clientId) async {
+    final c = Supabase.instance.client;
+    final rows = await c.from('clients').select().eq('id', clientId).limit(1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Get agent by ID (compat shim)
+  Future<Map<String, dynamic>?> getAgent(String agentId) async {
+    final c = Supabase.instance.client;
+    final rows = await c.from('agents').select().eq('id', agentId).limit(1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Get vehicle by ID (compat shim)
+  Future<Map<String, dynamic>?> getVehicle(String vehicleId) async {
+    final c = Supabase.instance.client;
+    final rows = await c.from('vehicles').select().eq('id', vehicleId).limit(1);
+    return rows.isEmpty ? null : rows.first;
+  }
+
+  /// Get user by ID (compat shim)
+  Future<Map<String, dynamic>?> getUser(String userId) async {
+    final c = Supabase.instance.client;
+    final rows = await c.from('users').select().eq('id', userId).limit(1);
+    return rows.isEmpty ? null : rows.first;
   }
 } 

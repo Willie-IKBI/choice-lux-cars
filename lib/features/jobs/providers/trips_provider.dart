@@ -64,7 +64,7 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
       
       if (result.isSuccess) {
         // Refresh trips list
-        await fetchTripsForJob(trip.jobId);
+        await fetchTripsForJob(trip.jobId.toString());
         Log.d('Trip created successfully');
         return result.data!;
       } else {
@@ -138,7 +138,7 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
       
       if (result.isSuccess) {
         // Refresh trips for the job
-        await fetchTripsForJob(jobId);
+        await fetchTripsForJob(jobId.toString());
         Log.d('Trip deleted successfully');
       } else {
         Log.e('Error deleting trip: ${result.error!.message}');
@@ -200,10 +200,54 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
   Future<void> refresh() async {
     ref.invalidateSelf();
   }
+
+  /// Add a new trip (alias for createTrip)
+  Future<Map<String, dynamic>> addTrip(Trip trip) async {
+    return createTrip(trip);
+  }
+}
+
+/// Notifier for managing trips by job using FamilyAsyncNotifier
+class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
+  late final TripsRepository _tripsRepository;
+  late final String jobId;
+
+  @override
+  Future<List<Trip>> build(String jobId) async {
+    _tripsRepository = ref.watch(tripsRepositoryProvider);
+    this.jobId = jobId;
+    return _fetchTripsForJob();
+  }
+
+  /// Fetch trips for a specific job from the repository
+  Future<List<Trip>> _fetchTripsForJob() async {
+    try {
+      Log.d('Fetching trips for job: $jobId');
+      
+      final result = await _tripsRepository.fetchTripsForJob(jobId);
+      
+      if (result.isSuccess) {
+        final trips = result.data!;
+        Log.d('Fetched ${trips.length} trips for job: $jobId');
+        return trips;
+      } else {
+        Log.e('Error fetching trips for job: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error fetching trips for job: $error');
+      rethrow;
+    }
+  }
+
+  /// Refresh trips by job data
+  Future<void> refresh() async {
+    ref.invalidateSelf();
+  }
 }
 
 /// Provider for TripsNotifier using AsyncNotifierProvider
 final tripsProvider = AsyncNotifierProvider<TripsNotifier, List<Trip>>(() => TripsNotifier());
 
 /// Async provider for trips by job that exposes AsyncValue<List<Trip>>
-final tripsByJobProvider = AsyncNotifierProvider.family<TripsNotifier, List<Trip>, String>((jobId) => TripsNotifier());
+final tripsByJobProvider = AsyncNotifierProvider.family<TripsByJobNotifier, List<Trip>, String>(TripsByJobNotifier.new);

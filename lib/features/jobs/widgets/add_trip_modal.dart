@@ -103,7 +103,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
         amount: double.tryParse(_amountController.text) ?? 0.0,
       );
 
-      await ref.read(tripsProvider.notifier).addTrip(newTrip);
+              await ref.read(tripsByJobProvider(jobId).notifier).addTrip(newTrip);
 
       if (mounted) {
         Navigator.of(context).pop();

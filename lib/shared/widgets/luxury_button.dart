@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
 
 /// Shared luxury button widget to eliminate duplicate button building functions
 class LuxuryButton extends StatelessWidget {
@@ -33,14 +34,14 @@ class LuxuryButton extends StatelessWidget {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
+              context.brandGold,
+              context.brandGold.withValues(alpha: 0.9),
             ],
           ),
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(context.radiusMd),
           boxShadow: [
             BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: context.brandGold.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -69,9 +70,9 @@ class LuxuryButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: padding ?? EdgeInsets.symmetric(horizontal: context.spacing, vertical: context.spacing * 0.75),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(context.radiusMd),
             ),
           ),
         ),
@@ -82,28 +83,28 @@ class LuxuryButton extends StatelessWidget {
         height: height,
         decoration: BoxDecoration(
           color: ChoiceLuxTheme.charcoalGray,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(context.radiusMd),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: context.brandGold.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
         child: ElevatedButton.icon(
           onPressed: isLoading ? null : onPressed,
           icon: isLoading 
-            ? const SizedBox(
+            ? SizedBox(
                 width: 20,
                 height: 20,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
+                  valueColor: AlwaysStoppedAnimation<Color>(context.brandGold),
                 ),
               )
-            : Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
+            : Icon(icon, color: context.brandGold, size: 20),
           label: Text(
             isLoading ? 'Processing...' : label,
             style: TextStyle(
-              color: ChoiceLuxTheme.richGold,
+              color: context.brandGold,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -111,9 +112,9 @@ class LuxuryButton extends StatelessWidget {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: padding ?? const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+            padding: padding ?? EdgeInsets.symmetric(horizontal: context.spacing, vertical: context.spacing * 0.75),
             shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+              borderRadius: BorderRadius.circular(context.radiusMd),
             ),
           ),
         ),

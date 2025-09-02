@@ -189,6 +189,86 @@ class JobsRepository {
     }
   }
 
+  /// Get completed jobs by client
+  Future<Result<List<Job>>> getCompletedJobsByClient(String clientId) async {
+    try {
+      Log.d('Fetching completed jobs for client: $clientId');
+      
+      final response = await _supabase
+          .from('jobs')
+          .select('*')
+          .eq('client_id', clientId)
+          .eq('job_status', 'completed')
+          .order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} completed jobs for client: $clientId');
+      
+      final jobs = response.map((json) => Job.fromJson(json)).toList();
+      return Result.success(jobs);
+    } catch (error) {
+      Log.e('Error fetching completed jobs by client: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Get completed jobs revenue by client
+  Future<Result<double>> getCompletedJobsRevenueByClient(String clientId) async {
+    try {
+      Log.d('Fetching completed jobs revenue for client: $clientId');
+      
+      final response = await _supabase
+          .from('jobs')
+          .select('amount')
+          .eq('client_id', clientId)
+          .eq('job_status', 'completed')
+          .not('amount', 'is', null);
+
+      Log.d('Fetched ${response.length} completed jobs with revenue for client: $clientId');
+      
+      double totalRevenue = 0.0;
+      for (final row in response) {
+        final amount = row['amount'];
+        if (amount != null) {
+          if (amount is num) {
+            totalRevenue += amount.toDouble();
+          } else if (amount is String) {
+            totalRevenue += double.tryParse(amount) ?? 0.0;
+          }
+        }
+      }
+
+      Log.d('Total revenue for client $clientId: $totalRevenue');
+      return Result.success(totalRevenue);
+    } catch (error) {
+      Log.e('Error fetching completed jobs revenue by client: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Fetch a single job by ID
+  Future<Result<Job?>> fetchJobById(String jobId) async {
+    try {
+      Log.d('Fetching job by ID: $jobId');
+      
+      final response = await _supabase
+          .from('jobs')
+          .select()
+          .eq('id', jobId)
+          .maybeSingle();
+
+      if (response != null) {
+        Log.d('Job found: ${response['passenger_name']}');
+        return Result.success(Job.fromJson(response));
+      } else {
+        Log.d('Job not found: $jobId');
+        return const Result.success(null);
+      }
+    } catch (error) {
+      Log.e('Error fetching job by ID: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Map Supabase errors to appropriate AppException types
   Result<T> _mapSupabaseError<T>(dynamic error) {
     if (error is AuthException) {

@@ -584,7 +584,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
 
       if (widget.client == null) {
         // Add new client
-        await ref.read(clientsNotifierProvider.notifier).addClient(client);
+        await ref.read(clientsProvider.notifier).addClient(client);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -595,7 +595,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         }
       } else {
         // Update existing client
-        await ref.read(clientsNotifierProvider.notifier).updateClient(client);
+        await ref.read(clientsProvider.notifier).updateClient(client);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

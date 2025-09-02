@@ -155,7 +155,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
         amount: double.tryParse(_amountController.text) ?? 0.0,
       );
 
-      await ref.read(tripsProvider.notifier).updateTrip(updatedTrip);
+              await ref.read(tripsByJobProvider(jobId).notifier).updateTrip(updatedTrip);
       
       if (mounted) {
         widget.onTripUpdated(updatedTrip);

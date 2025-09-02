@@ -38,3 +38,4 @@ final clientStatsProvider = FutureProvider.family<Map<String, dynamic>, String>(
     'totalRevenue': revenue,
   };
 });
+

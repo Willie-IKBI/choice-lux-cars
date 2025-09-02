@@ -333,7 +333,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           ElevatedButton(
             onPressed: () {
               Navigator.of(context).pop();
-              ref.read(clientsNotifierProvider.notifier).restoreClient(client.id.toString());
+              ref.read(clientsProvider.notifier).restoreClient(client.id.toString());
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
                   content: Row(

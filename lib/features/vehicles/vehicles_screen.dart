@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../vehicles/providers/vehicles_provider.dart';
-import '../vehicles/widgets/vehicle_card.dart';
 import 'package:go_router/go_router.dart';
-import '../../shared/widgets/luxury_app_bar.dart';
-import '../../app/theme.dart';
-import '../auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
+import 'package:choice_lux_cars/features/vehicles/widgets/vehicle_card.dart';
+import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({Key? key}) : super(key: key);
@@ -26,7 +27,16 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(vehiclesProvider);
-    final vehicles = state.vehicles.where((v) => v.make.toLowerCase().contains(_search.toLowerCase())).toList();
+    
+    return state.when(
+      loading: () => _buildLoadingState(),
+      error: (error, stackTrace) => _buildErrorState(error),
+      data: (vehicles) => _buildContent(vehicles),
+    );
+  }
+
+  Widget _buildContent(List<Vehicle> vehicles) {
+    final filteredVehicles = vehicles.where((v) => v.make.toLowerCase().contains(_search.toLowerCase())).toList();
     
     // Responsive breakpoints - consistent with our design system
     final screenWidth = MediaQuery.of(context).size.width;
@@ -63,7 +73,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 size: 20,
               ),
             ),
-            onPressed: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
+            onPressed: () => ref.read(vehiclesProvider.notifier).refresh(),
             tooltip: 'Refresh',
           ),
         ],
@@ -80,21 +90,16 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
                 // Responsive search bar
                 _buildResponsiveSearchBar(isMobile, isSmallMobile),
                 SizedBox(height: isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0),
-                if (state.isLoading)
-                  Expanded(child: _buildMobileLoadingState(isMobile, isSmallMobile)),
-                if (state.error != null)
-                  Expanded(child: Center(child: Text(state.error!, style: const TextStyle(color: Colors.red)))),
-                if (!state.isLoading && state.error == null)
-                  Expanded(
-                    child: _buildResponsiveVehicleGrid(
-                      vehicles, 
-                      isMobile, 
-                      isSmallMobile, 
-                      isTablet, 
-                      isDesktop, 
-                      isLargeDesktop
-                    ),
+                Expanded(
+                  child: _buildResponsiveVehicleGrid(
+                    filteredVehicles, 
+                    isMobile, 
+                    isSmallMobile, 
+                    isTablet, 
+                    isDesktop, 
+                    isLargeDesktop
                   ),
+                ),
               ],
             ),
           ),
@@ -159,7 +164,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   }
 
   Widget _buildResponsiveVehicleGrid(
-    List vehicles, 
+    List<Vehicle> vehicles, 
     bool isMobile, 
     bool isSmallMobile, 
     bool isTablet, 
@@ -201,7 +206,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: () => ref.read(vehiclesProvider.notifier).fetchVehicles(),
+      onRefresh: () => ref.read(vehiclesProvider.notifier).refresh(),
       color: ChoiceLuxTheme.richGold,
       backgroundColor: ChoiceLuxTheme.charcoalGray,
       child: GridView.builder(
@@ -289,5 +294,21 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         elevation: 6,
       );
     }
+  }
+
+  Widget _buildLoadingState() {
+    return const Scaffold(
+      body: Center(
+        child: CircularProgressIndicator(),
+      ),
+    );
+  }
+
+  Widget _buildErrorState(Object error) {
+    return Scaffold(
+      body: Center(
+        child: Text('Error: $error'),
+      ),
+    );
   }
 } 

@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 
 
@@ -56,7 +57,8 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   Future<void> _loadTrips() async {
     setState(() => _isLoading = true);
     try {
-      await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).fetchTripsForJob(widget.jobId.toString());
+      // Refresh the trips for this job
+      await ref.read(tripsByJobProvider(widget.jobId).notifier).refresh();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -140,7 +142,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     try {
              final trip = Trip(
          id: _editingTrip?.id ?? '',
-         jobId: widget.jobId,
+         jobId: int.parse(widget.jobId),
         pickupDate: _selectedTripDateTime!,
         pickupLocation: _pickUpAddressController.text.trim(),
         dropoffLocation: _dropOffAddressController.text.trim(),
@@ -152,9 +154,9 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
       );
       
       if (_editingTrip != null) {
-        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).updateTrip(trip);
+        await ref.read(tripsProvider.notifier).updateTrip(trip);
       } else {
-        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).addTrip(trip);
+        await ref.read(tripsProvider.notifier).addTrip(trip);
       }
       
       if (mounted) {
@@ -212,7 +214,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     
     if (confirmed == true) {
       try {
-        await ref.read(tripsProvider(int.parse(widget.jobId)).notifier).deleteTrip(trip.id, widget.jobId.toString());
+        await ref.read(tripsProvider.notifier).deleteTrip(trip.id, widget.jobId);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
@@ -243,8 +245,8 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   }
   
   Future<void> _confirmTrips() async {
-    final trips = ref.watch(tripsProvider(int.parse(widget.jobId)));
-    if (trips.isEmpty) {
+    final tripsState = ref.read(tripsByJobProvider(widget.jobId));
+    if (!tripsState.hasValue || tripsState.value!.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Please add at least one trip before confirming'),
@@ -258,6 +260,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
       return;
     }
     
+    final trips = tripsState.value!;
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -467,15 +470,8 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   
   @override
   Widget build(BuildContext context) {
-    final trips = ref.watch(tripsProvider(int.parse(widget.jobId)));
-    final totalAmount = ref.watch(tripsProvider(int.parse(widget.jobId)).notifier).totalAmount;
+    final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
     final isMobile = MediaQuery.of(context).size.width < 768;
-    
-    // Calculate completion percentage based on trips
-    final completionPercentage = trips.isEmpty ? 0 : 100;
-    final completionMessage = trips.isEmpty 
-        ? 'Add at least one trip to complete this step'
-        : 'All trips added successfully!';
     
     return Scaffold(
       appBar: LuxuryAppBar(
@@ -486,7 +482,27 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
+          : tripsState.when(
+              loading: () => const Center(child: CircularProgressIndicator()),
+              error: (error, stackTrace) => Center(
+                child: Text('Error loading trips: $error'),
+              ),
+              data: (trips) => _buildTripsContent(trips, isMobile),
+            ),
+    );
+  }
+
+  Widget _buildTripsContent(List<Trip> trips, bool isMobile) {
+    // Calculate completion percentage based on trips
+    final completionPercentage = trips.isEmpty ? 0 : 100;
+    final completionMessage = trips.isEmpty 
+        ? 'Add at least one trip to complete this step'
+        : 'All trips added successfully!';
+    
+    // Calculate total amount
+    final totalAmount = trips.fold(0.0, (sum, trip) => sum + trip.amount);
+    
+    return SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
                 children: [

@@ -6,24 +6,25 @@ class SimpleMigrationRunner {
 
   /// Apply basic driver flow schema migrations
   static Future<void> runBasicMigrations() async {
-    Log.d('Starting basic driver flow migrations...');
-    
-    // Migration 1: Add new columns to driver_flow table
-    await _checkDriverFlowTable();
-    
-    // Migration 2: Create trip_progress table
-    await _checkTripProgressTable();
-    
-    // Migration 3: Create basic indexes
-    await _createIndexes();
-    
-    // Migration 4: Add notification columns
-    await _checkNotificationColumns();
-    
-    Log.d('✅ Basic migrations completed successfully!');
-  } catch (e) {
-    Log.e('❌ Migration failed: $e');
-  }
+    try {
+      Log.d('Starting basic driver flow migrations...');
+      
+      // Migration 1: Add new columns to driver_flow table
+      await _checkDriverFlowTable();
+      
+      // Migration 2: Create trip_progress table
+      await _checkTripProgressTable();
+      
+      // Migration 3: Create basic indexes
+      await _createIndexes();
+      
+      // Migration 4: Add notification columns
+      await _checkNotificationColumns();
+      
+      Log.d('✅ Basic migrations completed successfully!');
+    } catch (e) {
+      Log.e('❌ Migration failed: $e');
+    }
   }
 
   /// Add new columns to driver_flow table
