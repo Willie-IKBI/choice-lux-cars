@@ -236,8 +236,15 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
             // Create a placeholder job - the screen will load the actual job data
+            final int parsedJobId = (jobId is int) 
+                ? jobId as int 
+                : (int.tryParse(jobId.toString()) ?? 0);
+            
+            // Guard against invalid job ID - 0 is typically not a valid database ID
+            assert(parsedJobId > 0, 'Invalid job ID: $jobId (parsed as $parsedJobId)');
+            
             final placeholderJob = Job(
-              id: jobId,
+              id: parsedJobId,
               jobNumber: 'JOB-$jobId',
               clientId: '',
               vehicleId: '',
