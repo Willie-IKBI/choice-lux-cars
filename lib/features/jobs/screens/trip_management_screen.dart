@@ -4,7 +4,6 @@ import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
-import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
 class TripManagementScreen extends ConsumerStatefulWidget {
@@ -20,6 +19,17 @@ class TripManagementScreen extends ConsumerStatefulWidget {
 class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   List<Trip> _transportDetails = [];
   bool _isLoading = false;
+
+  // SnackBar helper methods
+  void showErrorSnackBar(BuildContext context, String message) {
+    final m = ScaffoldMessenger.maybeOf(context);
+    m?.showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  void showSuccessSnackBar(BuildContext context, String message) {
+    final m = ScaffoldMessenger.maybeOf(context);
+    m?.showSnackBar(SnackBar(content: Text(message)));
+  }
 
   @override
   void initState() {
