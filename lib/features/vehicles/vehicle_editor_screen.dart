@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -109,6 +110,25 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         backgroundColor: Colors.orange,
       ),
     );
+  }
+
+  void _retryImageLoad() {
+    if (vehicleImage != null && vehicleImage!.isNotEmpty) {
+      print('=== RETRYING IMAGE LOAD ===');
+      print('Image URL: $vehicleImage');
+      print('===========================');
+      
+      // Force rebuild to retry image loading
+      setState(() {});
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Retrying image load...'),
+          backgroundColor: Colors.blue,
+          duration: Duration(seconds: 2),
+        ),
+      );
+    }
   }
 
   bool _isValidImageHeader(List<int> header) {
@@ -405,110 +425,162 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    final isDesktop = MediaQuery.of(context).size.width > 900;
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final isTablet =
-        MediaQuery.of(context).size.width >= 600 &&
-        MediaQuery.of(context).size.width <= 900;
+  Widget _buildModernPageTitle(bool isMobile, bool isSmallMobile) {
+    return Text(
+      isEdit ? 'Edit Vehicle' : 'Add Vehicle',
+      style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+        fontWeight: FontWeight.bold,
+        color: ChoiceLuxTheme.platinumSilver,
+      ),
+    );
+  }
 
-    final content = SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 16 : 24),
-      child: Form(
-        key: _formKey,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildModernSectionHeader(String title, IconData icon, bool isMobile, bool isSmallMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const SizedBox(height: 32),
+        Row(
           children: [
-            // Header with status badge (only for desktop)
-            if (isDesktop) ...[
-              Row(children: [Expanded(child: _buildPageTitle())]),
-              const SizedBox(height: 32),
-            ],
+            Icon(icon, size: 24, color: ChoiceLuxTheme.platinumSilver),
+            const SizedBox(width: 12),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                fontWeight: FontWeight.w700,
+                fontSize: 18,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 20),
+      ],
+    );
+  }
 
-            // Vehicle details section
-            _buildSectionHeader('Vehicle Details'),
-
-            // Make and Model row
-            if (isMobile) ...[
-              TextFormField(
+  Widget _buildVehicleDetailsForm(bool isMobile, bool isSmallMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
                 initialValue: make,
                 onChanged: (value) => make = value,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Make',
                   hintText: 'Enter vehicle make',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
                 ),
                 validator: (value) =>
                     value?.isEmpty == true ? 'Make is required' : null,
               ),
-              const SizedBox(height: fieldSpacing),
-              TextFormField(
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: TextFormField(
                 initialValue: model,
                 onChanged: (value) => model = value,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Model',
                   hintText: 'Enter vehicle model',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
                 ),
                 validator: (value) =>
                     value?.isEmpty == true ? 'Model is required' : null,
               ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: make,
-                      onChanged: (value) => make = value,
-                      decoration: const InputDecoration(
-                        labelText: 'Make',
-                        hintText: 'Enter vehicle make',
-                      ),
-                      validator: (value) =>
-                          value?.isEmpty == true ? 'Make is required' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: TextFormField(
-                      initialValue: model,
-                      onChanged: (value) => model = value,
-                      decoration: const InputDecoration(
-                        labelText: 'Model',
-                        hintText: 'Enter vehicle model',
-                      ),
-                      validator: (value) =>
-                          value?.isEmpty == true ? 'Model is required' : null,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: fieldSpacing),
-
-            // Registration plate
-            TextFormField(
-              initialValue: regPlate,
-              onChanged: (value) => regPlate = value,
-              decoration: const InputDecoration(
-                labelText: 'Registration Plate',
-                hintText: 'Enter registration plate',
-              ),
-              validator: (value) => value?.isEmpty == true
-                  ? 'Registration plate is required'
-                  : null,
             ),
-            const SizedBox(height: fieldSpacing),
+          ],
+        ),
+        const SizedBox(height: fieldSpacing),
 
-            // Fuel type and status row - full width dropdowns
-            if (isMobile) ...[
-              DropdownButtonFormField<String>(
-                value:
-                    [
-                      'Petrol',
-                      'Diesel',
-                      'Hybrid',
-                      'Electric',
-                    ].contains(fuelType)
+        TextFormField(
+          initialValue: regPlate,
+          onChanged: (value) => regPlate = value,
+          decoration: InputDecoration(
+            labelText: 'Registration Plate',
+            hintText: 'Enter registration plate',
+            labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+            hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+            ),
+          ),
+          validator: (value) => value?.isEmpty == true
+              ? 'Registration plate is required'
+              : null,
+        ),
+        const SizedBox(height: fieldSpacing),
+
+        Row(
+          children: [
+            Expanded(
+              child: DropdownButtonFormField<String>(
+                value: ['Petrol', 'Diesel', 'Hybrid', 'Electric'].contains(fuelType)
                     ? fuelType
                     : 'Petrol',
                 items: const [
@@ -518,537 +590,676 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   DropdownMenuItem(value: 'Electric', child: Text('Electric')),
                 ],
                 onChanged: (v) => setState(() => fuelType = v ?? 'Petrol'),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Fuel Type',
                   hintText: 'Select fuel type',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
                 ),
               ),
-              const SizedBox(height: fieldSpacing),
-              DropdownButtonFormField<String>(
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: DropdownButtonFormField<String>(
                 value: ['Active', 'Deactivated'].contains(status)
                     ? status
                     : 'Active',
                 items: const [
                   DropdownMenuItem(value: 'Active', child: Text('Active')),
-                  DropdownMenuItem(
-                    value: 'Deactivated',
-                    child: Text('Deactivated'),
-                  ),
+                  DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
                 ],
                 onChanged: (v) => setState(() => status = v ?? 'Active'),
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'Status',
                   hintText: 'Select status',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
                 ),
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value:
-                          [
-                            'Petrol',
-                            'Diesel',
-                            'Hybrid',
-                            'Electric',
-                          ].contains(fuelType)
-                          ? fuelType
-                          : 'Petrol',
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Petrol',
-                          child: Text('Petrol'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Diesel',
-                          child: Text('Diesel'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Hybrid',
-                          child: Text('Hybrid'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Electric',
-                          child: Text('Electric'),
-                        ),
-                      ],
-                      onChanged: (v) =>
-                          setState(() => fuelType = v ?? 'Petrol'),
-                      decoration: const InputDecoration(
-                        labelText: 'Fuel Type',
-                        hintText: 'Select fuel type',
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: DropdownButtonFormField<String>(
-                      value: ['Active', 'Deactivated'].contains(status)
-                          ? status
-                          : 'Active',
-                      items: const [
-                        DropdownMenuItem(
-                          value: 'Active',
-                          child: Text('Active'),
-                        ),
-                        DropdownMenuItem(
-                          value: 'Deactivated',
-                          child: Text('Deactivated'),
-                        ),
-                      ],
-                      onChanged: (v) => setState(() => status = v ?? 'Active'),
-                      decoration: const InputDecoration(
-                        labelText: 'Status',
-                        hintText: 'Select status',
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            // Dates section
-            _buildSectionHeader('Registration & License'),
-
-            // Registration and license dates row
-            if (isMobile) ...[
-              TextFormField(
-                readOnly: true,
-                controller: TextEditingController(
-                  text: regDate != DateTime(2000, 1, 1)
-                      ? regDate.toString().split(' ')[0]
-                      : '',
-                ),
-                decoration: const InputDecoration(
-                  labelText: 'Registration Date',
-                  hintText: 'Select registration date',
-                  suffixIcon: Icon(Icons.calendar_today),
-                ),
-                onTap: () async {
-                  final date = await showDatePicker(
-                    context: context,
-                    initialDate: regDate != DateTime(2000, 1, 1)
-                        ? regDate
-                        : DateTime.now(),
-                    firstDate: DateTime(2000),
-                    lastDate: DateTime(2100),
-                  );
-                  if (date != null) {
-                    setState(() => regDate = date);
-                  }
-                },
-              ),
-              const SizedBox(height: fieldSpacing),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  TextFormField(
-                    readOnly: true,
-                    controller: TextEditingController(
-                      text: licenseExpiryDate != DateTime(2000, 1, 1)
-                          ? licenseExpiryDate.toString().split(' ')[0]
-                          : '',
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'License Expiry Date',
-                      hintText: 'Select expiry date',
-                      suffixIcon: Icon(Icons.calendar_today),
-                    ),
-                    onTap: () async {
-                      final date = await showDatePicker(
-                        context: context,
-                        initialDate: licenseExpiryDate != DateTime(2000, 1, 1)
-                            ? licenseExpiryDate
-                            : DateTime.now(),
-                        firstDate: DateTime(2000),
-                        lastDate: DateTime(2100),
-                      );
-                      if (date != null) {
-                        setState(() => licenseExpiryDate = date);
-                      }
-                    },
-                  ),
-                  const SizedBox(height: 8),
-                  _buildLicenseCountdownIndicator(),
-                ],
-              ),
-            ] else ...[
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      readOnly: true,
-                      controller: TextEditingController(
-                        text: regDate != DateTime(2000, 1, 1)
-                            ? regDate.toString().split(' ')[0]
-                            : '',
-                      ),
-                      decoration: const InputDecoration(
-                        labelText: 'Registration Date',
-                        hintText: 'Select registration date',
-                        suffixIcon: Icon(Icons.calendar_today),
-                      ),
-                      onTap: () async {
-                        final date = await showDatePicker(
-                          context: context,
-                          initialDate: regDate != DateTime(2000, 1, 1)
-                              ? regDate
-                              : DateTime.now(),
-                          firstDate: DateTime(2000),
-                          lastDate: DateTime(2100),
-                        );
-                        if (date != null) {
-                          setState(() => regDate = date);
-                        }
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        TextFormField(
-                          readOnly: true,
-                          controller: TextEditingController(
-                            text: licenseExpiryDate != DateTime(2000, 1, 1)
-                                ? licenseExpiryDate.toString().split(' ')[0]
-                                : '',
-                          ),
-                          decoration: const InputDecoration(
-                            labelText: 'License Expiry Date',
-                            hintText: 'Select expiry date',
-                            suffixIcon: Icon(Icons.calendar_today),
-                          ),
-                          onTap: () async {
-                            final date = await showDatePicker(
-                              context: context,
-                              initialDate:
-                                  licenseExpiryDate != DateTime(2000, 1, 1)
-                                  ? licenseExpiryDate
-                                  : DateTime.now(),
-                              firstDate: DateTime(2000),
-                              lastDate: DateTime(2100),
-                            );
-                            if (date != null) {
-                              setState(() => licenseExpiryDate = date);
-                            }
-                          },
-                        ),
-                        const SizedBox(height: 8),
-                        _buildLicenseCountdownIndicator(),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-
-            // Image upload section
-            _buildSectionHeader('Vehicle Image'),
-
-            Center(
-              child: Column(
-                children: [
-                  GestureDetector(
-                    onTap: vehicleImage != null
-                        ? _removeImage
-                        : _pickAndUploadImage,
-                    onLongPress: vehicleImage != null
-                        ? _pickAndUploadImage
-                        : null,
-                    child: Container(
-                      width: isMobile ? 160 : 200,
-                      height: isMobile ? 160 : 200,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey[700]!),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.2),
-                            blurRadius: 8,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: vehicleImage != null
-                            ? Stack(
-                                children: [
-                                  Image.network(
-                                    vehicleImage!,
-                                    width: isMobile ? 160 : 200,
-                                    height: isMobile ? 160 : 200,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) =>
-                                            Container(
-                                              width: isMobile ? 160 : 200,
-                                              height: isMobile ? 160 : 200,
-                                              color: Colors.grey[300],
-                                              child: Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Icon(
-                                                    Icons.error,
-                                                    size: 32,
-                                                    color: Colors.red[400],
-                                                  ),
-                                                  const SizedBox(height: 8),
-                                                  Text(
-                                                    'Image Error',
-                                                    style: TextStyle(
-                                                      fontSize: 14,
-                                                      color: Colors.red[400],
-                                                    ),
-                                                  ),
-                                                ],
-                                              ),
-                                            ),
-                                  ),
-                                ],
-                              )
-                            : Container(
-                                width: isMobile ? 160 : 200,
-                                height: isMobile ? 160 : 200,
-                                color: Colors.grey[300],
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(
-                                      Icons.add_photo_alternate,
-                                      size: isMobile ? 48 : 64,
-                                      color: Colors.grey[600],
-                                    ),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      'Tap to upload',
-                                      style: TextStyle(
-                                        fontSize: isMobile ? 12 : 14,
-                                        color: Colors.grey[600],
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  if (vehicleImage == null)
-                    SizedBox(
-                      width: isMobile ? double.infinity : null,
-                      child: ElevatedButton.icon(
-                        icon: isLoading
-                            ? const SizedBox(
-                                width: 16,
-                                height: 16,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.upload),
-                        label: Text(
-                          isLoading ? 'Uploading...' : 'Upload Image',
-                        ),
-                        onPressed: isLoading ? null : _pickAndUploadImage,
-                        style: ElevatedButton.styleFrom(
-                          minimumSize: const Size(0, 48),
-                        ),
-                      ),
-                    )
-                  else
-                    Column(
-                      children: [
-                        SizedBox(
-                          width: isMobile ? double.infinity : 160,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.edit),
-                            label: const Text('Replace'),
-                            onPressed: _pickAndUploadImage,
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        SizedBox(
-                          width: isMobile ? double.infinity : 160,
-                          child: OutlinedButton.icon(
-                            icon: const Icon(Icons.delete),
-                            label: const Text('Remove'),
-                            onPressed: _removeImage,
-                            style: OutlinedButton.styleFrom(
-                              minimumSize: const Size(0, 48),
-                              foregroundColor: Colors.red,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                ],
               ),
             ),
-
-            // Action buttons with divider
-            const SizedBox(height: 32),
-            Divider(color: Colors.grey[800], height: 1),
-            const SizedBox(height: 24),
-            if (isMobile) ...[
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _save,
-                  style: ElevatedButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                  ),
-                  child: Text(isEdit ? 'Update Vehicle' : 'Add Vehicle'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  style: TextButton.styleFrom(
-                    minimumSize: const Size(0, 48),
-                    foregroundColor: Colors.grey[400],
-                  ),
-                  child: const Text('Cancel'),
-                ),
-              ),
-            ] else ...[
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    style: TextButton.styleFrom(
-                      minimumSize: const Size(120, 48),
-                      foregroundColor: Colors.grey[400],
-                    ),
-                    child: const Text('Cancel'),
-                  ),
-                  const SizedBox(width: 16),
-                  ElevatedButton(
-                    onPressed: _save,
-                    style: ElevatedButton.styleFrom(
-                      minimumSize: const Size(160, 48),
-                    ),
-                    child: Text(isEdit ? 'Update Vehicle' : 'Add Vehicle'),
-                  ),
-                ],
-              ),
-            ],
-            const SizedBox(height: 24),
           ],
         ),
-      ),
+      ],
     );
+  }
 
-    // Responsive layout based on screen size
-    if (isDesktop) {
-      // Desktop: Side sheet on the right with better balance
-      return Scaffold(
-        backgroundColor: Colors.transparent,
-        body: Row(
+  Widget _buildRegistrationForm(bool isMobile, bool isSmallMobile) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        TextFormField(
+          readOnly: true,
+          controller: TextEditingController(
+            text: regDate != DateTime(2000, 1, 1)
+                ? regDate.toString().split(' ')[0]
+                : '',
+          ),
+          decoration: InputDecoration(
+            labelText: 'Registration Date',
+            hintText: 'Select registration date',
+            labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+            hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+            floatingLabelBehavior: FloatingLabelBehavior.always,
+            suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+            ),
+            errorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+            ),
+            focusedErrorBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+            ),
+          ),
+          onTap: () async {
+            final date = await showDatePicker(
+              context: context,
+              initialDate: regDate != DateTime(2000, 1, 1)
+                  ? regDate
+                  : DateTime.now(),
+              firstDate: DateTime(2000),
+              lastDate: DateTime(2100),
+            );
+            if (date != null) {
+              setState(() => regDate = date);
+            }
+          },
+        ),
+        const SizedBox(height: fieldSpacing),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Left side - vehicle metadata and info
-            Expanded(
-              flex: 2,
-              child: Container(
-                color: Theme.of(context).scaffoldBackgroundColor,
-                padding: const EdgeInsets.all(32),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.directions_car,
-                          size: 32,
-                          color: Colors.grey[400],
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          'Vehicle Management',
-                          style: Theme.of(context).textTheme.headlineSmall
-                              ?.copyWith(
-                                color: Colors.grey[200],
-                                fontWeight: FontWeight.w600,
-                              ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Edit vehicle details in the panel',
-                      style: Theme.of(
-                        context,
-                      ).textTheme.bodyMedium?.copyWith(color: Colors.grey[500]),
-                    ),
-                    const SizedBox(height: 32),
-                    _buildVehicleMetadata(),
-                  ],
+            TextFormField(
+              readOnly: true,
+              controller: TextEditingController(
+                text: licenseExpiryDate != DateTime(2000, 1, 1)
+                    ? licenseExpiryDate.toString().split(' ')[0]
+                    : '',
+              ),
+              decoration: InputDecoration(
+                labelText: 'License Expiry Date',
+                hintText: 'Select expiry date',
+                labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                floatingLabelBehavior: FloatingLabelBehavior.always,
+                suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                ),
+                focusedErrorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
                 ),
               ),
+              onTap: () async {
+                final date = await showDatePicker(
+                  context: context,
+                  initialDate: licenseExpiryDate != DateTime(2000, 1, 1)
+                      ? licenseExpiryDate
+                      : DateTime.now(),
+                  firstDate: DateTime(2000),
+                  lastDate: DateTime(2100),
+                );
+                if (date != null) {
+                  setState(() => licenseExpiryDate = date);
+                }
+              },
             ),
-            // Vertical divider
-            Container(width: 1, color: Colors.grey[800]),
-            // Right side - form panel (wider)
-            Expanded(
-              flex: 3,
-              child: Material(
-                elevation: 8,
-                child: Container(
-                  color: Theme.of(context).scaffoldBackgroundColor,
-                  child: content,
-                ),
-              ),
-            ),
+            const SizedBox(height: 8),
+            _buildLicenseCountdownIndicator(),
           ],
         ),
-      );
-    } else if (isTablet) {
-      // Tablet: Centered modal with backdrop
-      return Scaffold(
-        backgroundColor: Colors.black.withOpacity(0.5),
-        body: Center(
-          child: Material(
-            elevation: 16,
-            borderRadius: BorderRadius.circular(16),
+      ],
+    );
+  }
+
+  Widget _buildImageSection(bool isMobile, bool isSmallMobile) {
+    return Center(
+      child: Column(
+        children: [
+          GestureDetector(
+            onTap: vehicleImage != null
+                ? _removeImage
+                : _pickAndUploadImage,
+            onLongPress: vehicleImage != null
+                ? _pickAndUploadImage
+                : null,
             child: Container(
-              width: 700,
-              height: MediaQuery.of(context).size.height * 0.85,
+              width: isMobile ? 160 : 200,
+              height: isMobile ? 160 : 200,
               decoration: BoxDecoration(
-                color: Theme.of(context).colorScheme.surface,
                 borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.2),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: ClipRRect(
                 borderRadius: BorderRadius.circular(16),
-                child: content,
+                child: _buildImageWidget(isMobile),
+              ),
+            ),
+          ),
+          const SizedBox(height: 24),
+          if (vehicleImage == null)
+            SizedBox(
+              width: isMobile ? double.infinity : null,
+              child: ElevatedButton.icon(
+                icon: isLoading
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Icon(Icons.upload),
+                label: Text(
+                  isLoading ? 'Uploading...' : 'Upload Image',
+                ),
+                onPressed: isLoading ? null : _pickAndUploadImage,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(0, 48),
+                  backgroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  foregroundColor: ChoiceLuxTheme.platinumSilver,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+              ),
+            )
+          else
+            Column(
+              children: [
+                SizedBox(
+                  width: isMobile ? double.infinity : 160,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.edit),
+                    label: const Text('Replace'),
+                    onPressed: _pickAndUploadImage,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      backgroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                      foregroundColor: ChoiceLuxTheme.platinumSilver,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                SizedBox(
+                  width: isMobile ? double.infinity : 160,
+                  child: OutlinedButton.icon(
+                    icon: const Icon(Icons.delete),
+                    label: const Text('Remove'),
+                    onPressed: _removeImage,
+                    style: OutlinedButton.styleFrom(
+                      minimumSize: const Size(0, 48),
+                      foregroundColor: Colors.red,
+                      backgroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildImageWidget(bool isMobile) {
+    if (vehicleImage == null || vehicleImage!.isEmpty) {
+      return _buildPlaceholder(isMobile);
+    }
+    
+    // Validate URL format
+    if (!_isImageUrlValid(vehicleImage!)) {
+      return _buildInvalidUrlPlaceholder(isMobile);
+    }
+    
+    return Image.network(
+      vehicleImage!,
+      width: isMobile ? 160 : 200,
+      height: isMobile ? 160 : 200,
+      fit: BoxFit.cover,
+      errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(isMobile, error),
+      loadingBuilder: (context, child, loadingProgress) {
+        if (loadingProgress == null) return child;
+        return _buildLoadingPlaceholder(isMobile, loadingProgress);
+      },
+    );
+  }
+
+  Widget _buildPlaceholder(bool isMobile) {
+    return Container(
+      width: isMobile ? 160 : 200,
+      height: isMobile ? 160 : 200,
+      color: Colors.grey[300],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.add_photo_alternate,
+            size: isMobile ? 48 : 64,
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Tap to upload',
+            style: TextStyle(
+              fontSize: isMobile ? 12 : 14,
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInvalidUrlPlaceholder(bool isMobile) {
+    return Container(
+      width: isMobile ? 160 : 200,
+      height: isMobile ? 160 : 200,
+      color: Colors.orange[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.link_off,
+            size: isMobile ? 48 : 64,
+            color: Colors.orange[600],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Invalid Image URL',
+            style: TextStyle(
+              fontSize: isMobile ? 12 : 14,
+              color: Colors.orange[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap to upload new image',
+            style: TextStyle(
+              fontSize: isMobile ? 10 : 12,
+              color: Colors.orange[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: isMobile ? 80 : 100,
+            height: isMobile ? 28 : 32,
+            child: ElevatedButton(
+              onPressed: _retryImageLoad,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(
+                  fontSize: isMobile ? 10 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorPlaceholder(bool isMobile, Object error) {
+    // Log the error for debugging
+    print('=== IMAGE LOAD ERROR ===');
+    print('Image URL: $vehicleImage');
+    print('Error: $error');
+    print('Error type: ${error.runtimeType}');
+    print('========================');
+    
+    return Container(
+      width: isMobile ? 160 : 200,
+      height: isMobile ? 160 : 200,
+      color: Colors.red[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.error_outline,
+            size: isMobile ? 48 : 64,
+            color: Colors.red[600],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Image Load Failed',
+            style: TextStyle(
+              fontSize: isMobile ? 12 : 14,
+              color: Colors.red[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tap to retry or upload new',
+            style: TextStyle(
+              fontSize: isMobile ? 10 : 12,
+              color: Colors.red[600],
+            ),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 8),
+          SizedBox(
+            width: isMobile ? 80 : 100,
+            height: isMobile ? 28 : 32,
+            child: ElevatedButton(
+              onPressed: _retryImageLoad,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red[600],
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                padding: EdgeInsets.zero,
+              ),
+              child: Text(
+                'Retry',
+                style: TextStyle(
+                  fontSize: isMobile ? 10 : 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLoadingPlaceholder(bool isMobile, ImageChunkEvent? loadingProgress) {
+    return Container(
+      width: isMobile ? 160 : 200,
+      height: isMobile ? 160 : 200,
+      color: Colors.blue[100],
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          SizedBox(
+            width: isMobile ? 32 : 40,
+            height: isMobile ? 32 : 40,
+            child: CircularProgressIndicator(
+              strokeWidth: 3,
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue[600]!),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Loading...',
+            style: TextStyle(
+              fontSize: isMobile ? 12 : 14,
+              color: Colors.blue[600],
+            ),
+          ),
+          if (loadingProgress != null && loadingProgress.expectedTotalBytes != null) ...[
+            const SizedBox(height: 4),
+            Text(
+              '${((loadingProgress.cumulativeBytesLoaded / loadingProgress.expectedTotalBytes!) * 100).toStringAsFixed(0)}%',
+              style: TextStyle(
+                fontSize: isMobile ? 10 : 12,
+                color: Colors.blue[600],
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  bool _isImageUrlValid(String url) {
+    try {
+      final uri = Uri.tryParse(url);
+      if (uri == null || !uri.hasAbsolutePath) {
+        print('Invalid URL format: $url');
+        return false;
+      }
+      
+      // Check if it's a supported image format
+      final path = uri.path.toLowerCase();
+      final supportedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
+      final hasValidExtension = supportedExtensions.any((ext) => path.endsWith(ext));
+      
+      if (!hasValidExtension) {
+        print('Unsupported image format: $path');
+        return false;
+      }
+      
+      return true;
+    } catch (e) {
+      print('URL validation error: $e');
+      return false;
+    }
+  }
+
+  Widget _buildModernActionButtons(bool isMobile, bool isSmallMobile) {
+    return Column(
+      children: [
+        if (isMobile) ...[
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: _save,
+              style: ElevatedButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                backgroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                foregroundColor: ChoiceLuxTheme.platinumSilver,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                elevation: 0,
+              ),
+              child: Text(isEdit ? 'Update Vehicle' : 'Add Vehicle'),
+            ),
+          ),
+          const SizedBox(height: 16),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              style: TextButton.styleFrom(
+                minimumSize: const Size(0, 48),
+                foregroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.5),
+              ),
+              child: const Text('Cancel'),
+            ),
+          ),
+        ] else ...[
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                style: TextButton.styleFrom(
+                  minimumSize: const Size(120, 48),
+                  foregroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.5),
+                ),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 16),
+              ElevatedButton(
+                onPressed: _save,
+                style: ElevatedButton.styleFrom(
+                  minimumSize: const Size(160, 48),
+                  backgroundColor: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  foregroundColor: ChoiceLuxTheme.platinumSilver,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 0,
+                ),
+                child: Text(isEdit ? 'Update Vehicle' : 'Add Vehicle'),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    // Mobile-first responsive breakpoints
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = screenWidth < 600;
+    final isSmallMobile = screenWidth < 400;
+    final isTablet = screenWidth >= 600 && screenWidth < 900;
+    final isDesktop = screenWidth >= 900;
+    final fieldSpacing = isMobile ? 16.0 : 20.0;
+
+    return Scaffold(
+      backgroundColor: ChoiceLuxTheme.charcoalGray,
+      appBar: LuxuryAppBar(
+        title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
+        subtitle: isEdit 
+            ? 'Update vehicle details' 
+            : 'Create a new vehicle',
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 800 : double.infinity,
+              ),
+              child: Card(
+                color: ChoiceLuxTheme.charcoalGray,
+                elevation: 8,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Vehicle details section
+                      _buildModernSectionHeader('Vehicle Details', Icons.directions_car, isMobile, isSmallMobile),
+
+                                  _buildVehicleDetailsForm(isMobile, isSmallMobile),
+
+                      // Registration & License section
+                      _buildModernSectionHeader('Registration & License', Icons.assignment, isMobile, isSmallMobile),
+
+                                  _buildRegistrationForm(isMobile, isSmallMobile),
+
+                      // Vehicle Image section
+                      _buildModernSectionHeader('Vehicle Image', Icons.photo_camera, isMobile, isSmallMobile),
+
+                      _buildImageSection(isMobile, isSmallMobile),
+
+                      // Action buttons with divider
+                      const SizedBox(height: 32),
+                      Divider(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2), height: 1),
+                      const SizedBox(height: 24),
+                      _buildModernActionButtons(isMobile, isSmallMobile),
+                      const SizedBox(height: 24),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      );
-    } else {
-      // Mobile: Full screen
-      return Scaffold(
-        appBar: LuxuryAppBar(
-          title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
-          subtitle: isEdit ? 'Update vehicle details' : 'Create new vehicle',
-          showBackButton: true,
-          onBackPressed: () => Navigator.of(context).pop(),
-          actions: [
-            if (isEdit) ...[_buildStatusChip(status), const SizedBox(width: 8)],
-          ],
-        ),
-        body: content,
-      );
-    }
+      ),
+    );
   }
 }

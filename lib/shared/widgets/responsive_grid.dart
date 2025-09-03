@@ -119,7 +119,7 @@ class ResponsiveGrid extends StatelessWidget {
             maxCrossAxisExtent: gridConfig.maxCrossAxisExtent,
             crossAxisSpacing: gridConfig.spacing,
             mainAxisSpacing: gridConfig.spacing,
-            childAspectRatio: gridConfig.aspectRatio,
+            // Removed childAspectRatio to allow natural content-based sizing
           ),
           itemCount: children.length,
           itemBuilder: (context, index) => children[index],

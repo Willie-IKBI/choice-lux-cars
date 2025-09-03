@@ -107,10 +107,12 @@ class RouterGuards {
     bool isPasswordRecovery,
     String currentRoute,
   ) {
-    if (!isAuthenticated(user)) {
-      return null; // Let the main auth guard handle this
+    // If user is in password recovery mode, they should stay on reset-password
+    if (isPasswordRecovery && currentRoute == '/reset-password') {
+      return null; // Allow them to stay on reset password screen
     }
 
+    // If user is in password recovery mode but on wrong route, redirect to reset-password
     if (isPasswordRecovery && currentRoute != '/reset-password') {
       Log.d(
         'Router Guard - Password recovery mode, redirecting to reset password',
@@ -151,24 +153,35 @@ class RouterGuards {
     required bool isPasswordRecovery,
     required String? userRole,
   }) {
+    Log.d('Router Guard - Checking route: $currentRoute, user: ${user?.id}, isPasswordRecovery: $isPasswordRecovery, isLoading: $isLoading, hasError: $hasError');
+    
     // Don't redirect while loading
     if (isLoading) {
+      Log.d('Router Guard - Loading, no redirect');
       return null;
     }
 
     // Don't redirect on error, let the UI handle it
     if (hasError) {
+      Log.d('Router Guard - Has error, no redirect');
       return null;
     }
 
-    // Handle password recovery first
-    final recoveryRedirect = handlePasswordRecovery(
-      user,
-      isPasswordRecovery,
-      currentRoute,
-    );
-    if (recoveryRedirect != null) {
-      return recoveryRedirect;
+    // Handle password recovery first - this takes absolute priority
+    if (isPasswordRecovery) {
+      Log.d('Router Guard - Password recovery mode active');
+      final recoveryRedirect = handlePasswordRecovery(
+        user,
+        isPasswordRecovery,
+        currentRoute,
+      );
+      if (recoveryRedirect != null) {
+        Log.d('Router Guard - Password recovery redirect: $recoveryRedirect');
+        return recoveryRedirect;
+      }
+      // If no redirect needed, allow the user to stay where they are
+      Log.d('Router Guard - Password recovery mode, no redirect needed');
+      return null;
     }
 
     // Define public routes that don't require authentication
@@ -182,6 +195,7 @@ class RouterGuards {
     // If not authenticated, only allow access to public routes
     if (!isAuthenticated(user)) {
       if (publicRoutes.contains(currentRoute)) {
+        Log.d('Router Guard - Not authenticated, but on public route: $currentRoute');
         return null; // Allow access to public routes
       }
       Log.d('Router Guard - Not authenticated, redirecting to login');
@@ -191,6 +205,7 @@ class RouterGuards {
     // User is authenticated, check role assignment
     if (userRole == null || userRole == 'unassigned') {
       if (currentRoute == '/pending-approval') {
+        Log.d('Router Guard - User not assigned, but on pending approval route');
         return null; // Allow access to pending approval route
       }
       Log.d(
@@ -209,6 +224,7 @@ class RouterGuards {
     }
 
     // Allow access to protected routes
+    Log.d('Router Guard - Allowing access to protected route: $currentRoute');
     return null;
   }
 }

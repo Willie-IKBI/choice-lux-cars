@@ -4,8 +4,15 @@
 /// to avoid hardcoding sensitive information in the source code.
 class Env {
   /// Supabase configuration
-  static const supabaseUrl = String.fromEnvironment('SUPABASE_URL');
-  static const supabaseAnonKey = String.fromEnvironment('SUPABASE_ANON_KEY');
+  /// Production Supabase instance
+  static const supabaseUrl = String.fromEnvironment(
+    'SUPABASE_URL',
+    defaultValue: 'https://hgqrbekphumdlsifuamq.supabase.co',
+  );
+  static const supabaseAnonKey = String.fromEnvironment(
+    'SUPABASE_ANON_KEY',
+    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhncXJiZWtwaHVtZGxzaWZ1YW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjc1MTc2NjgsImV4cCI6MjA0MzA5MzY2OH0.zXwuDm3KzLHiF31CsDIsHrrlYnjCweqnNjFZ90AiK1I',
+  );
 
   /// Firebase configuration
   static const firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');

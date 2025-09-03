@@ -21,7 +21,8 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref.read(vehiclesProvider.notifier).fetchVehicles());
+    // Removed Future.microtask call that was causing LateInitializationError
+    // The provider will automatically load data when accessed
   }
 
   @override
@@ -187,37 +188,31 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     bool isDesktop,
     bool isLargeDesktop,
   ) {
-    // Responsive grid configuration
-    int crossAxisCount;
+    // Responsive grid configuration - using maxCrossAxisExtent for better flexibility
+    double maxCrossAxisExtent;
     double spacing;
-    double childAspectRatio;
     EdgeInsets padding;
 
     if (isLargeDesktop) {
-      crossAxisCount = 4;
+      maxCrossAxisExtent = 320.0;
       spacing = 20.0;
-      childAspectRatio = 1.4;
       padding = const EdgeInsets.all(24.0);
     } else if (isDesktop) {
-      crossAxisCount = 3;
+      maxCrossAxisExtent = 350.0;
       spacing = 18.0;
-      childAspectRatio = 1.5;
       padding = const EdgeInsets.all(20.0);
     } else if (isTablet) {
-      crossAxisCount = 2;
+      maxCrossAxisExtent = 400.0;
       spacing = 16.0;
-      childAspectRatio = 1.6;
       padding = const EdgeInsets.all(16.0);
     } else if (isMobile) {
-      crossAxisCount = 2;
+      maxCrossAxisExtent = 450.0;
       spacing = 12.0;
-      childAspectRatio = 1.6;
       padding = const EdgeInsets.all(12.0);
     } else {
       // Small mobile
-      crossAxisCount = 1;
+      maxCrossAxisExtent = double.infinity;
       spacing = 12.0;
-      childAspectRatio = 1.8;
       padding = const EdgeInsets.all(12.0);
     }
 
@@ -227,11 +222,11 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       backgroundColor: ChoiceLuxTheme.charcoalGray,
       child: GridView.builder(
         padding: padding,
-        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: crossAxisCount,
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: maxCrossAxisExtent,
           crossAxisSpacing: spacing,
           mainAxisSpacing: spacing,
-          childAspectRatio: childAspectRatio,
+          // Removed childAspectRatio to allow natural content-based sizing
         ),
         itemCount: vehicles.length,
         itemBuilder: (context, i) => VehicleCard(

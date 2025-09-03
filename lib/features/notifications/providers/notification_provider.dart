@@ -82,7 +82,9 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       final activeNotifications = notifications
           .where((n) => !n.isHidden)
           .toList();
-      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
+      final unreadCount = activeNotifications
+          .where((n) => !n.isRead && !n.isDismissed)
+          .length;
       final totalCount = activeNotifications.length;
       final highPriorityCount = activeNotifications
           .where((n) => n.isHighPriority)
@@ -102,6 +104,14 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       Log.d(
         'Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
       );
+      
+      // Debug logging to identify the issue
+      Log.d('=== DEBUG: Provider stats calculation ===');
+      Log.d('Total notifications loaded: ${notifications.length}');
+      Log.d('Hidden notifications: ${notifications.where((n) => n.isHidden).length}');
+      Log.d('Active notifications: ${notifications.where((n) => !n.isHidden).length}');
+      Log.d('Unread active: ${notifications.where((n) => !n.isHidden && !n.isRead).length}');
+      Log.d('Dismissed notifications: ${notifications.where((n) => n.isDismissed).length}');
 
       // Also update stats based on loaded notifications
       await _updateStatsFromNotifications(notifications);
@@ -414,12 +424,26 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
 
       _subscription = _notificationService.getNotificationsStream().listen(
         (notifications) {
-          final unreadCount = notifications.where((n) => !n.isRead).length;
+          // Recalculate stats when real-time updates come in
+          final activeNotifications = notifications
+              .where((n) => !n.isHidden)
+              .toList();
+          final unreadCount = activeNotifications
+              .where((n) => !n.isRead && !n.isDismissed)
+              .length;
+          final totalCount = activeNotifications.length;
+          final highPriorityCount = activeNotifications
+              .where((n) => n.isHighPriority)
+              .length;
+              
           state = state.copyWith(
             notifications: notifications,
             unreadCount: unreadCount,
+            totalCount: totalCount,
+            highPriorityCount: highPriorityCount,
           );
-          Log.d('Real-time update: ${notifications.length} notifications');
+          
+          Log.d('Real-time update: ${notifications.length} notifications, $unreadCount unread, $totalCount total');
         },
         onError: (error) {
           Log.e('Real-time subscription error: $error');
@@ -595,6 +619,34 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
     } catch (e) {
       Log.e('Error hiding job notifications: $e');
       state = state.copyWith(error: e.toString());
+    }
+  }
+
+  /// Clear all notifications for the current user
+  Future<void> clearAllNotifications() async {
+    try {
+      await _notificationService.clearAllNotifications();
+      
+      // Clear local state
+      state = state.copyWith(
+        notifications: [],
+        unreadCount: 0,
+        totalCount: 0,
+        highPriorityCount: 0,
+        stats: {
+          'total_count': 0,
+          'unread_count': 0,
+          'read_count': 0,
+          'dismissed_count': 0,
+          'high_priority_count': 0,
+          'by_type': {},
+        },
+      );
+      
+      Log.d('All notifications cleared successfully');
+    } catch (e) {
+      Log.e('Error clearing all notifications: $e');
+      rethrow;
     }
   }
 }

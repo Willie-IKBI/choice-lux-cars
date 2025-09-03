@@ -19,6 +19,7 @@ import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
 import 'package:choice_lux_cars/features/jobs/widgets/job_list_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -86,11 +87,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     // Check if user can create vouchers based on role
     final userRole = userProfile?.role?.toLowerCase();
     final canCreateVoucher =
-        userRole == 'administrator' ||
-        userRole == 'admin' ||
-        userRole == 'manager' ||
-        userRole == 'driver_manager' ||
-        userRole == 'drivermanager';
+            userRole == 'administrator' ||
+    userRole == 'manager' ||
+    userRole == 'driver_manager' ||
+    userRole == 'drivermanager';
 
     // Check if user can create invoices (same permissions as vouchers for now)
     final canCreateInvoice = canCreateVoucher;
@@ -122,116 +122,135 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
     );
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Jobs',
-        subtitle: 'Manage transportation jobs',
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-        actions: [
-          // Refresh button
-          IconButton(
-            onPressed: _manualRefresh,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh jobs',
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-          if (canCreateJobs)
-            ElevatedButton.icon(
-              onPressed: () => context.go('/jobs/create'),
-              icon: const Icon(Icons.add),
-              label: Text(isMobile ? 'Create' : 'Create Job'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.black,
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile
-                      ? 12
-                      : isMobile
-                      ? 16
-                      : 20,
-                  vertical: isSmallMobile
-                      ? 6
-                      : isMobile
-                      ? 8
-                      : 10,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent, // CRITICAL
+          appBar: LuxuryAppBar(
+            title: 'Jobs',
+            subtitle: 'Manage transportation jobs',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            actions: [
+              // Refresh button
+              IconButton(
+                onPressed: _manualRefresh,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh jobs',
               ),
-            ),
-        ],
-      ),
-      drawer: const LuxuryDrawer(),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Enhanced Filter Section with better mobile layout
-            _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
+              if (canCreateJobs)
+                ElevatedButton.icon(
+                  onPressed: () => context.go('/jobs/create'),
+                  icon: const Icon(Icons.add),
+                  label: Text(isMobile ? 'Create' : 'Create Job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: isSmallMobile
+                          ? 12
+                          : isMobile
+                          ? 16
+                          : 20,
+                      vertical: isSmallMobile
+                          ? 6
+                          : isMobile
+                          ? 8
+                          : 10,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          drawer: const LuxuryDrawer(),
+          body: Stack( // The body is now just the content stack
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+              ),
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Enhanced Filter Section with better mobile layout
+                    _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
-            // Enhanced Search Section
-            _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop),
+                    // Enhanced Search Section
+                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
-            // Results count with better mobile optimization
-            _buildResultsCount(
-              filteredJobs.length,
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              isDesktop,
-            ),
-
-            // Enhanced Jobs list with better responsive behavior
-            Expanded(
-              child: paginatedJobs.isEmpty
-                  ? _buildEmptyState(
+                    // Results count with better mobile optimization
+                    _buildResultsCount(
+                      filteredJobs.length,
                       isSmallMobile,
                       isMobile,
                       isTablet,
                       isDesktop,
-                    )
-                  : clientsAsync.when(
-                      data: (clients) => _buildJobsList(
-                        paginatedJobs,
-                        clients,
-                        (vehiclesState.value ?? []),
-                        (users.value ?? []),
-                        isSmallMobile,
-                        isMobile,
-                        isTablet,
-                        isDesktop,
-                        canCreateVoucher,
-                        canCreateInvoice,
-                      ),
-                      loading: () => _buildLoadingState(
-                        isSmallMobile,
-                        isMobile,
-                        isTablet,
-                        isDesktop,
-                      ),
-                      error: (error, stack) => _buildErrorState(
-                        error,
-                        isSmallMobile,
-                        isMobile,
-                        isTablet,
-                        isDesktop,
-                      ),
                     ),
-            ),
 
-            // Enhanced Pagination with better mobile layout
-            if (totalPages > 1)
-              _buildPaginationSection(
-                totalPages,
-                filteredJobs.length,
-                isSmallMobile,
-                isMobile,
-                isTablet,
-                isDesktop,
+                    // Enhanced Jobs list with better responsive behavior
+                    Expanded(
+                      child: paginatedJobs.isEmpty
+                          ? _buildEmptyState(
+                              isSmallMobile,
+                              isMobile,
+                              isTablet,
+                              isDesktop,
+                            )
+                          : clientsAsync.when(
+                              data: (clients) => _buildJobsList(
+                                paginatedJobs,
+                                clients,
+                                (vehiclesState.value ?? []),
+                                (users.value ?? []),
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                                canCreateVoucher,
+                                canCreateInvoice,
+                              ),
+                              loading: () => _buildLoadingState(
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                              ),
+                              error: (error, stack) => _buildErrorState(
+                                error,
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                              ),
+                            ),
+                    ),
+
+                    // Enhanced Pagination with better mobile layout
+                    if (totalPages > 1)
+                      _buildPaginationSection(
+                        totalPages,
+                        filteredJobs.length,
+                        isSmallMobile,
+                        isMobile,
+                        isTablet,
+                        isDesktop,
+                      ),
+                  ],
+                ),
               ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

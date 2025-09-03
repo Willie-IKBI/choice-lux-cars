@@ -12,6 +12,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -85,54 +86,68 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ? 24.0
         : 32.0;
 
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: LuxuryAppBar(
-        title: 'Choice Lux Cars',
-        showLogo: true,
-        showProfile: true,
-        onNotificationTap: _handleNotifications,
-        onMenuTap: () {
-          if (isMobile) {
-            _showMobileDrawer(context);
-          } else {
-            _scaffoldKey.currentState?.openDrawer();
-          }
-        },
-        onSignOut: () async {
-          await ref.read(authProvider.notifier).signOut();
-        },
-      ),
-      drawer: isMobile ? null : LuxuryDrawer(),
-      body: SafeArea(
-        child: Container(
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
           decoration: const BoxDecoration(
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Welcome Section
-                _buildWelcomeSection(context, userName),
-                SizedBox(height: sectionSpacing),
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          key: _scaffoldKey,
+          backgroundColor: Colors.transparent, // CRITICAL
+          appBar: LuxuryAppBar(
+            title: 'Choice Lux Cars',
+            showLogo: true,
+            showProfile: true,
+            onNotificationTap: _handleNotifications,
+            onMenuTap: () {
+              if (isMobile) {
+                _showMobileDrawer(context);
+              } else {
+                _scaffoldKey.currentState?.openDrawer();
+              }
+            },
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+          ),
+          drawer: isMobile ? null : LuxuryDrawer(),
+          body: Stack( // The body is now just the content stack
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+              ),
+              SafeArea(
+                child: SingleChildScrollView(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: horizontalPadding,
+                    vertical: verticalPadding,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Welcome Section
+                      _buildWelcomeSection(context, userName),
+                      SizedBox(height: sectionSpacing),
 
-                // Dashboard Cards
-                _buildDashboardCards(
-                  context,
-                  todayJobsCount,
-                  unassignedUsersCount,
+                      // Dashboard Cards
+                      _buildDashboardCards(
+                        context,
+                        todayJobsCount,
+                        unassignedUsersCount,
+                      ),
+                      SizedBox(height: sectionSpacing),
+                    ],
+                  ),
                 ),
-                SizedBox(height: sectionSpacing),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
-      ),
+      ],
     );
   }
 

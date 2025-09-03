@@ -15,19 +15,45 @@ class JobsRepository {
 
   JobsRepository(this._supabase);
 
-  /// Fetch all jobs from the database
-  Future<Result<List<Job>>> fetchJobs() async {
+  /// Fetch jobs based on user role and permissions
+  Future<Result<List<Job>>> fetchJobs({
+    String? userId,
+    String? userRole,
+  }) async {
     try {
-      Log.d('Fetching jobs from database');
+      Log.d('Fetching jobs for user: $userId with role: $userRole');
 
-      final response = await _supabase
-          .from('jobs')
-          .select()
-          .order('created_at', ascending: false);
+      // Check if userId is available for role-based filtering
+      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+        Log.e('UserId is required for role-based filtering');
+        return const Result.success([]);
+      }
 
-      Log.d('Fetched ${response.length} jobs from database');
+      PostgrestFilterBuilder query = _supabase.from('jobs').select();
 
-      final jobs = response.map((json) => Job.fromJson(json)).toList();
+      // Apply role-based filtering
+      if (userRole == 'administrator' || userRole == 'manager') {
+        // Administrators and managers see all jobs
+        Log.d('User has full access - fetching all jobs');
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created/assigned + jobs assigned to them
+        Log.d('Driver manager - fetching created jobs and jobs assigned to them');
+        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'driver' && userId != null) {
+        // Drivers only see jobs assigned to them
+        Log.d('Driver - fetching only assigned jobs');
+        query = query.eq('driver_id', userId);
+      } else {
+        // Unknown role or missing userId - default to no access
+        Log.e('Unknown user role: $userRole or missing userId - returning empty list');
+        return const Result.success([]);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole');
+
+      final jobs = response.map<Job>((json) => Job.fromJson(json as Map<String, dynamic>)).toList();
       return Result.success(jobs);
     } catch (error) {
       Log.e('Error fetching jobs: $error');
@@ -120,18 +146,48 @@ class JobsRepository {
     }
   }
 
-  /// Get jobs by status
-  Future<Result<List<Job>>> getJobsByStatus(String status) async {
+  /// Get jobs by status with role-based filtering
+  Future<Result<List<Job>>> getJobsByStatus(
+    String status, {
+    String? userId,
+    String? userRole,
+  }) async {
     try {
-      Log.d('Fetching jobs with status: $status');
+      Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole');
 
-      final response = await _supabase
+      // Check if userId is available for role-based filtering
+      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+        Log.e('UserId is required for role-based filtering');
+        return const Result.success([]);
+      }
+
+      PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select()
-          .eq('status', status)
-          .order('created_at', ascending: false);
+          .eq('status', status);
 
-      Log.d('Fetched ${response.length} jobs with status: $status');
+      // Apply role-based filtering based on confirmed requirements
+      if (userRole == 'administrator' || userRole == 'manager') {
+        // Administrators and managers see ALL jobs
+        Log.d('User has full access - fetching all jobs with status: $status');
+        // No additional filtering needed
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created + jobs assigned to them
+        Log.d('Driver manager - fetching created jobs and jobs assigned to them with status: $status');
+        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'driver' && userId != null) {
+        // Drivers see jobs assigned to them (current + completed)
+        Log.d('Driver - fetching assigned jobs with status: $status');
+        query = query.eq('driver_id', userId);
+      } else {
+        // Unknown role or missing userId - default to no access
+        Log.e('Unknown user role: $userRole or missing userId - returning empty list');
+        return const Result.success([]);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} jobs with status: $status for user: $userId with role: $userRole');
 
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
@@ -162,18 +218,48 @@ class JobsRepository {
     }
   }
 
-  /// Get jobs by client
-  Future<Result<List<Job>>> getJobsByClient(String clientId) async {
+  /// Get jobs by client with role-based filtering
+  Future<Result<List<Job>>> getJobsByClient(
+    String clientId, {
+    String? userId,
+    String? userRole,
+  }) async {
     try {
-      Log.d('Fetching jobs for client: $clientId');
+      Log.d('Fetching jobs for client: $clientId for user: $userId with role: $userRole');
 
-      final response = await _supabase
+      // Check if userId is available for role-based filtering
+      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+        Log.e('UserId is required for role-based filtering');
+        return const Result.success([]);
+      }
+
+      PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select('*')
-          .eq('client_id', clientId)
-          .order('created_at', ascending: false);
+          .eq('client_id', clientId);
 
-      Log.d('Fetched ${response.length} jobs for client: $clientId');
+      // Apply role-based filtering based on confirmed requirements
+      if (userRole == 'administrator' || userRole == 'manager') {
+        // Administrators and managers see ALL jobs
+        Log.d('User has full access - fetching all jobs for client: $clientId');
+        // No additional filtering needed
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created + jobs assigned to them
+        Log.d('Driver manager - fetching created jobs and jobs assigned to them for client: $clientId');
+        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'driver' && userId != null) {
+        // Drivers see jobs assigned to them (current + completed)
+        Log.d('Driver - fetching assigned jobs for client: $clientId');
+        query = query.eq('driver_id', userId);
+      } else {
+        // Unknown role or missing userId - default to no access
+        Log.e('Unknown user role: $userRole or missing userId - returning empty list');
+        return const Result.success([]);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} jobs for client: $clientId for user: $userId with role: $userRole');
 
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
@@ -183,19 +269,49 @@ class JobsRepository {
     }
   }
 
-  /// Get completed jobs by client
-  Future<Result<List<Job>>> getCompletedJobsByClient(String clientId) async {
+  /// Get completed jobs by client with role-based filtering
+  Future<Result<List<Job>>> getCompletedJobsByClient(
+    String clientId, {
+    String? userId,
+    String? userRole,
+  }) async {
     try {
-      Log.d('Fetching completed jobs for client: $clientId');
+      Log.d('Fetching completed jobs for client: $clientId for user: $userId with role: $userRole');
 
-      final response = await _supabase
+      // Check if userId is available for role-based filtering
+      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+        Log.e('UserId is required for role-based filtering');
+        return const Result.success([]);
+      }
+
+      PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select('*')
           .eq('client_id', clientId)
-          .eq('job_status', 'completed')
-          .order('created_at', ascending: false);
+          .eq('job_status', 'completed');
 
-      Log.d('Fetched ${response.length} completed jobs for client: $clientId');
+      // Apply role-based filtering based on confirmed requirements
+      if (userRole == 'administrator' || userRole == 'manager') {
+        // Administrators and managers see ALL jobs
+        Log.d('User has full access - fetching all completed jobs for client: $clientId');
+        // No additional filtering needed
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created + jobs assigned to them
+        Log.d('Driver manager - fetching created jobs and jobs assigned to them for client: $clientId');
+        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'driver' && userId != null) {
+        // Drivers see jobs assigned to them (current + completed)
+        Log.d('Driver - fetching assigned jobs for client: $clientId');
+        query = query.eq('driver_id', userId);
+      } else {
+        // Unknown role or missing userId - default to no access
+        Log.e('Unknown user role: $userRole or missing userId - returning empty list');
+        return const Result.success([]);
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} completed jobs for client: $clientId for user: $userId with role: $userRole');
 
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
@@ -205,22 +321,51 @@ class JobsRepository {
     }
   }
 
-  /// Get completed jobs revenue by client
+  /// Get completed jobs revenue by client with role-based filtering
   Future<Result<double>> getCompletedJobsRevenueByClient(
-    String clientId,
-  ) async {
+    String clientId, {
+    String? userId,
+    String? userRole,
+  }) async {
     try {
-      Log.d('Fetching completed jobs revenue for client: $clientId');
+      Log.d('Fetching completed jobs revenue for client: $clientId for user: $userId with role: $userRole');
 
-      final response = await _supabase
+      // Check if userId is available for role-based filtering
+      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+        Log.e('UserId is required for role-based filtering');
+        return const Result.success(0.0);
+      }
+
+      PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select('amount')
           .eq('client_id', clientId)
           .eq('job_status', 'completed')
           .not('amount', 'is', null);
 
+      // Apply role-based filtering based on confirmed requirements
+      if (userRole == 'administrator' || userRole == 'manager') {
+        // Administrators and managers see ALL jobs
+        Log.d('User has full access - fetching all completed jobs revenue for client: $clientId');
+        // No additional filtering needed
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created + jobs assigned to them
+        Log.d('Driver manager - fetching created jobs and jobs assigned to them revenue for client: $clientId');
+        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'driver' && userId != null) {
+        // Drivers see jobs assigned to them (current + completed)
+        Log.d('Driver - fetching assigned jobs revenue for client: $clientId');
+        query = query.eq('driver_id', userId);
+      } else {
+        // Unknown role or missing userId - default to no access
+        Log.e('Unknown user role: $userRole or missing userId - returning 0.0');
+        return const Result.success(0.0);
+      }
+
+      final response = await query;
+
       Log.d(
-        'Fetched ${response.length} completed jobs with revenue for client: $clientId',
+        'Fetched ${response.length} completed jobs with revenue for client: $clientId for user: $userId with role: $userRole',
       );
 
       double totalRevenue = 0.0;
@@ -235,7 +380,7 @@ class JobsRepository {
         }
       }
 
-      Log.d('Total revenue for client $clientId: $totalRevenue');
+      Log.d('Total revenue for client $clientId for user $userId: $totalRevenue');
       return Result.success(totalRevenue);
     } catch (error) {
       Log.e('Error fetching completed jobs revenue by client: $error');

@@ -38,17 +38,31 @@ class TripsRepository {
   /// Fetch trips for a specific job
   Future<Result<List<Trip>>> fetchTripsForJob(String jobId) async {
     try {
-      Log.d('Fetching trips for job: $jobId');
+      Log.d('=== TRIPS REPOSITORY: fetchTripsForJob() called ===');
+      Log.d('Input jobId: $jobId (type: ${jobId.runtimeType})');
 
+      // Convert string jobId to int for database query
+      final intJobId = int.tryParse(jobId);
+      Log.d('Parsed intJobId: $intJobId');
+      
+      if (intJobId == null) {
+        Log.e('Invalid job ID format: $jobId');
+        return Result.success([]);
+      }
+
+      Log.d('Executing database query: SELECT * FROM trips WHERE job_id = $intJobId');
       final response = await _supabase
           .from('trips')
           .select()
-          .eq('job_id', jobId)
+          .eq('job_id', intJobId)
           .order('created_at', ascending: false);
 
-      Log.d('Fetched ${response.length} trips for job: $jobId');
+      Log.d('Database response length: ${response.length}');
+      Log.d('Database response: ${response.toString()}');
 
       final trips = response.map((json) => Trip.fromJson(json)).toList();
+      Log.d('Parsed trips: ${trips.map((t) => 'ID: ${t.id}, JobID: ${t.jobId}').join(', ')}');
+      
       return Result.success(trips);
     } catch (error) {
       Log.e('Error fetching trips for job: $error');

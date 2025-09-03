@@ -165,6 +165,14 @@ class SupabaseService {
   Future<void> updatePassword({required String newPassword}) async {
     try {
       Log.d('Updating password for user: ${currentUser?.id}');
+      
+      // Check if we're in a recovery session
+      final session = supabase.auth.currentSession;
+      if (session == null) {
+        throw Exception('No active session found');
+      }
+      
+      // For recovery sessions, we need to use updateUser with the recovery session
       await supabase.auth.updateUser(UserAttributes(password: newPassword));
       Log.d('Password updated successfully');
     } catch (error) {
@@ -239,7 +247,7 @@ class SupabaseService {
   /// Get user by ID (compat shim)
   Future<Map<String, dynamic>?> getUser(String userId) async {
     final c = Supabase.instance.client;
-    final rows = await c.from('users').select().eq('id', userId).limit(1);
+    final rows = await c.from('profiles').select().eq('id', userId).limit(1);
     return rows.isEmpty ? null : rows.first;
   }
 }

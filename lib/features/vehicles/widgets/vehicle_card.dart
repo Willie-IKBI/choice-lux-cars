@@ -59,8 +59,12 @@ class VehicleCard extends StatelessWidget {
           shadowColor: Colors.black.withOpacity(0.2),
           child: Container(
             padding: EdgeInsets.all(cardPadding),
+            constraints: BoxConstraints(
+              minHeight: isSmallMobile ? 140 : isMobile ? 150 : 160, // Ensure minimum height
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min, // Ensure column takes minimum space needed
               children: [
                 // Image section with overlay badge
                 Stack(
@@ -71,6 +75,9 @@ class VehicleCard extends StatelessWidget {
                       child: Container(
                         width: double.infinity,
                         height: imageHeight,
+                        constraints: BoxConstraints(
+                          maxHeight: imageHeight, // Ensure image doesn't exceed allocated height
+                        ),
                         child:
                             vehicle.vehicleImage != null &&
                                 vehicle.vehicleImage!.isNotEmpty

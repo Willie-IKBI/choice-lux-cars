@@ -542,7 +542,7 @@ class JobCard extends ConsumerWidget {
     double iconSize,
     double fontSize,
   ) {
-    return FutureBuilder<Map<String, dynamic>>(
+    return FutureBuilder<Map<String, dynamic>?>(
       future: DriverFlowApiService.getJobProgress(job.id),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -591,7 +591,7 @@ class JobCard extends ConsumerWidget {
           );
         }
 
-        if (snapshot.hasError || !snapshot.hasData) {
+        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
           return const SizedBox.shrink();
         }
 

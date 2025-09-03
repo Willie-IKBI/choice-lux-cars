@@ -9,7 +9,7 @@ class NotificationService {
 
   /// Get notifications
   Future<List<app_notification.AppNotification>> getNotifications({
-    int limit = 50,
+    int limit = 1000,  // Increased from 50 to fetch more notifications
     int offset = 0,
     bool unreadOnly = false,
     String? notificationType,
@@ -23,6 +23,9 @@ class NotificationService {
       Log.d(
         '=== DEBUG: Fetching notifications for user: ${currentUser.id} ===',
       );
+      Log.d('Limit: $limit, Offset: $offset');
+      Log.d('Unread only: $unreadOnly');
+      Log.d('Notification type: $notificationType');
 
       // Build query with all conditions
       var query = _supabase
@@ -46,8 +49,11 @@ class NotificationService {
       Log.d(
         'Fetched ${response.length} notifications for user ${currentUser.id}',
       );
+      Log.d('Raw response length: ${response.length}');
       if (response.isNotEmpty) {
         Log.d('Sample notification: ${response.first}');
+        Log.d('Sample notification isHidden: ${response.first['is_hidden']}');
+        Log.d('Sample notification isRead: ${response.first['is_read']}');
       }
 
       return response
@@ -856,6 +862,26 @@ class NotificationService {
         return 'Vehicle Return';
       default:
         return stepName;
+    }
+  }
+
+  /// Clear all notifications for the current user
+  Future<void> clearAllNotifications() async {
+    try {
+      final currentUser = _supabase.auth.currentUser;
+      if (currentUser == null) {
+        throw Exception('User not authenticated');
+      }
+
+      await _supabase
+          .from('app_notifications')
+          .delete()
+          .eq('user_id', currentUser.id);
+
+      Log.d('All notifications cleared successfully for user ${currentUser.id}');
+    } catch (e) {
+      Log.e('Error clearing all notifications: $e');
+      rethrow;
     }
   }
 }

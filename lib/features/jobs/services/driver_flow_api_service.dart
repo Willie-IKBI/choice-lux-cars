@@ -179,15 +179,18 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-      await _supabase
-          .from('driver_flow')
-          .update({
-            'current_step': 'passenger_pickup',
-            'progress_percentage': 33,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
-          .eq('job_id', jobId);
+             // Update driver_flow table with all changes in one call
+       await _supabase
+           .from('driver_flow')
+           .update({
+             'current_step': 'passenger_pickup',
+             'progress_percentage': 33,
+             'pickup_arrive_time': SATimeUtils.getCurrentSATimeISO(),
+             'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',
+             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+           })
+           .eq('job_id', jobId);
 
       Log.d('=== ARRIVAL AT PICKUP RECORDED ===');
 
@@ -238,19 +241,22 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
+                   // Update driver_flow table with step progression
       await _supabase
           .from('driver_flow')
           .update({
-            'current_step': 'en_route',
+            'current_step': 'passenger_onboard',
             'progress_percentage': 50,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
 
       Log.d('=== PASSENGER ONBOARD RECORDED ===');
+      
+      // Force refresh of job progress data
+      await getJobProgress(jobId);
 
-      // Send notification
+      // Send notification - TEMPORARILY DISABLED FOR TESTING
+      /*
       try {
         final driverResponse = await _supabase
             .from('profiles')
@@ -260,13 +266,14 @@ class DriverFlowApiService {
 
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
-          stepName: 'passenger_pickup',
+          stepName: 'passenger_onboard',
           driverName: driverResponse['display_name'] ?? 'Unknown Driver',
           jobNumber: 'JOB-$jobId',
         );
       } catch (e) {
         Log.e('Warning: Could not send step completion notification: $e');
       }
+      */
     } catch (e) {
       Log.e('=== ERROR RECORDING PASSENGER ONBOARD ===');
       Log.e('Error: $e');
@@ -297,15 +304,17 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-      await _supabase
-          .from('driver_flow')
-          .update({
-            'current_step': 'passenger_dropoff',
-            'progress_percentage': 67,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
-          .eq('job_id', jobId);
+             // Update driver_flow table with all changes in one call
+       await _supabase
+           .from('driver_flow')
+           .update({
+             'current_step': 'dropoff_arrival',
+             'progress_percentage': 67,
+             'transport_completed_ind': true,
+             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+           })
+           .eq('job_id', jobId);
 
       Log.d('=== ARRIVAL AT DROPOFF RECORDED ===');
 
@@ -356,15 +365,17 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-      await _supabase
-          .from('driver_flow')
-          .update({
-            'current_step': 'return_vehicle',
-            'progress_percentage': 83,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
-          .eq('job_id', jobId);
+             // Update driver_flow table with all changes in one call
+       await _supabase
+           .from('driver_flow')
+           .update({
+             'current_step': 'trip_complete',
+             'progress_percentage': 83,
+             'transport_completed_ind': true,
+             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+           })
+           .eq('job_id', jobId);
 
       Log.d('=== TRIP COMPLETED ===');
 
@@ -378,7 +389,7 @@ class DriverFlowApiService {
 
         await NotificationService.sendStepCompletionNotification(
           jobId: jobId,
-          stepName: 'trip_completion',
+          stepName: 'trip_complete',
           driverName: driverResponse['display_name'] ?? 'Unknown Driver',
           jobNumber: 'JOB-$jobId',
         );
@@ -416,17 +427,16 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-      await _supabase
-          .from('driver_flow')
-          .update({
-            'vehicle_returned': true,
-            'vehicle_returned_at': SATimeUtils.getCurrentSATimeISO(),
-            'current_step': 'completed',
-            'progress_percentage': 100,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
-          .eq('job_id', jobId);
+             await _supabase
+           .from('driver_flow')
+           .update({
+             'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
+             'current_step': 'vehicle_return',
+             'progress_percentage': 100,
+             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+           })
+           .eq('job_id', jobId);
 
       Log.d('=== VEHICLE RETURNED ===');
 
@@ -559,32 +569,21 @@ class DriverFlowApiService {
       Log.d('=== GETTING JOB ADDRESSES ===');
       Log.d('Job ID: $jobId');
 
-      // Get transport details for this job
-      final transportResponse = await _supabase
-          .from('transport')
-          .select('pickup_location, dropoff_location')
-          .eq('job_id', jobId)
+      // Get job details for this job (consolidated approach)
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('location')
+          .eq('id', jobId)
           .maybeSingle();
 
       String? pickupAddress;
       String? dropoffAddress;
 
-      if (transportResponse != null) {
-        pickupAddress = transportResponse['pickup_location']?.toString();
-        dropoffAddress = transportResponse['dropoff_location']?.toString();
-      }
-
-      // Fallback to job location if no transport details
-      if (pickupAddress == null || pickupAddress.isEmpty) {
-        final jobResponse = await _supabase
-            .from('jobs')
-            .select('location')
-            .eq('id', jobId)
-            .maybeSingle();
-
-        if (jobResponse != null) {
-          pickupAddress = jobResponse['location']?.toString();
-        }
+      if (jobResponse != null) {
+        // Use job location for both pickup and dropoff for now
+        // This can be enhanced later with separate pickup/dropoff fields
+        pickupAddress = jobResponse['location']?.toString();
+        dropoffAddress = jobResponse['location']?.toString(); // Same location for now
       }
 
       final addresses = {'pickup': pickupAddress, 'dropoff': dropoffAddress};
@@ -599,16 +598,53 @@ class DriverFlowApiService {
   }
 
   /// Static wrapper for job progress
-  static Future<List<Map<String, dynamic>>> getJobProgress(int jobId) async {
-    // TODO: Implement fetchJobProgress method or map to existing functionality
-    Log.d('Getting job progress for job ID: $jobId');
-    return [];
+  static Future<Map<String, dynamic>?> getJobProgress(int jobId) async {
+    try {
+      Log.d('Getting job progress for job ID: $jobId');
+      
+      // Query driver_flow table for this job - use maybeSingle() since there should be at most one record per job
+      final response = await _supabase
+          .from('driver_flow')
+          .select()
+          .eq('job_id', jobId)
+          .maybeSingle(); // Returns single row or null if not found
+      
+      if (response == null) {
+        Log.d('No driver flow record found for job $jobId');
+        return null;
+      }
+      
+      Log.d('Found job progress: $response');
+      return response;
+    } catch (e) {
+      Log.e('Error getting job progress: $e');
+      return null;
+    }
   }
 
   /// Static wrapper for trip progress
   static Future<List<Map<String, dynamic>>> getTripProgress(int jobId) async {
-    // TODO: Implement fetchTripProgress method or map to existing functionality
-    Log.d('Getting trip progress for job ID: $jobId');
-    return [];
+    try {
+      Log.d('Getting trip progress for job ID: $jobId');
+      
+      // Query driver_flow table for this job instead of transport table
+      final response = await _supabase
+          .from('driver_flow')
+          .select()
+          .eq('job_id', jobId)
+          .maybeSingle(); // Returns single row or null if not found
+      
+      if (response == null) {
+        Log.d('No driver flow record found for job $jobId');
+        return [];
+      }
+      
+      // Return as a list with single item to maintain compatibility
+      Log.d('Found driver flow record: $response');
+      return [response];
+    } catch (e) {
+      Log.e('Error getting trip progress: $e');
+      return [];
+    }
   }
 }

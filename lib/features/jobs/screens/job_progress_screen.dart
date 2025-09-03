@@ -21,6 +21,7 @@ import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
 import 'package:choice_lux_cars/shared/utils/date_utils.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/widgets/job_completion_dialog.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
@@ -49,6 +50,57 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   // Store references to avoid ancestor lookup issues
   JobsNotifier? _jobsNotifier;
 
+  /// Safe type conversion helpers
+  int _safeToInt(dynamic value, {int defaultValue = 0}) {
+    if (value == null) return defaultValue;
+    if (value is int) return value;
+    if (value is double) return value.round();
+    if (value is bool) return value ? 1 : 0;
+    if (value is String) {
+      final trimmed = value.trim();
+      if (trimmed.isEmpty) return defaultValue;
+      final parsed = int.tryParse(trimmed);
+      return parsed ?? defaultValue;
+    }
+    return defaultValue;
+  }
+
+  bool _safeToBool(dynamic value) {
+    if (value == null) return false;
+    if (value is bool) return value;
+    if (value is int) return value != 0;
+    if (value is double) return value != 0.0;
+    if (value is String) {
+      final trimmed = value.trim().toLowerCase();
+      if (trimmed.isEmpty) return false;
+      
+      // Truthy strings
+      if (['true', 'yes', 'y', 'completed', 'done', 'closed', 'finished', '1'].contains(trimmed)) {
+        return true;
+      }
+      
+      // Falsy strings
+      if (['false', 'no', 'n', 'pending', 'open', '0'].contains(trimmed)) {
+        return false;
+      }
+      
+      // Check if it's a timestamp-like string (ISO/SQL date format)
+      if (trimmed.contains('-') && (trimmed.contains('T') || trimmed.contains(' '))) {
+        try {
+          final date = DateTime.parse(trimmed);
+          return date.isAfter(DateTime(1900)); // Valid date
+        } catch (_) {
+          // Not a valid date string
+        }
+      }
+      
+      // Default to false for arbitrary strings
+      return false;
+    }
+    if (value is DateTime) return value.isAfter(DateTime(1900));
+    return false;
+  }
+
   final List<JobStep> _jobSteps = [
     JobStep(
       id: 'not_started',
@@ -68,6 +120,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       id: 'pickup_arrival',
       title: 'Arrive at Pickup',
       description: 'Arrive at passenger pickup location',
+      icon: Icons.location_on,
+      isCompleted: false,
+    ),
+    JobStep(
+      id: 'passenger_pickup', // ADDED: Database step ID
+      title: 'Pickup Arrival',
+      description: 'Arrived at passenger pickup location',
       icon: Icons.location_on,
       isCompleted: false,
     ),
@@ -120,6 +179,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _loadJobProgress() async {
     try {
+      Log.d('=== _loadJobProgress STARTED ===');
+      Log.d('Job ID: ${widget.jobId}');
+      
+      if (!mounted) {
+        Log.d('Widget not mounted, returning early');
+        return;
+      }
+      
       setState(() => _isLoading = true);
 
       // Parse job ID once and validate
@@ -132,9 +199,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       final progress = await DriverFlowApiService.getJobProgress(jobIdInt);
       Log.d('=== LOADED JOB PROGRESS ===');
       Log.d('Progress data: $progress');
-      Log.d('Vehicle collected: ${progress['vehicle_collected']}');
-      Log.d('Current step from DB: ${progress['current_step']}');
-      Log.d('Job status: ${progress['job_status']}');
+      
+      if (progress == null) {
+        // Set safe defaults when no progress found
+        Log.d('No job progress found for jobId: $jobIdInt');
+        
+        // Load trip progress and addresses even when no job progress exists
+        final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
+        final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
+        
+        setState(() {
+          _jobProgress = null;
+          _tripProgress = trips;
+          _jobAddresses = addresses;
+          _currentTripIndex = 1;
+          _progressPercentage = 0;
+          _isLoading = false; // CRITICAL: Set loading to false
+        });
+        
+        return;
+      }
+      
+      // Use local non-null variable for subsequent access
+      final p = progress;
+      Log.d('Vehicle collected: ${p['vehicle_collected']}');
+      Log.d('Current step from DB: ${p['current_step']}');
+      Log.d('Job status: ${p['job_status']}');
 
       // Load trip progress
       final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
@@ -150,8 +240,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         _jobProgress = progress;
         _tripProgress = trips;
         _jobAddresses = addresses;
-        _currentTripIndex = progress['current_trip_index'] ?? 1;
-        _progressPercentage = progress['progress_percentage'] ?? 0;
+        _currentTripIndex = 1; // Single transport record per job
+        _progressPercentage = p['progress_percentage'] ?? 0;
       });
 
       // Update step statuses
@@ -159,6 +249,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       // Determine current step
       _determineCurrentStep();
+      
+      // Debug logging after step determination
+      Log.d('=== AFTER STEP DETERMINATION ===');
+      Log.d('Current step: $_currentStep');
+      Log.d('Step completion status:');
+      for (final step in _jobSteps) {
+        Log.d('  ${step.id}: ${step.isCompleted}');
+      }
 
       // Check if all steps are completed and update job status if needed
       if (_jobSteps.every((s) => s.isCompleted) &&
@@ -177,9 +275,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       }
 
       if (mounted) {
+        Log.d('=== SETTING _isLoading = false ===');
         setState(() {
           _isLoading = false;
         });
+        Log.d('=== _loadJobProgress COMPLETED ===');
       }
 
       // Force a final UI update to ensure all changes are reflected
@@ -208,7 +308,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }
 
   void _updateStepStatus() {
-    if (_jobProgress == null) return;
+    if (_jobProgress == null) {
+      Log.d('_updateStepStatus: _jobProgress is null, returning early');
+      return;
+    }
 
     // Update step completion status based on job progress
     for (int i = 0; i < _jobSteps.length; i++) {
@@ -226,36 +329,49 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           isCompleted = _jobProgress!['vehicle_collected'] == true;
           break;
         case 'pickup_arrival':
-          // Pickup arrival is completed if any trip has pickup_arrived_at
+          // Pickup arrival is completed if current_step is pickup_arrival or beyond
           // Once completed, it cannot be undone
-          isCompleted =
-              _tripProgress?.any((trip) => trip['pickup_arrived_at'] != null) ??
-              false;
+          isCompleted = _jobProgress!['current_step'] == 'pickup_arrival' ||
+                       _jobProgress!['current_step'] == 'passenger_pickup' ||
+                       _jobProgress!['current_step'] == 'passenger_onboard' ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'passenger_pickup':
+          // Passenger pickup is completed if current_step is passenger_pickup or beyond
+          // This step represents the actual arrival at pickup
+          isCompleted = _jobProgress!['current_step'] == 'passenger_pickup' ||
+                       _jobProgress!['current_step'] == 'passenger_onboard' ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
           break;
         case 'passenger_onboard':
-          // Passenger onboard is completed if any trip has passenger_onboard_at
+          // Passenger onboard is completed if current_step is passenger_onboard or beyond
           // Once completed, it cannot be undone
-          isCompleted =
-              _tripProgress?.any(
-                (trip) => trip['passenger_onboard_at'] != null,
-              ) ??
-              false;
+          isCompleted = _jobProgress!['current_step'] == 'passenger_onboard' ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
           break;
         case 'dropoff_arrival':
-          // Dropoff arrival is completed if any trip has dropoff_arrived_at
+          // Dropoff arrival is completed if current_step is dropoff_arrival or beyond
           // Once completed, it cannot be undone
-          isCompleted =
-              _tripProgress?.any(
-                (trip) => trip['dropoff_arrived_at'] != null,
-              ) ??
-              false;
+          isCompleted = _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
           break;
         case 'trip_complete':
-          // Trip complete is completed if any trip has status 'completed'
+          // Trip complete is completed if current_step is trip_complete or beyond
           // Once completed, it cannot be undone
-          isCompleted =
-              _tripProgress?.any((trip) => trip['status'] == 'completed') ??
-              false;
+          isCompleted = _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
           break;
         case 'vehicle_return':
           // Vehicle return is completed if job_closed_time is set
@@ -291,6 +407,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             newTitle = 'Arrive at Pickup - $pickupAddress';
           }
           break;
+        case 'passenger_pickup':
+          final pickupAddress = _jobAddresses['pickup'];
+          if (pickupAddress != null && pickupAddress.isNotEmpty) {
+            newTitle = 'Pickup Arrival - $pickupAddress';
+          }
+          break;
         case 'dropoff_arrival':
           final dropoffAddress = _jobAddresses['dropoff'];
           if (dropoffAddress != null && dropoffAddress.isNotEmpty) {
@@ -302,6 +424,37 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (newTitle != step.title) {
         _jobSteps[i] = step.copyWith(title: newTitle);
       }
+    }
+  }
+
+  /// Map database step IDs to UI step IDs
+  String _mapDatabaseStepToUIStep(String databaseStep) {
+    switch (databaseStep) {
+      case 'vehicle_collection':
+        return 'vehicle_collection';
+      case 'pickup_arrival':
+        return 'pickup_arrival';
+      case 'passenger_pickup':
+        return 'passenger_pickup'; // FIXED: Map to the actual step ID
+      case 'passenger_onboard':
+        return 'passenger_onboard';
+      case 'en_route':
+        return 'passenger_onboard';
+      case 'dropoff_arrival':
+        return 'dropoff_arrival';
+      case 'passenger_dropoff':
+        return 'dropoff_arrival';
+      case 'trip_complete':
+        return 'trip_complete';
+      case 'vehicle_return':
+        return 'vehicle_return';
+      case 'return_vehicle':
+        return 'vehicle_return';
+      case 'completed':
+        return 'completed';
+      default:
+        Log.e('Unknown database step: $databaseStep, defaulting to pickup_arrival');
+        return 'pickup_arrival';
     }
   }
 
@@ -328,8 +481,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
         _jobProgress!['current_step'].toString() != 'completed') {
-      newCurrentStep = _jobProgress!['current_step'].toString();
-      Log.d('Using current step from DB: $newCurrentStep');
+      // Map database step ID to UI step ID
+      final databaseStep = _jobProgress!['current_step'].toString();
+      newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
+      Log.d('Using current step from DB: $databaseStep, mapped to UI step: $newCurrentStep');
     } else {
       // Priority 3: Determine step based on completion status
       Log.d('No valid current_step in DB, using completion-based logic');
@@ -337,26 +492,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (_jobProgress!['job_closed_time'] != null) {
         newCurrentStep = 'completed';
         Log.d('Job is completed');
-      } else if (_tripProgress?.any((trip) => trip['status'] == 'completed') ==
-          true) {
+      } else if (_jobProgress!['transport_completed_ind'] == true) {
         newCurrentStep = 'vehicle_return';
-        Log.d('Trip completed, moving to vehicle return');
-      } else if (_tripProgress?.any(
-            (trip) => trip['dropoff_arrived_at'] != null,
-          ) ==
-          true) {
-        newCurrentStep = 'trip_complete';
-        Log.d('Dropoff arrived, moving to trip complete');
-      } else if (_tripProgress?.any(
-            (trip) => trip['passenger_onboard_at'] != null,
-          ) ==
-          true) {
+        Log.d('Transport completed, moving to vehicle return');
+      } else if (_jobProgress!['pickup_ind'] == true) {
         newCurrentStep = 'dropoff_arrival';
         Log.d('Passenger onboard, moving to dropoff arrival');
-      } else if (_tripProgress?.any(
-            (trip) => trip['pickup_arrived_at'] != null,
-          ) ==
-          true) {
+      } else if (_jobProgress!['pickup_arrive_time'] != null) {
         newCurrentStep = 'passenger_onboard';
         Log.d('Pickup arrived, moving to passenger onboard');
       } else if (_jobProgress!['vehicle_collected'] == true) {
@@ -1128,6 +1270,59 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         }
         break;
 
+      case 'passenger_pickup':
+        // This step represents the actual arrival at pickup - no action button needed
+        // It's automatically completed when pickup_arrival is done
+        return Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                ChoiceLuxTheme.successColor.withOpacity(0.1),
+                ChoiceLuxTheme.successColor.withOpacity(0.05),
+              ],
+            ),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.check_circle_rounded,
+                color: ChoiceLuxTheme.successColor,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Pickup Arrival Completed',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.successColor,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                                          Text(
+                        'Successfully arrived at pickup location',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontSize: 14,
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+
       case 'passenger_onboard':
         // Only show button if previous step (pickup_arrival) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival')) {
@@ -1758,7 +1953,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Status: ${_jobProgress?['job_status'] ?? 'Unknown'}',
+                        'Status: ${widget.job.status ?? 'Unknown'}',
                         style: TextStyle(
                           color: ChoiceLuxTheme.platinumSilver,
                           fontSize: 14,
@@ -2113,10 +2308,20 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
     }
 
+    // Debug logging for step resolution
+    Log.d('=== BUILDING CURRENT STEP CARD ===');
+    Log.d('Current step ID: $_currentStep');
+    Log.d('Available step IDs: ${_jobSteps.map((s) => s.id).toList()}');
+    
     final currentStep = _jobSteps.firstWhere(
       (step) => step.id == _currentStep,
-      orElse: () => _jobSteps.first,
+      orElse: () {
+        Log.e('Step $_currentStep not found in _jobSteps, falling back to first step');
+        return _jobSteps.first;
+      },
     );
+    
+    Log.d('Resolved step: ${currentStep.id} - ${currentStep.title}');
 
     // Special handling for not started jobs
     if (_currentStep == 'not_started') {
@@ -2320,207 +2525,328 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     );
   }
 
-  @override
+    @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: ChoiceLuxTheme.jetBlack,
-      appBar: PreferredSize(
-        preferredSize: const Size.fromHeight(72),
-        child: _buildLuxuryAppBar(),
-      ),
-      body: _isLoading
-          ? Container(
-              decoration: const BoxDecoration(
-                gradient: ChoiceLuxTheme.backgroundGradient,
+    // Debug logging
+    Log.d('=== BUILD METHOD CALLED ===');
+    Log.d('_isLoading: $_isLoading');
+    Log.d('_jobProgress: $_jobProgress');
+    Log.d('_currentStep: $_currentStep');
+    Log.d('_jobSteps length: ${_jobSteps.length}');
+    
+    // Restore the proper job progress UI with background pattern
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: PreferredSize(
+            preferredSize: const Size.fromHeight(72),
+            child: _buildLuxuryAppBar(),
+          ),
+          body: Stack(
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
-              child: const Center(
-                child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(
-                    ChoiceLuxTheme.richGold,
-                  ),
-                ),
-              ),
-            )
-          : Container(
-              decoration: const BoxDecoration(
-                gradient: ChoiceLuxTheme.backgroundGradient,
-              ),
-              child: RefreshIndicator(
-                onRefresh: _loadJobProgress,
-                color: ChoiceLuxTheme.richGold,
-                child: SingleChildScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  padding: const EdgeInsets.all(20.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildLuxuryJobInfoCard(),
-                      const SizedBox(height: 24),
-                      _buildLuxuryCurrentStepCard(),
-                      const SizedBox(height: 24),
-                      _buildLuxuryTimeline(),
-                      const SizedBox(height: 24),
-
-                      // Trip Progress (if available)
-                      if (_tripProgress != null &&
-                          _tripProgress!.isNotEmpty) ...[
-                        Container(
-                          decoration: BoxDecoration(
-                            gradient: ChoiceLuxTheme.cardGradient,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                              width: 1,
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
+              _isLoading == true
+                  ? const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ChoiceLuxTheme.richGold,
+                        ),
+                      ),
+                    )
+                  : _jobProgress == null
+                      ? Center(
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.error_outline,
+                                size: 64,
+                                color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                              ),
+                              const SizedBox(height: 16),
+                              Text(
+                                'No job progress found',
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.softWhite,
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Job ID: ${widget.jobId}',
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.softWhite.withOpacity(0.7),
+                                  fontSize: 14,
+                                ),
+                              ),
+                              const SizedBox(height: 24),
+                              ElevatedButton(
+                                onPressed: _loadJobProgress,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: ChoiceLuxTheme.richGold,
+                                  foregroundColor: Colors.black,
+                                ),
+                                child: const Text('Retry'),
                               ),
                             ],
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(20),
+                        )
+                      : RefreshIndicator(
+                          onRefresh: _loadJobProgress,
+                          color: ChoiceLuxTheme.richGold,
+                          child: SingleChildScrollView(
+                            physics: const AlwaysScrollableScrollPhysics(),
+                            padding: const EdgeInsets.all(20.0),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.route_rounded,
-                                      color: ChoiceLuxTheme.richGold,
-                                      size: 24,
+                                // SIMPLE WORKING UI - Let's build this step by step
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    gradient: ChoiceLuxTheme.cardGradient,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      width: 1,
                                     ),
-                                    const SizedBox(width: 12),
-                                    const Text(
-                                      'Trip Progress',
-                                      style: TextStyle(
-                                        color: ChoiceLuxTheme.softWhite,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w700,
-                                        letterSpacing: 0.3,
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Job Progress - ${widget.job.jobNumber}',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.richGold,
+                                          fontSize: 20,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                  ],
+                                      SizedBox(height: 16),
+                                      Text(
+                                        'Status: ${widget.job.status}',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.softWhite,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Current Step: $_currentStep',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.softWhite,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      Text(
+                                        'Progress: $_progressPercentage%',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.softWhite,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
-                                const SizedBox(height: 20),
-                                ..._tripProgress!.map((trip) {
-                                  return Container(
-                                    margin: const EdgeInsets.only(bottom: 12),
-                                    padding: const EdgeInsets.all(16),
-                                    decoration: BoxDecoration(
-                                      color: ChoiceLuxTheme.jetBlack
-                                          .withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: ChoiceLuxTheme.platinumSilver
-                                            .withOpacity(0.1),
-                                        width: 1,
+                                SizedBox(height: 24),
+                                // Current Step Actions
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    gradient: ChoiceLuxTheme.cardGradient,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Current Step Actions',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.richGold,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
                                       ),
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        Container(
-                                          width: 32,
-                                          height: 32,
-                                          decoration: BoxDecoration(
-                                            color: ChoiceLuxTheme.richGold
-                                                .withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(
-                                              16,
-                                            ),
+                                      SizedBox(height: 16),
+                                      if (_currentStep == 'not_started' && widget.job.isConfirmed == true)
+                                        ElevatedButton(
+                                          onPressed: _startJob,
+                                          child: Text('Start Job'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
                                           ),
-                                          child: Center(
-                                            child: Text(
-                                              '${trip['trip_index']}',
-                                              style: const TextStyle(
-                                                color: ChoiceLuxTheme.richGold,
-                                                fontSize: 14,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
+                                        )
+                                      else if (_currentStep == 'vehicle_collection')
+                                        ElevatedButton(
+                                          onPressed: _collectVehicle,
+                                          child: Text('Collect Vehicle'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else if (_currentStep == 'pickup_arrival')
+                                        ElevatedButton(
+                                          onPressed: _arriveAtPickup,
+                                          child: Text('Arrive at Pickup'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else if (_currentStep == 'passenger_pickup')
+                                        ElevatedButton(
+                                          onPressed: _passengerOnboard,
+                                          child: Text('Passenger Onboard'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else if (_currentStep == 'passenger_onboard')
+                                        ElevatedButton(
+                                          onPressed: _arriveAtDropoff,
+                                          child: Text('Arrive at Dropoff'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else if (_currentStep == 'dropoff_arrival')
+                                        ElevatedButton(
+                                          onPressed: _completeTrip,
+                                          child: Text('Complete Trip'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else if (_currentStep == 'trip_complete')
+                                        ElevatedButton(
+                                          onPressed: _returnVehicle,
+                                          child: Text('Return Vehicle'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: ChoiceLuxTheme.richGold,
+                                            foregroundColor: Colors.black,
+                                          ),
+                                        )
+                                      else
+                                        Text(
+                                          'No actions available for current step',
+                                          style: TextStyle(
+                                            color: ChoiceLuxTheme.platinumSilver,
+                                            fontSize: 14,
                                           ),
                                         ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                'Trip ${trip['trip_index']}',
-                                                style: const TextStyle(
-                                                  color:
-                                                      ChoiceLuxTheme.softWhite,
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: 24),
+                                // Job Steps Timeline
+                                Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.all(20),
+                                  decoration: BoxDecoration(
+                                    gradient: ChoiceLuxTheme.cardGradient,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Job Steps Timeline',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.richGold,
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                      SizedBox(height: 16),
+                                      ..._jobSteps.map((step) => Padding(
+                                        padding: const EdgeInsets.only(bottom: 12),
+                                        child: Row(
+                                          children: [
+                                            Icon(
+                                              step.isCompleted ? Icons.check_circle : Icons.circle_outlined,
+                                              color: step.isCompleted ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.platinumSilver,
+                                              size: 20,
+                                            ),
+                                            SizedBox(width: 12),
+                                            Expanded(
+                                              child: Column(
+                                                crossAxisAlignment: CrossAxisAlignment.start,
+                                                children: [
+                                                  Text(
+                                                    step.title,
+                                                    style: TextStyle(
+                                                      color: ChoiceLuxTheme.softWhite,
+                                                      fontSize: 14,
+                                                      fontWeight: FontWeight.w500,
+                                                    ),
+                                                  ),
+                                                  if (step.description.isNotEmpty)
+                                                    Text(
+                                                      step.description,
+                                                      style: TextStyle(
+                                                        color: ChoiceLuxTheme.platinumSilver,
+                                                        fontSize: 12,
+                                                      ),
+                                                    ),
+                                                ],
+                                              ),
+                                            ),
+                                            if (step.id == _currentStep)
+                                              Container(
+                                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                                decoration: BoxDecoration(
+                                                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                                  borderRadius: BorderRadius.circular(12),
+                                                ),
+                                                child: Text(
+                                                  'CURRENT',
+                                                  style: TextStyle(
+                                                    color: ChoiceLuxTheme.richGold,
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                  ),
                                                 ),
                                               ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                'Status: ${trip['status'] ?? 'pending'}',
-                                                style: TextStyle(
-                                                  color: ChoiceLuxTheme
-                                                      .platinumSilver,
-                                                  fontSize: 14,
-                                                  fontWeight: FontWeight.w400,
-                                                ),
-                                              ),
-                                            ],
-                                          ),
+                                          ],
                                         ),
-                                        Icon(
-                                          _getTripStatusIcon(trip['status']),
-                                          color: _getTripStatusColor(
-                                            trip['status'],
-                                          ),
-                                          size: 24,
-                                        ),
-                                      ],
-                                    ),
-                                  );
-                                }).toList(),
+                                      )).toList(),
+                                    ],
+                                  ),
+                                ),
                               ],
                             ),
                           ),
                         ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
-            ),
+            ],
+          ),
+        ),
+      ],
     );
   }
-
-  IconData _getTripStatusIcon(String? status) {
-    switch (status) {
-      case 'completed':
-        return Icons.check_circle_rounded;
-      case 'onboard':
-        return Icons.person_rounded;
-      case 'dropoff_arrived':
-        return Icons.location_on_rounded;
-      case 'pickup_arrived':
-        return Icons.location_on_rounded;
-      default:
-        return Icons.pending_rounded;
-    }
-  }
-
-  Color _getTripStatusColor(String? status) {
-    switch (status) {
-      case 'completed':
-        return ChoiceLuxTheme.successColor;
-      case 'onboard':
-        return ChoiceLuxTheme.richGold;
-      case 'dropoff_arrived':
-        return ChoiceLuxTheme.richGold;
-      case 'pickup_arrived':
-        return ChoiceLuxTheme.richGold;
-      default:
-        return ChoiceLuxTheme.platinumSilver;
-    }
-  }
 }
+

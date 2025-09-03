@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'providers/quotes_provider.dart';
 import 'widgets/quote_card.dart';
 import 'models/quote.dart';
@@ -84,39 +85,51 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         showBackButton: true,
         onBackPressed: () => context.go('/'),
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header Section with Stats
-              _buildHeaderSection(
-                filteredQuotes.length,
-                (quotes.value ?? []).length,
+      body: Stack(
+        children: [
+          // Background gradient
+          Positioned.fill(
+            child: Container(
+              decoration: const BoxDecoration(
+                gradient: ChoiceLuxTheme.backgroundGradient,
               ),
-
-              // Search and Filter Section
-              _buildSearchAndFilterSection(isMobile),
-
-              // View Toggle - Mobile uses compact version, Desktop uses full version
-              if (isMobile) _buildMobileViewToggle() else _buildViewToggle(),
-
-              // Quotes List/Grid
-              Expanded(
-                child: filteredQuotes.isEmpty
-                    ? _buildEmptyState()
-                    : _buildQuotesList(
-                        filteredQuotes,
-                        isMobile,
-                        isSmallMobile,
-                        isDesktop,
-                      ),
-              ),
-            ],
+            ),
           ),
-        ),
+          // Background pattern overlay
+          Positioned.fill(
+            child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          ),
+          // Content
+          SafeArea(
+            child: Column(
+              children: [
+                // Header Section with Stats
+                _buildHeaderSection(
+                  filteredQuotes.length,
+                  (quotes.value ?? []).length,
+                ),
+
+                // Search and Filter Section
+                _buildSearchAndFilterSection(isMobile),
+
+                // View Toggle - Mobile uses compact version, Desktop uses full version
+                if (isMobile) _buildMobileViewToggle() else _buildViewToggle(),
+
+                // Quotes List/Grid
+                Expanded(
+                  child: filteredQuotes.isEmpty
+                      ? _buildEmptyState()
+                      : _buildQuotesList(
+                          filteredQuotes,
+                          isMobile,
+                          isSmallMobile,
+                          isDesktop,
+                        ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
       floatingActionButton: canCreateQuotes ? _buildMobileOptimizedFAB() : null,
     );

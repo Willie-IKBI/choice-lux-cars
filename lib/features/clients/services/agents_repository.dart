@@ -9,8 +9,14 @@ class AgentsRepository {
   final SupabaseClient _c;
 
   Future<List<Agent>> fetchAgentsByClient(String clientId) async {
-    final rows = await _c.from('agents').select().eq('client_id', clientId);
-    return rows.map<Agent>((r) => Agent.fromJson(r)).toList();
+    try {
+      final rows = await _c.from('agents').select().eq('client_key', clientId);
+      return rows.map<Agent>((r) => Agent.fromJson(r)).toList();
+    } catch (e) {
+      // Log the error for debugging
+      print('Error fetching agents for client $clientId: $e');
+      rethrow;
+    }
   }
 
   Future<void> createAgent(Agent agent) async {

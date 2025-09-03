@@ -243,6 +243,36 @@ class _NotificationListScreenState
 
               const SizedBox(width: 12),
 
+              // Refresh Button
+              Container(
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                    width: 1,
+                  ),
+                ),
+                child: IconButton(
+                  onPressed: () async {
+                    await ref.read(notificationProvider.notifier).loadNotifications();
+                    await ref.read(notificationProvider.notifier).loadStats();
+                  },
+                  icon: Icon(
+                    Icons.refresh,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 20,
+                  ),
+                  tooltip: 'Refresh notifications',
+                  style: IconButton.styleFrom(
+                    padding: const EdgeInsets.all(8),
+                    minimumSize: const Size(40, 40),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 12),
+
               // Mark All Read Button
               Consumer(
                 builder: (context, ref, child) {

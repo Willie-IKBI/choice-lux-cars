@@ -14,6 +14,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:uuid/uuid.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
@@ -100,14 +101,65 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     setState(() => _isLoading = true);
 
     try {
-      await Future.delayed(const Duration(milliseconds: 100));
+      Log.d('Loading form data...');
+      
+      // Load all required data in parallel
+      await Future.wait([
+        _loadClients(),
+        _loadVehicles(),
+        _loadDrivers(),
+        _loadLocations(),
+      ]);
+      
+      Log.d('Form data loaded successfully');
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Error loading data: $e')));
+      Log.e('Error loading form data: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Error loading form data: $e')));
+      }
     } finally {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _loadClients() async {
+    try {
+      // ClientsNotifier automatically loads clients in its build method
+      // We just need to ensure it's initialized
+      await ref.read(clientsProvider.future);
+      Log.d('Clients loaded');
+    } catch (e) {
+      Log.e('Error loading clients: $e');
+    }
+  }
+
+  Future<void> _loadVehicles() async {
+    try {
+      // VehiclesNotifier automatically loads vehicles in its build method
+      // We just need to ensure it's initialized
+      await ref.read(vehiclesProvider.future);
+      Log.d('Vehicles loaded');
+    } catch (e) {
+      Log.e('Error loading vehicles: $e');
+    }
+  }
+
+  Future<void> _loadDrivers() async {
+    try {
+      // The usersProvider automatically loads all users in its build method
+      // We just need to ensure it's initialized
+      await ref.read(usersProvider.future);
+      Log.d('Drivers loaded');
+    } catch (e) {
+      Log.e('Error loading drivers: $e');
+    }
+  }
+
+  Future<void> _loadLocations() async {
+    // Locations are hardcoded for now
+    Log.d('Locations loaded (hardcoded)');
   }
 
   Future<void> _loadJobForEditing() async {
@@ -116,12 +168,29 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     setState(() => _isLoading = true);
 
     try {
-      // Load the job data
-      final jobsState = ref.read(jobsProvider);
-      if (!jobsState.hasValue) {
-        throw Exception('Jobs not loaded');
+      Log.d('Loading job for editing: ${widget.jobId}');
+      
+      // Try to find job in local state first
+      Job? job;
+      try {
+        final jobsState = ref.read(jobsProvider);
+        if (jobsState.hasValue) {
+          job = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
+          Log.d('Found job in local state: ${job.id}');
+        }
+      } catch (e) {
+        Log.d('Job not found in local state, will fetch individually');
       }
-      final job = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
+
+      // If not found locally, fetch from database
+      if (job == null) {
+        Log.d('Fetching job from database...');
+        job = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId!);
+        if (job == null) {
+          throw Exception('Job not found in database');
+        }
+        Log.d('Successfully fetched job from database: ${job.id}');
+      }
 
       // Populate form fields
       _selectedClientId = job.clientId;
@@ -140,7 +209,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       if (job.paymentAmount != null) {
         _paymentAmountController.text = job.paymentAmount!.toString();
       }
+
+      Log.d('Form fields populated successfully');
     } catch (e) {
+      Log.e('Error loading job for editing: $e');
       if (mounted) {
         ScaffoldMessenger.of(
           context,
@@ -200,13 +272,24 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
       if (isEditing) {
         // Update existing job
-        final jobsState = ref.read(jobsProvider);
-        if (!jobsState.hasValue) {
-          throw Exception('Jobs not loaded');
+        Job existingJob;
+        try {
+          // Try to find job in local state first
+          final jobsState = ref.read(jobsProvider);
+          if (jobsState.hasValue) {
+            existingJob = jobsState.value!.firstWhere((j) => j.id == widget.jobId);
+          } else {
+            throw Exception('Jobs not loaded');
+          }
+        } catch (e) {
+          // If not found locally, fetch from database
+          Log.d('Job not found in local state, fetching from database for update...');
+          final fetchedJob = await ref.read(jobsProvider.notifier).fetchJobById(widget.jobId!);
+          if (fetchedJob == null) {
+            throw Exception('Job not found in database');
+          }
+          existingJob = fetchedJob;
         }
-        final existingJob = jobsState.value!.firstWhere(
-          (j) => j.id == widget.jobId,
-        );
 
         // Check if driver is being changed
         final isDriverChanged = _selectedDriverId != existingJob.driverId;
@@ -330,256 +413,311 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       return 1400; // Extra large: 1400px max
     }
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
-        subtitle: widget.jobId != null
-            ? 'Update Job Details'
-            : 'Step 1: Job Details',
-        showBackButton: true,
-        onBackPressed: () => widget.jobId != null
-            ? context.go('/jobs/${widget.jobId}/summary')
-            : context.go('/jobs'),
-      ),
-      body: Consumer(
-        builder: (context, ref, child) {
-          final clientsAsync = ref.watch(clientsProvider);
-          final vehiclesState = ref.watch(vehiclesProvider);
-          final users = ref.watch(usersProvider);
-
-          if (vehiclesState.isLoading || !users.hasValue) {
-            return const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  ChoiceLuxTheme.richGold,
-                ),
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent, // CRITICAL
+          appBar: LuxuryAppBar(
+            title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
+            subtitle: widget.jobId != null
+                ? 'Update Job Details'
+                : 'Step 1: Job Details',
+            showBackButton: true,
+            onBackPressed: () => widget.jobId != null
+                ? context.go('/jobs/${widget.jobId}/summary')
+                : context.go('/jobs'),
+          ),
+          body: Stack( // The body is now just the content stack
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
-            );
-          }
+              Consumer(
+                builder: (context, ref, child) {
+                  final clientsAsync = ref.watch(clientsProvider);
+                  final vehiclesState = ref.watch(vehiclesProvider);
+                  final users = ref.watch(usersProvider);
 
-          if (vehiclesState.error != null) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline,
-                    size: 64,
-                    color: ChoiceLuxTheme.errorColor,
-                  ),
-                  const SizedBox(height: 16),
-                  Text('Error loading vehicles: ${vehiclesState.error}'),
-                  const SizedBox(height: 16),
-                  ElevatedButton(
-                    onPressed: () =>
-                        ref.read(vehiclesProvider.notifier).fetchVehicles(),
-                    child: const Text('Retry'),
-                  ),
-                ],
-              ),
-            );
-          }
+                  // Debug logging
+                  Log.d('Form build - Clients: ${clientsAsync.toString()}');
+                  Log.d('Form build - Vehicles: ${vehiclesState.toString()}');
+                  Log.d('Form build - Users: ${users.toString()}');
 
-          return clientsAsync.when(
-            data: (clients) {
-              final vehicles = vehiclesState.value ?? [];
-              final allUsers =
-                  users.value ?? []; // Show all users regardless of role
-
-              return Form(
-                key: _formKey,
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.all(isMobile ? 16 : 24),
-                  child: Center(
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(maxWidth: getMaxWidth()),
+                  if (vehiclesState.isLoading || !users.hasValue) {
+                    Log.d('Form showing loading indicator - Vehicles loading: ${vehiclesState.isLoading}, Users hasValue: ${users.hasValue}');
+                    return Center(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          // Progress indicator
-                          _buildProgressIndicator(),
-
-                          const SizedBox(height: 32),
-
-                          // Client & Agent Selection
-                          _buildFormSection(
-                            title: 'Client & Agent Selection',
-                            icon: Icons.business,
-                            children: [
-                              _buildSearchableClientDropdown(clients),
-                              const SizedBox(height: 20),
-                              _buildAgentDropdown(),
-                            ],
+                          const CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              ChoiceLuxTheme.richGold,
+                            ),
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Job Details
-                          _buildFormSection(
-                            title: 'Job Details',
-                            icon: Icons.work,
-                            children: [
-                              _buildVehicleDropdown(vehicles),
-                              const SizedBox(height: 20),
-                              _buildDriverDropdown(allUsers),
-                              const SizedBox(height: 20),
-                              _buildLocationDropdown(),
-                              const SizedBox(height: 20),
-                              _buildJobStartDatePicker(),
-                            ],
+                          const SizedBox(height: 16),
+                          Text(
+                            'Loading form data...',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.softWhite,
+                              fontSize: 16,
+                            ),
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Passenger Details
-                          _buildFormSection(
-                            title: 'Passenger Details',
-                            icon: Icons.people,
-                            children: [
-                              _buildTextField(
-                                controller: _passengerNameController,
-                                label: 'Passenger Name',
-                                hint: 'Enter passenger name (optional)',
-                                icon: Icons.person,
-                                isRequired: false,
-                              ),
-                              const SizedBox(height: 20),
-                              _buildTextField(
-                                controller: _passengerContactController,
-                                label: 'Contact Number',
-                                hint: 'Enter contact number (optional)',
-                                icon: Icons.phone,
-                                isRequired: false,
-                                keyboardType: TextInputType.phone,
-                              ),
-                              const SizedBox(height: 20),
-                              isMobile
-                                  ? Column(
-                                      children: [
-                                        _buildTextField(
-                                          controller: _pasCountController,
-                                          label: 'Number of Passengers',
-                                          hint: 'e.g. 2',
-                                          icon: Icons.people,
-                                          keyboardType: TextInputType.number,
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Please enter passenger count';
-                                            }
-                                            if (double.tryParse(value) ==
-                                                    null ||
-                                                double.parse(value) <= 0) {
-                                              return 'Please enter a valid number';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                        const SizedBox(height: 20),
-                                        _buildTextField(
-                                          controller: _luggageCountController,
-                                          label: 'Number of Bags',
-                                          hint: 'e.g. 3',
-                                          icon: Icons.work,
-                                          keyboardType: TextInputType.number,
-                                          validator: (value) {
-                                            if (value == null ||
-                                                value.isEmpty) {
-                                              return 'Please enter luggage count';
-                                            }
-                                            return null;
-                                          },
-                                        ),
-                                      ],
-                                    )
-                                  : Row(
-                                      children: [
-                                        Expanded(
-                                          child: _buildTextField(
-                                            controller: _pasCountController,
-                                            label: 'Number of Passengers',
-                                            hint: 'e.g. 2',
-                                            icon: Icons.people,
-                                            keyboardType: TextInputType.number,
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'Please enter passenger count';
-                                              }
-                                              if (double.tryParse(value) ==
-                                                      null ||
-                                                  double.parse(value) <= 0) {
-                                                return 'Please enter a valid number';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                        const SizedBox(width: 20),
-                                        Expanded(
-                                          child: _buildTextField(
-                                            controller: _luggageCountController,
-                                            label: 'Number of Bags',
-                                            hint: 'e.g. 3',
-                                            icon: Icons.work,
-                                            keyboardType: TextInputType.number,
-                                            validator: (value) {
-                                              if (value == null ||
-                                                  value.isEmpty) {
-                                                return 'Please enter luggage count';
-                                              }
-                                              return null;
-                                            },
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                            ],
+                          const SizedBox(height: 8),
+                          Text(
+                            'Vehicles: ${vehiclesState.isLoading ? "Loading..." : "Ready"}',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver,
+                              fontSize: 14,
+                            ),
                           ),
-
-                          const SizedBox(height: 32),
-
-                          // Payment & Notes
-                          _buildFormSection(
-                            title: 'Payment & Notes',
-                            icon: Icons.payment,
-                            children: [
-                              _buildPaymentSection(),
-                              const SizedBox(height: 20),
-                              _buildTextField(
-                                controller: _notesController,
-                                label: 'Notes',
-                                hint:
-                                    'Enter pickup location, flight details, or other relevant information',
-                                icon: Icons.note,
-                                maxLines: 4,
-                                isRequired: false,
-                              ),
-                            ],
+                          Text(
+                            'Users: ${users.hasValue ? "Ready" : "Loading..."}',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver,
+                              fontSize: 14,
+                            ),
                           ),
-
-                          const SizedBox(height: 32),
-
-                          _buildActionButtons(isMobile),
                         ],
                       ),
+                    );
+                  }
+
+                  if (vehiclesState.error != null) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.error_outline,
+                            size: 64,
+                            color: ChoiceLuxTheme.errorColor,
+                          ),
+                          const SizedBox(height: 16),
+                          Text('Error loading vehicles: ${vehiclesState.error}'),
+                          const SizedBox(height: 16),
+                          ElevatedButton(
+                            onPressed: () =>
+                                ref.read(vehiclesProvider.notifier).fetchVehicles(),
+                            child: const Text('Retry'),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
+
+                  return clientsAsync.when(
+                    data: (clients) {
+                      final vehicles = vehiclesState.value ?? [];
+                      final allUsers =
+                          users.value ?? []; // Show all users regardless of role
+
+                      Log.d('Form rendering - Clients: ${clients.length}, Vehicles: ${vehicles.length}, Users: ${allUsers.length}');
+
+                      return Form(
+                        key: _formKey,
+                        child: SingleChildScrollView(
+                          padding: EdgeInsets.all(isMobile ? 16 : 24),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: getMaxWidth()),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  // Progress indicator
+                                  _buildProgressIndicator(),
+
+                                  const SizedBox(height: 32),
+
+                                  // Client & Agent Selection
+                                  _buildFormSection(
+                                    title: 'Client & Agent Selection',
+                                    icon: Icons.business,
+                                    children: [
+                                      _buildSearchableClientDropdown(clients),
+                                      const SizedBox(height: 20),
+                                      _buildAgentDropdown(),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 32),
+
+                                  // Job Details
+                                  _buildFormSection(
+                                    title: 'Job Details',
+                                    icon: Icons.work,
+                                    children: [
+                                      _buildVehicleDropdown(vehicles),
+                                      const SizedBox(height: 20),
+                                      _buildDriverDropdown(allUsers),
+                                      const SizedBox(height: 20),
+                                      _buildLocationDropdown(),
+                                      const SizedBox(height: 20),
+                                      _buildJobStartDatePicker(),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 32),
+
+                                  // Passenger Details
+                                  _buildFormSection(
+                                    title: 'Passenger Details',
+                                    icon: Icons.people,
+                                    children: [
+                                      _buildTextField(
+                                        controller: _passengerNameController,
+                                        label: 'Passenger Name',
+                                        hint: 'Enter passenger name (optional)',
+                                        icon: Icons.person,
+                                        isRequired: false,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      _buildTextField(
+                                        controller: _passengerContactController,
+                                        label: 'Contact Number',
+                                        hint: 'Enter contact number (optional)',
+                                        icon: Icons.phone,
+                                        isRequired: false,
+                                        keyboardType: TextInputType.phone,
+                                      ),
+                                      const SizedBox(height: 20),
+                                      isMobile
+                                          ? Column(
+                                              children: [
+                                                _buildTextField(
+                                                  controller: _pasCountController,
+                                                  label: 'Number of Passengers',
+                                                  hint: 'e.g. 2',
+                                                  icon: Icons.people,
+                                                  keyboardType: TextInputType.number,
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.isEmpty) {
+                                                      return 'Please enter passenger count';
+                                                    }
+                                                    if (double.tryParse(value) ==
+                                                            null ||
+                                                        double.parse(value) <= 0) {
+                                                      return 'Please enter a valid number';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                                const SizedBox(height: 20),
+                                                _buildTextField(
+                                                  controller: _luggageCountController,
+                                                  label: 'Number of Bags',
+                                                  hint: 'e.g. 3',
+                                                  icon: Icons.work,
+                                                  keyboardType: TextInputType.number,
+                                                  validator: (value) {
+                                                    if (value == null ||
+                                                        value.isEmpty) {
+                                                      return 'Please enter luggage count';
+                                                    }
+                                                    return null;
+                                                  },
+                                                ),
+                                              ],
+                                            )
+                                          : Row(
+                                              children: [
+                                                Expanded(
+                                                  child: _buildTextField(
+                                                    controller: _pasCountController,
+                                                    label: 'Number of Passengers',
+                                                    hint: 'e.g. 2',
+                                                    icon: Icons.people,
+                                                    keyboardType: TextInputType.number,
+                                                    validator: (value) {
+                                                      if (value == null ||
+                                                          value.isEmpty) {
+                                                        return 'Please enter passenger count';
+                                                      }
+                                                      if (double.tryParse(value) ==
+                                                              null ||
+                                                          double.parse(value) <= 0) {
+                                                        return 'Please enter a valid number';
+                                                      }
+                                                      return null;
+                                                    },
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 20),
+                                                Expanded(
+                                                  child: _buildTextField(
+                                                    controller: _luggageCountController,
+                                                    label: 'Number of Bags',
+                                                    hint: 'e.g. 3',
+                                                    icon: Icons.work,
+                                                    keyboardType: TextInputType.number,
+                                                    validator: (value) {
+                                                      if (value == null ||
+                                                          value.isEmpty) {
+                                                        return 'Please enter luggage count';
+                                                      }
+                                                      return null;
+                                                    },
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 32),
+
+                                  // Payment & Notes
+                                  _buildFormSection(
+                                    title: 'Payment & Notes',
+                                    icon: Icons.payment,
+                                    children: [
+                                      _buildPaymentSection(),
+                                      const SizedBox(height: 20),
+                                      _buildTextField(
+                                        controller: _notesController,
+                                        label: 'Notes',
+                                        hint:
+                                            'Enter pickup location, flight details, or other relevant information',
+                                        icon: Icons.note,
+                                        maxLines: 4,
+                                        isRequired: false,
+                                      ),
+                                    ],
+                                  ),
+
+                                  const SizedBox(height: 32),
+
+                                  _buildActionButtons(isMobile),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                    loading: () => const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ChoiceLuxTheme.richGold,
+                        ),
+                      ),
                     ),
-                  ),
-                ),
-              );
-            },
-            loading: () => const Center(
-              child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  ChoiceLuxTheme.richGold,
-                ),
+                    error: (error, stack) =>
+                        Center(child: Text('Error loading clients: $error')),
+                  );
+                },
               ),
-            ),
-            error: (error, stack) =>
-                Center(child: Text('Error loading clients: $error')),
-          );
-        },
-      ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 

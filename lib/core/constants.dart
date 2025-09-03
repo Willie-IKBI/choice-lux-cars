@@ -24,7 +24,7 @@ enum InvoiceStatus { pending, paid, overdue, cancelled }
 class AppConstants {
   // API endpoints
   // Production Supabase instance
-  // For local development, use: http://127.0.0.1:54321 and local anon key
+  // URL: https://hgqrbekphumdlsifuamq.supabase.co
   static const String supabaseUrl = Env.supabaseUrl;
   static const String supabaseAnonKey = Env.supabaseAnonKey;
 

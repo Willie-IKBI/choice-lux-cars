@@ -14,6 +14,17 @@ import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+
+extension StringExtension on String {
+  String toTitleCase() {
+    if (isEmpty) return this;
+    return split(' ').map((word) {
+      if (word.isEmpty) return word;
+      return word[0].toUpperCase() + word.substring(1).toLowerCase();
+    }).join(' ');
+  }
+}
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -53,6 +64,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   void initState() {
     super.initState();
     _loadJobData();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh step data when dependencies change (e.g., returning from job progress)
+    _loadStepCompletionData();
   }
 
   Future<void> _loadJobData() async {
@@ -99,14 +117,40 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         final tripsNotifier = ref.read(
           tripsByJobProvider(widget.jobId).notifier,
         );
+        Log.d('Trips notifier obtained, refreshing...');
         await tripsNotifier.refresh();
+        Log.d('Trips refresh completed');
+        
         final tripsState = ref.read(tripsByJobProvider(widget.jobId));
+        Log.d('Trips state: ${tripsState.toString()}');
+        Log.d('Trips state hasValue: ${tripsState.hasValue}');
+        Log.d('Trips state isLoading: ${tripsState.isLoading}');
+        Log.d('Trips state hasError: ${tripsState.hasError}');
+        
         if (tripsState.hasValue) {
           _trips = tripsState.value!;
           Log.d('Loaded ${_trips.length} trips for job ${widget.jobId}');
+          Log.d('Trip details: ${_trips.map((t) => 'ID: ${t.id}, JobID: ${t.jobId}').join(', ')}');
         } else {
           _trips = [];
           Log.d('No trips found for job ${widget.jobId}');
+        }
+        
+        // Fallback: Check database directly if provider approach failed
+        if (_trips.isEmpty) {
+          Log.d('Provider approach returned no trips, checking database directly...');
+          try {
+            final directResponse = await Supabase.instance.client
+                .from('trips')
+                .select('*')
+                .eq('job_id', int.parse(widget.jobId));
+            Log.d('Direct database query returned ${directResponse.length} trips');
+            if (directResponse.isNotEmpty) {
+              Log.d('Direct database response: ${directResponse.toString()}');
+            }
+          } catch (e) {
+            Log.e('Direct database query failed: $e');
+          }
         }
       } catch (e) {
         Log.e('Error loading trips: $e');
@@ -180,12 +224,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
       _driverFlowData = driverFlowResponse;
 
-      // Load trip progress data
-      final tripProgressResponse = await Supabase.instance.client
-          .from('trip_progress')
-          .select('*')
-          .eq('job_id', int.parse(widget.jobId))
-          .order('trip_index');
+      // Load trip progress data using the service
+      final tripProgressResponse = await DriverFlowApiService.getTripProgress(
+        int.parse(widget.jobId),
+      );
 
       _tripProgressData = List<Map<String, dynamic>>.from(tripProgressResponse);
 
@@ -254,28 +296,47 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final totalAmount = _job!.paymentAmount ?? 0.0;
     final isDesktop = MediaQuery.of(context).size.width > 768;
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Job Summary',
-        subtitle: 'Job #${_job!.id}',
-        showBackButton: true,
-        onBackPressed: () => context.go('/jobs'),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.print),
-            onPressed: () => _printJobSummary(),
-            tooltip: 'Print Summary',
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-          IconButton(
-            icon: const Icon(Icons.share),
-            onPressed: () => _shareJobSummary(),
-            tooltip: 'Share Summary',
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent, // CRITICAL
+          appBar: LuxuryAppBar(
+            title: 'Job Summary',
+            subtitle: 'Job #${_job!.id}',
+            showBackButton: true,
+            onBackPressed: () => context.go('/jobs'),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.print),
+                onPressed: () => _printJobSummary(),
+                tooltip: 'Print Summary',
+              ),
+              IconButton(
+                icon: const Icon(Icons.share),
+                onPressed: () => _shareJobSummary(),
+                tooltip: 'Share Summary',
+              ),
+            ],
           ),
-        ],
-      ),
-      body: isDesktop
-          ? _buildDesktopLayout(totalAmount)
-          : _buildMobileLayout(totalAmount),
+          body: Stack( // The body is now just the content stack
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+              ),
+              isDesktop
+                  ? _buildDesktopLayout(totalAmount)
+                  : _buildMobileLayout(totalAmount),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -746,7 +807,24 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildSectionHeader('Step Timeline', Icons.timeline),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                _buildSectionHeader('Step Timeline', Icons.timeline),
+                IconButton(
+                  onPressed: () {
+                    setState(() {
+                      // Trigger a rebuild of the timeline
+                    });
+                  },
+                  icon: Icon(
+                    Icons.refresh,
+                    color: ChoiceLuxTheme.richGold,
+                  ),
+                  tooltip: 'Refresh Timeline',
+                ),
+              ],
+            ),
             const SizedBox(height: 16),
             FutureBuilder<List<Map<String, dynamic>>>(
               future: _getStepTimeline(),
@@ -781,7 +859,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                             'Error loading timeline: ${snapshot.error}',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.red[600],
+                              color: Colors.red[300],
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -811,10 +889,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
-                            'Job not started yet. The timeline will show all steps including current progress once the job begins.',
+                            'No steps have been completed yet. The timeline will show completed steps as the job progresses.',
                             style: TextStyle(
                               fontSize: 14,
-                              color: Colors.grey[600],
+                              color: Colors.grey[300],
                               fontStyle: FontStyle.italic,
                             ),
                           ),
@@ -825,9 +903,188 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 }
 
                 return Column(
-                  children: steps.map((step) {
-                    return _buildStepTimelineItem(step);
-                  }).toList(),
+                  children: [
+                    // Progress Summary
+                    if (_driverFlowData != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                          ),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.analytics,
+                                  color: ChoiceLuxTheme.richGold,
+                                  size: 24,
+                                ),
+                                const SizedBox(width: 12),
+                                Text(
+                                  'Overall Progress',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: ChoiceLuxTheme.richGold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 8),
+                            // Progress Bar
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 12),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                    children: [
+                                      Text(
+                                        'Progress',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
+                                      ),
+                                      Text(
+                                        '${_driverFlowData!['progress_percentage']?.toString() ?? '0'}%',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: ChoiceLuxTheme.richGold,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  LinearProgressIndicator(
+                                    value: (_driverFlowData!['progress_percentage'] ?? 0) / 100.0,
+                                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      ChoiceLuxTheme.richGold,
+                                    ),
+                                    minHeight: 6,
+                                    borderRadius: BorderRadius.circular(3),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: _buildMetricItem(
+                                    'Status',
+                                    _getCurrentStepDisplayName(_driverFlowData!['current_step'] ?? 'Not Started'),
+                                    Icons.info_outline,
+                                    ChoiceLuxTheme.infoColor,
+                                  ),
+                                ),
+                                if (_driverFlowData!['odo_start_reading'] != null) ...[
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildMetricItem(
+                                      'Start KM',
+                                      '${_driverFlowData!['odo_start_reading'].toStringAsFixed(1)}',
+                                      Icons.speed,
+                                      Colors.green,
+                                    ),
+                                  ),
+                                ],
+                                if (_driverFlowData!['job_closed_odo'] != null) ...[
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildMetricItem(
+                                      'End KM',
+                                      '${_driverFlowData!['job_closed_odo'].toStringAsFixed(1)}',
+                                      Icons.speed,
+                                      Colors.orange,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            if (_driverFlowData!['odo_start_reading'] != null && 
+                                _driverFlowData!['job_closed_odo'] != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.indigo.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: Colors.indigo.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.route,
+                                      color: Colors.indigo,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Total Distance: ${(_driverFlowData!['job_closed_odo'] - _driverFlowData!['odo_start_reading']).toStringAsFixed(1)} km',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.w600,
+                                        color: Colors.indigo,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                            // Current Step Status
+                            if (_driverFlowData!['current_step'] != null) ...[
+                              const SizedBox(height: 8),
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: ChoiceLuxTheme.infoColor.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: ChoiceLuxTheme.infoColor.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.info_outline,
+                                      color: ChoiceLuxTheme.infoColor,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        'Current Step: ${_getCurrentStepDisplayName(_driverFlowData!['current_step'])}',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: ChoiceLuxTheme.infoColor,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
+                    // Individual Steps
+                    ...steps.map((step) => _buildStepTimelineItem(step)),
+                  ],
                 );
               },
             ),
@@ -906,7 +1163,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               : isCurrent
                               ? ChoiceLuxTheme.richGold
                               : isCompleted
-                              ? Colors.black
+                              ? Colors.white
                               : Colors.grey,
                         ),
                       ),
@@ -929,10 +1186,29 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               ? 'Not Started'
                               : 'In Progress',
                           style: TextStyle(
-                            color: Colors.black,
+                            color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
                           ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 6,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: ChoiceLuxTheme.richGold.withOpacity(0.5),
+                          ),
+                        ),
+                        child: Icon(
+                          Icons.play_arrow,
+                          color: ChoiceLuxTheme.richGold,
+                          size: 16,
                         ),
                       ),
                     ],
@@ -944,7 +1220,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     fontSize: 14,
                     color: isUpcoming
                         ? Colors.grey.withOpacity(0.7)
-                        : Colors.grey,
+                        : isCompleted
+                        ? Colors.white.withOpacity(0.9)
+                        : Colors.white.withOpacity(0.8),
                   ),
                 ),
                 if (step['address'] != null)
@@ -983,11 +1261,34 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               fontWeight: FontWeight.w500,
                               color: isCurrent
                                   ? ChoiceLuxTheme.richGold
-                                  : Colors.blue,
+                                  : Colors.blue[300],
                             ),
                           ),
                         ),
                       ],
+                    ),
+                  ),
+                if (step['startOdometer'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      step['startOdometer']!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: ChoiceLuxTheme.successColor,
+                      ),
                     ),
                   ),
                 if (step['odometer'] != null)
@@ -1013,7 +1314,53 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isTotal ? Colors.indigo : Colors.grey[700],
+                        color: isTotal ? Colors.indigo : Colors.white,
+                      ),
+                    ),
+                  ),
+                if (step['endOdometer'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.orange.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      step['endOdometer']!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.orange[300],
+                      ),
+                    ),
+                  ),
+                if (step['totalDistance'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      step['totalDistance']!,
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        color: ChoiceLuxTheme.richGold,
                       ),
                     ),
                   ),
@@ -1031,7 +1378,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
-                                color: ChoiceLuxTheme.richGold,
+                                color: Colors.white,
                               ),
                             ),
                             Text(
@@ -1059,9 +1406,34 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   ),
                 if (step['completedAt'] != null)
-                  Text(
-                    'Completed on: ${_formatDateTime(step['completedAt'])}',
-                    style: const TextStyle(fontSize: 12, color: Colors.green),
+                  Container(
+                    margin: const EdgeInsets.only(top: 8),
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: ChoiceLuxTheme.successColor,
+                          size: 16,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Completed on: ${_formatDateTime(step['completedAt'])}',
+                          style: TextStyle(
+                            fontSize: 12, 
+                            color: ChoiceLuxTheme.successColor,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -1764,7 +2136,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       // Determine step status
       bool isCompleted = false;
       bool isCurrent = false;
-      DateTime? completedAt;
+      String? completedAt; // Changed from DateTime? to String? to match database types
 
       // Check if this is the current step
       if (currentStepId != null && currentStepId.isNotEmpty) {
@@ -1781,36 +2153,35 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           completedAt = _driverFlowData?['vehicle_collected_at'];
           break;
         case 'pickup_arrival':
-          isCompleted =
-              _tripProgressData.isNotEmpty &&
-              _tripProgressData.first['pickup_arrived_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty
-              ? _tripProgressData.first['pickup_arrived_at']
-              : null;
+          isCompleted = _driverFlowData?['current_step'] == 'pickup_arrival' ||
+                       _driverFlowData?['current_step'] == 'passenger_pickup' ||
+                       _driverFlowData?['current_step'] == 'passenger_onboard' ||
+                       _driverFlowData?['current_step'] == 'dropoff_arrival' ||
+                       _driverFlowData?['current_step'] == 'trip_complete' ||
+                       _driverFlowData?['current_step'] == 'vehicle_return' ||
+                       _driverFlowData?['current_step'] == 'completed';
+          completedAt = _driverFlowData?['pickup_arrive_time'];
           break;
         case 'passenger_onboard':
-          isCompleted =
-              _tripProgressData.isNotEmpty &&
-              _tripProgressData.first['passenger_onboard_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty
-              ? _tripProgressData.first['passenger_onboard_at']
-              : null;
+          isCompleted = _driverFlowData?['current_step'] == 'passenger_onboard' ||
+                       _driverFlowData?['current_step'] == 'dropoff_arrival' ||
+                       _driverFlowData?['current_step'] == 'trip_complete' ||
+                       _driverFlowData?['current_step'] == 'vehicle_return' ||
+                       _driverFlowData?['current_step'] == 'completed';
+          completedAt = _driverFlowData?['last_activity_at'];
           break;
         case 'dropoff_arrival':
-          isCompleted =
-              _tripProgressData.isNotEmpty &&
-              _tripProgressData.first['dropoff_arrived_at'] != null;
-          completedAt = _tripProgressData.isNotEmpty
-              ? _tripProgressData.first['dropoff_arrived_at']
-              : null;
+          isCompleted = _driverFlowData?['current_step'] == 'dropoff_arrival' ||
+                       _driverFlowData?['current_step'] == 'trip_complete' ||
+                       _driverFlowData?['current_step'] == 'vehicle_return' ||
+                       _driverFlowData?['current_step'] == 'completed';
+          completedAt = _driverFlowData?['last_activity_at'];
           break;
         case 'trip_complete':
-          isCompleted =
-              _tripProgressData.isNotEmpty &&
-              _tripProgressData.first['status'] == 'completed';
-          completedAt = _tripProgressData.isNotEmpty
-              ? _tripProgressData.first['updated_at']
-              : null;
+          isCompleted = _driverFlowData?['current_step'] == 'trip_complete' ||
+                       _driverFlowData?['current_step'] == 'vehicle_return' ||
+                       _driverFlowData?['current_step'] == 'completed';
+          completedAt = _driverFlowData?['last_activity_at'];
           break;
         case 'vehicle_return':
           isCompleted = _driverFlowData?['job_closed_time'] != null;
@@ -1832,9 +2203,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
         // Add odometer info for vehicle steps
         if (stepId == 'vehicle_collection' && startOdo > 0) {
-          stepData['odometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
+          stepData['startOdometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
         } else if (stepId == 'vehicle_return' && endOdo > 0) {
-          stepData['odometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
+          stepData['endOdometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
+          // Also show total distance if we have both readings
+          if (startOdo > 0 && endOdo > startOdo) {
+            final totalKm = endOdo - startOdo;
+            stepData['totalDistance'] = 'Total: ${totalKm.toStringAsFixed(1)} km';
+          }
         }
 
         steps.add(stepData);
@@ -1890,12 +2266,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       }
     }
 
-    // Add total kilometers traveled if job is completed
-    final vehicleReturnedAt = _driverFlowData?['job_closed_time'];
-    if (startOdo > 0 &&
-        endOdo > 0 &&
-        totalKm > 0 &&
-        vehicleReturnedAt != null) {
+    // Add total kilometers traveled if we have both odometer readings
+    if (startOdo > 0 && endOdo > 0 && totalKm > 0) {
       steps.add({
         'title': 'Total Distance Traveled',
         'description': 'Total kilometers covered during this job',
@@ -1959,5 +2331,63 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         ],
       ),
     );
+  }
+
+  Widget _buildMetricItem(String label, String value, IconData icon, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(
+          color: color.withOpacity(0.3),
+        ),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              color: color,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 12,
+              color: Colors.white,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getCurrentStepDisplayName(String stepId) {
+    switch (stepId) {
+      case 'vehicle_collection':
+        return 'Vehicle Collection';
+      case 'pickup_arrival':
+        return 'Arrive at Pickup';
+      case 'passenger_pickup':
+        return 'Passenger Pickup';
+      case 'passenger_onboard':
+        return 'Passenger Onboard';
+      case 'dropoff_arrival':
+        return 'Arrive at Dropoff';
+      case 'trip_complete':
+        return 'Trip Complete';
+      case 'vehicle_return':
+        return 'Vehicle Return';
+      case 'completed':
+        return 'Job Completed';
+      default:
+        return stepId.replaceAll('_', ' ').toTitleCase();
+    }
   }
 }

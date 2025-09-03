@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,6 +7,7 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -59,6 +61,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         }
       } else {
         Log.d('Reset Password Screen - Session found, user can reset password');
+        // Set password recovery state to true when we have a valid session
+        // This prevents the router guard from redirecting the user away
+        ref.read(authProvider.notifier).setPasswordRecovery(true);
       }
     } catch (error) {
       Log.e('Reset Password Screen - Error checking session: $error');
@@ -80,12 +85,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   void dispose() {
     _passwordController.dispose();
     _confirmPasswordController.dispose();
-
-    // Clear password recovery state when leaving the screen
-    // This prevents the router from redirecting back to reset password
-    if (mounted) {
-      ref.read(authProvider.notifier).setPasswordRecovery(false);
-    }
 
     super.dispose();
   }
@@ -152,291 +151,300 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     return Scaffold(
       body: Container(
         decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
-              final isTablet =
-                  constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
+        child: Stack(
+          children: [
+                         // Subtle background pattern
+             Positioned.fill(
+               child: CustomPaint(painter: BackgroundPatterns.signin),
+             ),
+            SafeArea(
+              child: LayoutBuilder(
+                builder: (context, constraints) {
+                  final isMobile = constraints.maxWidth < 600;
+                  final isTablet =
+                      constraints.maxWidth >= 600 && constraints.maxWidth < 1200;
 
-              return Center(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: isMobile
-                        ? 24.0
-                        : isTablet
-                        ? 64.0
-                        : 120.0,
-                    vertical: 32.0,
-                  ),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: isMobile ? double.infinity : 400,
-                    ),
-                    child: Card(
-                      elevation: 12,
-                      shadowColor: Colors.black.withOpacity(0.3),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
+                  return Center(
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: isMobile
+                            ? 24.0
+                            : isTablet
+                                ? 64.0
+                                : 120.0,
+                        vertical: 32.0,
                       ),
-                      child: Container(
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          gradient: LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              ChoiceLuxTheme.charcoalGray,
-                              ChoiceLuxTheme.charcoalGray.withOpacity(0.95),
-                            ],
-                          ),
-                          border: Border.all(
-                            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                            width: 1,
-                          ),
+                      child: ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: isMobile ? double.infinity : 400,
                         ),
-                        padding: const EdgeInsets.all(32.0),
-                        child: Form(
-                          key: _formKey,
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              // Title
-                              Text(
-                                'Create New Password',
-                                style: TextStyle(
-                                  fontSize: 28,
-                                  fontWeight: FontWeight.bold,
-                                  color: ChoiceLuxTheme.softWhite,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(20),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.black.withOpacity(0.4),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.2),
+                                  width: 1.5,
                                 ),
-                                textAlign: TextAlign.center,
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.3),
+                                    blurRadius: 20,
+                                    offset: const Offset(0, 10),
+                                  ),
+                                ],
                               ),
-                              const SizedBox(height: 8),
+                              padding: const EdgeInsets.all(32.0),
+                              child: Form(
+                                key: _formKey,
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    // Title
+                                    Text(
+                                      'Create New Password',
+                                      style: TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: ChoiceLuxTheme.softWhite,
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 8),
 
-                              // Subtitle
-                              Text(
-                                'Please enter your new password below.',
-                                style: TextStyle(
-                                  fontSize: 16,
-                                  color: ChoiceLuxTheme.platinumSilver
-                                      .withOpacity(0.8),
-                                ),
-                                textAlign: TextAlign.center,
-                              ),
-                              const SizedBox(height: 32),
+                                    // Subtitle
+                                    Text(
+                                      'Please enter your new password below.',
+                                      style: TextStyle(
+                                        fontSize: 16,
+                                        color: ChoiceLuxTheme.platinumSilver
+                                            .withOpacity(0.8),
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                    const SizedBox(height: 32),
 
-                              // New Password field
-                              TextFormField(
-                                controller: _passwordController,
-                                obscureText: _obscurePassword,
-                                textInputAction: TextInputAction.next,
-                                style: TextStyle(
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: 'New Password',
-                                  labelStyle: TextStyle(
-                                    color: ChoiceLuxTheme.platinumSilver,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.lock_outline,
-                                    color: ChoiceLuxTheme.richGold,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscurePassword
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
-                                      color: ChoiceLuxTheme.platinumSilver,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscurePassword = !_obscurePassword;
-                                      });
-                                    },
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.platinumSilver
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.richGold,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  errorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.errorColor,
-                                    ),
-                                  ),
-                                  focusedErrorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.errorColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: ChoiceLuxTheme.charcoalGray
-                                      .withOpacity(0.3),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please enter a password';
-                                  }
-                                  if (value.length < 6) {
-                                    return 'Password must be at least 6 characters';
-                                  }
-                                  return null;
-                                },
-                              ),
-                              const SizedBox(height: 20),
-
-                              // Confirm Password field
-                              TextFormField(
-                                controller: _confirmPasswordController,
-                                obscureText: _obscureConfirmPassword,
-                                textInputAction: TextInputAction.done,
-                                style: TextStyle(
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                decoration: InputDecoration(
-                                  labelText: 'Confirm New Password',
-                                  labelStyle: TextStyle(
-                                    color: ChoiceLuxTheme.platinumSilver,
-                                  ),
-                                  prefixIcon: Icon(
-                                    Icons.lock_outline,
-                                    color: ChoiceLuxTheme.richGold,
-                                  ),
-                                  suffixIcon: IconButton(
-                                    icon: Icon(
-                                      _obscureConfirmPassword
-                                          ? Icons.visibility
-                                          : Icons.visibility_off,
-                                      color: ChoiceLuxTheme.platinumSilver,
-                                    ),
-                                    onPressed: () {
-                                      setState(() {
-                                        _obscureConfirmPassword =
-                                            !_obscureConfirmPassword;
-                                      });
-                                    },
-                                  ),
-                                  enabledBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.platinumSilver
-                                          .withOpacity(0.3),
-                                    ),
-                                  ),
-                                  focusedBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.richGold,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  errorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.errorColor,
-                                    ),
-                                  ),
-                                  focusedErrorBorder: OutlineInputBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                    borderSide: BorderSide(
-                                      color: ChoiceLuxTheme.errorColor,
-                                      width: 2,
-                                    ),
-                                  ),
-                                  filled: true,
-                                  fillColor: ChoiceLuxTheme.charcoalGray
-                                      .withOpacity(0.3),
-                                ),
-                                validator: (value) {
-                                  if (value == null || value.isEmpty) {
-                                    return 'Please confirm your password';
-                                  }
-                                  if (value != _passwordController.text) {
-                                    return 'Passwords do not match';
-                                  }
-                                  return null;
-                                },
-                                onFieldSubmitted: (_) => _resetPassword(),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Update Password button
-                              ElevatedButton(
-                                onPressed: _isLoading ? null : _resetPassword,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: ChoiceLuxTheme.richGold,
-                                  foregroundColor: Colors.black,
-                                  elevation: 4,
-                                  shadowColor: ChoiceLuxTheme.richGold
-                                      .withOpacity(0.3),
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                child: _isLoading
-                                    ? SizedBox(
-                                        height: 20,
-                                        width: 20,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2,
-                                          valueColor:
-                                              AlwaysStoppedAnimation<Color>(
-                                                Colors.black,
-                                              ),
+                                    // New Password field
+                                    TextFormField(
+                                      controller: _passwordController,
+                                      obscureText: _obscurePassword,
+                                      textInputAction: TextInputAction.next,
+                                      style: TextStyle(
+                                        color: ChoiceLuxTheme.softWhite,
+                                      ),
+                                      decoration: InputDecoration(
+                                        labelText: 'New Password',
+                                        labelStyle: TextStyle(
+                                          color: ChoiceLuxTheme.platinumSilver,
                                         ),
-                                      )
-                                    : Text(
-                                        'Update Password',
-                                        style: TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
+                                        prefixIcon: Icon(
+                                          Icons.lock_outline,
+                                          color: ChoiceLuxTheme.richGold,
+                                        ),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscurePassword
+                                                ? Icons.visibility
+                                                : Icons.visibility_off,
+                                            color: ChoiceLuxTheme.platinumSilver,
+                                          ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _obscurePassword = !_obscurePassword;
+                                            });
+                                          },
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.platinumSilver
+                                                .withOpacity(0.3),
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.richGold,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.errorColor,
+                                          ),
+                                        ),
+                                        focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.errorColor,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: ChoiceLuxTheme.charcoalGray
+                                            .withOpacity(0.3),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please enter a password';
+                                        }
+                                        if (value.length < 6) {
+                                          return 'Password must be at least 6 characters';
+                                        }
+                                        return null;
+                                      },
+                                    ),
+                                    const SizedBox(height: 20),
+
+                                    // Confirm Password field
+                                    TextFormField(
+                                      controller: _confirmPasswordController,
+                                      obscureText: _obscureConfirmPassword,
+                                      textInputAction: TextInputAction.done,
+                                      style: TextStyle(
+                                        color: ChoiceLuxTheme.softWhite,
+                                      ),
+                                      decoration: InputDecoration(
+                                        labelText: 'Confirm New Password',
+                                        labelStyle: TextStyle(
+                                          color: ChoiceLuxTheme.platinumSilver,
+                                        ),
+                                        prefixIcon: Icon(
+                                          Icons.lock_outline,
+                                          color: ChoiceLuxTheme.richGold,
+                                        ),
+                                        suffixIcon: IconButton(
+                                          icon: Icon(
+                                            _obscureConfirmPassword
+                                                ? Icons.visibility
+                                                : Icons.visibility_off,
+                                            color: ChoiceLuxTheme.platinumSilver,
+                                            ),
+                                          onPressed: () {
+                                            setState(() {
+                                              _obscureConfirmPassword =
+                                                  !_obscureConfirmPassword;
+                                            });
+                                          },
+                                        ),
+                                        enabledBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.platinumSilver
+                                                .withOpacity(0.3),
+                                          ),
+                                        ),
+                                        focusedBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.richGold,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        errorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.errorColor,
+                                          ),
+                                        ),
+                                        focusedErrorBorder: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: ChoiceLuxTheme.errorColor,
+                                            width: 2,
+                                          ),
+                                        ),
+                                        filled: true,
+                                        fillColor: ChoiceLuxTheme.charcoalGray
+                                            .withOpacity(0.3),
+                                      ),
+                                      validator: (value) {
+                                        if (value == null || value.isEmpty) {
+                                          return 'Please confirm your password';
+                                        }
+                                        if (value != _passwordController.text) {
+                                          return 'Passwords do not match';
+                                        }
+                                        return null;
+                                      },
+                                      onFieldSubmitted: (_) => _resetPassword(),
+                                    ),
+                                    const SizedBox(height: 24),
+
+                                    // Update Password button
+                                    ElevatedButton(
+                                      onPressed: _isLoading ? null : _resetPassword,
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ChoiceLuxTheme.richGold,
+                                        foregroundColor: Colors.black,
+                                        elevation: 4,
+                                        shadowColor: ChoiceLuxTheme.richGold
+                                            .withOpacity(0.3),
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 16,
+                                        ),
+                                        shape: RoundedRectangleBorder(
+                                          borderRadius: BorderRadius.circular(12),
                                         ),
                                       ),
-                              ),
-                              const SizedBox(height: 24),
-
-                              // Back to Login link
-                              Center(
-                                child: TextButton(
-                                  onPressed: () => context.go('/login'),
-                                  child: Text(
-                                    'Back to Login',
-                                    style: TextStyle(
-                                      color: ChoiceLuxTheme.platinumSilver,
-                                      fontSize: 14,
+                                      child: _isLoading
+                                          ? SizedBox(
+                                              height: 20,
+                                              width: 20,
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                valueColor:
+                                                    AlwaysStoppedAnimation<Color>(
+                                                  Colors.black,
+                                                ),
+                                              ),
+                                            )
+                                          : Text(
+                                              'Update Password',
+                                              style: TextStyle(
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w600,
+                                              ),
+                                            ),
                                     ),
-                                  ),
+                                    const SizedBox(height: 24),
+
+                                    // Back to Login link
+                                    Center(
+                                      child: TextButton(
+                                        onPressed: () => context.go('/login'),
+                                        child: Text(
+                                          'Back to Login',
+                                          style: TextStyle(
+                                            color: ChoiceLuxTheme.platinumSilver,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
-                            ],
+                            ),
                           ),
                         ),
                       ),
                     ),
-                  ),
-                ),
-              );
-            },
-          ),
+                  );
+                },
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 }
+
+

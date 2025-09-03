@@ -22,7 +22,7 @@ class UsersRepository {
       Log.d('Fetching users from database');
 
       final response = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
           .order('display_name', ascending: true);
 
@@ -42,7 +42,7 @@ class UsersRepository {
       Log.d('Fetching user profile: $userId');
 
       final response = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
           .eq('id', userId)
           .maybeSingle();
@@ -68,7 +68,7 @@ class UsersRepository {
     try {
       Log.d('Updating user profile: $userId');
 
-      await _supabase.from('users').update(data).eq('id', userId);
+      await _supabase.from('profiles').update(data).eq('id', userId);
 
       Log.d('User profile updated successfully');
       return const Result.success(null);
@@ -84,7 +84,7 @@ class UsersRepository {
       Log.d('Fetching users with role: $role');
 
       final response = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
           .eq('role', role)
           .order('display_name', ascending: true);
@@ -105,7 +105,7 @@ class UsersRepository {
       Log.d('Fetching drivers from database');
 
       final response = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
           .inFilter('role', ['driver', 'driver_manager'])
           .order('display_name', ascending: true);
@@ -126,9 +126,9 @@ class UsersRepository {
       Log.d('Searching users with query: $query');
 
       final response = await _supabase
-          .from('users')
+          .from('profiles')
           .select()
-          .or('display_name.ilike.%$query%,email.ilike.%$query%')
+          .or('display_name.ilike.%$query%,user_email.ilike.%$query%')
           .order('display_name', ascending: true);
 
       Log.d('Found ${response.length} users matching query: $query');
@@ -147,8 +147,8 @@ class UsersRepository {
       Log.d('Deactivating user: $userId');
 
       await _supabase
-          .from('users')
-          .update({'is_active': false})
+          .from('profiles')
+          .update({'status': 'deactivated'})
           .eq('id', userId);
 
       Log.d('User deactivated successfully');
@@ -165,8 +165,8 @@ class UsersRepository {
       Log.d('Activating user: $userId');
 
       await _supabase
-          .from('users')
-          .update({'is_active': true})
+          .from('profiles')
+          .update({'status': 'active'})
           .eq('id', userId);
 
       Log.d('User activated successfully');
@@ -184,7 +184,7 @@ class UsersRepository {
 
       final data = user.toJson();
       await _supabase
-          .from('users')
+          .from('profiles')
           .update(data)
           .eq('id', user.id);
 

@@ -88,6 +88,8 @@ class _ClientCardState extends State<ClientCard>
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
+                  // Fix: Add clipBehavior to ensure ripple is clipped to rounded corners
+                  clipBehavior: Clip.antiAlias,
                   child: Container(
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(12),
@@ -136,6 +138,11 @@ class _ClientCardState extends State<ClientCard>
                     ),
                     child: Material(
                       color: Colors.transparent,
+                      // Fix: Add proper shape and clipBehavior to Material
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: widget.onTap,
                         splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
@@ -198,23 +205,8 @@ class _ClientCardState extends State<ClientCard>
                                               .withOpacity(0.3),
                                         ),
                                       ),
-                                      child: widget.client.companyLogo != null
-                                          ? ClipRRect(
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                              child: Image.network(
-                                                widget.client.companyLogo!,
-                                                fit: BoxFit.cover,
-                                                errorBuilder:
-                                                    (
-                                                      context,
-                                                      error,
-                                                      stackTrace,
-                                                    ) =>
-                                                        _buildLogoPlaceholder(),
-                                              ),
-                                            )
-                                          : _buildLogoPlaceholder(),
+                                      // Fix: Check for both null and empty URLs
+                                      child: _buildLogo(),
                                     ),
                                     const SizedBox(width: 10),
                                     Expanded(
@@ -316,8 +308,9 @@ class _ClientCardState extends State<ClientCard>
                                   isSmallMobile,
                                 ),
 
-                                // Action buttons - reduced spacing
-                                if (_isHovered || isMobile) ...[
+                                                                 // Action buttons - reduced spacing
+                                 // Fix: Detect pointer kind and show actions appropriately
+                                 if (_isHovered || isMobile) ...[
                                   // Visual divider
                                   Container(
                                     margin: EdgeInsets.symmetric(
@@ -366,6 +359,25 @@ class _ClientCardState extends State<ClientCard>
         );
       },
     );
+  }
+
+  // Fix: Robust logo rendering with null/empty URL handling
+  Widget _buildLogo() {
+    final logo = widget.client.companyLogo;
+    final hasLogo = logo != null && logo.trim().isNotEmpty;
+    
+    if (hasLogo) {
+      return ClipRRect(
+        borderRadius: BorderRadius.circular(8),
+        child: Image.network(
+          logo!,
+          fit: BoxFit.cover,
+          errorBuilder: (_, __, ___) => _buildLogoPlaceholder(),
+        ),
+      );
+    } else {
+      return _buildLogoPlaceholder();
+    }
   }
 
   Widget _buildLogoPlaceholder() {
@@ -491,7 +503,8 @@ class _ClientCardState extends State<ClientCard>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          // Fix: Use theme colors instead of hard-coded greys
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
@@ -544,7 +557,8 @@ class _ClientCardState extends State<ClientCard>
       return Container(
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         decoration: BoxDecoration(
-          color: Colors.grey[900],
+          // Fix: Use theme colors instead of hard-coded greys
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),

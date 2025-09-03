@@ -9,6 +9,7 @@ import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -214,19 +215,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
 
     return Scaffold(
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [Color(0xFF0A0A0A), Color(0xFF1A1A1A), Color(0xFF0A0A0A)],
-          ),
-        ),
+        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
         child: Stack(
           children: [
-            // Subtle background pattern
-            Positioned.fill(
-              child: CustomPaint(painter: BackgroundPatternPainter()),
-            ),
+                         // Subtle background pattern
+             Positioned.fill(
+               child: CustomPaint(painter: BackgroundPatterns.signin),
+             ),
             SafeArea(
               child: Center(
                 child: SingleChildScrollView(
@@ -886,22 +881,4 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
   }
 }
 
-class BackgroundPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = ChoiceLuxTheme.richGold.withOpacity(0.03)
-      ..strokeWidth = 1;
 
-    // Draw subtle grid pattern
-    for (double i = 0; i < size.width; i += 50) {
-      canvas.drawLine(Offset(i, 0), Offset(i, size.height), paint);
-    }
-    for (double i = 0; i < size.height; i += 50) {
-      canvas.drawLine(Offset(0, i), Offset(size.width, i), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
-}

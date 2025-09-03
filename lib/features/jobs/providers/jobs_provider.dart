@@ -24,7 +24,6 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 
     final canCreate =
         userRole == 'administrator' ||
-        userRole == 'admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';
@@ -37,11 +36,23 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Fetching jobs...');
 
-      final result = await _jobsRepository.fetchJobs();
+      final userProfile = _ref.read(currentUserProfileProvider);
+      final userId = userProfile?.id;
+      final userRole = userProfile?.role?.toLowerCase();
+
+      if (userId == null || userRole == null) {
+        Log.e('User profile or role not available - cannot fetch jobs');
+        return [];
+      }
+
+      final result = await _jobsRepository.fetchJobs(
+        userId: userId,
+        userRole: userRole,
+      );
 
       if (result.isSuccess) {
         final jobs = result.data!;
-        Log.d('Fetched ${jobs.length} jobs successfully');
+        Log.d('Fetched ${jobs.length} jobs successfully for user: $userId with role: $userRole');
         return jobs;
       } else {
         Log.e('Error fetching jobs: ${result.error!.message}');
@@ -264,7 +275,6 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     final userRole = userProfile?.role?.toLowerCase();
 
     return userRole == 'administrator' ||
-        userRole == 'admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';

@@ -273,6 +273,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   // Set password recovery state
   void setPasswordRecovery(bool isRecovery) {
+    Log.d('Auth Provider - Setting password recovery state: $isRecovery');
     _isPasswordRecovery = isRecovery;
   }
 }

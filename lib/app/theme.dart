@@ -33,6 +33,8 @@ class ChoiceLuxTheme {
     colors: [Color(0xFF1E1E1E), Color(0xFF2A2A2A)],
   );
 
+
+
   // Light theme
   static ThemeData get lightTheme {
     return ThemeData(

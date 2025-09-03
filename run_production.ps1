@@ -1,0 +1,2 @@
+# Run Flutter app with production Supabase configuration
+flutter run -d chrome --dart-define=SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhncXJiZWtwaHVtZGxzaWZ1YW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjc1MTc2NjgsImV4cCI6MjA0MzA5MzY2OH0.zXwuDm3KzLHiF31CsDIsHrrlYnjCweqnNjFZ90AiK1I

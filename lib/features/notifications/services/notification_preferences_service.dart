@@ -83,7 +83,7 @@ class NotificationPreferencesService {
       }
 
       await _supabase
-          .from('notifications')
+          .from('app_notifications') // FIXED: Use correct table name
           .delete()
           .eq('user_id', currentUser.id);
 
