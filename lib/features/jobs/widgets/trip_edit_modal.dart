@@ -3,14 +3,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 
 class TripEditModal extends ConsumerStatefulWidget {
   final Trip trip;
+  final String jobId;
   final Function(Trip) onTripUpdated;
 
   const TripEditModal({
     super.key,
     required this.trip,
+    required this.jobId,
     required this.onTripUpdated,
   });
 
@@ -26,8 +29,6 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
   late TextEditingController _amountController;
   late DateTime _pickupDate;
   late TimeOfDay _pickupTime;
-  late DateTime? _clientPickupTime;
-  late DateTime? _clientDropoffTime;
   bool _isLoading = false;
 
   @override
@@ -45,8 +46,6 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
     );
     _pickupDate = widget.trip.pickupDate;
     _pickupTime = TimeOfDay.fromDateTime(widget.trip.pickupDate);
-    _clientPickupTime = widget.trip.clientPickupTime;
-    _clientDropoffTime = widget.trip.clientDropoffTime;
   }
 
   @override
@@ -84,57 +83,6 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
     }
   }
 
-  Future<void> _selectClientPickupTime(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _clientPickupTime ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      final TimeOfDay? timePicked = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (timePicked != null) {
-        setState(() {
-          _clientPickupTime = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            timePicked.hour,
-            timePicked.minute,
-          );
-        });
-      }
-    }
-  }
-
-  Future<void> _selectClientDropoffTime(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: _clientDropoffTime ?? DateTime.now(),
-      firstDate: DateTime.now().subtract(const Duration(days: 365)),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
-    );
-    if (picked != null) {
-      final TimeOfDay? timePicked = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-      );
-      if (timePicked != null) {
-        setState(() {
-          _clientDropoffTime = DateTime(
-            picked.year,
-            picked.month,
-            picked.day,
-            timePicked.hour,
-            timePicked.minute,
-          );
-        });
-      }
-    }
-  }
 
   Future<void> _saveTrip() async {
     if (!_formKey.currentState!.validate()) return;
@@ -155,8 +103,6 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
         pickupDate: combinedDateTime,
         pickupLocation: _pickupLocationController.text.trim(),
         dropoffLocation: _dropoffLocationController.text.trim(),
-        clientPickupTime: _clientPickupTime,
-        clientDropoffTime: _clientDropoffTime,
         notes: _notesController.text.trim().isEmpty
             ? null
             : _notesController.text.trim(),
@@ -164,7 +110,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
       );
 
       await ref
-          .read(tripsByJobProvider(jobId).notifier)
+          .read(tripsByJobProvider(widget.jobId).notifier)
           .updateTrip(updatedTrip);
 
       if (mounted) {
@@ -350,86 +296,6 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                   }
                   return null;
                 },
-              ),
-              const SizedBox(height: 16),
-
-              // Client Pickup Time
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Client Pickup Time (Optional)',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectClientPickupTime(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  color: ChoiceLuxTheme.richGold,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _clientPickupTime != null
-                                      ? '${_clientPickupTime!.day}/${_clientPickupTime!.month}/${_clientPickupTime!.year} ${_clientPickupTime!.hour.toString().padLeft(2, '0')}:${_clientPickupTime!.minute.toString().padLeft(2, '0')}'
-                                      : 'Not set',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Client Dropoff Time (Optional)',
-                          style: TextStyle(fontWeight: FontWeight.w500),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectClientDropoffTime(context),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  color: ChoiceLuxTheme.richGold,
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _clientDropoffTime != null
-                                      ? '${_clientDropoffTime!.day}/${_clientDropoffTime!.month}/${_clientDropoffTime!.year} ${_clientDropoffTime!.hour.toString().padLeft(2, '0')}:${_clientDropoffTime!.minute.toString().padLeft(2, '0')}'
-                                      : 'Not set',
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
               ),
               const SizedBox(height: 16),
 

@@ -94,7 +94,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        // Layer 2: The Scaffold with a transparent background
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
         Scaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.transparent, // CRITICAL
@@ -115,36 +119,29 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           drawer: isMobile ? null : LuxuryDrawer(),
-          body: Stack( // The body is now just the content stack
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          body: SafeArea(
+            child: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
               ),
-              SafeArea(
-                child: SingleChildScrollView(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: horizontalPadding,
-                    vertical: verticalPadding,
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Welcome Section
-                      _buildWelcomeSection(context, userName),
-                      SizedBox(height: sectionSpacing),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Welcome Section
+                  _buildWelcomeSection(context, userName),
+                  SizedBox(height: sectionSpacing),
 
-                      // Dashboard Cards
-                      _buildDashboardCards(
-                        context,
-                        todayJobsCount,
-                        unassignedUsersCount,
-                      ),
-                      SizedBox(height: sectionSpacing),
-                    ],
+                  // Dashboard Cards
+                  _buildDashboardCards(
+                    context,
+                    todayJobsCount,
+                    unassignedUsersCount,
                   ),
-                ),
+                  SizedBox(height: sectionSpacing),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -343,13 +340,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           color: ChoiceLuxTheme.richGold,
           badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
         ),
-        DashboardItem(
-          title: 'Invoices',
-          subtitle: 'Generate and manage invoices',
-          icon: Icons.receipt_long_outlined,
-          route: '/invoices',
-          color: ChoiceLuxTheme.richGold,
-        ),
       ];
     }
 
@@ -367,14 +357,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     EdgeInsets outerPadding = const EdgeInsets.all(16);
 
     if (screenWidth >= 1200) {
-      // Large Desktop - 4 columns
-      Log.d('Layout: Large Desktop (4 columns)');
-      crossAxisCount = 4;
+      // Large Desktop - 3 columns (2-3 layout)
+      Log.d('Layout: Large Desktop (3 columns - 2-3 layout)');
+      crossAxisCount = 3;
       spacing = 24.0;
       childAspectRatio = 1.2;
     } else if (screenWidth >= 900) {
-      // Desktop - 3 columns
-      Log.d('Layout: Desktop (3 columns)');
+      // Desktop - 3 columns (2-3 layout)
+      Log.d('Layout: Desktop (3 columns - 2-3 layout)');
       crossAxisCount = 3;
       spacing = 20.0;
       childAspectRatio = 1.1;
@@ -385,8 +375,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       spacing = 16.0;
       childAspectRatio = 1.0;
     } else {
-      // Mobile - 2 columns (forced for testing)
-      Log.d('Layout: Mobile (2 columns) - FORCED for testing');
+      // Mobile - 2 columns
+      Log.d('Layout: Mobile (2 columns)');
       crossAxisCount = 2;
       spacing = 12.0;
       childAspectRatio = 0.9;

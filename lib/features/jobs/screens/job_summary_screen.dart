@@ -15,6 +15,8 @@ import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.d
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -49,6 +51,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   // Step completion times
   Map<String, dynamic>? _driverFlowData;
   List<Map<String, dynamic>> _tripProgressData = [];
+  
+  // Trip timeline state
+  int _selectedTripIndex = 0;
 
   // Mobile accordion state
   final Map<String, bool> _expandedSections = {
@@ -71,6 +76,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     super.didChangeDependencies();
     // Refresh step data when dependencies change (e.g., returning from job progress)
     _loadStepCompletionData();
+    
+    // Refresh trips when screen is focused/opened
+    _refreshTrips();
+  }
+  
+  Future<void> _refreshTrips() async {
+    try {
+      final tripsNotifier = ref.read(tripsByJobProvider(widget.jobId).notifier);
+      await tripsNotifier.refresh();
+      Log.d('Trips refreshed on screen focus');
+    } catch (e) {
+      Log.e('Error refreshing trips on screen focus: $e');
+    }
   }
 
   Future<void> _loadJobData() async {
@@ -111,17 +129,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
       _job = job;
 
-      // Load trips for this job using the tripsByJobProvider
-      Log.d('Loading trips for job ${widget.jobId}...');
+      // Initialize trips provider for this job
+      Log.d('Initializing trips provider for job ${widget.jobId}...');
       try {
-        final tripsNotifier = ref.read(
-          tripsByJobProvider(widget.jobId).notifier,
-        );
-        Log.d('Trips notifier obtained, refreshing...');
-        await tripsNotifier.refresh();
-        Log.d('Trips refresh completed');
-        
+        // This will trigger the provider to load trips for this job
         final tripsState = ref.read(tripsByJobProvider(widget.jobId));
+        Log.d('Trips provider initialized');
         Log.d('Trips state: ${tripsState.toString()}');
         Log.d('Trips state hasValue: ${tripsState.hasValue}');
         Log.d('Trips state isLoading: ${tripsState.isLoading}');
@@ -135,25 +148,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           _trips = [];
           Log.d('No trips found for job ${widget.jobId}');
         }
-        
-        // Fallback: Check database directly if provider approach failed
-        if (_trips.isEmpty) {
-          Log.d('Provider approach returned no trips, checking database directly...');
-          try {
-            final directResponse = await Supabase.instance.client
-                .from('trips')
-                .select('*')
-                .eq('job_id', int.parse(widget.jobId));
-            Log.d('Direct database query returned ${directResponse.length} trips');
-            if (directResponse.isNotEmpty) {
-              Log.d('Direct database response: ${directResponse.toString()}');
-            }
-          } catch (e) {
-            Log.e('Direct database query failed: $e');
-          }
-        }
       } catch (e) {
-        Log.e('Error loading trips: $e');
+        Log.e('Error initializing trips provider: $e');
         _trips = [];
       }
 
@@ -234,6 +230,16 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       Log.d('Loaded step completion data:');
       Log.d('Driver flow: $_driverFlowData');
       Log.d('Trip progress: $_tripProgressData');
+      
+      // Debug odometer data specifically
+      if (_driverFlowData != null) {
+        Log.d('=== ODOMETER DEBUG ===');
+        Log.d('odo_start_reading: ${_driverFlowData!['odo_start_reading']}');
+        Log.d('job_closed_odo: ${_driverFlowData!['job_closed_odo']}');
+        Log.d('Start reading type: ${_driverFlowData!['odo_start_reading'].runtimeType}');
+        Log.d('End reading type: ${_driverFlowData!['job_closed_odo'].runtimeType}');
+        Log.d('=====================');
+      }
     } catch (e) {
       Log.e('Error loading step completion data: $e');
       // Don't fail the entire load if this fails
@@ -242,6 +248,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch trips data to automatically update when trips change
+    final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
+    
+    // Update local trips list when trips data changes
+    if (tripsState.hasValue && tripsState.value != null) {
+      _trips = tripsState.value!;
+    }
+    
     if (_isLoading) {
       return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
@@ -292,8 +306,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       );
     }
 
-    // Calculate total amount from job payment amount since trips are not implemented
-    final totalAmount = _job!.paymentAmount ?? 0.0;
+    // Calculate total amount from trips
+    final totalAmount = _trips.fold(0.0, (sum, trip) => sum + trip.amount);
     final isDesktop = MediaQuery.of(context).size.width > 768;
 
     return Stack(
@@ -798,6 +812,105 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
 
+  Widget _buildTripSelector() {
+    if (_trips.isEmpty) return const SizedBox.shrink();
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade800,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade600),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Select Trip:',
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              fontSize: 14,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 8),
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: _trips.asMap().entries.map((entry) {
+                final index = entry.key;
+                final trip = entry.value;
+                final isSelected = index == _selectedTripIndex;
+                
+                return Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _selectedTripIndex = index;
+                      });
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      decoration: BoxDecoration(
+                        color: isSelected 
+                            ? ChoiceLuxTheme.richGold 
+                            : Colors.grey.shade700,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: isSelected 
+                              ? ChoiceLuxTheme.richGold 
+                              : Colors.grey.shade500,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.directions_car,
+                            size: 16,
+                            color: isSelected 
+                                ? Colors.white 
+                                : Colors.grey.shade300,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Trip ${index + 1}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w500,
+                              color: isSelected 
+                                  ? Colors.white 
+                                  : Colors.grey.shade300,
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'R${trip.amount.toStringAsFixed(0)}',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              color: isSelected 
+                                  ? Colors.white 
+                                  : ChoiceLuxTheme.richGold,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildStepTimelineCard() {
     return Card(
       elevation: 2,
@@ -826,6 +939,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               ],
             ),
             const SizedBox(height: 16),
+            
+            // Trip Selector
+            if (_trips.isNotEmpty) ...[
+              _buildTripSelector(),
+              const SizedBox(height: 16),
+            ],
             FutureBuilder<List<Map<String, dynamic>>>(
               future: _getStepTimeline(),
               builder: (context, snapshot) {
@@ -1009,40 +1128,20 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                                     ),
                                   ),
                                 ],
+                                if (_driverFlowData!['odo_start_reading'] != null && 
+                                    _driverFlowData!['job_closed_odo'] != null) ...[
+                                  const SizedBox(width: 16),
+                                  Expanded(
+                                    child: _buildMetricItem(
+                                      'Total Distance',
+                                      '${(_driverFlowData!['job_closed_odo'] - _driverFlowData!['odo_start_reading']).toStringAsFixed(1)} km',
+                                      Icons.route,
+                                      Colors.indigo,
+                                    ),
+                                  ),
+                                ],
                               ],
                             ),
-                            if (_driverFlowData!['odo_start_reading'] != null && 
-                                _driverFlowData!['job_closed_odo'] != null) ...[
-                              const SizedBox(height: 8),
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.indigo.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: Colors.indigo.withOpacity(0.3),
-                                  ),
-                                ),
-                                child: Row(
-                                  children: [
-                                    Icon(
-                                      Icons.route,
-                                      color: Colors.indigo,
-                                      size: 20,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      'Total Distance: ${(_driverFlowData!['job_closed_odo'] - _driverFlowData!['odo_start_reading']).toStringAsFixed(1)} km',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: Colors.indigo,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
                             // Current Step Status
                             if (_driverFlowData!['current_step'] != null) ...[
                               const SizedBox(height: 8),
@@ -1263,6 +1362,72 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                                   ? ChoiceLuxTheme.richGold
                                   : Colors.blue[300],
                             ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (step['tripAmount'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.attach_money,
+                          size: 12,
+                          color: ChoiceLuxTheme.richGold,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          step['tripAmount']!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                            color: ChoiceLuxTheme.richGold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (step['tripDate'] != null)
+                  Container(
+                    margin: const EdgeInsets.only(top: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                      border: Border.all(
+                        color: Colors.green.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          Icons.schedule,
+                          size: 12,
+                          color: Colors.green,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          step['tripDate']!,
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            color: Colors.green,
                           ),
                         ),
                       ],
@@ -1778,6 +1943,23 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   ),
                 ),
               ),
+            ] else if (isAssignedDriver && isConfirmed) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: null, // Disabled after confirmation
+                  icon: const Icon(Icons.check_circle),
+                  label: const Text('Job Confirmed'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.grey, // Different color for confirmed state
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
             ] else if (canEdit) ...[
               const SizedBox(width: 16),
               Expanded(
@@ -1798,24 +1980,43 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ],
           ],
         ),
-        // Add Another Trip Button
+        // Trip Management Buttons
         if (canEdit) ...[
           const SizedBox(height: 12),
-          SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: _showAddTripModal,
-              icon: const Icon(Icons.add),
-              label: const Text('Add Another Trip'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.infoColor,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
+          Row(
+            children: [
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => context.go('/trip-management/${widget.jobId}'),
+                  icon: const Icon(Icons.list_alt),
+                  label: const Text('View All Trips'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.platinumSilver,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
                 ),
               ),
-            ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _showAddTripModal,
+                  icon: const Icon(Icons.add),
+                  label: const Text('Add Another Trip'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.infoColor,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
           ),
         ],
       ],
@@ -1877,6 +2078,24 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               ),
             ),
           ),
+        ] else if (isAssignedDriver && isConfirmed) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: null, // Disabled after confirmation
+              icon: const Icon(Icons.check_circle),
+              label: const Text('Job Confirmed'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.grey, // Different color for confirmed state
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
         ] else if (canEdit) ...[
           const SizedBox(height: 12),
           SizedBox(
@@ -1887,6 +2106,43 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               label: const Text('Edit Job'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
+        // Trip Management Buttons
+        if (canEdit) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: () => context.go('/trip-management/${widget.jobId}'),
+              icon: const Icon(Icons.list_alt),
+              label: const Text('View All Trips'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.platinumSilver,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showAddTripModal,
+              icon: const Icon(Icons.add),
+              label: const Text('Add Another Trip'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.infoColor,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -2095,6 +2351,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
   }
 
+  String _formatTripDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
   Future<List<Map<String, dynamic>>> _getStepTimeline() async {
     final steps = <Map<String, dynamic>>[];
 
@@ -2117,14 +2377,28 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     // Get current step from driver flow data
     final currentStepId = _driverFlowData?['current_step']?.toString();
 
-    // Load job addresses for pickup/dropoff steps
-    Map<String, String?> jobAddresses = {};
-    try {
-      jobAddresses = await DriverFlowApiService.getJobAddresses(
-        int.parse(widget.jobId),
-      );
-    } catch (e) {
-      Log.e('Could not load job addresses: $e');
+    // Get selected trip data
+    Trip? selectedTrip;
+    if (_trips.isNotEmpty && _selectedTripIndex < _trips.length) {
+      selectedTrip = _trips[_selectedTripIndex];
+    }
+
+    // Use trip-specific addresses if available, otherwise fall back to job addresses
+    Map<String, String?> addresses = {};
+    if (selectedTrip != null) {
+      addresses = {
+        'pickup': selectedTrip.pickupLocation,
+        'dropoff': selectedTrip.dropoffLocation,
+      };
+    } else {
+      // Fallback to job addresses
+      try {
+        addresses = await DriverFlowApiService.getJobAddresses(
+          int.parse(widget.jobId),
+        );
+      } catch (e) {
+        Log.e('Could not load job addresses: $e');
+      }
     }
 
     // Process each step
@@ -2219,7 +2493,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         final stepData = {
           'title': DriverFlowUtils.getStepTitleWithAddress(
             stepId,
-            jobAddresses['pickup'],
+            addresses['pickup'],
           ),
           'description': stepDescription,
           'completedAt': null,
@@ -2232,11 +2506,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         };
 
         // Add address info for location steps
-        if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
-          stepData['address'] = jobAddresses['pickup'];
+        if (stepId == 'pickup_arrival' && addresses['pickup'] != null) {
+          stepData['address'] = addresses['pickup'];
         } else if (stepId == 'dropoff_arrival' &&
-            jobAddresses['dropoff'] != null) {
-          stepData['address'] = jobAddresses['dropoff'];
+            addresses['dropoff'] != null) {
+          stepData['address'] = addresses['dropoff'];
+        }
+        
+        // Add trip-specific information
+        if (selectedTrip != null) {
+          if (stepId == 'trip_complete') {
+            stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
+          }
         }
 
         steps.add(stepData);
@@ -2245,7 +2527,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         final stepData = {
           'title': DriverFlowUtils.getStepTitleWithAddress(
             stepId,
-            jobAddresses['pickup'],
+            addresses['pickup'],
           ),
           'description': stepDescription,
           'completedAt': null,
@@ -2255,11 +2537,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         };
 
         // Add address info for location steps
-        if (stepId == 'pickup_arrival' && jobAddresses['pickup'] != null) {
-          stepData['address'] = jobAddresses['pickup'];
+        if (stepId == 'pickup_arrival' && addresses['pickup'] != null) {
+          stepData['address'] = addresses['pickup'];
         } else if (stepId == 'dropoff_arrival' &&
-            jobAddresses['dropoff'] != null) {
-          stepData['address'] = jobAddresses['dropoff'];
+            addresses['dropoff'] != null) {
+          stepData['address'] = addresses['dropoff'];
+        }
+        
+        // Add trip-specific information
+        if (selectedTrip != null) {
+          if (stepId == 'trip_complete') {
+            stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
+          }
         }
 
         steps.add(stepData);
@@ -2300,17 +2590,28 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   void _showTripEditModal(Trip trip) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Edit Trip'),
-        content: const Text(
-          'Trip editing functionality is not yet implemented.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => TripEditModal(
+        trip: trip,
+        jobId: widget.jobId,
+        onTripUpdated: (updatedTrip) async {
+          // Refresh the trips list after successful trip update
+          ref.invalidate(tripsByJobProvider(widget.jobId));
+          
+          // Force refresh the trips provider
+          try {
+            final tripsNotifier = ref.read(tripsByJobProvider(widget.jobId).notifier);
+            await tripsNotifier.refresh();
+            Log.d('Trips refreshed after updating trip');
+          } catch (e) {
+            Log.e('Error refreshing trips: $e');
+          }
+          
+          // Show success message
+          SnackBarUtils.showSuccess(
+            context,
+            'Trip updated successfully!',
+          );
+        },
       ),
     );
   }
@@ -2318,17 +2619,27 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   void _showAddTripModal() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Add Trip'),
-        content: const Text(
-          'Trip creation functionality is not yet implemented.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('OK'),
-          ),
-        ],
+      builder: (context) => AddTripModal(
+        jobId: widget.jobId,
+        onTripAdded: (trip) async {
+          // Refresh the trips list after successful trip creation
+          ref.invalidate(tripsByJobProvider(widget.jobId));
+          
+          // Force refresh the trips provider
+          try {
+            final tripsNotifier = ref.read(tripsByJobProvider(widget.jobId).notifier);
+            await tripsNotifier.refresh();
+            Log.d('Trips refreshed after adding new trip');
+          } catch (e) {
+            Log.e('Error refreshing trips: $e');
+          }
+          
+          // Show success message
+          SnackBarUtils.showSuccess(
+            context,
+            'Trip added successfully!',
+          );
+        },
       ),
     );
   }

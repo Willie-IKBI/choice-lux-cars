@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -39,97 +40,108 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         ? ref.watch(clientsProvider)
         : ref.watch(clientSearchProvider(_searchQuery));
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Clients',
-        subtitle: 'Manage your clients',
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-        onSignOut: () async {
-          await ref.read(authProvider.notifier).signOut();
-        },
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                Icons.archive_rounded,
-                color: ChoiceLuxTheme.richGold,
-                size: 20,
-              ),
-            ),
-            onPressed: () {
-              context.go('/clients/inactive');
-            },
-            tooltip: 'View Inactive Clients',
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-        ],
-      ),
-      floatingActionButton: _buildMobileOptimizedFAB(isMobile),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
         ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Responsive Search Bar with Filter
-              Padding(
-                padding: EdgeInsets.all(
-                  isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 24.0,
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Clients',
+            subtitle: 'Manage your clients',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.archive_rounded,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 20,
+                  ),
                 ),
-                child: _buildResponsiveSearchAndFilter(isMobile, isSmallMobile),
-              ),
-
-              SizedBox(
-                height: isSmallMobile
-                    ? 12.0
-                    : isMobile
-                    ? 16.0
-                    : 20.0,
-              ),
-
-              // Clients List
-              Expanded(
-                child: clientsAsync.when(
-                  data: (clients) {
-                    if (clients.isEmpty) {
-                      return _buildEmptyState();
-                    }
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        ref.invalidate(clientsProvider);
-                        if (_searchQuery.isNotEmpty) {
-                          ref.invalidate(clientSearchProvider(_searchQuery));
-                        }
-                      },
-                      color: ChoiceLuxTheme.richGold,
-                      backgroundColor: ChoiceLuxTheme.charcoalGray,
-                      child: _buildClientsGrid(clients),
-                    );
-                  },
-                  loading: () =>
-                      _buildMobileLoadingState(isMobile, isSmallMobile),
-                  error: (error, stackTrace) =>
-                      _buildErrorState(error, isMobile, isSmallMobile),
-                ),
+                onPressed: () {
+                  context.go('/clients/inactive');
+                },
+                tooltip: 'View Inactive Clients',
               ),
             ],
           ),
+          floatingActionButton: _buildMobileOptimizedFAB(isMobile),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Responsive Search Bar with Filter
+                Padding(
+                  padding: EdgeInsets.all(
+                    isSmallMobile
+                        ? 12.0
+                        : isMobile
+                        ? 16.0
+                        : 24.0,
+                  ),
+                  child: _buildResponsiveSearchAndFilter(isMobile, isSmallMobile),
+                ),
+
+                SizedBox(
+                  height: isSmallMobile
+                      ? 12.0
+                      : isMobile
+                      ? 16.0
+                      : 20.0,
+                ),
+
+                // Clients List
+                Expanded(
+                  child: clientsAsync.when(
+                    data: (clients) {
+                      if (clients.isEmpty) {
+                        return _buildEmptyState();
+                      }
+                      return RefreshIndicator(
+                        onRefresh: () async {
+                          ref.invalidate(clientsProvider);
+                          if (_searchQuery.isNotEmpty) {
+                            ref.invalidate(clientSearchProvider(_searchQuery));
+                          }
+                        },
+                        color: ChoiceLuxTheme.richGold,
+                        backgroundColor: ChoiceLuxTheme.charcoalGray,
+                        child: _buildClientsGrid(clients),
+                      );
+                    },
+                    loading: () =>
+                        _buildMobileLoadingState(isMobile, isSmallMobile),
+                    error: (error, stackTrace) =>
+                        _buildErrorState(error, isMobile, isSmallMobile),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ),
-      ),
+      ],
     );
   }
 

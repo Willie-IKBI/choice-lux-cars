@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class InactiveClientsScreen extends ConsumerStatefulWidget {
   const InactiveClientsScreen({super.key});
@@ -31,29 +32,39 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
   Widget build(BuildContext context) {
     final inactiveClientsAsync = ref.watch(inactiveClientsProvider);
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Inactive Clients',
-        subtitle: 'View and manage inactive clients',
-        showBackButton: true,
-        onBackPressed: () => context.go('/clients'),
-        onSignOut: () async {
-          await ref.read(authProvider.notifier).signOut();
-        },
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh_rounded),
-            onPressed: () {
-              ref.invalidate(inactiveClientsProvider);
-            },
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
         ),
-        child: SafeArea(
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Inactive Clients',
+            subtitle: 'View and manage inactive clients',
+            showBackButton: true,
+            onBackPressed: () => context.go('/clients'),
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh_rounded),
+                onPressed: () {
+                  ref.invalidate(inactiveClientsProvider);
+                },
+              ),
+            ],
+          ),
+          body: SafeArea(
           child: Column(
             children: [
               // Search Bar
@@ -179,6 +190,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           ),
         ),
       ),
+      ],
     );
   }
 

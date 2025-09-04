@@ -6,11 +6,8 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 /// Notifier for managing global trips state using AsyncNotifier
 /// Handles operations that affect all trips or create/update/delete operations
 class TripsNotifier extends AsyncNotifier<List<Trip>> {
-  late final TripsRepository _tripsRepository;
-
   @override
   Future<List<Trip>> build() async {
-    _tripsRepository = ref.watch(tripsRepositoryProvider);
     return _fetchTrips();
   }
 
@@ -19,7 +16,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Fetching all trips...');
 
-      final result = await _tripsRepository.fetchTrips();
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.fetchTrips();
 
       if (result.isSuccess) {
         final trips = result.data!;
@@ -40,7 +38,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Creating trip for job: ${trip.jobId}');
 
-      final result = await _tripsRepository.createTrip(trip);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.createTrip(trip);
 
       if (result.isSuccess) {
         // Refresh global trips list
@@ -62,7 +61,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Updating trip: ${trip.id}');
 
-      final result = await _tripsRepository.updateTrip(trip);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.updateTrip(trip);
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -87,7 +87,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Updating trip status: $tripId to $status');
 
-      final result = await _tripsRepository.updateTripStatus(tripId, status);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.updateTripStatus(tripId, status);
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -116,7 +117,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Deleting trip: $tripId');
 
-      final result = await _tripsRepository.deleteTrip(tripId: tripId, jobId: jobId);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.deleteTrip(tripId: tripId, jobId: jobId);
 
       if (result.isSuccess) {
         // Refresh global trips list
@@ -137,7 +139,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Getting trips by status: $status');
 
-      final result = await _tripsRepository.getTripsByStatus(status);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.getTripsByStatus(status);
 
       if (result.isSuccess) {
         return result.data!;
@@ -156,7 +159,8 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
     try {
       Log.d('Getting trips for driver: $driverId');
 
-      final result = await _tripsRepository.getTripsByDriver(driverId);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.getTripsByDriver(driverId);
 
       if (result.isSuccess) {
         return result.data!;
@@ -193,24 +197,20 @@ class TripsNotifier extends AsyncNotifier<List<Trip>> {
 /// Notifier for managing trips by job using FamilyAsyncNotifier
 /// Handles job-specific trip operations like fetching trips for a specific job
 class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
-  late final TripsRepository _tripsRepository;
-  late final String jobId;
-
   @override
   Future<List<Trip>> build(String jobId) async {
-    _tripsRepository = ref.watch(tripsRepositoryProvider);
-    this.jobId = jobId;
-    return _fetchTripsForJob();
+    return _fetchTripsForJob(jobId);
   }
 
   /// Fetch trips for a specific job from the repository
-  Future<List<Trip>> _fetchTripsForJob() async {
+  Future<List<Trip>> _fetchTripsForJob(String jobId) async {
     try {
       Log.d('=== TRIPS BY JOB PROVIDER: _fetchTripsForJob() called ===');
       Log.d('Job ID: $jobId');
       Log.d('Job ID type: ${jobId.runtimeType}');
 
-      final result = await _tripsRepository.fetchTripsForJob(jobId);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.fetchTripsForJob(jobId);
       Log.d('Repository result: ${result.toString()}');
       Log.d('Repository isSuccess: ${result.isSuccess}');
 
@@ -241,7 +241,8 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
     try {
       Log.d('Creating trip for job: ${trip.jobId}');
 
-      final result = await _tripsRepository.createTrip(trip);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.createTrip(trip);
 
       if (result.isSuccess) {
         // Refresh this job's trips
@@ -263,7 +264,8 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
     try {
       Log.d('Updating trip: ${trip.id}');
 
-      final result = await _tripsRepository.updateTrip(trip);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.updateTrip(trip);
 
       if (result.isSuccess) {
         // Refresh this job's trips
@@ -284,7 +286,8 @@ class TripsByJobNotifier extends FamilyAsyncNotifier<List<Trip>, String> {
     try {
       Log.d('Deleting trip: $tripId');
 
-      final result = await _tripsRepository.deleteTrip(tripId: tripId, jobId: jobId);
+      final tripsRepository = ref.watch(tripsRepositoryProvider);
+      final result = await tripsRepository.deleteTrip(tripId: tripId, jobId: arg);
 
       if (result.isSuccess) {
         // Refresh this job's trips

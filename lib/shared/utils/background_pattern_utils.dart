@@ -43,8 +43,8 @@ class BackgroundPatterns {
 
   /// Dashboard pattern - more subtle
   static const dashboard = BackgroundPatternPainter(
-    opacity: 0.02,
-    strokeWidth: 0.8,
-    gridSpacing: 80.0,
+    opacity: 0.05,
+    strokeWidth: 1.0,
+    gridSpacing: 60.0,
   );
 }

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -17,8 +18,6 @@ class TripManagementScreen extends ConsumerStatefulWidget {
 }
 
 class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
-  List<Trip> _transportDetails = [];
-  bool _isLoading = false;
 
   // SnackBar helper methods
   void showErrorSnackBar(BuildContext context, String message) {
@@ -34,34 +33,18 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   @override
   void initState() {
     super.initState();
-    _loadTrips();
-  }
-
-  Future<void> _loadTrips() async {
-    setState(() => _isLoading = true);
-    try {
-      await ref.read(tripsByJobProvider(widget.jobId).notifier).refresh();
-    } catch (e) {
-      if (mounted) {
-        showErrorSnackBar(context, 'Failed to load trips: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
   }
 
   Future<void> _saveTrip(Trip trip) async {
     try {
-      if (trip.id == null) {
+      if (trip.id == null || trip.id == '') {
         // Create new trip
-        await ref.read(tripsProvider.notifier).addTrip(trip);
+        await ref.read(tripsByJobProvider(widget.jobId).notifier).createTrip(trip);
       } else {
         // Update existing trip
-        await ref.read(tripsProvider.notifier).updateTrip(trip);
+        await ref.read(tripsByJobProvider(widget.jobId).notifier).updateTrip(trip);
       }
-      await _loadTrips();
+      ref.invalidate(tripsByJobProvider(widget.jobId));
       if (mounted) {
         showSuccessSnackBar(context, 'Trip saved successfully');
       }
@@ -74,8 +57,8 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
 
   Future<void> _deleteTrip(Trip trip) async {
     try {
-      await ref.read(tripsProvider.notifier).deleteTrip(trip.id!);
-      await _loadTrips();
+      await ref.read(tripsByJobProvider(widget.jobId).notifier).deleteTrip(trip.id!);
+      ref.invalidate(tripsByJobProvider(widget.jobId));
       if (mounted) {
         showSuccessSnackBar(context, 'Trip deleted successfully');
       }
@@ -86,6 +69,22 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     }
   }
 
+  void _showAddTripModal() {
+    showDialog(
+      context: context,
+      builder: (context) => AddTripModal(
+        jobId: widget.jobId,
+        onTripAdded: (trip) async {
+          // Refresh the trips list after successful trip creation
+          ref.invalidate(tripsByJobProvider(widget.jobId));
+          if (mounted) {
+            showSuccessSnackBar(context, 'Trip added successfully!');
+          }
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
@@ -93,19 +92,33 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     return Scaffold(
       appBar: const LuxuryAppBar(title: 'Trip Management'),
       drawer: const LuxuryDrawer(),
-      body: tripsState.when(
-        data: (trips) => _buildTripsContent(trips),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Error: $error'),
-              ElevatedButton(onPressed: _loadTrips, child: const Text('Retry')),
-            ],
+      body: SafeArea(
+        child: tripsState.when(
+          data: (trips) => _buildTripsContent(trips),
+          loading: () => const Center(child: CircularProgressIndicator()),
+          error: (error, stack) => Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Text('Error: $error'),
+                ElevatedButton(
+                  onPressed: () => ref.invalidate(tripsByJobProvider(widget.jobId)),
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
           ),
         ),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showAddTripModal,
+        backgroundColor: ChoiceLuxTheme.richGold,
+        foregroundColor: Colors.black,
+        child: const Icon(Icons.add),
+        tooltip: 'Add Trip',
+        elevation: 6,
+      ),
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
@@ -113,7 +126,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     final totalAmount = trips.fold(0.0, (sum, trip) => sum + trip.amount);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added bottom padding for FAB
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -202,26 +215,46 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
                 ],
               ),
             ),
-          ] else ...[
-            // Empty state
-            Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.route_outlined, size: 64, color: Colors.grey[600]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No trips added yet',
-                    style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+
+            const SizedBox(height: 24),
+
+            // Done button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () => Navigator.of(context).pop(),
+                icon: const Icon(Icons.check),
+                label: const Text('Done - Back to Job Summary'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ChoiceLuxTheme.richGold,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Add trips to get started',
-                    style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                  ),
-                ],
+                ),
               ),
             ),
+          ] else ...[
+                      // Empty state
+          Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.route_outlined, size: 64, color: Colors.grey[600]),
+                const SizedBox(height: 16),
+                Text(
+                  'No trips added yet',
+                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Add trips to get started',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                ),
+              ],
+            ),
+          ),
           ],
         ],
       ),

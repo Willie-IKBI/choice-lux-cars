@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.da
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
   final String? quoteId; // null for create, non-null for edit
@@ -258,48 +259,67 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
     final maxWidth = _getMaxWidth(screenWidth);
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: widget.quoteId != null ? 'Edit Quote' : 'Create New Quote',
-        subtitle: widget.quoteId != null
-            ? 'Update Quote Details'
-            : 'Step 1: Quote Details',
-        showBackButton: true,
-        onBackPressed: () => widget.quoteId != null
-            ? context.go('/quotes/${widget.quoteId}/summary')
-            : context.go('/quotes'),
-      ),
-      body: Consumer(
-        builder: (context, ref, child) {
-          final clientsAsync = ref.watch(clientsProvider);
-          final vehiclesState = ref.watch(vehiclesProvider);
-          final users = ref.watch(usersProvider);
-
-          return clientsAsync.when(
-            data: (clients) => vehiclesState.when(
-              data: (vehicles) => users.when(
-                data: (usersList) => _buildForm(
-                  clients,
-                  vehicles,
-                  usersList,
-                  isMobile,
-                  isSmallMobile,
-                ),
-                loading: () =>
-                    _buildMobileLoadingState(isMobile, isSmallMobile),
-                error: (error, stack) =>
-                    _buildErrorState(error, isMobile, isSmallMobile),
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        // Layer 2: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent, // CRITICAL
+          appBar: LuxuryAppBar(
+            title: widget.quoteId != null ? 'Edit Quote' : 'Create New Quote',
+            subtitle: widget.quoteId != null
+                ? 'Update Quote Details'
+                : 'Step 1: Quote Details',
+            showBackButton: true,
+            onBackPressed: () => widget.quoteId != null
+                ? context.go('/quotes/${widget.quoteId}/summary')
+                : context.go('/quotes'),
+          ),
+          body: Stack( // The body is now just the content stack
+            children: [
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
-              loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-              error: (error, stack) =>
-                  _buildErrorState(error, isMobile, isSmallMobile),
-            ),
-            loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
-            error: (error, stack) =>
-                _buildErrorState(error, isMobile, isSmallMobile),
-          );
-        },
-      ),
+              Consumer(
+                builder: (context, ref, child) {
+                  final clientsAsync = ref.watch(clientsProvider);
+                  final vehiclesState = ref.watch(vehiclesProvider);
+                  final users = ref.watch(usersProvider);
+
+                  return clientsAsync.when(
+                    data: (clients) => vehiclesState.when(
+                      data: (vehicles) => users.when(
+                        data: (usersList) => _buildForm(
+                          clients,
+                          vehicles,
+                          usersList,
+                          isMobile,
+                          isSmallMobile,
+                        ),
+                        loading: () =>
+                            _buildMobileLoadingState(isMobile, isSmallMobile),
+                        error: (error, stack) =>
+                            _buildErrorState(error, isMobile, isSmallMobile),
+                      ),
+                      loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
+                      error: (error, stack) =>
+                          _buildErrorState(error, isMobile, isSmallMobile),
+                    ),
+                    loading: () => _buildMobileLoadingState(isMobile, isSmallMobile),
+                    error: (error, stack) =>
+                        _buildErrorState(error, isMobile, isSmallMobile),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1380,70 +1400,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               ? 6
               : 8,
         ),
-        _buildResponsiveDropdown(
+        _buildDriverDropdown(
+          drivers: drivers,
           value: _selectedDriverId,
           hintText: 'Select a driver (any user)',
-          items: drivers.map((driver) {
-            final isPdpExpired =
-                driver.pdpExp != null &&
-                driver.pdpExp!.isBefore(DateTime.now());
-            final isLicenseExpired =
-                driver.driverLicExp != null &&
-                driver.driverLicExp!.isBefore(DateTime.now());
-
-            return DropdownMenuItem(
-              value: driver.id.toString(),
-              child: Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          driver.displayName,
-                          style: TextStyle(
-                            color: (isPdpExpired || isLicenseExpired)
-                                ? ChoiceLuxTheme.errorColor
-                                : null,
-                            fontSize: isSmallMobile
-                                ? 13
-                                : isMobile
-                                ? 14
-                                : 16,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        if (driver.role != null && driver.role!.isNotEmpty)
-                          Text(
-                            '(${driver.role})',
-                            style: TextStyle(
-                              color: ChoiceLuxTheme.platinumSilver.withOpacity(
-                                0.7,
-                              ),
-                              fontSize: isSmallMobile
-                                  ? 11
-                                  : isMobile
-                                  ? 12
-                                  : 13,
-                            ),
-                          ),
-                      ],
-                    ),
-                  ),
-                  if (isPdpExpired || isLicenseExpired)
-                    Icon(
-                      Icons.warning,
-                      color: ChoiceLuxTheme.errorColor,
-                      size: isSmallMobile
-                          ? 14
-                          : isMobile
-                          ? 16
-                          : 18,
-                    ),
-                ],
-              ),
-            );
-          }).toList(),
           onChanged: (value) {
             setState(() {
               _selectedDriverId = value;
@@ -1459,6 +1419,234 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           isSmallMobile: isSmallMobile,
         ),
       ],
+    );
+  }
+
+  // Custom driver dropdown to handle overflow issue
+  Widget _buildDriverDropdown({
+    required List<dynamic> drivers,
+    required String? value,
+    required String hintText,
+    required ValueChanged<String?> onChanged,
+    String? Function(String?)? validator,
+    required bool isMobile,
+    required bool isSmallMobile,
+  }) {
+    return FormField<String>(
+      validator: validator,
+      builder: (FormFieldState<String> field) {
+        final hasError = field.hasError;
+        final errorText = field.errorText;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.charcoalGray,
+                borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+                border: Border.all(
+                  color: hasError
+                      ? ChoiceLuxTheme.errorColor
+                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  width: hasError ? 2 : 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: hasError
+                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
+                        : Colors.black.withOpacity(0.1),
+                    blurRadius: hasError ? 8 : 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: DropdownButtonFormField<String>(
+                value: value,
+                isExpanded: true,
+                menuMaxHeight: 300,
+                selectedItemBuilder: (BuildContext context) {
+                  // For selected item display, show only the driver name to prevent overflow
+                  return drivers.map<Widget>((driver) {
+                    return Container(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        driver.displayName,
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite,
+                          fontSize: isSmallMobile
+                              ? 13
+                              : isMobile
+                              ? 14
+                              : 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    );
+                  }).toList();
+                },
+                decoration: InputDecoration(
+                  hintText: hintText,
+                  hintStyle: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    fontSize: isSmallMobile
+                        ? 13
+                        : isMobile
+                        ? 14
+                        : 16,
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: isSmallMobile ? 12 : 16,
+                    vertical: isSmallMobile ? 12 : 16,
+                  ),
+                  suffixIcon: hasError
+                      ? Icon(
+                          Icons.error_outline,
+                          color: ChoiceLuxTheme.errorColor,
+                          size: isSmallMobile
+                              ? 18
+                              : isMobile
+                              ? 20
+                              : 24,
+                        )
+                      : null,
+                ),
+                dropdownColor: ChoiceLuxTheme.charcoalGray,
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: isSmallMobile
+                      ? 13
+                      : isMobile
+                      ? 14
+                      : 16,
+                ),
+                icon: Icon(
+                  Icons.arrow_drop_down,
+                  color: hasError
+                      ? ChoiceLuxTheme.errorColor
+                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  size: isSmallMobile
+                      ? 20
+                      : isMobile
+                      ? 24
+                      : 28,
+                ),
+                items: drivers.map((driver) {
+                  final isPdpExpired =
+                      driver.pdpExp != null &&
+                      driver.pdpExp!.isBefore(DateTime.now());
+                  final isLicenseExpired =
+                      driver.driverLicExp != null &&
+                      driver.driverLicExp!.isBefore(DateTime.now());
+
+                  return DropdownMenuItem(
+                    value: driver.id.toString(),
+                    child: Container(
+                      constraints: const BoxConstraints(
+                        minHeight: 48, // Ensure consistent height
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  driver.displayName,
+                                  style: TextStyle(
+                                    color: (isPdpExpired || isLicenseExpired)
+                                        ? ChoiceLuxTheme.errorColor
+                                        : ChoiceLuxTheme.softWhite,
+                                    fontSize: isSmallMobile
+                                        ? 13
+                                        : isMobile
+                                        ? 14
+                                        : 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (driver.role != null && driver.role!.isNotEmpty)
+                                  Text(
+                                    '(${driver.role})',
+                                    style: TextStyle(
+                                      color: ChoiceLuxTheme.platinumSilver.withOpacity(
+                                        0.7,
+                                      ),
+                                      fontSize: isSmallMobile
+                                          ? 11
+                                          : isMobile
+                                          ? 12
+                                          : 13,
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          if (isPdpExpired || isLicenseExpired)
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8.0),
+                              child: Icon(
+                                Icons.warning,
+                                color: ChoiceLuxTheme.errorColor,
+                                size: isSmallMobile
+                                    ? 14
+                                    : isMobile
+                                    ? 16
+                                    : 18,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  );
+                }).toList(),
+                onChanged: (newValue) {
+                  onChanged(newValue);
+                  field.didChange(newValue);
+                  field.validate();
+                },
+              ),
+            ),
+            if (hasError && errorText != null) ...[
+              SizedBox(height: isSmallMobile ? 6 : 8),
+              Row(
+                children: [
+                  Icon(
+                    Icons.error_outline,
+                    color: ChoiceLuxTheme.errorColor,
+                    size: isSmallMobile
+                        ? 14
+                        : isMobile
+                        ? 16
+                        : 18,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      errorText,
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.errorColor,
+                        fontSize: isSmallMobile
+                            ? 11
+                            : isMobile
+                            ? 12
+                            : 14,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        );
+      },
     );
   }
 
@@ -2080,7 +2268,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 value: value,
                 isExpanded: true,
                 menuMaxHeight:
-                    200, // Limit dropdown menu height to prevent overflow
+                    300, // Increased height to accommodate complex items
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: TextStyle(

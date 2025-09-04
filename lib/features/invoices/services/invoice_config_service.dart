@@ -2,12 +2,12 @@ import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 
 class InvoiceConfigService {
   // Tax configuration
-  static const double defaultTaxRate = 0.15; // 15% VAT
+  static const double defaultTaxRate = 0.0; // 0% VAT (no tax)
   static const String defaultCurrency = 'ZAR';
 
   // Payment terms
   static const int defaultPaymentDays = 30;
-  static const String defaultPaymentTerms = 'Payment due within 30 days';
+  static const String defaultPaymentTerms = ''; // No payment terms
 
   // Banking details
   static const BankingDetails defaultBankingDetails = BankingDetails(

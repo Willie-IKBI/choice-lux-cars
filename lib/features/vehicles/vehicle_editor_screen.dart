@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -1197,69 +1198,84 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     final isDesktop = screenWidth >= 900;
     final fieldSpacing = isMobile ? 16.0 : 20.0;
 
-    return Scaffold(
-      backgroundColor: ChoiceLuxTheme.charcoalGray,
-      appBar: LuxuryAppBar(
-        title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
-        subtitle: isEdit 
-            ? 'Update vehicle details' 
-            : 'Create a new vehicle',
-        showBackButton: true,
-        onBackPressed: () => Navigator.of(context).pop(),
-      ),
-      body: Form(
-        key: _formKey,
-        child: SingleChildScrollView(
-          padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                child: Center(
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                maxWidth: isDesktop ? 800 : double.infinity,
-              ),
-              child: Card(
-                color: ChoiceLuxTheme.charcoalGray,
-                elevation: 8,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-                    width: 1,
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
+            subtitle: isEdit 
+                ? 'Update vehicle details' 
+                : 'Create a new vehicle',
+            showBackButton: true,
+            onBackPressed: () => Navigator.of(context).pop(),
+          ),
+          body: Form(
+            key: _formKey,
+            child: SingleChildScrollView(
+              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    maxWidth: isDesktop ? 800 : double.infinity,
                   ),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      // Vehicle details section
-                      _buildModernSectionHeader('Vehicle Details', Icons.directions_car, isMobile, isSmallMobile),
+                  child: Card(
+                    color: ChoiceLuxTheme.charcoalGray,
+                    elevation: 8,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      side: BorderSide(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        width: 1,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Vehicle details section
+                          _buildModernSectionHeader('Vehicle Details', Icons.directions_car, isMobile, isSmallMobile),
 
-                                  _buildVehicleDetailsForm(isMobile, isSmallMobile),
+                          _buildVehicleDetailsForm(isMobile, isSmallMobile),
 
-                      // Registration & License section
-                      _buildModernSectionHeader('Registration & License', Icons.assignment, isMobile, isSmallMobile),
+                          // Registration & License section
+                          _buildModernSectionHeader('Registration & License', Icons.assignment, isMobile, isSmallMobile),
 
-                                  _buildRegistrationForm(isMobile, isSmallMobile),
+                          _buildRegistrationForm(isMobile, isSmallMobile),
 
-                      // Vehicle Image section
-                      _buildModernSectionHeader('Vehicle Image', Icons.photo_camera, isMobile, isSmallMobile),
+                          // Vehicle Image section
+                          _buildModernSectionHeader('Vehicle Image', Icons.photo_camera, isMobile, isSmallMobile),
 
-                      _buildImageSection(isMobile, isSmallMobile),
+                          _buildImageSection(isMobile, isSmallMobile),
 
-                      // Action buttons with divider
-                      const SizedBox(height: 32),
-                      Divider(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2), height: 1),
-                      const SizedBox(height: 24),
-                      _buildModernActionButtons(isMobile, isSmallMobile),
-                      const SizedBox(height: 24),
-                    ],
+                          // Action buttons with divider
+                          const SizedBox(height: 32),
+                          Divider(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2), height: 1),
+                          const SizedBox(height: 24),
+                          _buildModernActionButtons(isMobile, isSmallMobile),
+                          const SizedBox(height: 24),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

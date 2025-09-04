@@ -210,6 +210,20 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         _paymentAmountController.text = job.paymentAmount!.toString();
       }
 
+      // Populate client search controller with client name
+      if (job?.clientId != null) {
+        try {
+          final clientsState = ref.read(clientsProvider);
+          if (clientsState.hasValue) {
+            final client = clientsState.value!.firstWhere((c) => c.id.toString() == job!.clientId);
+            _clientSearchController.text = client.companyName;
+            Log.d('Client search controller populated with: ${client.companyName}');
+          }
+        } catch (e) {
+          Log.d('Could not populate client search controller: $e');
+        }
+      }
+
       Log.d('Form fields populated successfully');
     } catch (e) {
       Log.e('Error loading job for editing: $e');

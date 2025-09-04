@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -93,15 +94,29 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       final matchesStatus = _statusFilter == null || u.status == _statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Manage Users',
-        subtitle: 'User administration',
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-        onSignOut: () async {
-          await Supabase.instance.client.auth.signOut();
-        },
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Manage Users',
+            subtitle: 'User administration',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            onSignOut: () async {
+              await Supabase.instance.client.auth.signOut();
+            },
         actions: [
           IconButton(
             icon: Container(
@@ -125,11 +140,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ],
       ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
-        child: SafeArea(
+      body: SafeArea(
           child: Padding(
             padding: EdgeInsets.all(
               isSmallMobile
@@ -200,6 +211,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
       ),
+      ],
     );
   }
 

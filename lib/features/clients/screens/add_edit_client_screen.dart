@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
@@ -56,42 +57,53 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   Widget build(BuildContext context) {
     final isEditMode = widget.client != null;
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: isEditMode ? 'Edit Client' : 'Add Client',
-        subtitle: isEditMode ? 'Update client details' : 'Create new client',
-        showBackButton: true,
-        onBackPressed: () => context.go('/clients'),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
         ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: isEditMode ? 'Edit Client' : 'Add Client',
+            subtitle: isEditMode ? 'Update client details' : 'Create new client',
+            showBackButton: true,
+            onBackPressed: () => context.go('/clients'),
+          ),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
 
-              return Column(
-                children: [
-                  // Form Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: _buildForm(isMobile),
+                return Column(
+                  children: [
+                    // Form Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: _buildForm(isMobile),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 

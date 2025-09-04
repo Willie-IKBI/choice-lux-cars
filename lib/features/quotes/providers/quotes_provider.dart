@@ -242,10 +242,14 @@ class QuoteTransportDetailsNotifier
   // Add transport detail to quote
   Future<void> addTransportDetail(QuoteTransportDetail transportDetail) async {
     try {
+      Log.d('Adding transport detail: ${transportDetail.toMap()}');
+      
       final result = await _quotesRepository.createQuoteTransportDetail(
         transportDetail.toMap(),
       );
+      
       if (result.isSuccess) {
+        Log.d('Transport detail added successfully, invalidating provider');
         ref.invalidateSelf();
       } else {
         Log.e('Error adding quote transport detail: ${result.error!.message}');

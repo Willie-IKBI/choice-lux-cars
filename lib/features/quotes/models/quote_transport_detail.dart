@@ -23,9 +23,8 @@ class QuoteTransportDetail {
     return QuoteTransportDetail(
       id: map['id']?.toString() ?? '',
       quoteId: map['quote_id']?.toString() ?? '',
-      pickupDate: DateTime.parse(
-        map['pickup_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
-      ),
+      pickupDate: SATimeUtils.parseSATimeFromDatabase(map['pickup_date']?.toString()) ?? 
+          SATimeUtils.getCurrentSATime(),
       pickupLocation: map['pickup_location']?.toString() ?? '',
       dropoffLocation: map['dropoff_location']?.toString() ?? '',
       amount: (map['amount'] is num)
@@ -39,7 +38,7 @@ class QuoteTransportDetail {
     return {
       if (id.isNotEmpty) 'id': int.tryParse(id) ?? id,
       'quote_id': int.tryParse(quoteId) ?? quoteId,
-      'pickup_date': pickupDate.toIso8601String(),
+      'pickup_date': SATimeUtils.formatSATimeForDatabase(pickupDate),
       'pickup_location': pickupLocation,
       'dropoff_location': dropoffLocation,
       'amount': amount,

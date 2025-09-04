@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UserDetailScreen extends ConsumerWidget {
   final String userId;
@@ -24,79 +25,120 @@ class UserDetailScreen extends ConsumerWidget {
       user = null;
     }
     if (usersList.isEmpty) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          ),
+          const Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
     }
     if (user == null) {
-      return Scaffold(
-        appBar: LuxuryAppBar(
-          title: 'User Not Found',
-          showBackButton: true,
-          onBackPressed: () => context.go('/users'),
-        ),
-        body: const Center(child: Text('User not found.')),
+      return Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          ),
+          Scaffold(
+            backgroundColor: Colors.transparent,
+            appBar: LuxuryAppBar(
+              title: 'User Not Found',
+              showBackButton: true,
+              onBackPressed: () => context.go('/users'),
+            ),
+            body: const Center(child: Text('User not found.')),
+          ),
+        ],
       );
     }
     final canDeactivate = user.status == 'active';
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Edit User',
-        subtitle: user.displayName,
-        showBackButton: true,
-        onBackPressed: () => context.go('/users'),
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 900),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: UserForm(
-                user: user,
-                canDeactivate: canDeactivate,
-                onDeactivate: canDeactivate
-                    ? () async {
-                        Log.d(
-                          'Deactivate button clicked for user: ${user!.id}',
-                        );
-                        try {
-                          await ref
-                              .read(usersp.usersProvider.notifier)
-                              .deactivateUser(user!.id);
-                          Log.d('User deactivated successfully');
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(
-                                content: Text('User deactivated successfully'),
-                              ),
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Edit User',
+            subtitle: user.displayName,
+            showBackButton: true,
+            onBackPressed: () => context.go('/users'),
+          ),
+          body: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 900),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: UserForm(
+                    user: user,
+                    canDeactivate: canDeactivate,
+                    onDeactivate: canDeactivate
+                        ? () async {
+                            Log.d(
+                              'Deactivate button clicked for user: ${user!.id}',
                             );
+                            try {
+                              await ref
+                                  .read(usersp.usersProvider.notifier)
+                                  .deactivateUser(user!.id);
+                              Log.d('User deactivated successfully');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('User deactivated successfully'),
+                                  ),
+                                );
+                              }
+                            } catch (error) {
+                              Log.e('Error deactivating user: $error');
+                              if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Error deactivating user: $error',
+                                    ),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
+                            }
                           }
-                        } catch (error) {
-                          Log.e('Error deactivating user: $error');
-                          if (context.mounted) {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  'Error deactivating user: $error',
-                                ),
-                                backgroundColor: Colors.red,
-                              ),
-                            );
-                          }
-                        }
-                      }
-                    : null,
-                onSave: (updatedUser) async {
-                  await usersNotifier.updateUser(updatedUser);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('User updated successfully')),
-                  );
-                },
+                        : null,
+                    onSave: (updatedUser) async {
+                      await usersNotifier.updateUser(updatedUser);
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text('User updated successfully')),
+                      );
+                    },
+                  ),
+                ),
               ),
             ),
           ),
         ),
-      ),
+      ],
     );
   }
 }

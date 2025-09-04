@@ -143,10 +143,10 @@ class QuotesRepository {
       Log.d('Fetching transport details for quote: $quoteId');
 
       final response = await _supabase
-          .from('quote_transport_details')
+          .from('quotes_transport_details')
           .select()
           .eq('quote_id', quoteId)
-          .order('created_at', ascending: true);
+          .order('id', ascending: true);
 
       Log.d('Fetched ${response.length} transport details for quote: $quoteId');
 
@@ -165,17 +165,20 @@ class QuotesRepository {
       Log.d(
         'Creating transport detail for quote: ${transportDetail['quote_id']}',
       );
+      Log.d('Transport detail data: $transportDetail');
 
       final response = await _supabase
-          .from('quote_transport_details')
+          .from('quotes_transport_details')
           .insert(transportDetail)
           .select()
           .single();
 
       Log.d('Transport detail created successfully with ID: ${response['id']}');
+      Log.d('Created transport detail: $response');
       return Result.success(response);
     } catch (error) {
       Log.e('Error creating quote transport detail: $error');
+      Log.e('Failed transport detail data: $transportDetail');
       return _mapSupabaseError(error);
     }
   }
@@ -188,7 +191,7 @@ class QuotesRepository {
       Log.d('Updating transport detail: ${transportDetail['id']}');
 
       await _supabase
-          .from('quote_transport_details')
+          .from('quotes_transport_details')
           .update(transportDetail)
           .eq('id', transportDetail['id']);
 
@@ -208,7 +211,7 @@ class QuotesRepository {
       Log.d('Deleting transport detail: $transportDetailId');
 
       await _supabase
-          .from('quote_transport_details')
+          .from('quotes_transport_details')
           .delete()
           .eq('id', transportDetailId);
 

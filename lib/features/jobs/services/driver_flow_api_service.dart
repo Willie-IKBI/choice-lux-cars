@@ -431,6 +431,8 @@ class DriverFlowApiService {
            .from('driver_flow')
            .update({
              'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
+             'job_closed_odo': odoEndReading,
+             'pdp_end_image': pdpEndImage,
              'current_step': 'vehicle_return',
              'progress_percentage': 100,
              'last_activity_at': SATimeUtils.getCurrentSATimeISO(),

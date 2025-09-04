@@ -6,6 +6,10 @@ import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.da
 import 'package:choice_lux_cars/features/quotes/providers/quotes_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:intl/intl.dart';
 
 class QuoteTransportDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
@@ -55,6 +59,8 @@ class _QuoteTransportDetailsScreenState
   Future<void> _loadData() async {
     setState(() => _isLoading = true);
     try {
+      Log.d('Loading data for quote: ${widget.quoteId}');
+      
       // Load quote details
       final quote = await ref
           .read(quotesProvider.notifier)
@@ -63,23 +69,45 @@ class _QuoteTransportDetailsScreenState
         setState(() => _quote = quote);
       }
 
-      // Load transport details
+      // Force refresh transport details provider
       final transportNotifier = ref.read(
         quoteTransportDetailsProvider(widget.quoteId).notifier,
       );
-      await transportNotifier.fetchTransportDetails();
-
+      
+      // Invalidate and refresh the provider
+      await transportNotifier.refresh();
+      
+      // Wait a moment for the provider to update
+      await Future.delayed(const Duration(milliseconds: 200));
+      
       // Get the updated state
-      final transportDetails = ref.read(
+      final transportDetailsAsync = ref.read(
         quoteTransportDetailsProvider(widget.quoteId),
       );
-      setState(() => _transportDetails = transportDetails.value ?? []);
+      
+      transportDetailsAsync.when(
+        data: (data) {
+          Log.d('Loaded ${data.length} transport details');
+          setState(() => _transportDetails = data);
+        },
+        loading: () {
+          Log.d('Transport details still loading...');
+          setState(() => _transportDetails = []);
+        },
+        error: (error, stack) {
+          Log.e('Error loading transport details: $error');
+          setState(() => _transportDetails = []);
+        },
+      );
     } catch (e) {
+      Log.e('Error loading data: $e');
+      setState(() => _transportDetails = []);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error loading data: $e'),
+            content: Text('Error loading data: ${e.toString()}'),
             backgroundColor: ChoiceLuxTheme.errorColor,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -88,10 +116,19 @@ class _QuoteTransportDetailsScreenState
     }
   }
 
+  void _resetForm() {
+    _pickupLocationController.clear();
+    _dropoffLocationController.clear();
+    _amountController.clear();
+    _notesController.clear();
+    _selectedPickupDate = null;
+    _selectedPickupTime = null;
+  }
+
   void _showAddTransportDialog() {
-    _resetForm();
     _isEditMode = false;
     _editingTransport = null;
+    _resetForm(); // Reset form after setting mode
     _showTransportDialog();
   }
 
@@ -113,168 +150,1009 @@ class _QuoteTransportDetailsScreenState
   void _showTransportDialog() {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ChoiceLuxTheme.charcoalGray,
-        title: Text(
-          _isEditMode ? 'Edit Transport Leg' : 'Add Transport Leg',
-          style: const TextStyle(
-            color: ChoiceLuxTheme.softWhite,
-            fontWeight: FontWeight.w600,
+      builder: (context) => _TransportDialog(
+        isEditMode: _isEditMode,
+        editingTransport: _editingTransport,
+        quoteId: widget.quoteId,
+        onSave: _saveTransportFromDialog,
+      ),
+    );
+  }
+
+  Future<void> _saveTransportFromDialog(QuoteTransportDetail transportDetail) async {
+    // Close the dialog first
+    Navigator.of(context).pop();
+    
+    // Then save the transport
+    setState(() => _isAddingTransport = true);
+    try {
+      final transportNotifier = ref.read(
+        quoteTransportDetailsProvider(widget.quoteId).notifier,
+      );
+
+      if (_isEditMode && _editingTransport != null) {
+        await transportNotifier.updateTransportDetail(transportDetail);
+      } else {
+        await transportNotifier.addTransportDetail(transportDetail);
+      }
+
+      // Force refresh the provider and reload data
+      await transportNotifier.refresh();
+      await _loadData();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _isEditMode
+                  ? 'Transport updated successfully'
+                  : 'Transport added successfully',
+            ),
+            backgroundColor: ChoiceLuxTheme.successColor,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        Log.e('Error saving transport: $e');
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error saving transport: ${e.toString()}'),
+            backgroundColor: ChoiceLuxTheme.errorColor,
+            duration: const Duration(seconds: 5),
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isAddingTransport = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.transparent,
+      appBar: LuxuryAppBar(
+        title: 'Transport Details',
+        subtitle: 'Quote #${widget.quoteId}',
+        showBackButton: true,
+        onBackPressed: () => context.go('/quotes/${widget.quoteId}'),
+        actions: [
+          IconButton(
+            onPressed: _loadData,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Refresh',
+          ),
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Background gradient
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
+          ),
+          // Background pattern
+          CustomPaint(
+            painter: BackgroundPatterns.dashboard,
+            size: Size.infinite,
+          ),
+          // Main content
+          SafeArea(
+            child: _isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        ChoiceLuxTheme.richGold,
+                      ),
+                    ),
+                  )
+                : _buildContent(),
+          ),
+        ],
+      ),
+      floatingActionButton: _buildFloatingActionButton(),
+    );
+  }
+
+  Widget _buildContent() {
+    if (_transportDetails.isEmpty) {
+      return _buildEmptyState();
+    }
+
+    return Column(
+      children: [
+        // Total Amount Summary
+        _buildTotalAmountCard(),
+        
+        const SizedBox(height: 16),
+        
+        // Transport Details List
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _transportDetails.length,
+            itemBuilder: (context, index) {
+              final transport = _transportDetails[index];
+              return _buildTransportCard(transport);
+            },
           ),
         ),
-        content: SizedBox(
-          width: MediaQuery.of(context).size.width * 0.9,
-          child: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
+      ],
+    );
+  }
+
+  Widget _buildTotalAmountCard() {
+    final totalAmount = _transportDetails.fold(0.0, (sum, transport) => sum + transport.amount);
+    
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ChoiceLuxTheme.richGold.withOpacity(0.1),
+            ChoiceLuxTheme.richGold.withOpacity(0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: const Icon(
+              Icons.receipt_long,
+              color: Colors.black,
+              size: 24,
+            ),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Total Quote Amount',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'R${totalAmount.toStringAsFixed(2)}',
+                  style: const TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              '${_transportDetails.length} Trip${_transportDetails.length == 1 ? '' : 's'}',
+              style: const TextStyle(
+                color: ChoiceLuxTheme.richGold,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            Icons.local_shipping_outlined,
+            size: 64,
+            color: ChoiceLuxTheme.platinumSilver,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'No transport details yet',
+            style: TextStyle(
+              fontSize: 18,
+              color: ChoiceLuxTheme.platinumSilver,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Add transport legs for this quote',
+            style: TextStyle(
+              fontSize: 14,
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildTransportCard(QuoteTransportDetail transport) {
+    final index = _transportDetails.indexOf(transport);
+    
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        // Responsive breakpoints for mobile optimization
+        final screenWidth = constraints.maxWidth;
+        final isMobile = screenWidth < 600;
+        final isSmallMobile = screenWidth < 400;
+        
+        // Responsive sizing
+        final cardPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0;
+        final spacing = isSmallMobile ? 8.0 : isMobile ? 12.0 : 16.0;
+        final cornerRadius = isMobile ? 12.0 : 16.0;
+        final iconSize = isSmallMobile ? 16.0 : isMobile ? 18.0 : 20.0;
+        final titleSize = isSmallMobile ? 14.0 : isMobile ? 16.0 : 18.0;
+        final subtitleSize = isSmallMobile ? 12.0 : isMobile ? 13.0 : 14.0;
+        
+        return Card(
+          margin: EdgeInsets.only(bottom: spacing),
+          elevation: 4,
+          shadowColor: Colors.black.withOpacity(0.1),
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.9),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(cornerRadius),
+          ),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(cornerRadius),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: EdgeInsets.all(cardPadding),
               child: Column(
-                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Pickup Location
-                  TextFormField(
-                    controller: _pickupLocationController,
-                    decoration: const InputDecoration(
-                      labelText: 'Pickup Location *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Pickup location is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Dropoff Location
-                  TextFormField(
-                    controller: _dropoffLocationController,
-                    decoration: const InputDecoration(
-                      labelText: 'Dropoff Location *',
-                      border: OutlineInputBorder(),
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Dropoff location is required';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Pickup Date and Time
-                  Row(
-                    children: [
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectDate(context),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Pickup Date *',
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(
-                              _selectedPickupDate != null
-                                  ? '${_selectedPickupDate!.day}/${_selectedPickupDate!.month}/${_selectedPickupDate!.year}'
-                                  : 'Select Date',
-                              style: TextStyle(
-                                color: _selectedPickupDate != null
-                                    ? ChoiceLuxTheme.softWhite
-                                    : ChoiceLuxTheme.platinumSilver,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: InkWell(
-                          onTap: () => _selectTime(context),
-                          child: InputDecorator(
-                            decoration: const InputDecoration(
-                              labelText: 'Pickup Time *',
-                              border: OutlineInputBorder(),
-                            ),
-                            child: Text(
-                              _selectedPickupTime != null
-                                  ? _selectedPickupTime!.format(context)
-                                  : 'Select Time',
-                              style: TextStyle(
-                                color: _selectedPickupTime != null
-                                    ? ChoiceLuxTheme.softWhite
-                                    : ChoiceLuxTheme.platinumSilver,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Amount
-                  TextFormField(
-                    controller: _amountController,
-                    keyboardType: TextInputType.number,
-                    decoration: const InputDecoration(
-                      labelText: 'Amount (R) *',
-                      border: OutlineInputBorder(),
-                      prefixText: 'R ',
-                    ),
-                    validator: (value) {
-                      if (value == null || value.trim().isEmpty) {
-                        return 'Amount is required';
-                      }
-                      final amount = double.tryParse(value);
-                      if (amount == null || amount <= 0) {
-                        return 'Please enter a valid amount';
-                      }
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Notes
-                  TextFormField(
-                    controller: _notesController,
-                    maxLines: 3,
-                    decoration: const InputDecoration(
-                      labelText: 'Notes (Optional)',
-                      border: OutlineInputBorder(),
-                    ),
-                  ),
+                  // Header with Trip Badge and Actions
+                  _buildCardHeader(transport, index, spacing, iconSize),
+                  
+                  SizedBox(height: spacing),
+                  
+                  // Route Information
+                  _buildRouteInfo(transport, titleSize, spacing),
+                  
+                  SizedBox(height: spacing * 0.75),
+                  
+                  // Date and Time Section
+                  _buildDateTimeSection(transport, spacing, iconSize, subtitleSize),
+                  
+                  SizedBox(height: spacing * 0.75),
+                  
+                  // Amount Section
+                  _buildAmountSection(transport, spacing, subtitleSize),
+                  
+                  // Notes Section (if exists)
+                  if (transport.notes != null && transport.notes!.isNotEmpty) ...[
+                    SizedBox(height: spacing * 0.75),
+                    _buildNotesSection(transport, spacing, subtitleSize),
+                  ],
                 ],
               ),
             ),
           ),
+        );
+      },
+    );
+  }
+
+  Widget _buildCardHeader(QuoteTransportDetail transport, int index, double spacing, double iconSize) {
+    return Row(
+      children: [
+        // Trip Sequence Badge
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing * 0.75,
+            vertical: spacing * 0.5,
+          ),
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.richGold,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Text(
+            'Trip ${index + 1}',
+            style: const TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 12,
+            ),
+          ),
+        ),
+        
+        const Spacer(),
+        
+        // Action Menu
+        PopupMenuButton<String>(
+          icon: Icon(
+            Icons.more_vert,
+            color: ChoiceLuxTheme.platinumSilver,
+            size: iconSize,
+          ),
+          onSelected: (value) {
+            if (value == 'edit') {
+              _showEditTransportDialog(transport);
+            } else if (value == 'delete') {
+              _deleteTransport(transport);
+            }
+          },
+          itemBuilder: (context) => [
+            const PopupMenuItem(
+              value: 'edit',
+              child: Row(
+                children: [
+                  Icon(Icons.edit, size: 16, color: ChoiceLuxTheme.platinumSilver),
+                  SizedBox(width: 8),
+                  Text('Edit'),
+                ],
+              ),
+            ),
+            const PopupMenuItem(
+              value: 'delete',
+              child: Row(
+                children: [
+                  Icon(Icons.delete, size: 16, color: ChoiceLuxTheme.errorColor),
+                  SizedBox(width: 8),
+                  Text('Delete'),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRouteInfo(QuoteTransportDetail transport, double titleSize, double spacing) {
+    return Container(
+      padding: EdgeInsets.all(spacing * 0.75),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          // Pickup Location
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.radio_button_checked,
+                      size: 12,
+                      color: ChoiceLuxTheme.successColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'From',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  transport.pickupLocation,
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.softWhite,
+                    fontSize: titleSize * 0.9,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          // Arrow
+          Padding(
+            padding: EdgeInsets.symmetric(horizontal: spacing * 0.5),
+            child: Icon(
+              Icons.arrow_forward,
+              color: ChoiceLuxTheme.richGold,
+              size: 20,
+            ),
+          ),
+          
+          // Dropoff Location
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(
+                      Icons.location_on,
+                      size: 12,
+                      color: ChoiceLuxTheme.errorColor,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'To',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  transport.dropoffLocation,
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.softWhite,
+                    fontSize: titleSize * 0.9,
+                    fontWeight: FontWeight.w600,
+                    height: 1.3,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDateTimeSection(QuoteTransportDetail transport, double spacing, double iconSize, double subtitleSize) {
+    return Row(
+      children: [
+        // Date
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing * 0.75,
+              vertical: spacing * 0.5,
+            ),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.calendar_today,
+                  size: iconSize * 0.8,
+                  color: ChoiceLuxTheme.richGold,
+                ),
+                SizedBox(width: spacing * 0.5),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Date',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('MMM dd, yyyy').format(transport.pickupDate),
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite,
+                          fontSize: subtitleSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        
+        SizedBox(width: spacing * 0.5),
+        
+        // Time
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: spacing * 0.75,
+              vertical: spacing * 0.5,
+            ),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.access_time,
+                  size: iconSize * 0.8,
+                  color: ChoiceLuxTheme.richGold,
+                ),
+                SizedBox(width: spacing * 0.5),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Time',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      Text(
+                        DateFormat('HH:mm').format(transport.pickupDate),
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite,
+                          fontSize: subtitleSize,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAmountSection(QuoteTransportDetail transport, double spacing, double subtitleSize) {
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing * 0.75,
+        vertical: spacing * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.richGold.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withOpacity(0.4),
+          width: 1,
+        ),
+      ),
+      child: Row(
+        children: [
+          Icon(
+            Icons.attach_money,
+            size: 18,
+            color: ChoiceLuxTheme.richGold,
+          ),
+          SizedBox(width: spacing * 0.5),
+          Text(
+            'Amount',
+            style: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver,
+              fontSize: 11,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const Spacer(),
+          Text(
+            'R${transport.amount.toStringAsFixed(2)}',
+            style: TextStyle(
+              color: ChoiceLuxTheme.richGold,
+              fontSize: subtitleSize + 2,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNotesSection(QuoteTransportDetail transport, double spacing, double subtitleSize) {
+    return Container(
+      padding: EdgeInsets.all(spacing * 0.75),
+      decoration: BoxDecoration(
+        color: Colors.grey.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: Colors.grey.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.note,
+                size: 14,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
+              SizedBox(width: spacing * 0.5),
+              Text(
+                'Notes',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            transport.notes!,
+            style: TextStyle(
+              color: ChoiceLuxTheme.softWhite,
+              fontSize: subtitleSize,
+              height: 1.4,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFloatingActionButton() {
+    return FloatingActionButton(
+      onPressed: _isAddingTransport ? null : _showAddTransportDialog,
+      backgroundColor: ChoiceLuxTheme.richGold,
+      foregroundColor: Colors.black,
+      child: _isAddingTransport
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),
+            )
+          : const Icon(Icons.add),
+    );
+  }
+
+  Future<void> _deleteTransport(QuoteTransportDetail transport) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Transport',
+          style: TextStyle(color: ChoiceLuxTheme.softWhite),
+        ),
+        content: const Text(
+          'Are you sure you want to delete this transport leg?',
+          style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => Navigator.of(context).pop(false),
             child: const Text(
               'Cancel',
               style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
           ),
           ElevatedButton(
-            onPressed: _isAddingTransport ? null : _saveTransport,
+            onPressed: () => Navigator.of(context).pop(true),
             style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.richGold,
-              foregroundColor: Colors.black,
+              backgroundColor: ChoiceLuxTheme.errorColor,
+              foregroundColor: Colors.white,
             ),
-            child: _isAddingTransport
-                ? const SizedBox(
-                    width: 16,
-                    height: 16,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
-                    ),
-                  )
-                : Text(_isEditMode ? 'Update' : 'Add'),
+            child: const Text('Delete'),
           ),
         ],
       ),
+    );
+
+    if (confirmed == true) {
+      setState(() => _isLoading = true);
+      try {
+        final transportNotifier = ref.read(
+          quoteTransportDetailsProvider(widget.quoteId).notifier,
+        );
+        await transportNotifier.deleteTransportDetail(transport.id);
+        
+        // Force refresh the provider and reload data
+        await transportNotifier.refresh();
+        await _loadData();
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Transport deleted successfully'),
+              backgroundColor: ChoiceLuxTheme.successColor,
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          Log.e('Error deleting transport: $e');
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text('Error deleting transport: ${e.toString()}'),
+              backgroundColor: ChoiceLuxTheme.errorColor,
+              duration: const Duration(seconds: 5),
+            ),
+          );
+        }
+      } finally {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+}
+
+class _TransportDialog extends StatefulWidget {
+  final bool isEditMode;
+  final QuoteTransportDetail? editingTransport;
+  final String quoteId;
+  final Function(QuoteTransportDetail) onSave;
+
+  const _TransportDialog({
+    required this.isEditMode,
+    required this.editingTransport,
+    required this.quoteId,
+    required this.onSave,
+  });
+
+  @override
+  State<_TransportDialog> createState() => _TransportDialogState();
+}
+
+class _TransportDialogState extends State<_TransportDialog> {
+  final _formKey = GlobalKey<FormState>();
+  final _pickupLocationController = TextEditingController();
+  final _dropoffLocationController = TextEditingController();
+  final _amountController = TextEditingController();
+  final _notesController = TextEditingController();
+  
+  DateTime? _selectedPickupDate;
+  TimeOfDay? _selectedPickupTime;
+  bool _isAddingTransport = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.isEditMode && widget.editingTransport != null) {
+      _populateForm();
+    }
+  }
+
+  void _populateForm() {
+    final transport = widget.editingTransport!;
+    _pickupLocationController.text = transport.pickupLocation;
+    _dropoffLocationController.text = transport.dropoffLocation;
+    _amountController.text = transport.amount.toString();
+    _notesController.text = transport.notes ?? '';
+    _selectedPickupDate = transport.pickupDate;
+    _selectedPickupTime = TimeOfDay.fromDateTime(transport.pickupDate);
+  }
+
+  @override
+  void dispose() {
+    _pickupLocationController.dispose();
+    _dropoffLocationController.dispose();
+    _amountController.dispose();
+    _notesController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      backgroundColor: ChoiceLuxTheme.charcoalGray,
+      title: Text(
+        widget.isEditMode ? 'Edit Transport Leg' : 'Add Transport Leg',
+        style: const TextStyle(
+          color: ChoiceLuxTheme.softWhite,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+      content: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.9,
+        child: Form(
+          key: _formKey,
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Pickup Location
+                TextFormField(
+                  controller: _pickupLocationController,
+                  decoration: const InputDecoration(
+                    labelText: 'Pickup Location *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Pickup location is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Dropoff Location
+                TextFormField(
+                  controller: _dropoffLocationController,
+                  decoration: const InputDecoration(
+                    labelText: 'Dropoff Location *',
+                    border: OutlineInputBorder(),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Dropoff location is required';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Date and Time Row
+                Row(
+                  children: [
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectDate(context),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Pickup Date *',
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(
+                            _selectedPickupDate != null
+                                ? '${_selectedPickupDate!.day}/${_selectedPickupDate!.month}/${_selectedPickupDate!.year}'
+                                : 'Select Date',
+                            style: TextStyle(
+                              color: _selectedPickupDate != null
+                                  ? ChoiceLuxTheme.softWhite
+                                  : ChoiceLuxTheme.platinumSilver,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: InkWell(
+                        onTap: () => _selectTime(context),
+                        child: InputDecorator(
+                          decoration: const InputDecoration(
+                            labelText: 'Pickup Time *',
+                            border: OutlineInputBorder(),
+                          ),
+                          child: Text(
+                            _selectedPickupTime != null
+                                ? _selectedPickupTime!.format(context)
+                                : 'Select Time',
+                            style: TextStyle(
+                              color: _selectedPickupTime != null
+                                  ? ChoiceLuxTheme.softWhite
+                                  : ChoiceLuxTheme.platinumSilver,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // Amount
+                TextFormField(
+                  controller: _amountController,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (R) *',
+                    border: OutlineInputBorder(),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Amount is required';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid amount';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+
+                // Notes
+                TextFormField(
+                  controller: _notesController,
+                  decoration: const InputDecoration(
+                    labelText: 'Notes (Optional)',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 3,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+          ),
+        ),
+        ElevatedButton(
+          onPressed: _isAddingTransport ? null : _saveTransport,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: ChoiceLuxTheme.richGold,
+            foregroundColor: Colors.black,
+          ),
+          child: _isAddingTransport
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                  ),
+                )
+              : Text(widget.isEditMode ? 'Update' : 'Add'),
+        ),
+      ],
     );
   }
 
@@ -300,7 +1178,6 @@ class _QuoteTransportDetailsScreenState
     );
     if (picked != null) {
       setState(() {
-        _selectedPickupDate = picked;
         // If we have a time selected, combine it with the new date
         if (_selectedPickupTime != null) {
           _selectedPickupDate = DateTime(
@@ -310,8 +1187,12 @@ class _QuoteTransportDetailsScreenState
             _selectedPickupTime!.hour,
             _selectedPickupTime!.minute,
           );
+        } else {
+          // Store just the date part if no time is selected
+          _selectedPickupDate = DateTime(picked.year, picked.month, picked.day);
         }
       });
+      Log.d('Date selected: $_selectedPickupDate');
     }
   }
 
@@ -345,8 +1226,19 @@ class _QuoteTransportDetailsScreenState
             picked.hour,
             picked.minute,
           );
+        } else {
+          // If no date is selected, use today's date with the selected time
+          final now = DateTime.now();
+          _selectedPickupDate = DateTime(
+            now.year,
+            now.month,
+            now.day,
+            picked.hour,
+            picked.minute,
+          );
         }
       });
+      Log.d('Time selected: $_selectedPickupTime, Combined date: $_selectedPickupDate');
     }
   }
 
@@ -364,1122 +1256,34 @@ class _QuoteTransportDetailsScreenState
 
     setState(() => _isAddingTransport = true);
     try {
-      final transportNotifier = ref.read(
-        quoteTransportDetailsProvider(widget.quoteId).notifier,
+      final transportDetail = QuoteTransportDetail(
+        id: widget.isEditMode && widget.editingTransport != null 
+            ? widget.editingTransport!.id 
+            : '',
+        quoteId: widget.quoteId,
+        pickupDate: _selectedPickupDate!,
+        pickupLocation: _pickupLocationController.text.trim(),
+        dropoffLocation: _dropoffLocationController.text.trim(),
+        amount: double.parse(_amountController.text),
+        notes: _notesController.text.trim().isEmpty
+            ? null
+            : _notesController.text.trim(),
       );
 
-      if (_isEditMode && _editingTransport != null) {
-        // Update existing transport
-        final updatedTransport = _editingTransport!.copyWith(
-          pickupLocation: _pickupLocationController.text.trim(),
-          dropoffLocation: _dropoffLocationController.text.trim(),
-          pickupDate: _selectedPickupDate!,
-          amount: double.parse(_amountController.text),
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-        );
-
-        await transportNotifier.updateTransportDetail(updatedTransport);
-      } else {
-        // Add new transport
-        final newTransport = QuoteTransportDetail(
-          id: '', // Will be set by database
-          quoteId: widget.quoteId,
-          pickupDate: _selectedPickupDate!,
-          pickupLocation: _pickupLocationController.text.trim(),
-          dropoffLocation: _dropoffLocationController.text.trim(),
-          amount: double.parse(_amountController.text),
-          notes: _notesController.text.trim().isEmpty
-              ? null
-              : _notesController.text.trim(),
-        );
-
-        await transportNotifier.addTransportDetail(newTransport);
-      }
-
-      // Refresh data
-      await _loadData();
-
-      Navigator.of(context).pop();
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _isEditMode
-                  ? 'Transport updated successfully'
-                  : 'Transport added successfully',
-            ),
-            backgroundColor: ChoiceLuxTheme.successColor,
-          ),
-        );
-      }
+      widget.onSave(transportDetail);
     } catch (e) {
       if (mounted) {
+        Log.e('Error creating transport detail: $e');
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error saving transport: $e'),
+            content: Text('Error creating transport detail: ${e.toString()}'),
             backgroundColor: ChoiceLuxTheme.errorColor,
+            duration: const Duration(seconds: 5),
           ),
         );
       }
     } finally {
       setState(() => _isAddingTransport = false);
     }
-  }
-
-  void _resetForm() {
-    _pickupLocationController.clear();
-    _dropoffLocationController.clear();
-    _amountController.clear();
-    _notesController.clear();
-    _selectedPickupDate = null;
-    _selectedPickupTime = null;
-  }
-
-  Future<void> _deleteTransport(QuoteTransportDetail transport) async {
-    final confirmed = await showDialog<bool>(
-      context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: ChoiceLuxTheme.charcoalGray,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(
-                Icons.warning_amber_rounded,
-                color: ChoiceLuxTheme.errorColor,
-                size: 24,
-              ),
-            ),
-            const SizedBox(width: 12),
-            const Text(
-              'Delete Transport Leg',
-              style: TextStyle(
-                color: ChoiceLuxTheme.softWhite,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Are you sure you want to delete this transport leg?',
-              style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
-            ),
-            const SizedBox(height: 8),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(
-                  color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
-                ),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'From: ${transport.pickupLocation}',
-                    style: const TextStyle(
-                      color: ChoiceLuxTheme.softWhite,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'To: ${transport.dropoffLocation}',
-                    style: const TextStyle(
-                      color: ChoiceLuxTheme.softWhite,
-                      fontSize: 14,
-                    ),
-                  ),
-                  Text(
-                    'Amount: R ${transport.amount.toStringAsFixed(2)}',
-                    style: const TextStyle(
-                      color: ChoiceLuxTheme.richGold,
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'This action cannot be undone.',
-              style: TextStyle(
-                color: ChoiceLuxTheme.errorColor,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(false),
-            style: TextButton.styleFrom(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(
-                color: ChoiceLuxTheme.platinumSilver,
-                fontSize: 16,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.of(context).pop(true),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.errorColor,
-              foregroundColor: Colors.white,
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-            child: const Text(
-              'Delete',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (confirmed == true) {
-      try {
-        final transportNotifier = ref.read(
-          quoteTransportDetailsProvider(widget.quoteId).notifier,
-        );
-        await transportNotifier.deleteTransportDetail(transport.id);
-        await _loadData();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Transport deleted successfully'),
-              backgroundColor: ChoiceLuxTheme.successColor,
-            ),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Error deleting transport: $e'),
-              backgroundColor: ChoiceLuxTheme.errorColor,
-            ),
-          );
-        }
-      }
-    }
-  }
-
-  double get _totalAmount {
-    return _transportDetails.fold(
-      0.0,
-      (sum, transport) => sum + transport.amount,
-    );
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-
-    if (_isLoading) {
-      return Scaffold(
-        appBar: LuxuryAppBar(
-          title: 'Transport Details',
-          subtitle: 'Quote #${widget.quoteId}',
-          showBackButton: true,
-          onBackPressed: () => context.go('/quotes/${widget.quoteId}'),
-        ),
-        body: const Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-          ),
-        ),
-      );
-    }
-
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Transport Details',
-        subtitle: 'Quote #${widget.quoteId}',
-        showBackButton: true,
-        onBackPressed: () => context.go('/quotes/${widget.quoteId}'),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: Column(
-            children: [
-              // Header with Summary
-              _buildHeader(isMobile, isSmallMobile),
-
-              // Transport Details List
-              Expanded(
-                child: _transportDetails.isEmpty
-                    ? _buildEmptyState()
-                    : _buildTransportList(isMobile, isSmallMobile),
-              ),
-            ],
-          ),
-        ),
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 4),
-              spreadRadius: 2,
-            ),
-          ],
-        ),
-        child: FloatingActionButton.extended(
-          onPressed: _showAddTransportDialog,
-          backgroundColor: ChoiceLuxTheme.richGold,
-          foregroundColor: Colors.black,
-          elevation: 0,
-          icon: const Icon(Icons.add, size: 24),
-          label: const Text(
-            'Add Transport',
-            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildHeader(bool isMobile, bool isSmallMobile) {
-    return Container(
-      margin: EdgeInsets.all(
-        isSmallMobile
-            ? 12
-            : isMobile
-            ? 16
-            : 20,
-      ),
-      padding: EdgeInsets.all(
-        isSmallMobile
-            ? 16
-            : isMobile
-            ? 20
-            : 24,
-      ),
-      decoration: BoxDecoration(
-        gradient: ChoiceLuxTheme.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-        ),
-      ),
-      child: Column(
-        children: [
-          // Breadcrumb Navigation
-          Row(
-            children: [
-              Icon(
-                Icons.arrow_back_ios,
-                size: 16,
-                color: ChoiceLuxTheme.platinumSilver,
-              ),
-              TextButton(
-                onPressed: () => context.go('/quotes/${widget.quoteId}'),
-                child: Text(
-                  'Back to Quote',
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.richGold,
-                    fontSize: isSmallMobile
-                        ? 12
-                        : isMobile
-                        ? 14
-                        : 16,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ),
-              const Spacer(),
-            ],
-          ),
-          const SizedBox(height: 16),
-
-          // Main Header Content
-          Row(
-            children: [
-              Container(
-                padding: EdgeInsets.all(
-                  isSmallMobile
-                      ? 8
-                      : isMobile
-                      ? 12
-                      : 16,
-                ),
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  Icons.route,
-                  size: isSmallMobile
-                      ? 20
-                      : isMobile
-                      ? 24
-                      : 28,
-                  color: ChoiceLuxTheme.richGold,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Transport Details',
-                      style: TextStyle(
-                        fontSize: isSmallMobile
-                            ? 18
-                            : isMobile
-                            ? 20
-                            : 24,
-                        fontWeight: FontWeight.w700,
-                        color: ChoiceLuxTheme.softWhite,
-                      ),
-                    ),
-                    Text(
-                      '${_transportDetails.length} transport leg${_transportDetails.length == 1 ? '' : 's'}',
-                      style: TextStyle(
-                        fontSize: isSmallMobile
-                            ? 12
-                            : isMobile
-                            ? 14
-                            : 16,
-                        color: ChoiceLuxTheme.platinumSilver,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.all(
-                  isSmallMobile
-                      ? 12
-                      : isMobile
-                      ? 16
-                      : 20,
-                ),
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                  ),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'R ${_totalAmount.toStringAsFixed(2)}',
-                      style: TextStyle(
-                        fontSize: isSmallMobile
-                            ? 16
-                            : isMobile
-                            ? 18
-                            : 20,
-                        fontWeight: FontWeight.w700,
-                        color: ChoiceLuxTheme.richGold,
-                      ),
-                    ),
-                    Text(
-                      'Total',
-                      style: TextStyle(
-                        fontSize: isSmallMobile
-                            ? 10
-                            : isMobile
-                            ? 11
-                            : 12,
-                        color: ChoiceLuxTheme.platinumSilver,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(32),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  ChoiceLuxTheme.richGold.withOpacity(0.1),
-                  ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                width: 2,
-              ),
-            ),
-            child: Icon(
-              Icons.route_outlined,
-              size: 64,
-              color: ChoiceLuxTheme.richGold.withOpacity(0.6),
-            ),
-          ),
-          const SizedBox(height: 32),
-          Text(
-            'No Transport Details',
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.w700,
-              color: ChoiceLuxTheme.softWhite,
-            ),
-          ),
-          const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Text(
-              'Add transport legs to define the route and pricing for this quote. Each leg represents a segment of the journey with its own pickup, dropoff, and cost.',
-              style: TextStyle(
-                fontSize: 16,
-                color: ChoiceLuxTheme.platinumSilver,
-                height: 1.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-          ),
-          const SizedBox(height: 40),
-          Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                  blurRadius: 12,
-                  offset: const Offset(0, 4),
-                  spreadRadius: 2,
-                ),
-              ],
-            ),
-            child: ElevatedButton.icon(
-              onPressed: _showAddTransportDialog,
-              icon: const Icon(Icons.add, size: 24),
-              label: const Text(
-                'Add First Transport',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.black,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 16,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTransportList(bool isMobile, bool isSmallMobile) {
-    return ListView.builder(
-      padding: EdgeInsets.symmetric(
-        horizontal: isSmallMobile
-            ? 12
-            : isMobile
-            ? 16
-            : 20,
-        vertical: 8,
-      ),
-      itemCount: _transportDetails.length,
-      itemBuilder: (context, index) {
-        final transport = _transportDetails[index];
-        return _buildTransportCard(transport, index, isMobile, isSmallMobile);
-      },
-    );
-  }
-
-  Widget _buildTransportCard(
-    QuoteTransportDetail transport,
-    int index,
-    bool isMobile,
-    bool isSmallMobile,
-  ) {
-    return Container(
-      margin: EdgeInsets.only(
-        bottom: isSmallMobile
-            ? 12
-            : isMobile
-            ? 16
-            : 20,
-      ),
-      decoration: BoxDecoration(
-        gradient: ChoiceLuxTheme.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          // Header with leg number, title, date/time, and actions
-          Container(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 16
-                  : 20,
-            ),
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.05),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(16),
-                topRight: Radius.circular(16),
-              ),
-            ),
-            child: Row(
-              children: [
-                // Leg number badge
-                Container(
-                  padding: EdgeInsets.all(
-                    isSmallMobile
-                        ? 8
-                        : isMobile
-                        ? 10
-                        : 12,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.8),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    '${index + 1}',
-                    style: TextStyle(
-                      fontSize: isSmallMobile
-                          ? 14
-                          : isMobile
-                          ? 16
-                          : 18,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 12),
-
-                // Title and date/time
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Transport Leg ${index + 1}',
-                        style: TextStyle(
-                          fontSize: isSmallMobile
-                              ? 16
-                              : isMobile
-                              ? 18
-                              : 20,
-                          fontWeight: FontWeight.w700,
-                          color: ChoiceLuxTheme.softWhite,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          Icon(
-                            Icons.calendar_today,
-                            size: isSmallMobile
-                                ? 12
-                                : isMobile
-                                ? 14
-                                : 16,
-                            color: ChoiceLuxTheme.platinumSilver,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${transport.pickupDate.day}/${transport.pickupDate.month}/${transport.pickupDate.year}',
-                            style: TextStyle(
-                              fontSize: isSmallMobile
-                                  ? 11
-                                  : isMobile
-                                  ? 12
-                                  : 13,
-                              color: ChoiceLuxTheme.platinumSilver,
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.access_time,
-                            size: isSmallMobile
-                                ? 12
-                                : isMobile
-                                ? 14
-                                : 16,
-                            color: ChoiceLuxTheme.platinumSilver,
-                          ),
-                          const SizedBox(width: 4),
-                          Text(
-                            '${transport.pickupDate.hour.toString().padLeft(2, '0')}:${transport.pickupDate.minute.toString().padLeft(2, '0')}',
-                            style: TextStyle(
-                              fontSize: isSmallMobile
-                                  ? 11
-                                  : isMobile
-                                  ? 12
-                                  : 13,
-                              color: ChoiceLuxTheme.platinumSilver,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Action buttons
-                Row(
-                  children: [
-                    Container(
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                        ),
-                      ),
-                      child: IconButton(
-                        onPressed: () => _showEditTransportDialog(transport),
-                        icon: const Icon(
-                          Icons.edit,
-                          color: ChoiceLuxTheme.richGold,
-                          size: 18,
-                        ),
-                        tooltip: 'Edit Transport Leg',
-                        style: IconButton.styleFrom(
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(36, 36),
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(
-                          color: ChoiceLuxTheme.errorColor.withOpacity(0.2),
-                        ),
-                      ),
-                      child: IconButton(
-                        onPressed: () => _deleteTransport(transport),
-                        icon: const Icon(
-                          Icons.delete,
-                          color: ChoiceLuxTheme.errorColor,
-                          size: 18,
-                        ),
-                        tooltip: 'Delete Transport Leg',
-                        style: IconButton.styleFrom(
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(36, 36),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-
-          // Route information
-          Padding(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 16
-                  : 20,
-            ),
-            child: Column(
-              children: [
-                // Pickup location
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(
-                    isSmallMobile
-                        ? 12
-                        : isMobile
-                        ? 14
-                        : 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.directions_car,
-                          color: ChoiceLuxTheme.richGold,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'From',
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 11
-                                    : isMobile
-                                    ? 12
-                                    : 13,
-                                fontWeight: FontWeight.w600,
-                                color: ChoiceLuxTheme.richGold,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              transport.pickupLocation,
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 13
-                                    : isMobile
-                                    ? 14
-                                    : 16,
-                                fontWeight: FontWeight.w500,
-                                color: ChoiceLuxTheme.softWhite,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Arrow connector
-                Container(
-                  margin: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.keyboard_arrow_down,
-                          color: ChoiceLuxTheme.platinumSilver,
-                          size: 24,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Dropoff location
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(
-                    isSmallMobile
-                        ? 12
-                        : isMobile
-                        ? 14
-                        : 16,
-                  ),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.flag,
-                          color: ChoiceLuxTheme.platinumSilver,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'To',
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 11
-                                    : isMobile
-                                    ? 12
-                                    : 13,
-                                fontWeight: FontWeight.w600,
-                                color: ChoiceLuxTheme.platinumSilver,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              transport.dropoffLocation,
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 13
-                                    : isMobile
-                                    ? 14
-                                    : 16,
-                                fontWeight: FontWeight.w500,
-                                color: ChoiceLuxTheme.softWhite,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Amount section
-                Container(
-                  width: double.infinity,
-                  padding: EdgeInsets.all(
-                    isSmallMobile
-                        ? 14
-                        : isMobile
-                        ? 16
-                        : 18,
-                  ),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold.withOpacity(0.2),
-                        ChoiceLuxTheme.richGold.withOpacity(0.1),
-                      ],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                        blurRadius: 4,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.attach_money,
-                          color: ChoiceLuxTheme.richGold,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Amount',
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 11
-                                    : isMobile
-                                    ? 12
-                                    : 13,
-                                fontWeight: FontWeight.w600,
-                                color: ChoiceLuxTheme.platinumSilver,
-                              ),
-                            ),
-                            const SizedBox(height: 2),
-                            Text(
-                              'R ${transport.amount.toStringAsFixed(2)}',
-                              style: TextStyle(
-                                fontSize: isSmallMobile
-                                    ? 18
-                                    : isMobile
-                                    ? 20
-                                    : 22,
-                                fontWeight: FontWeight.w800,
-                                color: ChoiceLuxTheme.richGold,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Notes section (if any)
-                if (transport.notes?.isNotEmpty == true) ...[
-                  const SizedBox(height: 16),
-                  Container(
-                    width: double.infinity,
-                    padding: EdgeInsets.all(
-                      isSmallMobile
-                          ? 12
-                          : isMobile
-                          ? 14
-                          : 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-                      ),
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(6),
-                          decoration: BoxDecoration(
-                            color: ChoiceLuxTheme.platinumSilver.withOpacity(
-                              0.2,
-                            ),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: const Icon(
-                            Icons.note,
-                            color: ChoiceLuxTheme.platinumSilver,
-                            size: 16,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Notes',
-                                style: TextStyle(
-                                  fontSize: isSmallMobile
-                                      ? 11
-                                      : isMobile
-                                      ? 12
-                                      : 13,
-                                  fontWeight: FontWeight.w600,
-                                  color: ChoiceLuxTheme.platinumSilver,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                transport.notes!,
-                                style: TextStyle(
-                                  fontSize: isSmallMobile
-                                      ? 12
-                                      : isMobile
-                                      ? 13
-                                      : 14,
-                                  color: ChoiceLuxTheme.softWhite,
-                                  height: 1.4,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
   }
 }

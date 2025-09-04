@@ -71,6 +71,21 @@ class InvoiceSharingService {
     }
   }
 
+  Future<void> shareInvoiceViaSystemShareSheet({
+    required String invoiceUrl,
+    required InvoiceData invoiceData,
+  }) async {
+    try {
+      final message = _buildShareMessage(invoiceUrl, invoiceData);
+      await Share.share(
+        message,
+        subject: 'Invoice for Job #${invoiceData.jobId}',
+      );
+    } catch (e) {
+      throw Exception('Failed to share invoice: $e');
+    }
+  }
+
   Future<void> copyInvoiceLink({
     required String invoiceUrl,
     required InvoiceData invoiceData,
@@ -135,5 +150,19 @@ Amount: ${data.formattedTotalAmount}
 Due Date: ${data.formattedDueDate}
 
 View invoice: $url''';
+  }
+
+  String _buildShareMessage(String url, InvoiceData data) {
+    return '''Invoice for Job #${data.jobId}
+
+${data.companyName} has generated an invoice for your booking.
+
+Invoice Number: ${data.invoiceNumber}
+Amount: ${data.formattedTotalAmount}
+Due Date: ${data.formattedDueDate}
+
+View your invoice: $url
+
+Thank you for choosing ${data.companyName}!''';
   }
 }

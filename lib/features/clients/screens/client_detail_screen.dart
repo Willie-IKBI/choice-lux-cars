@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/features/clients/providers/client_stats_provider
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -51,54 +52,65 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     final clientAsync = ref.watch(clientProvider(widget.clientId));
     final agentsAsync = ref.watch(agentsNotifierProvider(widget.clientId));
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Client Details',
-        subtitle: 'View and manage client information',
-        showBackButton: true,
-        onBackPressed: () => context.go('/clients'),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
-
-              return Column(
-                children: [
-                  // Client Info Header
-                  clientAsync.when(
-                    data: (client) => client != null
-                        ? _buildClientHeader(client, isMobile)
-                        : _buildErrorState('Client not found'),
-                    loading: () => _buildLoadingHeader(),
-                    error: (error, stackTrace) =>
-                        _buildErrorState(error.toString()),
-                  ),
-
-                  // Tab Bar
-                  _buildTabBar(isMobile),
-
-                  // Tab Content
-                  Expanded(
-                    child: TabBarView(
-                      controller: _tabController,
-                      children: [
-                        _buildOverviewTab(clientAsync, agentsAsync, isMobile),
-                        _buildAgentsTab(agentsAsync, isMobile),
-                        _buildActivityTab(isMobile),
-                      ],
-                    ),
-                  ),
-                ],
-              );
-            },
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-      ),
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Client Details',
+            subtitle: 'View and manage client information',
+            showBackButton: true,
+            onBackPressed: () => context.go('/clients'),
+          ),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
+
+                return Column(
+                  children: [
+                    // Client Info Header
+                    clientAsync.when(
+                      data: (client) => client != null
+                          ? _buildClientHeader(client, isMobile)
+                          : _buildErrorState('Client not found'),
+                      loading: () => _buildLoadingHeader(),
+                      error: (error, stackTrace) =>
+                          _buildErrorState(error.toString()),
+                    ),
+
+                    // Tab Bar
+                    _buildTabBar(isMobile),
+
+                    // Tab Content
+                    Expanded(
+                      child: TabBarView(
+                        controller: _tabController,
+                        children: [
+                          _buildOverviewTab(clientAsync, agentsAsync, isMobile),
+                          _buildAgentsTab(agentsAsync, isMobile),
+                          _buildActivityTab(isMobile),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+        ),
+      ],
     );
   }
 

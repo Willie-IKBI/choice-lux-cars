@@ -304,36 +304,6 @@ class InvoicePdfService {
               mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
               children: [
                 pw.Text(
-                  'Subtotal:',
-                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600),
-                ),
-                pw.Text(
-                  data.formattedSubtotal,
-                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 6),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
-                  'VAT (15%):',
-                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey600),
-                ),
-                pw.Text(
-                  data.formattedTaxAmount,
-                  style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800),
-                ),
-              ],
-            ),
-            pw.SizedBox(height: 8),
-            pw.Container(height: 0.5, color: PdfTheme.grey300),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-              children: [
-                pw.Text(
                   'Total Amount:',
                   style: pw.TextStyle(
                     font: PdfTheme.fontBold,
@@ -350,23 +320,6 @@ class InvoicePdfService {
                   ),
                 ),
               ],
-            ),
-            pw.SizedBox(height: 12),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(12),
-              decoration: pw.BoxDecoration(
-                color: PdfTheme.gold50,
-                borderRadius: pw.BorderRadius.circular(6),
-                border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
-              ),
-              child: pw.Text(
-                'Payment Terms: ${data.paymentTerms}',
-                style: pw.TextStyle(
-                  font: PdfTheme.fontBold,
-                  fontSize: 11,
-                  color: PdfTheme.gold700,
-                ),
-              ),
             ),
           ],
         ),

@@ -257,7 +257,11 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 
   /// Refresh jobs data (alias for refresh)
   Future<void> refreshJobs() async {
-    ref.invalidateSelf();
+    Log.d('Refreshing jobs data...');
+    // Force a complete refresh by setting state to loading and then rebuilding
+    state = const AsyncLoading();
+    state = await AsyncValue.guard(() async => await _fetchJobs());
+    Log.d('Jobs data refresh completed');
   }
 
   /// Convenience alias for old call sites

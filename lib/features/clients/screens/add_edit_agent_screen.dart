@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class AddEditAgentScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -47,42 +48,53 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
   Widget build(BuildContext context) {
     final isEditMode = widget.agent != null;
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: isEditMode ? 'Edit Agent' : 'Add Agent',
-        subtitle: isEditMode ? 'Update agent details' : 'Create new agent',
-        showBackButton: true,
-        onBackPressed: () => context.pop(),
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
         ),
-        child: SafeArea(
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              final isMobile = constraints.maxWidth < 600;
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: isEditMode ? 'Edit Agent' : 'Add Agent',
+            subtitle: isEditMode ? 'Update agent details' : 'Create new agent',
+            showBackButton: true,
+            onBackPressed: () => context.pop(),
+          ),
+          body: SafeArea(
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final isMobile = constraints.maxWidth < 600;
 
-              return Column(
-                children: [
-                  // Form Content
-                  Expanded(
-                    child: SingleChildScrollView(
-                      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                      child: Center(
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxWidth: 600),
-                          child: _buildForm(isMobile),
+                return Column(
+                  children: [
+                    // Form Content
+                    Expanded(
+                      child: SingleChildScrollView(
+                        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 600),
+                            child: _buildForm(isMobile),
+                          ),
                         ),
                       ),
                     ),
-                  ),
-                ],
-              );
-            },
+                  ],
+                );
+              },
+            ),
           ),
         ),
-      ),
+      ],
     );
   }
 
@@ -162,34 +174,32 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
 
           const SizedBox(height: 32),
 
-          // Save Button (Mobile)
-          if (isMobile) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                onPressed: _isLoading ? null : _saveAgent,
-                icon: _isLoading
-                    ? const SizedBox(
-                        width: 16,
-                        height: 16,
-                        child: CircularProgressIndicator(
-                          strokeWidth: 2,
-                          color: Colors.black,
-                        ),
-                      )
-                    : const Icon(Icons.save),
-                label: Text(_isLoading ? 'Saving...' : 'Save Agent'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: ChoiceLuxTheme.richGold,
-                  foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+          // Save Button
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isLoading ? null : _saveAgent,
+              icon: _isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.black,
+                      ),
+                    )
+                  : const Icon(Icons.save),
+              label: Text(_isLoading ? 'Saving...' : 'Save Agent'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.black,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
                 ),
               ),
             ),
-          ],
+          ),
         ],
       ),
     );

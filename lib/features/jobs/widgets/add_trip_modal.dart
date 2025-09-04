@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 
 class AddTripModal extends ConsumerStatefulWidget {
   final String jobId;
@@ -93,7 +94,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
 
       final newTrip = Trip(
         id: '', // Will be set by the database
-        jobId: widget.jobId,
+        jobId: int.parse(widget.jobId), // Convert String to int
         pickupDate: combinedDateTime,
         pickupLocation: _pickupLocationController.text.trim(),
         dropoffLocation: _dropoffLocationController.text.trim(),
@@ -103,7 +104,7 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
         amount: double.tryParse(_amountController.text) ?? 0.0,
       );
 
-      await ref.read(tripsByJobProvider(jobId).notifier).addTrip(newTrip);
+      await ref.read(tripsByJobProvider(widget.jobId).notifier).createTrip(newTrip);
 
       if (mounted) {
         Navigator.of(context).pop();

@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -193,30 +194,44 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
     final isWide = MediaQuery.of(context).size.width > 900;
 
     if (userProfile == null) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return Stack(
+        children: [
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
+          ),
+          Positioned.fill(
+            child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          ),
+          const Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Center(child: CircularProgressIndicator()),
+          ),
+        ],
+      );
     }
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'My Profile',
-        showProfile: false, // Hide profile menu since we're on profile page
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-      ),
-      drawer: isMobile ? const LuxuryDrawer() : null,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              ChoiceLuxTheme.jetBlack,
-              ChoiceLuxTheme.charcoalGray,
-              ChoiceLuxTheme.jetBlack,
-            ],
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        child: SingleChildScrollView(
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'My Profile',
+            showProfile: false, // Hide profile menu since we're on profile page
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+          ),
+          drawer: isMobile ? const LuxuryDrawer() : null,
+          body: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Center(
             child: ConstrainedBox(
@@ -513,6 +528,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
           ),
         ),
       ),
+      ],
     );
   }
 }

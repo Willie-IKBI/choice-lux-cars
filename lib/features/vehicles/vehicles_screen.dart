@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({Key? key}) : super(key: key);
@@ -49,78 +50,89 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     final isDesktop = screenWidth >= 800;
     final isLargeDesktop = screenWidth >= 1200;
 
-    return Scaffold(
-      appBar: LuxuryAppBar(
-        title: 'Vehicles',
-        subtitle: 'Manage your fleet',
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-        onSignOut: () async {
-          await ref.read(authProvider.notifier).signOut();
-        },
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                Icons.refresh_rounded,
-                color: ChoiceLuxTheme.richGold,
-                size: 20,
-              ),
-            ),
-            onPressed: () => ref.read(vehiclesProvider.notifier).refresh(),
-            tooltip: 'Refresh',
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
           ),
-        ],
-      ),
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
         ),
-        child: SafeArea(
-          child: Padding(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 12.0
-                  : isMobile
-                  ? 16.0
-                  : 24.0,
-            ),
-            child: Column(
-              children: [
-                // Responsive search bar
-                _buildResponsiveSearchBar(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
-                Expanded(
-                  child: _buildResponsiveVehicleGrid(
-                    filteredVehicles,
-                    isMobile,
-                    isSmallMobile,
-                    isTablet,
-                    isDesktop,
-                    isLargeDesktop,
+        // Layer 2: Background pattern that covers the entire screen
+        Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        // Layer 3: The Scaffold with a transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Vehicles',
+            subtitle: 'Manage your fleet',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+            actions: [
+              IconButton(
+                icon: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                      width: 1,
+                    ),
+                  ),
+                  child: Icon(
+                    Icons.refresh_rounded,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 20,
                   ),
                 ),
-              ],
+                onPressed: () => ref.read(vehiclesProvider.notifier).refresh(),
+                tooltip: 'Refresh',
+              ),
+            ],
+          ),
+          body: SafeArea(
+            child: Padding(
+              padding: EdgeInsets.all(
+                isSmallMobile
+                    ? 12.0
+                    : isMobile
+                    ? 16.0
+                    : 24.0,
+              ),
+              child: Column(
+                children: [
+                  // Responsive search bar
+                  _buildResponsiveSearchBar(isMobile, isSmallMobile),
+                  SizedBox(
+                    height: isSmallMobile
+                        ? 12.0
+                        : isMobile
+                        ? 16.0
+                        : 20.0,
+                  ),
+                  Expanded(
+                    child: _buildResponsiveVehicleGrid(
+                      filteredVehicles,
+                      isMobile,
+                      isSmallMobile,
+                      isTablet,
+                      isDesktop,
+                      isLargeDesktop,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
+          floatingActionButton: _buildMobileOptimizedFAB(),
         ),
-      ),
-      floatingActionButton: _buildMobileOptimizedFAB(),
+      ],
     );
   }
 

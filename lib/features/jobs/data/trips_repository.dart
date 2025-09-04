@@ -21,7 +21,7 @@ class TripsRepository {
       Log.d('Fetching trips from database');
 
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .select()
           .order('created_at', ascending: false);
 
@@ -50,9 +50,9 @@ class TripsRepository {
         return Result.success([]);
       }
 
-      Log.d('Executing database query: SELECT * FROM trips WHERE job_id = $intJobId');
+      Log.d('Executing database query: SELECT * FROM transport WHERE job_id = $intJobId');
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .select()
           .eq('job_id', intJobId)
           .order('created_at', ascending: false);
@@ -76,10 +76,13 @@ class TripsRepository {
       Log.d('Creating trip for job: ${trip.jobId}');
 
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .insert(trip.toJson())
           .select()
           .single();
+
+      // Update job amount after creating trip
+      await _updateJobAmountFromTrips(trip.jobId.toString());
 
       Log.d('Trip created successfully with ID: ${response['id']}');
       return Result.success(response);
@@ -94,7 +97,10 @@ class TripsRepository {
     try {
       Log.d('Updating trip: ${trip.id}');
 
-      await _supabase.from('trips').update(trip.toJson()).eq('id', trip.id);
+      await _supabase.from('transport').update(trip.toJson()).eq('id', trip.id);
+
+      // Update job amount after updating trip
+      await _updateJobAmountFromTrips(trip.jobId.toString());
 
       Log.d('Trip updated successfully');
       return const Result.success(null);
@@ -109,7 +115,7 @@ class TripsRepository {
     try {
       Log.d('Updating trip status: $tripId to $status');
 
-      await _supabase.from('trips').update({'status': status}).eq('id', tripId);
+      await _supabase.from('transport').update({'status': status}).eq('id', tripId);
 
       Log.d('Trip status updated successfully');
       return const Result.success(null);
@@ -124,7 +130,12 @@ class TripsRepository {
     try {
       Log.d('Deleting trip: $tripId');
       
-      await _supabase.from('trips').delete().eq('id', tripId);
+      await _supabase.from('transport').delete().eq('id', tripId);
+
+      // Update job amount after deleting trip
+      if (jobId != null) {
+        await _updateJobAmountFromTrips(jobId);
+      }
 
       Log.d('Trip deleted successfully');
       return const Result.success(null);
@@ -140,7 +151,7 @@ class TripsRepository {
       Log.d('Finding job ID for trip: $tripId');
       
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .select('job_id')
           .eq('id', tripId)
           .single();
@@ -160,7 +171,7 @@ class TripsRepository {
       Log.d('Fetching trips with status: $status');
 
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .select()
           .eq('status', status)
           .order('created_at', ascending: false);
@@ -181,7 +192,7 @@ class TripsRepository {
       Log.d('Fetching trips for driver: $driverId');
 
       final response = await _supabase
-          .from('trips')
+          .from('transport')
           .select()
           .eq('driver_id', driverId)
           .order('created_at', ascending: false);
@@ -222,6 +233,38 @@ class TripsRepository {
       return Result.failure(UnknownException(error.message));
     } else {
       return Result.failure(UnknownException(error.toString()));
+    }
+  }
+
+  /// Helper method to update job amount based on sum of trip amounts
+  Future<void> _updateJobAmountFromTrips(String jobId) async {
+    try {
+      Log.d('Updating job amount for job: $jobId');
+      
+      // Fetch all trips for this job
+      final tripsResult = await fetchTripsForJob(jobId);
+      
+      if (tripsResult.isSuccess) {
+        final trips = tripsResult.data!;
+        
+        // Calculate total amount from all trips
+        final totalAmount = trips.fold(0.0, (sum, trip) => sum + trip.amount);
+        
+        Log.d('Calculated total amount for job $jobId: $totalAmount');
+        
+        // Update job payment amount
+        await _supabase
+            .from('jobs')
+            .update({'amount': totalAmount})
+            .eq('id', int.parse(jobId));
+            
+        Log.d('Job amount updated successfully to: $totalAmount');
+      } else {
+        Log.e('Failed to fetch trips for job amount calculation: ${tripsResult.error?.message}');
+      }
+    } catch (error) {
+      Log.e('Error updating job amount from trips: $error');
+      // Don't throw error here to avoid breaking the main operation
     }
   }
 }

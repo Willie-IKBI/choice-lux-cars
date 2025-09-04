@@ -262,17 +262,29 @@ class PdfTheme {
 
   /// Build section header
   static pw.Widget buildSectionHeader(String title) {
-    return pw.Container(
-      padding: const pw.EdgeInsets.symmetric(
-        vertical: spacing12,
-        horizontal: spacing16,
-      ),
-      decoration: pw.BoxDecoration(
-        color: gold50,
-        borderRadius: pw.BorderRadius.circular(radius),
-        border: pw.Border.all(color: gold400, width: 1),
-      ),
-      child: pw.Text(title, style: titleMedium.copyWith(color: gold700)),
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(
+            font: fontBold,
+            fontSize: 14, // Reduced from 20
+            color: grey800,
+            letterSpacing: 0.5,
+          ),
+        ),
+        pw.SizedBox(height: spacing8),
+        pw.Container(
+          height: 2,
+          width: 60,
+          decoration: pw.BoxDecoration(
+            color: brandGold,
+            borderRadius: pw.BorderRadius.circular(1),
+          ),
+        ),
+        pw.SizedBox(height: spacing12),
+      ],
     );
   }
 

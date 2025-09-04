@@ -307,6 +307,54 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 
+  /// Show the start job modal when no driver_flow record exists
+  void _showStartJobModal() {
+    showDialog(
+      context: context,
+      builder: (context) => VehicleCollectionModal(
+        onConfirm: ({
+          required double odometerReading,
+          required String odometerImageUrl,
+          required double gpsLat,
+          required double gpsLng,
+          required double gpsAccuracy,
+        }) async {
+          try {
+            // Start the job using the vehicle collection data
+            await DriverFlowApiService.startJob(
+              int.parse(widget.jobId),
+              odoStartReading: odometerReading,
+              pdpStartImage: odometerImageUrl,
+              gpsLat: gpsLat,
+              gpsLng: gpsLng,
+              gpsAccuracy: gpsAccuracy,
+            );
+
+            // Close the modal
+            Navigator.of(context).pop();
+
+            // Reload job progress after starting the job
+            await _loadJobProgress();
+            
+            if (mounted) {
+              SnackBarUtils.showSuccess(context, 'Job started successfully!');
+            }
+          } catch (e) {
+            // Close the modal even on error
+            Navigator.of(context).pop();
+            
+            if (mounted) {
+              SnackBarUtils.showError(context, 'Failed to start job: $e');
+            }
+          }
+        },
+        onCancel: () {
+          Navigator.of(context).pop();
+        },
+      ),
+    );
+  }
+
   void _updateStepStatus() {
     if (_jobProgress == null) {
       Log.d('_updateStepStatus: _jobProgress is null, returning early');
@@ -2569,13 +2617,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               Icon(
-                                Icons.error_outline,
+                                Icons.play_circle_outline,
                                 size: 64,
                                 color: ChoiceLuxTheme.richGold.withOpacity(0.7),
                               ),
                               const SizedBox(height: 16),
                               Text(
-                                'No job progress found',
+                                'Ready to Start Job',
                                 style: TextStyle(
                                   color: ChoiceLuxTheme.softWhite,
                                   fontSize: 18,
@@ -2591,13 +2639,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                 ),
                               ),
                               const SizedBox(height: 24),
-                              ElevatedButton(
-                                onPressed: _loadJobProgress,
+                              ElevatedButton.icon(
+                                onPressed: _showStartJobModal,
+                                icon: const Icon(Icons.play_arrow),
+                                label: const Text('Start Job'),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: ChoiceLuxTheme.richGold,
                                   foregroundColor: Colors.black,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 24,
+                                    vertical: 12,
+                                  ),
                                 ),
-                                child: const Text('Retry'),
                               ),
                             ],
                           ),
