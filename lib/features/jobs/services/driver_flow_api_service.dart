@@ -45,7 +45,7 @@ class DriverFlowApiService {
       await _supabase.from('driver_flow').upsert({
         'job_id': jobId,
         'driver_user': driverId,
-        'current_step': 'pickup_arrival',
+        'current_step': 'vehicle_collection', // Start with vehicle collection step
         'job_started_at': SATimeUtils.getCurrentSATimeISO(),
         'odo_start_reading': odoStartReading,
         'pdp_start_image': pdpStartImage,
@@ -407,7 +407,6 @@ class DriverFlowApiService {
   static Future<void> returnVehicle(
     int jobId, {
     required double odoEndReading,
-    required String pdpEndImage,
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -432,7 +431,6 @@ class DriverFlowApiService {
            .update({
              'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
              'job_closed_odo': odoEndReading,
-             'pdp_end_image': pdpEndImage,
              'current_step': 'vehicle_return',
              'progress_percentage': 100,
              'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
@@ -565,37 +563,72 @@ class DriverFlowApiService {
     }
   }
 
-  /// Get job addresses for pickup and dropoff
+  /// Get job addresses for pickup and dropoff from trips
   static Future<Map<String, String?>> getJobAddresses(int jobId) async {
     try {
       Log.d('=== GETTING JOB ADDRESSES ===');
       Log.d('Job ID: $jobId');
 
-      // Get job details for this job (consolidated approach)
-      final jobResponse = await _supabase
-          .from('jobs')
-          .select('location')
-          .eq('id', jobId)
+      // First try to get addresses from trips (most accurate)
+      final tripsResponse = await _supabase
+          .from('trips')
+          .select('pickup_location, dropoff_location')
+          .eq('job_id', jobId)
+          .limit(1)
           .maybeSingle();
 
       String? pickupAddress;
       String? dropoffAddress;
 
-      if (jobResponse != null) {
-        // Use job location for both pickup and dropoff for now
-        // This can be enhanced later with separate pickup/dropoff fields
-        pickupAddress = jobResponse['location']?.toString();
-        dropoffAddress = jobResponse['location']?.toString(); // Same location for now
+      if (tripsResponse != null) {
+        // Use actual trip addresses
+        pickupAddress = tripsResponse['pickup_location']?.toString();
+        dropoffAddress = tripsResponse['dropoff_location']?.toString();
+        Log.d('Found trip addresses - Pickup: $pickupAddress, Dropoff: $dropoffAddress');
+      } else {
+        // Fallback to job location if no trips found
+        final jobResponse = await _supabase
+            .from('jobs')
+            .select('location')
+            .eq('id', jobId)
+            .maybeSingle();
+
+        if (jobResponse != null) {
+          pickupAddress = jobResponse['location']?.toString();
+          dropoffAddress = jobResponse['location']?.toString();
+          Log.d('Using job location fallback: $pickupAddress');
+        }
       }
 
       final addresses = {'pickup': pickupAddress, 'dropoff': dropoffAddress};
 
-      Log.d('Job addresses: $addresses');
+      Log.d('Final job addresses: $addresses');
       return addresses;
     } catch (e) {
       Log.e('=== ERROR GETTING JOB ADDRESSES ===');
       Log.e('Error: $e');
       return {'pickup': null, 'dropoff': null};
+    }
+  }
+
+  /// Update the current step in the driver_flow table
+  static Future<void> updateCurrentStep(int jobId, String currentStep) async {
+    try {
+      Log.d('Updating current step for job $jobId to: $currentStep');
+      
+      await _supabase
+          .from('driver_flow')
+          .update({
+            'current_step': currentStep,
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId);
+      
+      Log.d('Successfully updated current step for job $jobId');
+    } catch (e) {
+      Log.e('Error updating current step for job $jobId: $e');
+      throw Exception('Failed to update current step: $e');
     }
   }
 

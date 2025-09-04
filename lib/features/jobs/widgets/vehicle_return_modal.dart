@@ -9,7 +9,6 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 class VehicleReturnModal extends StatefulWidget {
   final Function({
     required double odoEndReading,
-    required String pdpEndImage,
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
@@ -159,7 +158,6 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
       // Call the confirm callback
       widget.onConfirm(
         odoEndReading: double.parse(_odometerController.text),
-        pdpEndImage: imageUrl,
         gpsLat: _currentPosition!.latitude,
         gpsLng: _currentPosition!.longitude,
         gpsAccuracy: _currentPosition!.accuracy,

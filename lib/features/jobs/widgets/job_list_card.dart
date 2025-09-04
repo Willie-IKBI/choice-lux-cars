@@ -212,7 +212,7 @@ class JobListCard extends ConsumerWidget {
 
         SizedBox(height: spacing * 0.5),
 
-        // Location (Secondary)
+        // Location (Secondary) - Show branch location with better formatting
         Row(
           children: [
             Icon(
@@ -223,7 +223,7 @@ class JobListCard extends ConsumerWidget {
             SizedBox(width: spacing * 0.25),
             Expanded(
               child: Text(
-                currentJob.location ?? 'No location specified',
+                _formatLocation(currentJob.location),
                 style: TextStyle(
                   fontSize: isSmallMobile ? 12 : 14,
                   color: ChoiceLuxTheme.platinumSilver,
@@ -334,45 +334,93 @@ class JobListCard extends ConsumerWidget {
     );
   }
 
-  // 4. Confirmation State
+  // 4. Dual Status Display: Driver Confirmation + Current Step
   Widget _buildConfirmationState(BuildContext context, double spacing, Job currentJob) {
-    // Use only driver_confirm_ind field to determine confirmation status
+    // Driver confirmation status
     final isConfirmed = currentJob.driverConfirmation == true;
     final confirmationColor = isConfirmed ? Colors.green : Colors.orange;
-    final confirmationText = isConfirmed ? 'Confirmed' : 'Not Confirmed';
+    final confirmationText = isConfirmed ? 'Driver Confirmed' : 'Awaiting Confirmation';
     final confirmationIcon = isConfirmed ? Icons.check_circle : Icons.pending;
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: spacing * 0.75,
-        vertical: spacing * 0.5,
-      ),
-      decoration: BoxDecoration(
-        color: confirmationColor.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-        border: Border.all(
-          color: confirmationColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            confirmationIcon,
-            size: isSmallMobile ? 14 : 16,
-            color: confirmationColor,
+    // Current job step
+    final currentStep = DriverFlowUtils.getCurrentJobStep(currentJob);
+    final stepText = DriverFlowUtils.getCurrentStepDisplayText(currentStep);
+    final stepColor = DriverFlowUtils.getCurrentStepColor(currentStep);
+
+    return Column(
+      children: [
+        // Driver Confirmation Status
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing * 0.75,
+            vertical: spacing * 0.5,
           ),
-          SizedBox(width: spacing * 0.5),
-          Text(
-            'Driver $confirmationText',
-            style: TextStyle(
-              fontSize: isSmallMobile ? 12 : 14,
-              fontWeight: FontWeight.w500,
-              color: confirmationColor,
+          decoration: BoxDecoration(
+            color: confirmationColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: confirmationColor.withValues(alpha: 0.2),
+              width: 1,
             ),
           ),
-        ],
-      ),
+          child: Row(
+            children: [
+              Icon(
+                confirmationIcon,
+                size: isSmallMobile ? 14 : 16,
+                color: confirmationColor,
+              ),
+              SizedBox(width: spacing * 0.5),
+              Text(
+                confirmationText,
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 12 : 14,
+                  fontWeight: FontWeight.w500,
+                  color: confirmationColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+        
+        SizedBox(height: spacing * 0.5),
+        
+        // Current Job Step Status
+        Container(
+          width: double.infinity,
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing * 0.75,
+            vertical: spacing * 0.5,
+          ),
+          decoration: BoxDecoration(
+            color: stepColor.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(6),
+            border: Border.all(
+              color: stepColor.withValues(alpha: 0.2),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.timeline,
+                size: isSmallMobile ? 14 : 16,
+                color: stepColor,
+              ),
+              SizedBox(width: spacing * 0.5),
+              Text(
+                stepText,
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 12 : 14,
+                  fontWeight: FontWeight.w500,
+                  color: stepColor,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -417,6 +465,35 @@ class JobListCard extends ConsumerWidget {
         // Secondary Actions Row
         Row(
           children: [
+            // Driver Confirmation Button (if applicable)
+            if (DriverFlowUtils.shouldShowDriverConfirmationButton(
+              currentUserId: ref.read(currentUserProfileProvider)?.id,
+              jobDriverId: currentJob.driverId,
+              jobStatus: currentJob.statusEnum,
+              isJobConfirmed: currentJob.driverConfirmation == true,
+            ))
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: () => _handleDriverConfirmation(context, ref, currentJob),
+                  icon: const Icon(Icons.check_circle, size: 16),
+                  label: Text(
+                    'Confirm Job',
+                    style: TextStyle(fontSize: isSmallMobile ? 12 : 14),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.orange,
+                    foregroundColor: Colors.white,
+                    padding: EdgeInsets.symmetric(
+                      horizontal: spacing,
+                      vertical: spacing * 0.75,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+
             // Driver Flow Button (if applicable)
             if (DriverFlowUtils.shouldShowDriverFlowButton(
               currentUserId: ref.read(currentUserProfileProvider)?.id,
@@ -453,25 +530,35 @@ class JobListCard extends ConsumerWidget {
 
             // Voucher Actions
             if (canCreateVoucher) ...[
-              if (DriverFlowUtils.shouldShowDriverFlowButton(
-                currentUserId: ref.read(currentUserProfileProvider)?.id,
-                jobDriverId: currentJob.driverId,
-                jobStatus: currentJob.statusEnum,
-                isJobConfirmed: currentJob.driverConfirmation == true,
-              ))
+              if (DriverFlowUtils.shouldShowDriverConfirmationButton(
+                    currentUserId: ref.read(currentUserProfileProvider)?.id,
+                    jobDriverId: currentJob.driverId,
+                    jobStatus: currentJob.statusEnum,
+                    isJobConfirmed: currentJob.driverConfirmation == true,
+                  ) ||
+                  DriverFlowUtils.shouldShowDriverFlowButton(
+                    currentUserId: ref.read(currentUserProfileProvider)?.id,
+                    jobDriverId: currentJob.driverId,
+                    jobStatus: currentJob.statusEnum,
+                    isJobConfirmed: currentJob.driverConfirmation == true,
+                  ))
                 SizedBox(width: spacing),
               Expanded(child: _buildVoucherSection(context, spacing, currentJob)),
             ],
 
             // Invoice Actions
             if (canCreateInvoice) ...[
-              if (DriverFlowUtils.shouldShowDriverFlowButton(
+              if (DriverFlowUtils.shouldShowDriverConfirmationButton(
                     currentUserId: ref.read(currentUserProfileProvider)?.id,
                     jobDriverId: currentJob.driverId,
                     jobStatus: currentJob.statusEnum,
-                    isJobConfirmed:
-                        currentJob.isConfirmed == true ||
-                        currentJob.driverConfirmation == true,
+                    isJobConfirmed: currentJob.driverConfirmation == true,
+                  ) ||
+                  DriverFlowUtils.shouldShowDriverFlowButton(
+                    currentUserId: ref.read(currentUserProfileProvider)?.id,
+                    jobDriverId: currentJob.driverId,
+                    jobStatus: currentJob.statusEnum,
+                    isJobConfirmed: currentJob.driverConfirmation == true,
                   ) ||
                   canCreateVoucher)
                 SizedBox(width: spacing),
@@ -563,6 +650,26 @@ class JobListCard extends ConsumerWidget {
 
   // Helper Methods
 
+  String _formatLocation(String? location) {
+    if (location == null || location.isEmpty) {
+      return 'Location not specified';
+    }
+    
+    // Convert branch codes to full names for better readability
+    switch (location.toUpperCase()) {
+      case 'JHB':
+        return 'Johannesburg';
+      case 'CPT':
+        return 'Cape Town';
+      case 'DBN':
+        return 'Durban';
+      case 'PTA':
+        return 'Pretoria';
+      default:
+        return location; // Return as-is if not a known code
+    }
+  }
+
   Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref, Job currentJob) async {
     try {
       // Navigate to the appropriate screen based on job status
@@ -580,6 +687,33 @@ class JobListCard extends ConsumerWidget {
           SnackBar(
             content: Text('Failed to navigate to driver flow: ${e.toString()}'),
             backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref, Job currentJob) async {
+    try {
+      // Call the jobs provider to confirm the job
+      await ref.read(jobsProvider.notifier).confirmJob(currentJob.id.toString());
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Job confirmed successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to confirm job: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: Duration(seconds: 3),
           ),
         );
       }

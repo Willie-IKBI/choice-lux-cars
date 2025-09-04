@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:image_picker/image_picker.dart';
 import 'dart:io';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
@@ -49,6 +50,46 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   // Store references to avoid ancestor lookup issues
   JobsNotifier? _jobsNotifier;
+
+  /// Responsive design helpers
+  bool get _isMobile => MediaQuery.of(context).size.width < 768;
+  bool get _isTablet => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
+  bool get _isDesktop => MediaQuery.of(context).size.width >= 1024;
+
+  /// Navigation and contact helper methods
+  Future<void> _openNavigation(String address) async {
+    try {
+      final encodedAddress = Uri.encodeComponent(address);
+      final url = 'https://www.google.com/maps/dir/?api=1&destination=$encodedAddress';
+      
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
+      } else {
+        SnackBarUtils.showError(context, 'Could not open navigation app');
+      }
+    } catch (e) {
+      SnackBarUtils.showError(context, 'Failed to open navigation: $e');
+    }
+  }
+
+  Future<void> _callPassenger() async {
+    try {
+      final contact = widget.job.passengerContact;
+      if (contact == null || contact.isEmpty) {
+        SnackBarUtils.showError(context, 'No contact number available');
+        return;
+      }
+      
+      final url = 'tel:$contact';
+      if (await canLaunchUrl(Uri.parse(url))) {
+        await launchUrl(Uri.parse(url));
+      } else {
+        SnackBarUtils.showError(context, 'Could not open phone app');
+      }
+    } catch (e) {
+      SnackBarUtils.showError(context, 'Failed to make call: $e');
+    }
+  }
 
   /// Safe type conversion helpers
   int _safeToInt(dynamic value, {int defaultValue = 0}) {
@@ -377,19 +418,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           isCompleted = _jobProgress!['vehicle_collected'] == true;
           break;
         case 'pickup_arrival':
-          // Pickup arrival is completed if current_step is pickup_arrival or beyond
-          // Once completed, it cannot be undone
-          isCompleted = _jobProgress!['current_step'] == 'pickup_arrival' ||
-                       _jobProgress!['current_step'] == 'passenger_pickup' ||
-                       _jobProgress!['current_step'] == 'passenger_onboard' ||
-                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
-                       _jobProgress!['current_step'] == 'trip_complete' ||
-                       _jobProgress!['current_step'] == 'vehicle_return' ||
-                       _jobProgress!['current_step'] == 'completed';
-          break;
-        case 'passenger_pickup':
-          // Passenger pickup is completed if current_step is passenger_pickup or beyond
-          // This step represents the actual arrival at pickup
+          // Pickup arrival is completed only when we've moved beyond this step
+          // NOT when it's the current step - that's when the action button should show
           isCompleted = _jobProgress!['current_step'] == 'passenger_pickup' ||
                        _jobProgress!['current_step'] == 'passenger_onboard' ||
                        _jobProgress!['current_step'] == 'dropoff_arrival' ||
@@ -397,28 +427,34 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
-        case 'passenger_onboard':
-          // Passenger onboard is completed if current_step is passenger_onboard or beyond
-          // Once completed, it cannot be undone
+        case 'passenger_pickup':
+          // Passenger pickup is completed only when we've moved beyond this step
+          // NOT when it's the current step - that's when the action button should show
           isCompleted = _jobProgress!['current_step'] == 'passenger_onboard' ||
                        _jobProgress!['current_step'] == 'dropoff_arrival' ||
                        _jobProgress!['current_step'] == 'trip_complete' ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
-        case 'dropoff_arrival':
-          // Dropoff arrival is completed if current_step is dropoff_arrival or beyond
-          // Once completed, it cannot be undone
+        case 'passenger_onboard':
+          // Passenger onboard is completed only when we've moved beyond this step
+          // NOT when it's the current step - that's when the action button should show
           isCompleted = _jobProgress!['current_step'] == 'dropoff_arrival' ||
                        _jobProgress!['current_step'] == 'trip_complete' ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
-        case 'trip_complete':
-          // Trip complete is completed if current_step is trip_complete or beyond
-          // Once completed, it cannot be undone
+        case 'dropoff_arrival':
+          // Dropoff arrival is completed only when we've moved beyond this step
+          // NOT when it's the current step - that's when the action button should show
           isCompleted = _jobProgress!['current_step'] == 'trip_complete' ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'trip_complete':
+          // Trip complete is completed only when we've moved beyond this step
+          // NOT when it's the current step - that's when the action button should show
+          isCompleted = _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'vehicle_return':
@@ -452,19 +488,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         case 'pickup_arrival':
           final pickupAddress = _jobAddresses['pickup'];
           if (pickupAddress != null && pickupAddress.isNotEmpty) {
-            newTitle = 'Arrive at Pickup - $pickupAddress';
+            newTitle = 'Arrive at Pickup';
           }
           break;
         case 'passenger_pickup':
           final pickupAddress = _jobAddresses['pickup'];
           if (pickupAddress != null && pickupAddress.isNotEmpty) {
-            newTitle = 'Pickup Arrival - $pickupAddress';
+            newTitle = 'Pickup Arrival';
           }
           break;
         case 'dropoff_arrival':
           final dropoffAddress = _jobAddresses['dropoff'];
           if (dropoffAddress != null && dropoffAddress.isNotEmpty) {
-            newTitle = 'Arrive at Dropoff - $dropoffAddress';
+            newTitle = 'Arrive at Dropoff';
           }
           break;
       }
@@ -472,6 +508,337 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (newTitle != step.title) {
         _jobSteps[i] = step.copyWith(title: newTitle);
       }
+    }
+  }
+
+  /// Build enhanced step card with navigation and contact functionality
+  Widget _buildEnhancedStepCard(JobStep step) {
+    final isCurrent = step.id == _currentStep;
+    final isCompleted = step.isCompleted;
+    
+    // Get address for location-based steps
+    String? stepAddress;
+    if (step.id == 'pickup_arrival' || step.id == 'passenger_pickup') {
+      stepAddress = _jobAddresses['pickup'];
+    } else if (step.id == 'dropoff_arrival') {
+      stepAddress = _jobAddresses['dropoff'];
+    }
+
+    // Responsive sizing
+    final cardPadding = _isMobile ? 16.0 : 20.0;
+    final iconSize = _isMobile ? 40.0 : 48.0;
+    final titleFontSize = _isMobile ? 16.0 : 18.0;
+    final descriptionFontSize = _isMobile ? 12.0 : 14.0;
+
+    return Container(
+      margin: EdgeInsets.only(bottom: _isMobile ? 12.0 : 16.0),
+      decoration: BoxDecoration(
+        gradient: isCurrent 
+            ? LinearGradient(
+                colors: [
+                  ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  ChoiceLuxTheme.richGold.withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+            : ChoiceLuxTheme.cardGradient,
+        borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
+        border: Border.all(
+          color: isCurrent 
+              ? ChoiceLuxTheme.richGold.withOpacity(0.5)
+              : ChoiceLuxTheme.richGold.withOpacity(0.2),
+          width: isCurrent ? 2 : 1,
+        ),
+        boxShadow: isCurrent ? [
+          BoxShadow(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            blurRadius: _isMobile ? 6 : 8,
+            offset: Offset(0, _isMobile ? 2 : 4),
+          ),
+        ] : null,
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(cardPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Step header with status
+            Row(
+              children: [
+                Container(
+                  width: iconSize,
+                  height: iconSize,
+                  decoration: BoxDecoration(
+                    color: isCompleted 
+                        ? ChoiceLuxTheme.successColor
+                        : isCurrent 
+                            ? ChoiceLuxTheme.richGold
+                            : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    isCompleted 
+                        ? Icons.check
+                        : isCurrent 
+                            ? Icons.play_arrow
+                            : Icons.circle_outlined,
+                    color: isCompleted || isCurrent 
+                        ? Colors.white
+                        : ChoiceLuxTheme.platinumSilver,
+                    size: _isMobile ? 20 : 24,
+                  ),
+                ),
+                SizedBox(width: _isMobile ? 12 : 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        step.title,
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite,
+                          fontSize: titleFontSize,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (step.description.isNotEmpty)
+                        Text(
+                          step.description,
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontSize: descriptionFontSize,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                if (isCurrent)
+                  Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _isMobile ? 8 : 12, 
+                      vertical: _isMobile ? 4 : 6
+                    ),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.richGold,
+                      borderRadius: BorderRadius.circular(_isMobile ? 16 : 20),
+                    ),
+                    child: Text(
+                      'CURRENT',
+                      style: TextStyle(
+                        color: Colors.black,
+                        fontSize: _isMobile ? 10 : 12,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            
+            // Address display with navigation
+            if (stepAddress != null && stepAddress.isNotEmpty) ...[
+              SizedBox(height: _isMobile ? 12 : 16),
+              Container(
+                padding: EdgeInsets.all(_isMobile ? 12 : 16),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(_isMobile ? 8 : 12),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.location_on,
+                          color: ChoiceLuxTheme.richGold,
+                          size: _isMobile ? 18 : 20,
+                        ),
+                        SizedBox(width: _isMobile ? 6 : 8),
+                        Text(
+                          'Address',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.richGold,
+                            fontSize: _isMobile ? 12 : 14,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: _isMobile ? 6 : 8),
+                    Text(
+                      stepAddress,
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: _isMobile ? 14 : 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    SizedBox(height: _isMobile ? 10 : 12),
+                    // Responsive button layout
+                    _isMobile 
+                        ? Column(
+                            children: [
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton.icon(
+                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
+                                  icon: const Icon(Icons.navigation, size: 16),
+                                  label: const Text('Navigate'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ChoiceLuxTheme.richGold,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              if (widget.job.passengerContact != null && 
+                                  widget.job.passengerContact!.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: ElevatedButton.icon(
+                                    onPressed: _callPassenger,
+                                    icon: const Icon(Icons.phone, size: 16),
+                                    label: const Text('Call Passenger'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ChoiceLuxTheme.successColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          )
+                        : Row(
+                            children: [
+                              Expanded(
+                                child: ElevatedButton.icon(
+                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
+                                  icon: const Icon(Icons.navigation, size: 18),
+                                  label: const Text('Navigate'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: ChoiceLuxTheme.richGold,
+                                    foregroundColor: Colors.black,
+                                    padding: const EdgeInsets.symmetric(vertical: 12),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              if (widget.job.passengerContact != null && 
+                                  widget.job.passengerContact!.isNotEmpty)
+                                Expanded(
+                                  child: ElevatedButton.icon(
+                                    onPressed: _callPassenger,
+                                    icon: const Icon(Icons.phone, size: 18),
+                                    label: const Text('Call'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: ChoiceLuxTheme.successColor,
+                                      foregroundColor: Colors.white,
+                                      padding: const EdgeInsets.symmetric(vertical: 12),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(8),
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          ),
+                  ],
+                ),
+              ),
+            ],
+            
+            // Action button for current step
+            if (isCurrent && !isCompleted) ...[
+              SizedBox(height: _isMobile ? 12 : 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _getStepAction(step.id),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
+                    padding: EdgeInsets.symmetric(
+                      vertical: _isMobile ? 14 : 16,
+                      horizontal: _isMobile ? 16 : 24,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(_isMobile ? 10 : 12),
+                    ),
+                    elevation: _isMobile ? 2 : 4,
+                  ),
+                  child: Text(
+                    _getStepActionText(step.id),
+                    style: TextStyle(
+                      fontSize: _isMobile ? 14 : 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get the action function for a step
+  VoidCallback? _getStepAction(String stepId) {
+    switch (stepId) {
+      case 'not_started':
+        return widget.job.isConfirmed == true ? _startJob : null;
+      case 'vehicle_collection':
+        return _collectVehicle;
+      case 'pickup_arrival':
+        return _arriveAtPickup;
+      case 'passenger_pickup':
+        return _passengerOnboard;
+      case 'passenger_onboard':
+        return _arriveAtDropoff;
+      case 'dropoff_arrival':
+        return _completeTrip;
+      case 'trip_complete':
+        return _returnVehicle;
+      default:
+        return null;
+    }
+  }
+
+  /// Get the action text for a step
+  String _getStepActionText(String stepId) {
+    switch (stepId) {
+      case 'not_started':
+        return 'Start Job';
+      case 'vehicle_collection':
+        return 'Collect Vehicle';
+      case 'pickup_arrival':
+        return 'Arrive at Pickup';
+      case 'passenger_pickup':
+        return 'Passenger Onboard';
+      case 'passenger_onboard':
+        return 'Arrive at Dropoff';
+      case 'dropoff_arrival':
+        return 'Complete Trip';
+      case 'trip_complete':
+        return 'Return Vehicle';
+      default:
+        return 'No Action';
     }
   }
 
@@ -524,7 +891,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       newCurrentStep = 'not_started';
       Log.d('Job has not started yet - showing as not started');
     }
-    // Priority 2: Trust the database current_step if it exists and is valid
+    // Priority 2: If vehicle is collected but current_step is vehicle_collection, progress to next step
+    else if (_jobProgress!['vehicle_collected'] == true &&
+        _jobProgress!['current_step'] == 'vehicle_collection') {
+      newCurrentStep = 'pickup_arrival';
+      Log.d('Vehicle collected, progressing to pickup arrival');
+    }
+    // Priority 3: Trust the database current_step if it exists and is valid
     else if (_jobProgress!['current_step'] != null &&
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
@@ -534,7 +907,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
       Log.d('Using current step from DB: $databaseStep, mapped to UI step: $newCurrentStep');
     } else {
-      // Priority 3: Determine step based on completion status
+      // Priority 4: Determine step based on completion status
       Log.d('No valid current_step in DB, using completion-based logic');
 
       if (_jobProgress!['job_closed_time'] != null) {
@@ -566,12 +939,30 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       setState(() {
         _currentStep = newCurrentStep;
       });
+      
+      // Update the database with the new current step
+      _updateCurrentStepInDatabase(newCurrentStep);
     } else {
       Log.d('Step unchanged: $_currentStep');
     }
 
     // Force a rebuild of the step status to ensure UI updates
     _updateStepStatus();
+  }
+
+  Future<void> _updateCurrentStepInDatabase(String newStep) async {
+    try {
+      final jobIdInt = int.tryParse(widget.jobId);
+      if (jobIdInt == null) return;
+
+      Log.d('Updating current step in database to: $newStep');
+      
+      await DriverFlowApiService.updateCurrentStep(jobIdInt, newStep);
+      
+      Log.d('Successfully updated current step in database');
+    } catch (e) {
+      Log.e('Error updating current step in database: $e');
+    }
   }
 
   Future<void> _startJob() async {
@@ -886,7 +1277,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           onConfirm:
               (({
                 required double odoEndReading,
-                required String pdpEndImage,
                 required double gpsLat,
                 required double gpsLng,
                 required double gpsAccuracy,
@@ -897,13 +1287,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== RETURNING VEHICLE ===');
                   Log.d('Job ID: ${widget.jobId}');
                   Log.d('Odometer: $odoEndReading');
-                  Log.d('Image: $pdpEndImage');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
                   await DriverFlowApiService.returnVehicle(
                     int.parse(widget.jobId),
                     odoEndReading: odoEndReading,
-                    pdpEndImage: pdpEndImage,
                     gpsLat: gpsLat,
                     gpsLng: gpsLng,
                     gpsAccuracy: gpsAccuracy,
@@ -2664,13 +3052,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // SIMPLE WORKING UI - Let's build this step by step
+                                // Job Progress Summary Card
                                 Container(
                                   width: double.infinity,
-                                  padding: const EdgeInsets.all(20),
+                                  padding: EdgeInsets.all(_isMobile ? 16 : 20),
                                   decoration: BoxDecoration(
                                     gradient: ChoiceLuxTheme.cardGradient,
-                                    borderRadius: BorderRadius.circular(16),
+                                    borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
                                     border: Border.all(
                                       color: ChoiceLuxTheme.richGold.withOpacity(0.2),
                                       width: 1,
@@ -2683,211 +3071,102 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                                         'Job Progress - ${widget.job.jobNumber}',
                                         style: TextStyle(
                                           color: ChoiceLuxTheme.richGold,
-                                          fontSize: 20,
+                                          fontSize: _isMobile ? 18 : 20,
                                           fontWeight: FontWeight.bold,
                                         ),
                                       ),
-                                      SizedBox(height: 16),
-                                      Text(
-                                        'Status: ${widget.job.status}',
-                                        style: TextStyle(
-                                          color: ChoiceLuxTheme.softWhite,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Current Step: $_currentStep',
-                                        style: TextStyle(
-                                          color: ChoiceLuxTheme.softWhite,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                      Text(
-                                        'Progress: $_progressPercentage%',
-                                        style: TextStyle(
-                                          color: ChoiceLuxTheme.softWhite,
-                                          fontSize: 16,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 24),
-                                // Current Step Actions
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    gradient: ChoiceLuxTheme.cardGradient,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Current Step Actions',
-                                        style: TextStyle(
-                                          color: ChoiceLuxTheme.richGold,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 16),
-                                      if (_currentStep == 'not_started' && widget.job.isConfirmed == true)
-                                        ElevatedButton(
-                                          onPressed: _startJob,
-                                          child: Text('Start Job'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'vehicle_collection')
-                                        ElevatedButton(
-                                          onPressed: _collectVehicle,
-                                          child: Text('Collect Vehicle'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'pickup_arrival')
-                                        ElevatedButton(
-                                          onPressed: _arriveAtPickup,
-                                          child: Text('Arrive at Pickup'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'passenger_pickup')
-                                        ElevatedButton(
-                                          onPressed: _passengerOnboard,
-                                          child: Text('Passenger Onboard'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'passenger_onboard')
-                                        ElevatedButton(
-                                          onPressed: _arriveAtDropoff,
-                                          child: Text('Arrive at Dropoff'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'dropoff_arrival')
-                                        ElevatedButton(
-                                          onPressed: _completeTrip,
-                                          child: Text('Complete Trip'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else if (_currentStep == 'trip_complete')
-                                        ElevatedButton(
-                                          onPressed: _returnVehicle,
-                                          child: Text('Return Vehicle'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: ChoiceLuxTheme.richGold,
-                                            foregroundColor: Colors.black,
-                                          ),
-                                        )
-                                      else
-                                        Text(
-                                          'No actions available for current step',
-                                          style: TextStyle(
-                                            color: ChoiceLuxTheme.platinumSilver,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                ),
-                                SizedBox(height: 24),
-                                // Job Steps Timeline
-                                Container(
-                                  width: double.infinity,
-                                  padding: const EdgeInsets.all(20),
-                                  decoration: BoxDecoration(
-                                    gradient: ChoiceLuxTheme.cardGradient,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        'Job Steps Timeline',
-                                        style: TextStyle(
-                                          color: ChoiceLuxTheme.richGold,
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                        ),
-                                      ),
-                                      SizedBox(height: 16),
-                                      ..._jobSteps.map((step) => Padding(
-                                        padding: const EdgeInsets.only(bottom: 12),
-                                        child: Row(
-                                          children: [
-                                            Icon(
-                                              step.isCompleted ? Icons.check_circle : Icons.circle_outlined,
-                                              color: step.isCompleted ? ChoiceLuxTheme.successColor : ChoiceLuxTheme.platinumSilver,
-                                              size: 20,
-                                            ),
-                                            SizedBox(width: 12),
-                                            Expanded(
-                                              child: Column(
-                                                crossAxisAlignment: CrossAxisAlignment.start,
-                                                children: [
-                                                  Text(
-                                                    step.title,
-                                                    style: TextStyle(
-                                                      color: ChoiceLuxTheme.softWhite,
-                                                      fontSize: 14,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                  if (step.description.isNotEmpty)
-                                                    Text(
-                                                      step.description,
-                                                      style: TextStyle(
-                                                        color: ChoiceLuxTheme.platinumSilver,
-                                                        fontSize: 12,
-                                                      ),
-                                                    ),
-                                                ],
-                                              ),
-                                            ),
-                                            if (step.id == _currentStep)
-                                              Container(
-                                                padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                decoration: BoxDecoration(
-                                                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                                                  borderRadius: BorderRadius.circular(12),
-                                                ),
-                                                child: Text(
-                                                  'CURRENT',
+                                      SizedBox(height: _isMobile ? 12 : 16),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  'Status: ${widget.job.status}',
                                                   style: TextStyle(
-                                                    color: ChoiceLuxTheme.richGold,
-                                                    fontSize: 10,
-                                                    fontWeight: FontWeight.bold,
+                                                    color: ChoiceLuxTheme.softWhite,
+                                                    fontSize: _isMobile ? 14 : 16,
                                                   ),
                                                 ),
+                                                Text(
+                                                  'Current Step: $_currentStep',
+                                                  style: TextStyle(
+                                                    color: ChoiceLuxTheme.softWhite,
+                                                    fontSize: _isMobile ? 14 : 16,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          Container(
+                                            padding: EdgeInsets.symmetric(
+                                              horizontal: _isMobile ? 12 : 16,
+                                              vertical: _isMobile ? 6 : 8,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              '$_progressPercentage%',
+                                              style: TextStyle(
+                                                color: ChoiceLuxTheme.richGold,
+                                                fontSize: _isMobile ? 16 : 18,
+                                                fontWeight: FontWeight.bold,
                                               ),
-                                          ],
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                SizedBox(height: _isMobile ? 16 : 24),
+                                // Enhanced Job Steps with Responsive Design
+                                Container(
+                                  width: double.infinity,
+                                  padding: EdgeInsets.all(_isMobile ? 16 : 20),
+                                  decoration: BoxDecoration(
+                                    gradient: ChoiceLuxTheme.cardGradient,
+                                    borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
+                                    border: Border.all(
+                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        children: [
+                                          Icon(
+                                            Icons.timeline,
+                                            color: ChoiceLuxTheme.richGold,
+                                            size: _isMobile ? 20 : 24,
+                                          ),
+                                          SizedBox(width: _isMobile ? 8 : 12),
+                                          Text(
+                                            'Job Steps',
+                                            style: TextStyle(
+                                              color: ChoiceLuxTheme.richGold,
+                                              fontSize: _isMobile ? 18 : 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                      SizedBox(height: _isMobile ? 6 : 8),
+                                      Text(
+                                        'Follow the steps below to complete your job',
+                                        style: TextStyle(
+                                          color: ChoiceLuxTheme.platinumSilver,
+                                          fontSize: _isMobile ? 12 : 14,
                                         ),
-                                      )).toList(),
+                                      ),
+                                      SizedBox(height: _isMobile ? 16 : 20),
+                                      // Enhanced step cards with responsive design
+                                      ..._jobSteps.map((step) => _buildEnhancedStepCard(step)).toList(),
                                     ],
                                   ),
                                 ),

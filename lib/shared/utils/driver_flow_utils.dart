@@ -46,6 +46,91 @@ class DriverFlowUtils {
     return StatusColorUtils.getDriverFlowColor(status);
   }
 
+  /// Get current job step from job data
+  /// Note: This is a simplified version. For accurate step tracking, 
+  /// the job progress screen fetches detailed data from driver_flow table
+  static String getCurrentJobStep(Job job) {
+    // If job is not started or not confirmed, return not started
+    if (job.statusEnum == JobStatus.open || job.statusEnum == JobStatus.assigned) {
+      return 'not_started';
+    }
+    
+    // If job is completed, return completed
+    if (job.statusEnum == JobStatus.completed) {
+      return 'completed';
+    }
+    
+    // For started/in-progress jobs, we can make educated guesses based on status
+    // but the actual current step should come from driver_flow table
+    if (job.statusEnum == JobStatus.started) {
+      // Job has started but we don't know the exact step
+      // This is a limitation - we should show a generic "in progress" message
+      return 'in_progress';
+    }
+    
+    if (job.statusEnum == JobStatus.inProgress) {
+      // Job is actively in progress
+      return 'in_progress';
+    }
+    
+    if (job.statusEnum == JobStatus.readyToClose) {
+      // Job is ready to be closed
+      return 'vehicle_return';
+    }
+    
+    return 'not_started';
+  }
+
+  /// Get display text for current job step
+  static String getCurrentStepDisplayText(String stepId) {
+    switch (stepId) {
+      case 'not_started':
+        return 'Ready to Start';
+      case 'vehicle_collection':
+        return 'Vehicle Collection';
+      case 'pickup_arrival':
+        return 'Arrive at Pickup';
+      case 'passenger_pickup':
+        return 'Pickup Arrival';
+      case 'passenger_onboard':
+        return 'Passenger Onboard';
+      case 'dropoff_arrival':
+        return 'Arrive at Dropoff';
+      case 'trip_complete':
+        return 'Trip Complete';
+      case 'vehicle_return':
+        return 'Vehicle Return';
+      case 'completed':
+        return 'Job Complete';
+      case 'in_progress':
+        return 'Job In Progress';
+      default:
+        return 'In Progress';
+    }
+  }
+
+  /// Get color for current job step
+  static Color getCurrentStepColor(String stepId) {
+    switch (stepId) {
+      case 'not_started':
+        return Colors.orange;
+      case 'vehicle_collection':
+      case 'pickup_arrival':
+      case 'passenger_pickup':
+      case 'passenger_onboard':
+      case 'dropoff_arrival':
+      case 'trip_complete':
+      case 'vehicle_return':
+        return Colors.blue;
+      case 'completed':
+        return Colors.green;
+      case 'in_progress':
+        return Colors.blue;
+      default:
+        return Colors.grey;
+    }
+  }
+
   /// Get icon for trip status
   static IconData getTripStatusIcon(String? status) {
     switch (status) {
@@ -85,6 +170,22 @@ class DriverFlowUtils {
     // For other statuses (started, inProgress), show regardless of confirmation
     return isAssignedDriver &&
         (jobStatus == JobStatus.started || jobStatus == JobStatus.inProgress);
+  }
+
+  /// Check if driver confirmation button should be shown
+  static bool shouldShowDriverConfirmationButton({
+    required String? currentUserId,
+    required String? jobDriverId,
+    required JobStatus jobStatus,
+    required bool isJobConfirmed,
+  }) {
+    // Check if current user is the assigned driver
+    final isAssignedDriver = currentUserId == jobDriverId;
+    
+    // Only show confirmation button for assigned drivers on open/assigned jobs that are not yet confirmed
+    return isAssignedDriver && 
+           (jobStatus == JobStatus.open || jobStatus == JobStatus.assigned) && 
+           !isJobConfirmed;
   }
 
   /// Get route for driver flow based on job status
