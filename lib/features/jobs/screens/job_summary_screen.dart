@@ -2490,10 +2490,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         steps.add(stepData);
       } else if (isCurrent) {
         // Current step
+        // Get the correct address based on step type
+        String? stepAddress;
+        if (stepId == 'pickup_arrival') {
+          stepAddress = addresses['pickup'];
+        } else if (stepId == 'dropoff_arrival') {
+          stepAddress = addresses['dropoff'];
+        }
+        
         final stepData = {
           'title': DriverFlowUtils.getStepTitleWithAddress(
             stepId,
-            addresses['pickup'],
+            stepAddress,
           ),
           'description': stepDescription,
           'completedAt': null,
@@ -2524,10 +2532,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         steps.add(stepData);
       } else {
         // Upcoming step
+        // Get the correct address based on step type
+        String? stepAddress;
+        if (stepId == 'pickup_arrival') {
+          stepAddress = addresses['pickup'];
+        } else if (stepId == 'dropoff_arrival') {
+          stepAddress = addresses['dropoff'];
+        }
+        
         final stepData = {
           'title': DriverFlowUtils.getStepTitleWithAddress(
             stepId,
-            addresses['pickup'],
+            stepAddress,
           ),
           'description': stepDescription,
           'completedAt': null,

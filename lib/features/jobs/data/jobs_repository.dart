@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 import 'package:choice_lux_cars/features/jobs/services/job_assignment_service.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 
 /// Repository for job-related data operations
 ///
@@ -147,7 +148,21 @@ class JobsRepository {
     try {
       Log.d('Updating job status: $jobId to $status');
 
-      await _supabase.from('jobs').update({'status': status}).eq('id', jobId);
+      // Prepare update data
+      final updateData = <String, dynamic>{
+        'status': status,
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      // If confirming a job, also set driver confirmation fields
+      if (status == 'confirmed') {
+        updateData['driver_confirm_ind'] = true;
+        updateData['confirmed_at'] = SATimeUtils.getCurrentSATimeISO();
+        // Note: confirmed_by would need current user ID - this could be enhanced later
+        Log.d('Setting driver confirmation fields for job confirmation');
+      }
+
+      await _supabase.from('jobs').update(updateData).eq('id', jobId);
 
       Log.d('Job status updated successfully');
       return const Result.success(null);
