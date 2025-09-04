@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:go_router/go_router.dart';
 
 class TripManagementScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -222,7 +223,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pop(),
+                onPressed: () => context.go('/jobs/${widget.jobId}/summary'),
                 icon: const Icon(Icons.check),
                 label: const Text('Done - Back to Job Summary'),
                 style: ElevatedButton.styleFrom(

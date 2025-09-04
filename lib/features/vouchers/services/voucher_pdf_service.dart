@@ -210,10 +210,10 @@ class VoucherPdfService {
         ];
       }).toList(),
       columnWidths: {
-        0: const pw.FixedColumnWidth(85),
-        1: const pw.FixedColumnWidth(50),
-        2: const pw.FlexColumnWidth(),
-        3: const pw.FlexColumnWidth(),
+        0: const pw.FixedColumnWidth(85),  // Date column - good for "04 Sep 2025"
+        1: const pw.FixedColumnWidth(65),  // Time column - increased from 50 to fit "Time" header
+        2: const pw.FlexColumnWidth(1.2),  // Pick-Up Location - slightly reduced flex weight
+        3: const pw.FlexColumnWidth(1.2),  // Drop-Off Location - slightly reduced flex weight
       },
     );
 

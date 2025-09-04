@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/constants/notification_constants.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/widgets/notification_card.dart';
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
@@ -44,78 +45,91 @@ class _NotificationListScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
+    return Stack(
+      children: [
+        // Layer 1: Gradient background
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
         ),
-        child: Column(
-          children: [
-            // Custom App Bar
-            _buildCustomAppBar(),
+        // Layer 2: Background pattern
+        const Positioned.fill(
+          child: CustomPaint(
+            painter: BackgroundPatterns.dashboard,
+          ),
+        ),
+        // Layer 3: Scaffold with transparent background
+        Scaffold(
+          backgroundColor: Colors.transparent,
+          body: Column(
+            children: [
+              // Custom App Bar
+              _buildCustomAppBar(),
 
-            // Filter and Stats Section
-            _buildFilterSection(),
+              // Filter and Stats Section
+              _buildFilterSection(),
 
-            // Notifications List
-            Expanded(
-              child: Consumer(
-                builder: (context, ref, child) {
-                  final notificationState = ref.watch(notificationProvider);
+              // Notifications List
+              Expanded(
+                child: Consumer(
+                  builder: (context, ref, child) {
+                    final notificationState = ref.watch(notificationProvider);
 
-                  if (notificationState.isLoading) {
-                    return _buildLoadingState();
-                  }
+                    if (notificationState.isLoading) {
+                      return _buildLoadingState();
+                    }
 
-                  if (notificationState.error != null) {
-                    return _buildErrorState(notificationState.error!);
-                  }
+                    if (notificationState.error != null) {
+                      return _buildErrorState(notificationState.error!);
+                    }
 
-                  if (notificationState.notifications.isEmpty) {
-                    return _buildEmptyState();
-                  }
+                    if (notificationState.notifications.isEmpty) {
+                      return _buildEmptyState();
+                    }
 
-                  return RefreshIndicator(
-                    onRefresh: () async {
-                      await ref
-                          .read(notificationProvider.notifier)
-                          .loadNotifications();
-                    },
-                    color: ChoiceLuxTheme.richGold,
-                    backgroundColor: ChoiceLuxTheme.charcoalGray,
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: _getFilteredNotifications(
-                        notificationState.notifications,
-                      ).length,
-                      itemBuilder: (context, index) {
-                        final filteredNotifications = _getFilteredNotifications(
-                          notificationState.notifications,
-                        );
-                        final notification = filteredNotifications[index];
-                        return Padding(
-                          padding: const EdgeInsets.only(bottom: 12),
-                          child: NotificationCard(
-                            notification: notification,
-                            onTap: () => _handleNotificationTap(notification),
-                            onDismiss: () =>
-                                _handleNotificationDismiss(notification),
-                            onMarkRead: () => _handleMarkAsRead(notification),
-                          ),
-                        );
+                    return RefreshIndicator(
+                      onRefresh: () async {
+                        await ref
+                            .read(notificationProvider.notifier)
+                            .loadNotifications();
                       },
-                    ),
-                  );
-                },
+                      color: ChoiceLuxTheme.richGold,
+                      backgroundColor: ChoiceLuxTheme.charcoalGray,
+                      child: ListView.builder(
+                        controller: _scrollController,
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        itemCount: _getFilteredNotifications(
+                          notificationState.notifications,
+                        ).length,
+                        itemBuilder: (context, index) {
+                          final filteredNotifications = _getFilteredNotifications(
+                            notificationState.notifications,
+                          );
+                          final notification = filteredNotifications[index];
+                          return Padding(
+                            padding: const EdgeInsets.only(bottom: 12),
+                            child: NotificationCard(
+                              notification: notification,
+                              onTap: () => _handleNotificationTap(notification),
+                              onDismiss: () =>
+                                  _handleNotificationDismiss(notification),
+                              onMarkRead: () => _handleMarkAsRead(notification),
+                            ),
+                          );
+                        },
+                      ),
+                    );
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
+      ],
     );
   }
 

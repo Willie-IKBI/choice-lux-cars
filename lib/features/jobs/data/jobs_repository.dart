@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
+import 'package:choice_lux_cars/features/jobs/services/job_assignment_service.dart';
 
 /// Repository for job-related data operations
 ///
@@ -73,6 +74,24 @@ class JobsRepository {
           .single();
 
       Log.d('Job created successfully with ID: ${response['id']}');
+
+      // Send notification to assigned driver if one is assigned
+      if (job.driverId != null && job.driverId!.isNotEmpty) {
+        try {
+          Log.d('Sending notification to assigned driver: ${job.driverId}');
+          await JobAssignmentService.notifyDriverOfNewJob(
+            jobId: response['id'].toString(),
+            driverId: job.driverId!,
+          );
+          Log.d('Driver notification sent successfully');
+        } catch (notificationError) {
+          // Don't fail job creation if notification fails
+          Log.e('Warning: Failed to send driver notification: $notificationError');
+        }
+      } else {
+        Log.d('No driver assigned to job, skipping notification');
+      }
+
       return Result.success(response);
     } catch (error) {
       Log.e('Error creating job: $error');
@@ -85,9 +104,37 @@ class JobsRepository {
     try {
       Log.d('Updating job: ${job.id}');
 
+      // Get the current job to check for driver changes
+      final currentJobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', job.id)
+          .single();
+
+      final currentDriverId = currentJobResponse['driver_id']?.toString();
+      final newDriverId = job.driverId;
+
+      // Update the job
       await _supabase.from('jobs').update(job.toJson()).eq('id', job.id);
 
       Log.d('Job updated successfully');
+
+      // Check if driver was reassigned
+      if (currentDriverId != newDriverId && newDriverId != null && newDriverId.isNotEmpty) {
+        try {
+          Log.d('Driver reassigned from $currentDriverId to $newDriverId');
+          await JobAssignmentService.notifyDriverOfReassignment(
+            jobId: job.id.toString(),
+            newDriverId: newDriverId,
+            previousDriverId: currentDriverId,
+          );
+          Log.d('Driver reassignment notification sent successfully');
+        } catch (notificationError) {
+          // Don't fail job update if notification fails
+          Log.e('Warning: Failed to send driver reassignment notification: $notificationError');
+        }
+      }
+
       return const Result.success(null);
     } catch (error) {
       Log.e('Error updating job: $error');
