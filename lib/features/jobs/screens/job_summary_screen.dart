@@ -248,6 +248,22 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    // Watch jobs provider to automatically update when job data changes
+    final jobsState = ref.watch(jobsProvider);
+    
+    // Update local job data when jobs provider changes
+    if (jobsState.hasValue && jobsState.value != null) {
+      try {
+        final updatedJob = jobsState.value!.firstWhere((job) => job.id.toString() == widget.jobId);
+        if (updatedJob != _job) {
+          _job = updatedJob;
+          Log.d('Job data updated from jobs provider: ${_job?.driverConfirmation}');
+        }
+      } catch (e) {
+        Log.d('Job ${widget.jobId} not found in jobs provider state');
+      }
+    }
+    
     // Watch trips data to automatically update when trips change
     final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
     
@@ -2183,9 +2199,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       await ref.read(jobsProvider.notifier).confirmJob(widget.jobId);
       Log.d('jobsProvider.confirmJob completed successfully');
 
-      // Refresh all jobs to help with state synchronization
-      await ref.read(jobsProvider.notifier).fetchJobs();
-      Log.d('Jobs list refreshed after confirmation');
+      // Note: No need to refresh jobs as confirmJob already does optimistic update
 
       // Check if widget is still mounted before showing success message and navigating
       if (!mounted) {

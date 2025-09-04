@@ -1174,7 +1174,7 @@ class JobCard extends ConsumerWidget {
 
       Log.d('Calling jobsProvider.confirmJob from job card...');
       // Use the proper jobsProvider.confirmJob method
-      await ref.read(jobsProvider.notifier).confirmJob(job.id, ref: ref);
+      await ref.read(jobsProvider.notifier).confirmJob(job.id.toString());
       Log.d('jobsProvider.confirmJob completed from job card');
 
       if (!context.mounted) return;
@@ -1194,12 +1194,8 @@ class JobCard extends ConsumerWidget {
         ),
       );
 
-      // Refresh job data and notifications
-      await ref.read(jobsProvider.notifier).refreshJob(job.id);
+      // Refresh notifications only (job data already updated by optimistic update)
       ref.invalidate(notificationProvider);
-
-      // Also refresh all jobs to help with state synchronization
-      await ref.read(jobsProvider.notifier).fetchJobs();
 
       // Optional: Navigate to job progress after confirmation
       // context.go('/jobs/${job.id}/progress');

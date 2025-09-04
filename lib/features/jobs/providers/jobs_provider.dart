@@ -122,7 +122,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         // Update local state optimistically
         final currentJobs = state.value ?? [];
         final updatedJobs = currentJobs.map((job) {
-          if (job.id == jobId) {
+          if (job.id.toString() == jobId) {
             return job.copyWith(status: status);
           }
           return job;
@@ -308,21 +308,36 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   /// Confirm a job (change status to confirmed)
   Future<void> confirmJob(String jobId) async {
     try {
+      Log.d('=== CONFIRM JOB DEBUG ===');
       Log.d('Confirming job: $jobId');
+      Log.d('Current jobs count: ${state.value?.length ?? 0}');
 
-      final result = await _jobsRepository.updateJobStatus(jobId, 'confirmed');
+      // Update only the confirmation fields, not the status
+      final result = await _jobsRepository.updateJobConfirmation(jobId);
 
       if (result.isSuccess) {
-        // Update local state optimistically
+        Log.d('Database update successful');
+        // Update local state optimistically with all confirmation fields
         final currentJobs = state.value ?? [];
+        Log.d('Current jobs before update: ${currentJobs.length}');
+        
         final updatedJobs = currentJobs.map((job) {
-          if (job.id == jobId) {
-            return job.copyWith(status: 'confirmed');
+          if (job.id.toString() == jobId) {
+            Log.d('Found job to update: ${job.id} -> ${job.passengerName}');
+            final updatedJob = job.copyWith(
+              driverConfirmation: true,
+              confirmedAt: DateTime.now(),
+            );
+            Log.d('Updated job - driverConfirmation: ${updatedJob.driverConfirmation}, isConfirmed: ${updatedJob.isConfirmed}');
+            return updatedJob;
           }
           return job;
         }).toList();
+        
+        Log.d('Updated jobs count: ${updatedJobs.length}');
         state = AsyncValue.data(updatedJobs);
-        Log.d('Job confirmed successfully');
+        Log.d('State updated successfully');
+        Log.d('New state jobs count: ${state.value?.length ?? 0}');
       } else {
         Log.e('Error confirming job: ${result.error!.message}');
         throw Exception(result.error!.message);

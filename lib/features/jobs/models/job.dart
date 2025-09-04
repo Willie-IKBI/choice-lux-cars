@@ -271,6 +271,7 @@ class Job {
       status: status ?? this.status,
       quoteNo: quoteNo ?? this.quoteNo,
       voucherPdf: voucherPdf ?? this.voucherPdf,
+      invoicePdf: invoicePdf ?? this.invoicePdf,
       cancelReason: cancelReason ?? this.cancelReason,
       location: location ?? this.location,
       createdBy: createdBy ?? this.createdBy,

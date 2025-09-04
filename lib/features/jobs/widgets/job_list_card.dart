@@ -336,8 +336,8 @@ class JobListCard extends ConsumerWidget {
 
   // 4. Confirmation State
   Widget _buildConfirmationState(BuildContext context, double spacing, Job currentJob) {
-    final isConfirmed =
-        currentJob.isConfirmed == true || currentJob.driverConfirmation == true;
+    // Use only driver_confirm_ind field to determine confirmation status
+    final isConfirmed = currentJob.driverConfirmation == true;
     final confirmationColor = isConfirmed ? Colors.green : Colors.orange;
     final confirmationText = isConfirmed ? 'Confirmed' : 'Not Confirmed';
     final confirmationIcon = isConfirmed ? Icons.check_circle : Icons.pending;
@@ -422,8 +422,7 @@ class JobListCard extends ConsumerWidget {
               currentUserId: ref.read(currentUserProfileProvider)?.id,
               jobDriverId: currentJob.driverId,
               jobStatus: currentJob.statusEnum,
-              isJobConfirmed:
-                  currentJob.isConfirmed == true || currentJob.driverConfirmation == true,
+              isJobConfirmed: currentJob.driverConfirmation == true,
             ))
               Expanded(
                 child: ElevatedButton.icon(
@@ -458,8 +457,7 @@ class JobListCard extends ConsumerWidget {
                 currentUserId: ref.read(currentUserProfileProvider)?.id,
                 jobDriverId: currentJob.driverId,
                 jobStatus: currentJob.statusEnum,
-                isJobConfirmed:
-                    currentJob.isConfirmed == true || currentJob.driverConfirmation == true,
+                isJobConfirmed: currentJob.driverConfirmation == true,
               ))
                 SizedBox(width: spacing),
               Expanded(child: _buildVoucherSection(context, spacing, currentJob)),

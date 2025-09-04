@@ -79,9 +79,11 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
     Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
     if ((jobs.value ?? []).isNotEmpty) {
+      final firstJob = (jobs.value ?? []).first;
       Log.d(
-        'Sample job: ${(jobs.value ?? []).first.id} - ${(jobs.value ?? []).first.status} - ${(jobs.value ?? []).first.passengerName}',
+        'Sample job: ${firstJob.id} - ${firstJob.status} - ${firstJob.passengerName}',
       );
+      Log.d('Sample job confirmation: isConfirmed=${firstJob.isConfirmed}, driverConfirmation=${firstJob.driverConfirmation}');
     }
 
     // Check if user can create vouchers based on role

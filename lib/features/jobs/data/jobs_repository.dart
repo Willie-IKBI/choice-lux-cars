@@ -172,6 +172,28 @@ class JobsRepository {
     }
   }
 
+  /// Update job confirmation fields only (without changing status)
+  Future<Result<void>> updateJobConfirmation(String jobId) async {
+    try {
+      Log.d('Updating job confirmation: $jobId');
+
+      // Prepare update data - only driver_confirm_ind field
+      final updateData = <String, dynamic>{
+        'driver_confirm_ind': true,
+        'confirmed_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      await _supabase.from('jobs').update(updateData).eq('id', jobId);
+
+      Log.d('Job confirmation updated successfully');
+      return const Result.success(null);
+    } catch (error) {
+      Log.e('Error updating job confirmation: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Update job payment amount
   Future<Result<void>> updateJobPaymentAmount(
     String jobId,
