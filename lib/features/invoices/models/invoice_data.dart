@@ -1,13 +1,15 @@
-import 'dart:convert';
-
 class InvoiceData {
   final int jobId;
   final String? quoteNo;
   final DateTime? quoteDate;
   final String companyName;
   final String? companyLogo;
+  final String? clientContactPerson;
+  final String? clientContactNumber;
+  final String? clientContactEmail;
   final String agentName;
   final String agentContact;
+  final String? agentEmail;
   final String passengerName;
   final String passengerContact;
   final int numberPassengers;
@@ -35,8 +37,12 @@ class InvoiceData {
     this.quoteDate,
     required this.companyName,
     this.companyLogo,
+    this.clientContactPerson,
+    this.clientContactNumber,
+    this.clientContactEmail,
     required this.agentName,
     required this.agentContact,
+    this.agentEmail,
     required this.passengerName,
     required this.passengerContact,
     required this.numberPassengers,
@@ -66,8 +72,12 @@ class InvoiceData {
           : null,
       companyName: json['company_name'] as String? ?? 'Choice Lux Cars',
       companyLogo: json['company_logo'] as String?,
+      clientContactPerson: json['client_contact_person'] as String?,
+      clientContactNumber: json['client_contact_number'] as String?,
+      clientContactEmail: json['client_contact_email'] as String?,
       agentName: json['agent_name'] as String? ?? 'Not available',
       agentContact: json['agent_contact'] as String? ?? 'Not available',
+      agentEmail: json['agent_email'] as String?,
       passengerName: json['passenger_name'] as String? ?? 'Not specified',
       passengerContact: json['passenger_contact'] as String? ?? 'Not specified',
       numberPassengers: json['number_passengers'] as int? ?? 0,
@@ -116,8 +126,12 @@ class InvoiceData {
       'quote_date': quoteDate?.toIso8601String(),
       'company_name': companyName,
       'company_logo': companyLogo,
+      'client_contact_person': clientContactPerson,
+      'client_contact_number': clientContactNumber,
+      'client_contact_email': clientContactEmail,
       'agent_name': agentName,
       'agent_contact': agentContact,
+      'agent_email': agentEmail,
       'passenger_name': passengerName,
       'passenger_contact': passengerContact,
       'number_passengers': numberPassengers,
