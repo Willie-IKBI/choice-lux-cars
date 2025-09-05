@@ -58,6 +58,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
         curve: Curves.elasticOut,
       ),
     );
+
+    // Load saved credentials and remember me preference
+    _loadSavedCredentials();
   }
 
   @override
@@ -86,6 +89,29 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     });
   }
 
+  // Load saved credentials and remember me preference
+  Future<void> _loadSavedCredentials() async {
+    try {
+      final authNotifier = ref.read(authProvider.notifier);
+      final credentials = await authNotifier.loadSavedCredentials();
+      final rememberMe = await authNotifier.isRememberMeEnabled();
+      
+      if (mounted) {
+        setState(() {
+          _rememberMe = rememberMe;
+          if (credentials['email'] != null) {
+            _emailController.text = credentials['email']!;
+          }
+          if (credentials['password'] != null) {
+            _passwordController.text = credentials['password']!;
+          }
+        });
+      }
+    } catch (error) {
+      Log.e('Error loading saved credentials: $error');
+    }
+  }
+
   Future<void> _signIn() async {
     if (_formKey.currentState!.validate()) {
       _buttonAnimationController.forward().then((_) {
@@ -98,6 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
             .signIn(
               email: _emailController.text.trim(),
               password: _passwordController.text,
+              rememberMe: _rememberMe,
             );
       } catch (e) {
         Log.e('Unexpected sign in error in UI: $e');

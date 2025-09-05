@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
+import 'package:choice_lux_cars/core/services/preferences_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
@@ -55,6 +56,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   }
 
   final SupabaseService _supabaseService = SupabaseService.instance;
+  final PreferencesService _preferencesService = PreferencesService.instance;
   FirebaseService? _firebaseService;
 
   void _initializeAuth() {
@@ -130,7 +132,32 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     }
   }
 
-  Future<void> signIn({required String email, required String password}) async {
+  // Handle remember me functionality
+  Future<void> _handleRememberMe(bool rememberMe, String email, String password) async {
+    try {
+      // Save remember me preference
+      await _preferencesService.setRememberMe(rememberMe);
+      
+      if (rememberMe) {
+        // Save credentials for auto-login
+        await _preferencesService.saveCredentials(email, password);
+        Log.d('Credentials saved for remember me');
+      } else {
+        // Clear saved credentials if remember me is disabled
+        await _preferencesService.clearSavedCredentials();
+        Log.d('Saved credentials cleared');
+      }
+    } catch (error) {
+      Log.e('Error handling remember me: $error');
+      // Don't fail authentication if remember me handling fails
+    }
+  }
+
+  Future<void> signIn({
+    required String email, 
+    required String password,
+    bool rememberMe = false,
+  }) async {
     // Validate inputs
     if (email.isEmpty || password.isEmpty) {
       _setErrorState('Please enter both email and password.');
@@ -147,6 +174,10 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
       if (response.user != null) {
         state = AsyncValue.data(response.user);
+        
+        // Handle remember me functionality
+        await _handleRememberMe(rememberMe, email, password);
+        
         // Handle FCM token update after successful sign in
         _handleFCMTokenUpdate(response.user!.id);
       } else {
@@ -275,6 +306,30 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   void setPasswordRecovery(bool isRecovery) {
     Log.d('Auth Provider - Setting password recovery state: $isRecovery');
     _isPasswordRecovery = isRecovery;
+  }
+
+  // Load saved credentials for remember me
+  Future<Map<String, String?>> loadSavedCredentials() async {
+    try {
+      final rememberMe = await _preferencesService.getRememberMe();
+      if (rememberMe) {
+        return await _preferencesService.getSavedCredentials();
+      }
+      return {'email': null, 'password': null};
+    } catch (error) {
+      Log.e('Error loading saved credentials: $error');
+      return {'email': null, 'password': null};
+    }
+  }
+
+  // Check if remember me is enabled
+  Future<bool> isRememberMeEnabled() async {
+    try {
+      return await _preferencesService.getRememberMe();
+    } catch (error) {
+      Log.e('Error checking remember me status: $error');
+      return false;
+    }
   }
 }
 
