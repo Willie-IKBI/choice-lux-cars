@@ -561,97 +561,51 @@ class _UserFormState extends State<UserForm> {
               ],
             ),
             const SizedBox(height: 16),
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isDesktop = constraints.maxWidth > 768;
+                
+                if (isDesktop) {
+                  // Desktop: Horizontal card layout
+                  return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      Expanded(
+                        child: _buildHorizontalDocumentCard(
+                          'Driver License',
+                          driverLicence,
+                          () => _uploadDriverLicense(context),
+                        ),
+                      ),
+                      const SizedBox(width: 16),
+                      Expanded(
+                        child: _buildHorizontalDocumentCard(
+                          'PDP',
+                          pdp,
+                          () => _uploadPdp(context),
+                        ),
+                      ),
+                    ],
+                  );
+                } else {
+                  // Mobile: Compact inline layout
+                  return Column(
+                    children: [
+                      _buildCompactDocumentRow(
                         'Driver License',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
+                        driverLicence,
+                        () => _uploadDriverLicense(context),
                       ),
-                      if (driverLicence != null && driverLicence!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 8),
-                          child: Image.network(driverLicence!, height: 60),
-                        ),
-                      Consumer(
-                        builder: (context, ref, _) => TextButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: Text(
-                            driverLicence == null ? 'Upload' : 'Replace',
-                          ),
-                          onPressed: widget.user == null
-                              ? null
-                              : () async {
-                                  final picked = await ImagePicker().pickImage(
-                                    source: ImageSource.gallery,
-                                  );
-                                  if (picked != null) {
-                                    setState(() => _uploading = true);
-                                    final url = await ref
-                                        .read(usersp.usersProvider.notifier)
-                                        .uploadDriverLicenseImage(
-                                          picked,
-                                          widget.user!.id,
-                                        );
-                                    setState(() {
-                                      driverLicence = url;
-                                      _uploading = false;
-                                    });
-                                  }
-                                },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
+                      const SizedBox(height: 12),
+                      _buildCompactDocumentRow(
                         'PDP',
-                        style: const TextStyle(fontWeight: FontWeight.w500),
-                      ),
-                      if (pdp != null && pdp!.isNotEmpty)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 8, bottom: 8),
-                          child: Image.network(pdp!, height: 60),
-                        ),
-                      Consumer(
-                        builder: (context, ref, _) => TextButton.icon(
-                          icon: const Icon(Icons.upload_file),
-                          label: Text(pdp == null ? 'Upload' : 'Replace'),
-                          onPressed: widget.user == null
-                              ? null
-                              : () async {
-                                  final picked = await ImagePicker().pickImage(
-                                    source: ImageSource.gallery,
-                                  );
-                                  if (picked != null) {
-                                    setState(() => _uploading = true);
-                                    final url = await ref
-                                        .read(usersp.usersProvider.notifier)
-                                        .uploadPdpImage(
-                                          picked,
-                                          widget.user!.id,
-                                        );
-                                    setState(() {
-                                      pdp = url;
-                                      _uploading = false;
-                                    });
-                                  }
-                                },
-                        ),
+                        pdp,
+                        () => _uploadPdp(context),
                       ),
                     ],
-                  ),
-                ),
-              ],
+                  );
+                }
+              },
             ),
             const SizedBox(height: 16),
             _DatePickerFormField(
@@ -748,6 +702,213 @@ class _UserFormState extends State<UserForm> {
 
   String _titleCase(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
+
+  /// Build horizontal document card for desktop layout
+  Widget _buildHorizontalDocumentCard(
+    String title,
+    String? imageUrl,
+    VoidCallback onUpload,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+        color: Colors.grey.shade50,
+      ),
+      child: Row(
+        children: [
+          // Image preview (fixed width)
+          Container(
+            width: 80,
+            height: 60,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+              color: Colors.white,
+            ),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.description,
+                          color: Colors.grey,
+                          size: 32,
+                        );
+                      },
+                    ),
+                  )
+                : const Icon(
+                    Icons.description,
+                    color: Colors.grey,
+                    size: 32,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          // Button and label
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Consumer(
+                  builder: (context, ref, _) => TextButton.icon(
+                    icon: const Icon(Icons.upload_file, size: 16),
+                    label: Text(imageUrl == null ? 'Upload' : 'Replace'),
+                    onPressed: widget.user == null ? null : onUpload,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build compact document row for mobile layout
+  Widget _buildCompactDocumentRow(
+    String title,
+    String? imageUrl,
+    VoidCallback onUpload,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(8),
+        color: Colors.grey.shade50,
+      ),
+      child: Row(
+        children: [
+          // Small image preview
+          Container(
+            width: 60,
+            height: 45,
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(6),
+              color: Colors.white,
+            ),
+            child: imageUrl != null && imageUrl.isNotEmpty
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(6),
+                    child: Image.network(
+                      imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return const Icon(
+                          Icons.description,
+                          color: Colors.grey,
+                          size: 20,
+                        );
+                      },
+                    ),
+                  )
+                : const Icon(
+                    Icons.description,
+                    color: Colors.grey,
+                    size: 20,
+                  ),
+          ),
+          const SizedBox(width: 12),
+          // Title and button
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w500,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Consumer(
+                  builder: (context, ref, _) => TextButton.icon(
+                    icon: const Icon(Icons.upload_file, size: 14),
+                    label: Text(
+                      imageUrl == null ? 'Upload $title' : 'Replace',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    onPressed: widget.user == null ? null : onUpload,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Upload driver license image
+  Future<void> _uploadDriverLicense(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (picked != null) {
+      setState(() => _uploading = true);
+      try {
+        final ref = ProviderScope.containerOf(context).read(usersp.usersProvider.notifier);
+        final url = await ref.uploadDriverLicenseImage(
+          picked,
+          widget.user!.id,
+        );
+        setState(() {
+          driverLicence = url;
+          _uploading = false;
+        });
+      } catch (e) {
+        setState(() => _uploading = false);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload driver license: $e')),
+          );
+        }
+      }
+    }
+  }
+
+  /// Upload PDP image
+  Future<void> _uploadPdp(BuildContext context) async {
+    final picked = await ImagePicker().pickImage(
+      source: ImageSource.gallery,
+    );
+    if (picked != null) {
+      setState(() => _uploading = true);
+      try {
+        final ref = ProviderScope.containerOf(context).read(usersp.usersProvider.notifier);
+        final url = await ref.uploadPdpImage(
+          picked,
+          widget.user!.id,
+        );
+        setState(() {
+          pdp = url;
+          _uploading = false;
+        });
+      } catch (e) {
+        setState(() => _uploading = false);
+        if (context.mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Failed to upload PDP: $e')),
+          );
+        }
+      }
+    }
+  }
 }
 
 class _RoleOption {
@@ -811,4 +972,4 @@ class _DatePickerFormField extends FormField<DateTime> {
            );
          },
        );
-}
+  }

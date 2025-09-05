@@ -1,11 +1,15 @@
+import 'dart:typed_data';
+import 'dart:io';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart'
     hide User, AuthException;
+import 'package:image_picker/image_picker.dart';
 import 'package:choice_lux_cars/core/supabase/supabase_client_provider.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
+import 'package:choice_lux_cars/core/services/upload_service.dart';
 
 /// Repository for user-related data operations
 ///
@@ -201,10 +205,33 @@ class UsersRepository {
     try {
       Log.d('Uploading profile image for user: $userId');
 
-      // TODO: Implement actual upload logic
-      // For now, return a placeholder URL
-      Log.d('Profile image upload not implemented yet');
-      return const Result.success('https://placeholder.com/profile.jpg');
+      // Read file bytes
+      Uint8List bytes;
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+      } else if (file is File) {
+        bytes = await file.readAsBytes();
+      } else {
+        throw Exception('Unsupported file type');
+      }
+
+      // Upload to Supabase Storage
+      final fileName = 'profile_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final url = await UploadService.uploadImageBytes(
+        bytes,
+        'clc_images',
+        'profiles',
+        '$userId/$fileName',
+      );
+
+      // Update user profile in database
+      await _supabase
+          .from('profiles')
+          .update({'profile_image': url})
+          .eq('id', userId);
+
+      Log.d('Profile image uploaded successfully: $url');
+      return Result.success(url);
     } catch (error) {
       Log.e('Error uploading profile image: $error');
       return _mapSupabaseError(error);
@@ -216,10 +243,33 @@ class UsersRepository {
     try {
       Log.d('Uploading driver license image for user: $userId');
 
-      // TODO: Implement actual upload logic
-      // For now, return a placeholder URL
-      Log.d('Driver license image upload not implemented yet');
-      return const Result.success('https://placeholder.com/license.jpg');
+      // Read file bytes
+      Uint8List bytes;
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+      } else if (file is File) {
+        bytes = await file.readAsBytes();
+      } else {
+        throw Exception('Unsupported file type');
+      }
+
+      // Upload to Supabase Storage
+      final fileName = 'driver_license_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final url = await UploadService.uploadImageBytes(
+        bytes,
+        'clc_images',
+        'driver_licenses',
+        '$userId/$fileName',
+      );
+
+      // Update user profile in database
+      await _supabase
+          .from('profiles')
+          .update({'driver_licence': url})
+          .eq('id', userId);
+
+      Log.d('Driver license image uploaded successfully: $url');
+      return Result.success(url);
     } catch (error) {
       Log.e('Error uploading driver license image: $error');
       return _mapSupabaseError(error);
@@ -231,10 +281,33 @@ class UsersRepository {
     try {
       Log.d('Uploading PDP image for user: $userId');
 
-      // TODO: Implement actual upload logic
-      // For now, return a placeholder URL
-      Log.d('PDP image upload not implemented yet');
-      return const Result.success('https://placeholder.com/pdp.jpg');
+      // Read file bytes
+      Uint8List bytes;
+      if (file is XFile) {
+        bytes = await file.readAsBytes();
+      } else if (file is File) {
+        bytes = await file.readAsBytes();
+      } else {
+        throw Exception('Unsupported file type');
+      }
+
+      // Upload to Supabase Storage
+      final fileName = 'pdp_${DateTime.now().millisecondsSinceEpoch}.jpg';
+      final url = await UploadService.uploadImageBytes(
+        bytes,
+        'clc_images',
+        'pdp_documents',
+        '$userId/$fileName',
+      );
+
+      // Update user profile in database
+      await _supabase
+          .from('profiles')
+          .update({'pdp': url})
+          .eq('id', userId);
+
+      Log.d('PDP image uploaded successfully: $url');
+      return Result.success(url);
     } catch (error) {
       Log.e('Error uploading PDP image: $error');
       return _mapSupabaseError(error);
