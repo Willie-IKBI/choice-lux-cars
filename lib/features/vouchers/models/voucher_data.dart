@@ -59,7 +59,7 @@ class VoucherData {
       driverContact: json['driver_contact']?.toString() ?? 'Not available',
       vehicleType: json['vehicle_type']?.toString() ?? 'Not assigned',
       transport:
-          (json['transport'] as List<dynamic>?)
+          (json['transport_details'] as List<dynamic>?)
               ?.map(
                 (item) =>
                     TransportDetail.fromJson(item as Map<String, dynamic>),
@@ -201,7 +201,9 @@ class TransportDetail {
       pickupDate: json['pickup_date'] != null
           ? DateTime.tryParse(json['pickup_date'].toString())
           : null,
-      pickupTime: json['pickup_time']?.toString(),
+      pickupTime: json['pickup_time'] != null
+          ? DateTime.tryParse(json['pickup_time'].toString())?.toString().substring(11, 16) // Gets HH:MM format
+          : null,
       pickupLocation: json['pickup_location']?.toString() ?? 'Not specified',
       dropoffLocation: json['dropoff_location']?.toString() ?? 'Not specified',
     );
