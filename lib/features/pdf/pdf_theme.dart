@@ -89,7 +89,7 @@ class PdfTheme {
 
   // ---- HEADER BUILDERS -----------------------------------------------------
 
-  /// Build hero header for page 1 (large logo, company name)
+  /// Build hero header for page 1 (large logo only)
   static pw.Widget buildHeroHeader({
     required pw.MemoryImage? logo,
     required String companyName,
@@ -111,8 +111,7 @@ class PdfTheme {
                 )
               else
                 pw.Text(companyName, style: titleLarge),
-              pw.SizedBox(width: spacing12),
-              pw.Expanded(child: pw.Text(companyName, style: titleLarge)),
+              // Removed company name text - only show logo
             ],
           ),
         ),
