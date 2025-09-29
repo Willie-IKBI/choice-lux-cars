@@ -55,11 +55,11 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
           await DriverFlowApiService.getDriverActivitySummary();
 
       // Calculate summary
-      final summary = _calculateSummary(activeJobs, driverActivity);
+      final summary = _calculateSummary(activeJobs, [driverActivity]);
 
       setState(() {
         _activeJobs = activeJobs;
-        _driverActivity = driverActivity;
+        _driverActivity = [driverActivity];
         _summary = summary;
         _isLoading = false;
       });
@@ -498,7 +498,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
     Navigator.of(context).push(
       MaterialPageRoute(
         builder: (context) => JobProgressScreen(
-          jobId: int.parse(job['job_id']),
+          jobId: job['job_id'].toString(),
           job: Job.fromMap(job),
         ),
       ),

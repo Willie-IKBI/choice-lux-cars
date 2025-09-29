@@ -910,7 +910,7 @@ class JobCard extends ConsumerWidget {
       margin: EdgeInsets.only(top: marginTop),
       padding: EdgeInsets.symmetric(vertical: paddingVertical),
       child: VoucherActionButtons(
-        jobId: job.id,
+        jobId: job.id.toString(),
         voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
         canCreateVoucher: ref.watch(canCreateVoucherProvider).value ?? false,
       ),
@@ -1134,7 +1134,7 @@ class JobCard extends ConsumerWidget {
     Log.d('Is Confirmed: ${job.isConfirmed}');
     Log.d('Driver Confirmation: ${job.driverConfirmation}');
 
-    final jobId = int.tryParse(job.id);
+    final jobId = job.id is int ? job.id : int.tryParse(job.id.toString());
     if (jobId == null) {
       Log.d('Invalid job ID: ${job.id}');
       if (!context.mounted) return;

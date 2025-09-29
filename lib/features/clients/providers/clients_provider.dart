@@ -5,11 +5,10 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Notifier for managing clients state using AsyncNotifier
 class ClientsNotifier extends AsyncNotifier<List<Client>> {
-  late final ClientsRepository _clientsRepository;
+  ClientsRepository get _clientsRepository => ref.watch(clientsRepositoryProvider);
 
   @override
   Future<List<Client>> build() async {
-    _clientsRepository = ref.watch(clientsRepositoryProvider);
     return _fetchClients();
   }
 
@@ -117,11 +116,10 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
 
 /// Notifier for managing inactive clients using AsyncNotifier
 class InactiveClientsNotifier extends AsyncNotifier<List<Client>> {
-  late final ClientsRepository _clientsRepository;
+  ClientsRepository get _clientsRepository => ref.watch(clientsRepositoryProvider);
 
   @override
   Future<List<Client>> build() async {
-    _clientsRepository = ref.watch(clientsRepositoryProvider);
     return _fetchInactiveClients();
   }
 
@@ -154,14 +152,10 @@ class InactiveClientsNotifier extends AsyncNotifier<List<Client>> {
 
 /// Notifier for managing client search using FamilyAsyncNotifier
 class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
-  late final ClientsRepository _clientsRepository;
-  late final String query;
+  ClientsRepository get _clientsRepository => ref.watch(clientsRepositoryProvider);
 
   @override
   Future<List<Client>> build(String query) async {
-    _clientsRepository = ref.watch(clientsRepositoryProvider);
-    this.query = query;
-
     if (query.isEmpty) {
       // If query is empty, return all active clients
       final clientsNotifier = ref.read(clientsProvider.notifier);
@@ -174,6 +168,7 @@ class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
   /// Search clients by query
   Future<List<Client>> _searchClients() async {
     try {
+      final query = arg;
       Log.d('Searching clients with query: $query');
 
       final result = await _clientsRepository.searchClients(query);
@@ -203,18 +198,15 @@ class ClientSearchNotifier extends FamilyAsyncNotifier<List<Client>, String> {
 
 /// Notifier for managing single client using FamilyAsyncNotifier
 class SingleClientNotifier extends FamilyAsyncNotifier<Client?, String> {
-  late final ClientsRepository _clientsRepository;
-  late final String clientId;
+  ClientsRepository get _clientsRepository => ref.watch(clientsRepositoryProvider);
 
   @override
   Future<Client?> build(String clientId) async {
-    _clientsRepository = ref.watch(clientsRepositoryProvider);
-    this.clientId = clientId;
-    return _fetchClientById();
+    return _fetchClientById(clientId);
   }
 
   /// Fetch client by ID
-  Future<Client?> _fetchClientById() async {
+  Future<Client?> _fetchClientById(String clientId) async {
     try {
       Log.d('Fetching client by ID: $clientId');
 
@@ -242,18 +234,15 @@ class SingleClientNotifier extends FamilyAsyncNotifier<Client?, String> {
 /// Notifier for managing client with agents using FamilyAsyncNotifier
 class ClientWithAgentsNotifier
     extends FamilyAsyncNotifier<Map<String, dynamic>?, String> {
-  late final ClientsRepository _clientsRepository;
-  late final String clientId;
+  ClientsRepository get _clientsRepository => ref.watch(clientsRepositoryProvider);
 
   @override
   Future<Map<String, dynamic>?> build(String clientId) async {
-    _clientsRepository = ref.watch(clientsRepositoryProvider);
-    this.clientId = clientId;
-    return _fetchClientWithAgents();
+    return _fetchClientWithAgents(clientId);
   }
 
   /// Fetch client with agents
-  Future<Map<String, dynamic>?> _fetchClientWithAgents() async {
+  Future<Map<String, dynamic>?> _fetchClientWithAgents(String clientId) async {
     try {
       Log.d('Fetching client with agents: $clientId');
 

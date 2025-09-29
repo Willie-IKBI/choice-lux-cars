@@ -120,7 +120,6 @@ class FCMService {
     Log.d('FCMService: Foreground message received: ${message.data}');
 
     final action = message.data['action'];
-    final notificationType = message.data['notification_type'];
     final jobId = message.data['job_id'];
     final messageText =
         message.notification?.body ?? 'New notification received';
@@ -386,7 +385,6 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   // Handle different notification types in background
   final action = message.data['action'];
-  final notificationType = message.data['notification_type'];
 
   switch (action) {
     case 'new_job_assigned':

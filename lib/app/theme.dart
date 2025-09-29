@@ -151,33 +151,33 @@ class ChoiceLuxTheme {
         contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       ),
       switchTheme: SwitchThemeData(
-        thumbColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        thumbColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return richGold;
           }
           return platinumSilver;
         }),
-        trackColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        trackColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return richGold.withValues(alpha: 0.3);
           }
           return platinumSilver.withValues(alpha: 0.3);
         }),
       ),
       checkboxTheme: CheckboxThemeData(
-        fillColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return richGold;
           }
           return Colors.transparent;
         }),
-        checkColor: MaterialStateProperty.all(Colors.black),
+        checkColor: WidgetStateProperty.all(Colors.black),
         side: const BorderSide(color: platinumSilver),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(4)),
       ),
       radioTheme: RadioThemeData(
-        fillColor: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        fillColor: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return richGold;
           }
           return platinumSilver;
@@ -206,11 +206,11 @@ class ChoiceLuxTheme {
       navigationBarTheme: NavigationBarThemeData(
         backgroundColor: charcoalGray,
         indicatorColor: richGold.withValues(alpha: 0.2),
-        labelTextStyle: MaterialStateProperty.all(
+        labelTextStyle: WidgetStateProperty.all(
           const TextStyle(color: softWhite, fontSize: 12),
         ),
-        iconTheme: MaterialStateProperty.resolveWith((states) {
-          if (states.contains(MaterialState.selected)) {
+        iconTheme: WidgetStateProperty.resolveWith((states) {
+          if (states.contains(WidgetState.selected)) {
             return const IconThemeData(color: richGold);
           }
           return const IconThemeData(color: platinumSilver);
@@ -264,8 +264,8 @@ class ChoiceLuxTheme {
           fontWeight: FontWeight.w600,
         ),
         dividerThickness: 1,
-        dataRowColor: MaterialStatePropertyAll(Colors.transparent),
-        headingRowColor: MaterialStatePropertyAll(Colors.transparent),
+        dataRowColor: WidgetStatePropertyAll(Colors.transparent),
+        headingRowColor: WidgetStatePropertyAll(Colors.transparent),
       ),
       timePickerTheme: TimePickerThemeData(
         backgroundColor: charcoalGray,
@@ -282,16 +282,16 @@ class ChoiceLuxTheme {
         backgroundColor: charcoalGray,
         headerBackgroundColor: richGold,
         headerForegroundColor: Colors.black,
-        dayForegroundColor: MaterialStateProperty.all(softWhite),
-        yearForegroundColor: MaterialStateProperty.all(softWhite),
-        dayBackgroundColor: MaterialStateProperty.all(Colors.transparent),
-        yearBackgroundColor: MaterialStateProperty.all(Colors.transparent),
-        todayForegroundColor: MaterialStateProperty.all(richGold),
-        todayBackgroundColor: MaterialStateProperty.all(
+        dayForegroundColor: WidgetStateProperty.all(softWhite),
+        yearForegroundColor: WidgetStateProperty.all(softWhite),
+        dayBackgroundColor: WidgetStateProperty.all(Colors.transparent),
+        yearBackgroundColor: WidgetStateProperty.all(Colors.transparent),
+        todayForegroundColor: WidgetStateProperty.all(richGold),
+        todayBackgroundColor: WidgetStateProperty.all(
           richGold.withValues(alpha: 0.2),
         ),
-        dayOverlayColor: MaterialStateProperty.all(richGold.withValues(alpha: 0.1)),
-        yearOverlayColor: MaterialStateProperty.all(richGold.withValues(alpha: 0.1)),
+        dayOverlayColor: WidgetStateProperty.all(richGold.withValues(alpha: 0.1)),
+        yearOverlayColor: WidgetStateProperty.all(richGold.withValues(alpha: 0.1)),
       ),
       extensions: [
         const AppTokens(

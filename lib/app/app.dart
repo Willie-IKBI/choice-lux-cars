@@ -205,7 +205,6 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/quotes/:id/summary',
           name: 'quote_summary',
           builder: (context, state) {
-            final quoteId = state.pathParameters['id']!;
             // TODO: Create QuoteSummaryScreen
             return const Scaffold(
               body: Center(child: Text('Quote Summary Screen - Coming Soon')),

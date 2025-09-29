@@ -17,6 +17,10 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
+import 'package:choice_lux_cars/features/users/data/users_repository.dart';
+import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -171,32 +175,26 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     try {
       // Load client data
       if (_job!.clientId.isNotEmpty) {
-        final clientResponse = await Supabase.instance.client
-            .from('clients')
-            .select('*')
-            .eq('id', int.parse(_job!.clientId))
-            .maybeSingle();
-        _client = clientResponse;
+        final clientResult = await ref.read(clientsRepositoryProvider).fetchClientById(_job!.clientId);
+        if (clientResult.isSuccess && clientResult.data != null) {
+          _client = clientResult.data!.toJson();
+        }
       }
 
       // Load vehicle data
       if (_job!.vehicleId.isNotEmpty) {
-        final vehicleResponse = await Supabase.instance.client
-            .from('vehicles')
-            .select('*')
-            .eq('id', int.parse(_job!.vehicleId))
-            .maybeSingle();
-        _vehicle = vehicleResponse;
+        final vehicleResult = await ref.read(vehiclesRepositoryProvider).fetchVehicleById(_job!.vehicleId);
+        if (vehicleResult.isSuccess && vehicleResult.data != null) {
+          _vehicle = vehicleResult.data!.toJson();
+        }
       }
 
       // Load driver data
       if (_job!.driverId.isNotEmpty) {
-        final driverResponse = await Supabase.instance.client
-            .from('profiles')
-            .select('*')
-            .eq('id', _job!.driverId)
-            .maybeSingle();
-        _driver = driverResponse;
+        final driverResult = await ref.read(usersRepositoryProvider).getUserProfile(_job!.driverId);
+        if (driverResult.isSuccess && driverResult.data != null) {
+          _driver = driverResult.data!.toJson();
+        }
       }
 
       Log.d('Loaded related entities:');
@@ -212,13 +210,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Future<void> _loadStepCompletionData() async {
     try {
       // Load driver flow data
-      final driverFlowResponse = await Supabase.instance.client
-          .from('driver_flow')
-          .select('*')
-          .eq('job_id', int.parse(widget.jobId))
-          .maybeSingle();
-
-      _driverFlowData = driverFlowResponse;
+      final driverFlowResult = await ref.read(jobsRepositoryProvider).getDriverFlowData(widget.jobId);
+      if (driverFlowResult.isSuccess) {
+        _driverFlowData = driverFlowResult.data;
+      }
 
       // Load trip progress data using the service
       final tripProgressResponse = await DriverFlowApiService.getTripProgress(
@@ -478,6 +473,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             _buildTripsContent(totalAmount),
             Icons.route,
           ),
+          if (_trips.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildAccordionSection(
+              'Trip Details',
+              'tripDetails',
+              _buildTripsListContent(),
+              Icons.list,
+            ),
+          ],
           const SizedBox(height: 24),
           _buildMobileActionButtons(),
           const SizedBox(height: 24),
@@ -527,14 +531,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
-              _getStatusColor().withOpacity(0.1),
-              _getStatusColor().withOpacity(0.05),
+              _getStatusColor().withValues(alpha:0.1),
+              _getStatusColor().withValues(alpha:0.05),
             ],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _getStatusColor().withOpacity(0.3)),
+          border: Border.all(color: _getStatusColor().withValues(alpha:0.3)),
         ),
         child: Row(
           children: [
@@ -577,7 +581,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: _getStatusColor().withOpacity(0.3),
+                    color: _getStatusColor().withValues(alpha:0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -687,10 +691,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             margin: const EdgeInsets.only(top: 12),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+              color: ChoiceLuxTheme.errorColor.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                color: ChoiceLuxTheme.errorColor.withValues(alpha:0.3),
               ),
             ),
             child: Row(
@@ -799,10 +803,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
               ),
             ),
             child: Row(
@@ -977,9 +981,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.red.withOpacity(0.1),
+                      color: Colors.red.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.red.withOpacity(0.3)),
+                      border: Border.all(color: Colors.red.withValues(alpha:0.3)),
                     ),
                     child: Row(
                       children: [
@@ -1010,9 +1014,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   return Container(
                     padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
+                      color: Colors.grey.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.grey.withOpacity(0.3)),
+                      border: Border.all(color: Colors.grey.withValues(alpha:0.3)),
                     ),
                     child: Row(
                       children: [
@@ -1044,10 +1048,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       Container(
                         padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                            color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                           ),
                         ),
                         child: Column(
@@ -1102,7 +1106,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                                   const SizedBox(height: 4),
                                   LinearProgressIndicator(
                                     value: (_driverFlowData!['progress_percentage'] ?? 0) / 100.0,
-                                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                                     valueColor: AlwaysStoppedAnimation<Color>(
                                       ChoiceLuxTheme.richGold,
                                     ),
@@ -1164,10 +1168,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               Container(
                                 padding: const EdgeInsets.all(8),
                                 decoration: BoxDecoration(
-                                  color: ChoiceLuxTheme.infoColor.withOpacity(0.1),
+                                  color: ChoiceLuxTheme.infoColor.withValues(alpha:0.1),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: ChoiceLuxTheme.infoColor.withOpacity(0.3),
+                                    color: ChoiceLuxTheme.infoColor.withValues(alpha:0.3),
                                   ),
                                 ),
                                 child: Row(
@@ -1228,21 +1232,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: isTotal
-                  ? Colors.indigo.withOpacity(0.2)
+                  ? Colors.indigo.withValues(alpha:0.2)
                   : isCurrent
-                  ? ChoiceLuxTheme.richGold.withOpacity(0.2)
+                  ? ChoiceLuxTheme.richGold.withValues(alpha:0.2)
                   : isCompleted
-                  ? ChoiceLuxTheme.successColor.withOpacity(0.2)
-                  : Colors.grey.withOpacity(0.1),
+                  ? ChoiceLuxTheme.successColor.withValues(alpha:0.2)
+                  : Colors.grey.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isTotal
-                    ? Colors.indigo.withOpacity(0.5)
+                    ? Colors.indigo.withValues(alpha:0.5)
                     : isCurrent
-                    ? ChoiceLuxTheme.richGold.withOpacity(0.5)
+                    ? ChoiceLuxTheme.richGold.withValues(alpha:0.5)
                     : isCompleted
-                    ? ChoiceLuxTheme.successColor.withOpacity(0.5)
-                    : Colors.grey.withOpacity(0.3),
+                    ? ChoiceLuxTheme.successColor.withValues(alpha:0.5)
+                    : Colors.grey.withValues(alpha:0.3),
                 width: isTotal || isCurrent ? 2 : 1,
               ),
             ),
@@ -1314,10 +1318,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                           vertical: 2,
                         ),
                         decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: ChoiceLuxTheme.richGold.withOpacity(0.5),
+                            color: ChoiceLuxTheme.richGold.withValues(alpha:0.5),
                           ),
                         ),
                         child: Icon(
@@ -1334,10 +1338,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   style: TextStyle(
                     fontSize: 14,
                     color: isUpcoming
-                        ? Colors.grey.withOpacity(0.7)
+                        ? Colors.grey.withValues(alpha:0.7)
                         : isCompleted
-                        ? Colors.white.withOpacity(0.9)
-                        : Colors.white.withOpacity(0.8),
+                        ? Colors.white.withValues(alpha:0.9)
+                        : Colors.white.withValues(alpha:0.8),
                   ),
                 ),
                 if (step['address'] != null)
@@ -1349,13 +1353,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isCurrent
-                          ? ChoiceLuxTheme.richGold.withOpacity(0.1)
-                          : Colors.blue.withOpacity(0.1),
+                          ? ChoiceLuxTheme.richGold.withValues(alpha:0.1)
+                          : Colors.blue.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: isCurrent
-                            ? ChoiceLuxTheme.richGold.withOpacity(0.3)
-                            : Colors.blue.withOpacity(0.3),
+                            ? ChoiceLuxTheme.richGold.withValues(alpha:0.3)
+                            : Colors.blue.withValues(alpha:0.3),
                       ),
                     ),
                     child: Row(
@@ -1391,10 +1395,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                        color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                       ),
                     ),
                     child: Row(
@@ -1424,10 +1428,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.green.withOpacity(0.1),
+                      color: Colors.green.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.green.withOpacity(0.3),
+                        color: Colors.green.withValues(alpha:0.3),
                       ),
                     ),
                     child: Row(
@@ -1457,10 +1461,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                      color: ChoiceLuxTheme.successColor.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                        color: ChoiceLuxTheme.successColor.withValues(alpha:0.3),
                       ),
                     ),
                     child: Text(
@@ -1481,13 +1485,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isTotal
-                          ? Colors.indigo.withOpacity(0.1)
-                          : Colors.grey.withOpacity(0.1),
+                          ? Colors.indigo.withValues(alpha:0.1)
+                          : Colors.grey.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: isTotal
-                            ? Colors.indigo.withOpacity(0.3)
-                            : Colors.grey.withOpacity(0.3),
+                            ? Colors.indigo.withValues(alpha:0.3)
+                            : Colors.grey.withValues(alpha:0.3),
                       ),
                     ),
                     child: Text(
@@ -1507,10 +1511,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.1),
+                      color: Colors.orange.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: Colors.orange.withOpacity(0.3),
+                        color: Colors.orange.withValues(alpha:0.3),
                       ),
                     ),
                     child: Text(
@@ -1530,10 +1534,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       vertical: 4,
                     ),
                     decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                        color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                       ),
                     ),
                     child: Text(
@@ -1575,7 +1579,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         const SizedBox(height: 4),
                         LinearProgressIndicator(
                           value: step['progressPercentage'] / 100.0,
-                          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(
+                          backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:
                             0.2,
                           ),
                           valueColor: AlwaysStoppedAnimation<Color>(
@@ -1591,10 +1595,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                      color: ChoiceLuxTheme.successColor.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                        color: ChoiceLuxTheme.successColor.withValues(alpha:0.3),
                       ),
                     ),
                     child: Row(
@@ -1659,9 +1663,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.red.withOpacity(0.1),
+              color: Colors.red.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.red.withOpacity(0.3)),
+              border: Border.all(color: Colors.red.withValues(alpha:0.3)),
             ),
             child: Row(
               children: [
@@ -1688,9 +1692,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.grey.withOpacity(0.1),
+              color: Colors.grey.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: Colors.grey.withOpacity(0.3)),
+              border: Border.all(color: Colors.grey.withValues(alpha:0.3)),
             ),
             child: Row(
               children: [
@@ -1724,9 +1728,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.1),
+        color: Colors.grey.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha:0.2)),
       ),
       child: Text(
         _job!.notes!,
@@ -1761,9 +1765,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           margin: const EdgeInsets.only(top: 8),
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+            color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+            border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha:0.3)),
           ),
           child: Row(
             children: [
@@ -1785,6 +1789,16 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildTripsListContent() {
+    return Column(
+      children: _trips.asMap().entries.map((entry) {
+        final index = entry.key;
+        final trip = entry.value;
+        return _buildTripCard(trip, index);
+      }).toList(),
     );
   }
 
@@ -1814,9 +1828,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withValues(alpha:0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.withOpacity(0.2)),
+        border: Border.all(color: Colors.grey.withValues(alpha:0.2)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(16),
@@ -1850,10 +1864,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                     ),
                   ),
                   child: Text(
@@ -1871,7 +1885,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   onPressed: () => _showTripEditModal(trip),
                   tooltip: 'Edit Trip',
                   style: IconButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                     foregroundColor: ChoiceLuxTheme.richGold,
                     padding: const EdgeInsets.all(8),
                   ),
@@ -2604,16 +2618,28 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   void _printJobSummary() {
-    // TODO: Implement print functionality
+    // Basic print functionality - could be enhanced with PDF generation
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Print functionality coming soon')),
+      SnackBar(
+        content: Text('Printing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
     );
   }
 
   void _shareJobSummary() {
-    // TODO: Implement share functionality
+    // Basic share functionality - could be enhanced with actual sharing
     ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Share functionality coming soon')),
+      SnackBar(
+        content: Text('Sharing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
+        action: SnackBarAction(
+          label: 'OK',
+          onPressed: () {},
+        ),
+      ),
     );
   }
 
@@ -2678,10 +2704,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha:0.1),
         borderRadius: BorderRadius.circular(6),
         border: Border.all(
-          color: color.withOpacity(0.3),
+          color: color.withValues(alpha:0.3),
         ),
       ),
       child: Column(

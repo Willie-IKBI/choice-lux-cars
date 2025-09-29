@@ -143,6 +143,30 @@ class JobsRepository {
     }
   }
 
+  /// Get driver flow data for a job
+  Future<Result<Map<String, dynamic>?>> getDriverFlowData(String jobId) async {
+    try {
+      Log.d('Fetching driver flow data for job: $jobId');
+
+      final response = await _supabase
+          .from('driver_flow')
+          .select('*')
+          .eq('job_id', int.parse(jobId))
+          .maybeSingle();
+
+      if (response != null) {
+        Log.d('Driver flow data found for job: $jobId');
+        return Result.success(response);
+      } else {
+        Log.d('No driver flow data found for job: $jobId');
+        return const Result.success(null);
+      }
+    } catch (error) {
+      Log.e('Error fetching driver flow data: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Update job status
   Future<Result<void>> updateJobStatus(String jobId, String status) async {
     try {

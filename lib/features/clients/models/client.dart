@@ -7,6 +7,9 @@ class Client {
   final String contactNumber;
   final String contactEmail;
   final String? companyLogo;
+  final String? websiteAddress;
+  final String? companyRegistrationNumber;
+  final String? vatNumber;
   final ClientStatus status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -19,6 +22,9 @@ class Client {
     required this.contactNumber,
     required this.contactEmail,
     this.companyLogo,
+    this.websiteAddress,
+    this.companyRegistrationNumber,
+    this.vatNumber,
     this.status = ClientStatus.active,
     this.createdAt,
     this.updatedAt,
@@ -34,6 +40,9 @@ class Client {
       contactNumber: json['contact_number'] as String,
       contactEmail: json['contact_email'] as String,
       companyLogo: json['company_logo'] as String?,
+      websiteAddress: json['website_address'] as String?,
+      companyRegistrationNumber: json['company_registration_number'] as String?,
+      vatNumber: json['vat_number'] as String?,
       status: _parseStatus(json['status'] as String?),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -70,6 +79,9 @@ class Client {
       'contact_number': contactNumber,
       'contact_email': contactEmail,
       if (companyLogo != null) 'company_logo': companyLogo,
+      if (websiteAddress != null) 'website_address': websiteAddress,
+      if (companyRegistrationNumber != null) 'company_registration_number': companyRegistrationNumber,
+      if (vatNumber != null) 'vat_number': vatNumber,
       'status': status.name,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
@@ -85,6 +97,9 @@ class Client {
     String? contactNumber,
     String? contactEmail,
     String? companyLogo,
+    String? websiteAddress,
+    String? companyRegistrationNumber,
+    String? vatNumber,
     ClientStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -97,6 +112,9 @@ class Client {
       contactNumber: contactNumber ?? this.contactNumber,
       contactEmail: contactEmail ?? this.contactEmail,
       companyLogo: companyLogo ?? this.companyLogo,
+      websiteAddress: websiteAddress ?? this.websiteAddress,
+      companyRegistrationNumber: companyRegistrationNumber ?? this.companyRegistrationNumber,
+      vatNumber: vatNumber ?? this.vatNumber,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
@@ -115,6 +133,6 @@ class Client {
 
   @override
   String toString() {
-    return 'Client(id: $id, companyName: $companyName, contactPerson: $contactPerson)';
+    return 'Client(id: $id, companyName: $companyName, contactPerson: $contactPerson, websiteAddress: $websiteAddress)';
   }
 }

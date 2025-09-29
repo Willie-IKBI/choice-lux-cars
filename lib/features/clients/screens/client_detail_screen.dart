@@ -217,6 +217,79 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                     ),
                   ],
                 ),
+                
+                // Additional Information (only show if available)
+                if (client.websiteAddress != null && client.websiteAddress!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.language,
+                        size: isMobile ? 16 : 18,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          client.websiteAddress!,
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 15,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                
+                if (client.companyRegistrationNumber != null && client.companyRegistrationNumber!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.business_center,
+                        size: isMobile ? 16 : 18,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Reg: ${client.companyRegistrationNumber!}',
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 15,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+                
+                if (client.vatNumber != null && client.vatNumber!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.receipt_long,
+                        size: isMobile ? 16 : 18,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'VAT: ${client.vatNumber!}',
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 15,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ],
             ),
           ),

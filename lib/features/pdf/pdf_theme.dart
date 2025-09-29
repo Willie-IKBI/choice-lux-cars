@@ -297,4 +297,172 @@ class PdfTheme {
       buildBackground: watermarkBuilder,
     );
   }
+
+  // ---- CLIENT BRANDING METHODS ---------------------------------------------
+
+  /// Build client-branded header for vouchers
+  static pw.Widget buildClientBrandedHeader({
+    required pw.MemoryImage? logo,
+    required String companyName,
+    String? website,
+    String? phone,
+    String? email,
+  }) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
+      children: [
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: spacing8),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              if (logo != null)
+                pw.Container(
+                  height: 50,
+                  width: 120,
+                  child: pw.Image(logo, fit: pw.BoxFit.contain),
+                )
+              else
+                pw.Text(companyName, style: titleLarge),
+            ],
+          ),
+        ),
+        // Client contact strip
+        if (website != null || phone != null || email != null)
+          pw.Container(
+            padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            decoration: pw.BoxDecoration(
+              color: grey100,
+              borderRadius: pw.BorderRadius.only(
+                bottomLeft: pw.Radius.circular(radius),
+                bottomRight: pw.Radius.circular(radius),
+              ),
+            ),
+            child: pw.Column(
+              crossAxisAlignment: pw.CrossAxisAlignment.start,
+              children: [
+                if (website != null)
+                  pw.Text('Web: $website', style: captionText),
+                if (phone != null || email != null) pw.SizedBox(height: spacing4),
+                if (phone != null && email != null)
+                  pw.Row(
+                    children: [
+                      pw.Expanded(child: pw.Text('Phone: $phone', style: captionText)),
+                      pw.Expanded(child: pw.Text('Email: $email', style: captionText)),
+                    ],
+                  )
+                else if (phone != null)
+                  pw.Text('Phone: $phone', style: captionText)
+                else if (email != null)
+                  pw.Text('Email: $email', style: captionText),
+              ],
+            ),
+          ),
+        pw.SizedBox(height: spacing16),
+      ],
+    );
+  }
+
+  /// Build clean, balanced card for information display
+  static pw.Widget buildBalancedCard({
+    required String title,
+    required List<pw.Widget> children,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.all(spacing16),
+      decoration: pw.BoxDecoration(
+        color: PdfColors.white,
+        borderRadius: pw.BorderRadius.circular(radius),
+        border: pw.Border.all(color: grey300, width: 0.5),
+      ),
+      child: pw.Column(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.Text(title, style: titleSmall),
+          pw.SizedBox(height: spacing12),
+          ...children,
+        ],
+      ),
+    );
+  }
+
+  /// Build clean section header with professional styling
+  static pw.Widget buildCleanSectionHeader(String title) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        pw.Text(
+          title,
+          style: pw.TextStyle(
+            font: fontBold,
+            fontSize: 16,
+            color: grey800,
+            letterSpacing: 0.5,
+          ),
+        ),
+        pw.SizedBox(height: spacing8),
+        pw.Container(
+          height: 2,
+          width: 60,
+          decoration: pw.BoxDecoration(
+            color: brandGold,
+            borderRadius: pw.BorderRadius.circular(1),
+          ),
+        ),
+        pw.SizedBox(height: spacing16),
+      ],
+    );
+  }
+
+  /// Build client footer with both client and service provider info
+  static pw.Widget buildClientFooter({
+    String? clientWebsite,
+    String? clientEmail,
+  }) {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(top: spacing16),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: grey300, width: 1)),
+      ),
+      child: pw.Column(
+        children: [
+          if (clientWebsite != null || clientEmail != null) ...[
+            pw.Text(
+              '${clientWebsite ?? ''} | ${clientEmail ?? ''}',
+              style: captionText,
+              textAlign: pw.TextAlign.center,
+            ),
+            pw.SizedBox(height: spacing4),
+          ],
+          pw.Text(
+            'www.choiceluxcars.com | bookings@choiceluxcars.com',
+            style: captionText,
+            textAlign: pw.TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+  /// Build clean info row with consistent spacing
+  static pw.Widget buildCleanInfoRow(String label, String value) {
+    return pw.Padding(
+      padding: const pw.EdgeInsets.symmetric(vertical: spacing4),
+      child: pw.Row(
+        crossAxisAlignment: pw.CrossAxisAlignment.start,
+        children: [
+          pw.SizedBox(
+            width: labelWidth,
+            child: pw.Text(label, style: labelText),
+          ),
+          pw.Expanded(child: pw.Text(value, style: bodyText)),
+        ],
+      ),
+    );
+  }
+
+  /// Build professional spacing for consistent layout
+  static pw.Widget buildProfessionalSpacing({double height = spacing20}) {
+    return pw.SizedBox(height: height);
+  }
 }

@@ -75,6 +75,12 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
     final TimeOfDay? picked = await showTimePicker(
       context: context,
       initialTime: _pickupTime,
+      builder: (BuildContext context, Widget? child) {
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: child ?? Container(),
+        );
+      },
     );
     if (picked != null && picked != _pickupTime) {
       setState(() {

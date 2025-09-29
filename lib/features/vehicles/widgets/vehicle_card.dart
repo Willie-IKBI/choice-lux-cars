@@ -49,14 +49,14 @@ class VehicleCard extends StatelessWidget {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(borderRadius),
-        splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-        highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.05),
+        splashColor: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
+        highlightColor: ChoiceLuxTheme.richGold.withValues(alpha:0.05),
         child: Card(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(borderRadius),
           ),
           elevation: isMobile ? 4 : 8,
-          shadowColor: Colors.black.withOpacity(0.2),
+          shadowColor: Colors.black.withValues(alpha:0.2),
           child: Container(
             padding: EdgeInsets.all(cardPadding),
             constraints: BoxConstraints(
@@ -115,7 +115,7 @@ class VehicleCard extends StatelessWidget {
                                 vertical: 4,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.grey[600]!.withOpacity(0.9),
+                                color: Colors.grey[600]!.withValues(alpha:0.9),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
@@ -181,7 +181,7 @@ class VehicleCard extends StatelessWidget {
       width: double.infinity,
       height: imageHeight,
       decoration: BoxDecoration(
-        color: const Color(0xFFF4F4F4),
+        color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(8),
       ),
       child: Icon(

@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_tokens.dart';
+import 'package:choice_lux_cars/core/constants.dart';
 
 /// A reusable status pill widget for displaying status information consistently
 class StatusPill extends StatelessWidget {
@@ -83,7 +86,7 @@ class JobStatusPill extends StatelessWidget {
     // Import the JobStatus enum and extension
     // This would need to be imported from the job model
     // For now, we'll use a simple mapping
-    final (color, label) = _getStatusInfo(status);
+    final (color, label) = _getStatusInfo(status, context);
 
     return StatusPill(
       color: color,
@@ -95,22 +98,25 @@ class JobStatusPill extends StatelessWidget {
     );
   }
 
-  (Color, String) _getStatusInfo(String status) {
+  (Color, String) _getStatusInfo(String status, BuildContext context) {
+    final theme = Theme.of(context);
+    final appTokens = theme.extension<AppTokens>();
+    
     switch (status.toLowerCase()) {
-      case 'assigned':
-        return (const Color(0xFFD4AF37), 'ASSIGNED'); // richGold
-      case 'started':
-        return (const Color(0xFFF59E0B), 'STARTED'); // orange
-      case 'in_progress':
-        return (const Color(0xFF3B82F6), 'IN PROGRESS'); // infoColor
-      case 'ready_to_close':
-        return (const Color(0xFF8B5CF6), 'READY TO CLOSE'); // purple
-      case 'completed':
-        return (const Color(0xFF059669), 'COMPLETED'); // successColor
-      case 'cancelled':
-        return (const Color(0xFFDC2626), 'CANCELLED'); // errorColor
+      case JobStatusConstants.assigned:
+        return (appTokens?.brandGold ?? ChoiceLuxTheme.richGold, JobStatusLabels.assigned);
+      case JobStatusConstants.started:
+        return (ChoiceLuxTheme.orange, JobStatusLabels.started);
+      case JobStatusConstants.inProgress:
+        return (ChoiceLuxTheme.infoColor, JobStatusLabels.inProgress);
+      case JobStatusConstants.readyToClose:
+        return (ChoiceLuxTheme.purple, JobStatusLabels.readyToClose);
+      case JobStatusConstants.completed:
+        return (ChoiceLuxTheme.successColor, JobStatusLabels.completed);
+      case JobStatusConstants.cancelled:
+        return (ChoiceLuxTheme.errorColor, JobStatusLabels.cancelled);
       default:
-        return (const Color(0xFFC0C0C0), 'OPEN'); // platinumSilver
+        return (ChoiceLuxTheme.platinumSilver, JobStatusLabels.open);
     }
   }
 }

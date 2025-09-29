@@ -75,4 +75,38 @@ class User {
   }
 
   Map<String, dynamic> toJson() => toMap();
+
+  User copyWith({
+    String? id,
+    String? displayName,
+    String? role,
+    String? driverLicence,
+    DateTime? driverLicExp,
+    String? pdp,
+    DateTime? pdpExp,
+    String? profileImage,
+    String? address,
+    String? number,
+    String? kin,
+    String? kinNumber,
+    String? userEmail,
+    String? status,
+  }) {
+    return User(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      role: role ?? this.role,
+      driverLicence: driverLicence ?? this.driverLicence,
+      driverLicExp: driverLicExp ?? this.driverLicExp,
+      pdp: pdp ?? this.pdp,
+      pdpExp: pdpExp ?? this.pdpExp,
+      profileImage: profileImage ?? this.profileImage,
+      address: address ?? this.address,
+      number: number ?? this.number,
+      kin: kin ?? this.kin,
+      kinNumber: kinNumber ?? this.kinNumber,
+      userEmail: userEmail ?? this.userEmail,
+      status: status ?? this.status,
+    );
+  }
 }

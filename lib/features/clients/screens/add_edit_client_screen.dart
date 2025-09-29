@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -26,6 +27,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   final _contactPersonController = TextEditingController();
   final _contactNumberController = TextEditingController();
   final _contactEmailController = TextEditingController();
+  final _websiteAddressController = TextEditingController();
+  final _companyRegistrationNumberController = TextEditingController();
+  final _vatNumberController = TextEditingController();
 
   bool _isLoading = false;
   String? _companyLogoUrl;
@@ -40,6 +44,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       _contactPersonController.text = widget.client!.contactPerson;
       _contactNumberController.text = widget.client!.contactNumber;
       _contactEmailController.text = widget.client!.contactEmail;
+      _websiteAddressController.text = widget.client!.websiteAddress ?? '';
+      _companyRegistrationNumberController.text = widget.client!.companyRegistrationNumber ?? '';
+      _vatNumberController.text = widget.client!.vatNumber ?? '';
       _companyLogoUrl = widget.client!.companyLogo;
     }
   }
@@ -50,6 +57,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     _contactPersonController.dispose();
     _contactNumberController.dispose();
     _contactEmailController.dispose();
+    _websiteAddressController.dispose();
+    _companyRegistrationNumberController.dispose();
+    _vatNumberController.dispose();
     super.dispose();
   }
 
@@ -190,6 +200,53 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               if (value == null || value.trim().isEmpty) {
                 return 'Phone number is required';
               }
+              return null;
+            },
+            isMobile: isMobile,
+          ),
+
+          const SizedBox(height: 24),
+
+          // Additional Company Information
+          _buildSectionTitle('Additional Information', isMobile),
+          const SizedBox(height: 16),
+
+          _buildTextField(
+            controller: _websiteAddressController,
+            label: 'Website Address',
+            hint: 'Enter website URL (optional)',
+            icon: Icons.language,
+            keyboardType: TextInputType.url,
+            validator: (value) {
+              // Optional field - no validation required
+              return null;
+            },
+            isMobile: isMobile,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildTextField(
+            controller: _companyRegistrationNumberController,
+            label: 'Company Registration Number',
+            hint: 'Enter company registration number (optional)',
+            icon: Icons.business_center,
+            validator: (value) {
+              // Optional field - no validation required
+              return null;
+            },
+            isMobile: isMobile,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildTextField(
+            controller: _vatNumberController,
+            label: 'VAT Number',
+            hint: 'Enter VAT number (optional)',
+            icon: Icons.receipt_long,
+            validator: (value) {
+              // Optional field - no validation required
               return null;
             },
             isMobile: isMobile,
@@ -439,22 +496,33 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         _isLogoUploading = true;
       });
 
-      // Show source selection dialog
-      final ImageSource? source = await _showImageSourceDialog();
-      if (source == null) {
-        setState(() {
-          _isLogoUploading = false;
-        });
-        return;
-      }
+      // For web, skip source selection and use file picker directly
+      File? imageFile;
+      if (kIsWeb) {
+        imageFile = await UploadService.pickImage(
+          source: ImageSource.gallery, // This will be ignored on web
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+      } else {
+        // Show source selection dialog for mobile
+        final ImageSource? source = await _showImageSourceDialog();
+        if (source == null) {
+          setState(() {
+            _isLogoUploading = false;
+          });
+          return;
+        }
 
-      // Pick image
-      final File? imageFile = await UploadService.pickImage(
-        source: source,
-        maxWidth: 800,
-        maxHeight: 800,
-        imageQuality: 85,
-      );
+        // Pick image
+        imageFile = await UploadService.pickImage(
+          source: source,
+          maxWidth: 800,
+          maxHeight: 800,
+          imageQuality: 85,
+        );
+      }
 
       if (imageFile == null) {
         setState(() {
@@ -464,19 +532,38 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       }
 
       // Validate file size
-      if (!UploadService.isValidFileSize(imageFile, maxSizeMB: 5.0)) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('File size must be less than 5MB'),
-              backgroundColor: ChoiceLuxTheme.errorColor,
-            ),
-          );
+      if (kIsWeb) {
+        // For web, validate bytes size (5MB = 5 * 1024 * 1024 bytes)
+        if (UploadService.webImageBytes != null && UploadService.webImageBytes!.length > 5 * 1024 * 1024) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('File size must be less than 5MB'),
+                backgroundColor: ChoiceLuxTheme.errorColor,
+              ),
+            );
+          }
+          setState(() {
+            _isLogoUploading = false;
+          });
+          return;
         }
-        setState(() {
-          _isLogoUploading = false;
-        });
-        return;
+      } else {
+        // For mobile, validate file size
+        if (!UploadService.isValidFileSize(imageFile, maxSizeMB: 5.0)) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('File size must be less than 5MB'),
+                backgroundColor: ChoiceLuxTheme.errorColor,
+              ),
+            );
+          }
+          setState(() {
+            _isLogoUploading = false;
+          });
+          return;
+        }
       }
 
       // Ensure bucket exists
@@ -588,6 +675,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         contactNumber: _contactNumberController.text.trim(),
         contactEmail: _contactEmailController.text.trim(),
         companyLogo: _companyLogoUrl,
+        websiteAddress: _websiteAddressController.text.trim().isEmpty ? null : _websiteAddressController.text.trim(),
+        companyRegistrationNumber: _companyRegistrationNumberController.text.trim().isEmpty ? null : _companyRegistrationNumberController.text.trim(),
+        vatNumber: _vatNumberController.text.trim().isEmpty ? null : _vatNumberController.text.trim(),
       );
 
       if (widget.client == null) {

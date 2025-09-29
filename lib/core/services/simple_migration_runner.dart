@@ -33,7 +33,7 @@ class SimpleMigrationRunner {
 
     try {
       // Check if columns already exist
-      final result = await _supabase
+      await _supabase
           .from('driver_flow')
           .select('current_step')
           .limit(1);
@@ -50,7 +50,7 @@ class SimpleMigrationRunner {
 
     try {
       // Check if table exists
-      final result = await _supabase
+      await _supabase
           .from('trip_progress')
           .select('id')
           .limit(1);
@@ -74,7 +74,7 @@ class SimpleMigrationRunner {
 
     try {
       // Check if columns exist
-      final result = await _supabase
+      await _supabase
           .from('notifications')
           .select('notification_type')
           .limit(1);
@@ -89,13 +89,13 @@ class SimpleMigrationRunner {
   static Future<bool> checkMigrationsApplied() async {
     try {
       // Check if new columns exist in driver_flow table
-      final result = await _supabase
+      await _supabase
           .from('driver_flow')
           .select('current_step, current_trip_index, progress_percentage')
           .limit(1);
 
       // Check if trip_progress table exists
-      final tripResult = await _supabase
+      await _supabase
           .from('trip_progress')
           .select('id')
           .limit(1);
@@ -112,7 +112,7 @@ class SimpleMigrationRunner {
 
     try {
       // Test 1: Check if we can connect to driver_flow
-      final driverFlowResult = await _supabase
+      await _supabase
           .from('driver_flow')
           .select('job_id')
           .limit(1);

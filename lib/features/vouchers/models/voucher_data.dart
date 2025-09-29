@@ -1,4 +1,3 @@
-import 'dart:convert';
 
 class VoucherData {
   final int jobId;
@@ -6,6 +5,11 @@ class VoucherData {
   final DateTime? quoteDate;
   final String companyName;
   final String? companyLogo;
+  final String? clientWebsite;
+  final String? clientContactPhone;
+  final String? clientContactEmail;
+  final String? clientRegistrationNumber;
+  final String? clientVatNumber;
   final String agentName;
   final String agentContact;
   final String passengerName;
@@ -24,6 +28,11 @@ class VoucherData {
     this.quoteDate,
     required this.companyName,
     this.companyLogo,
+    this.clientWebsite,
+    this.clientContactPhone,
+    this.clientContactEmail,
+    this.clientRegistrationNumber,
+    this.clientVatNumber,
     required this.agentName,
     required this.agentContact,
     required this.passengerName,
@@ -46,6 +55,11 @@ class VoucherData {
           : null,
       companyName: json['company_name']?.toString() ?? 'Choice Lux Cars',
       companyLogo: json['company_logo']?.toString(),
+      clientWebsite: json['client_website']?.toString(),
+      clientContactPhone: json['client_contact_phone']?.toString(),
+      clientContactEmail: json['client_contact_email']?.toString(),
+      clientRegistrationNumber: json['client_registration']?.toString(),
+      clientVatNumber: json['client_vat_number']?.toString(),
       agentName: json['agent_name']?.toString() ?? 'Not available',
       agentContact: json['agent_contact']?.toString() ?? 'Not available',
       passengerName: json['passenger_name']?.toString() ?? 'Not specified',
@@ -77,6 +91,11 @@ class VoucherData {
       'quote_date': quoteDate?.toIso8601String(),
       'company_name': companyName,
       'company_logo': companyLogo,
+      'client_website': clientWebsite,
+      'client_contact_phone': clientContactPhone,
+      'client_contact_email': clientContactEmail,
+      'client_registration': clientRegistrationNumber,
+      'client_vat_number': clientVatNumber,
       'agent_name': agentName,
       'agent_contact': agentContact,
       'passenger_name': passengerName,
@@ -136,6 +155,11 @@ class VoucherData {
     DateTime? quoteDate,
     String? companyName,
     String? companyLogo,
+    String? clientWebsite,
+    String? clientContactPhone,
+    String? clientContactEmail,
+    String? clientRegistrationNumber,
+    String? clientVatNumber,
     String? agentName,
     String? agentContact,
     String? passengerName,
@@ -154,6 +178,11 @@ class VoucherData {
       quoteDate: quoteDate ?? this.quoteDate,
       companyName: companyName ?? this.companyName,
       companyLogo: companyLogo ?? this.companyLogo,
+      clientWebsite: clientWebsite ?? this.clientWebsite,
+      clientContactPhone: clientContactPhone ?? this.clientContactPhone,
+      clientContactEmail: clientContactEmail ?? this.clientContactEmail,
+      clientRegistrationNumber: clientRegistrationNumber ?? this.clientRegistrationNumber,
+      clientVatNumber: clientVatNumber ?? this.clientVatNumber,
       agentName: agentName ?? this.agentName,
       agentContact: agentContact ?? this.agentContact,
       passengerName: passengerName ?? this.passengerName,

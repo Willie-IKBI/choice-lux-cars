@@ -111,3 +111,58 @@ class RouteNames {
   static const String vehicles = 'vehicles';
   static const String vouchers = 'vouchers';
 }
+
+// Job status constants
+class JobStatusConstants {
+  static const String pending = 'pending';
+  static const String assigned = 'assigned';
+  static const String started = 'started';
+  static const String inProgress = 'in_progress';
+  static const String readyToClose = 'ready_to_close';
+  static const String completed = 'completed';
+  static const String cancelled = 'cancelled';
+  static const String open = 'open';
+}
+
+// Job status display labels
+class JobStatusLabels {
+  static const String assigned = 'ASSIGNED';
+  static const String started = 'STARTED';
+  static const String inProgress = 'IN PROGRESS';
+  static const String readyToClose = 'READY TO CLOSE';
+  static const String completed = 'COMPLETED';
+  static const String cancelled = 'CANCELLED';
+  static const String open = 'OPEN';
+}
+
+// Currency and banking constants
+class CurrencyConstants {
+  static const String defaultCurrency = 'ZAR';
+  static const String currencySymbol = 'R';
+  static const String swiftCode = 'SBZAZAJJ';
+  static const String bankName = 'Standard Bank';
+  static const String accountName = 'Choice Lux Cars (Pty) Ltd';
+  static const String accountNumber = '1234567890';
+  static const String branchCode = '051001';
+}
+
+// Storage constants
+class StorageConstants {
+  static const String pdfDocumentsBucket = 'pdfdocuments';
+  static const String invoicesFolder = 'invoices';
+  static const String quotesFolder = 'quotes';
+  static const String vouchersFolder = 'vouchers';
+  static const String jobPhotosFolder = 'job-photos';
+  static const String clientPhotosFolder = 'client-photos';
+}
+
+// Default values
+class DefaultValues {
+  static const String defaultPassengerName = 'Unnamed Job';
+  static const String defaultClientName = 'Unknown Client';
+  static const String defaultDriverName = 'Unassigned';
+  static const String defaultVehicleName = 'Vehicle not assigned';
+  static const String defaultJobNumberPrefix = 'Job #';
+  static const String defaultCompanyName = 'Choice Lux Cars';
+  static const String defaultCompanyWebsite = 'www.choiceluxcars.com';
+}

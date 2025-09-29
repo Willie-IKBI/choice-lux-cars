@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:flutter/foundation.dart';
+import 'package:file_picker/file_picker.dart';
 
 class UploadService {
   static final SupabaseClient _supabase = Supabase.instance.client;
@@ -187,7 +189,7 @@ class UploadService {
   // LEGACY METHODS FOR BACKWARD COMPATIBILITY
   // ========================================
 
-  /// Pick an image from gallery or camera (legacy method)
+  /// Pick an image from gallery or camera (web-compatible)
   static Future<File?> pickImage({
     required ImageSource source,
     int maxWidth = 800,
@@ -195,24 +197,50 @@ class UploadService {
     int imageQuality = 85,
   }) async {
     try {
-      final ImagePicker picker = ImagePicker();
-      final XFile? image = await picker.pickImage(
-        source: source,
-        maxWidth: maxWidth.toDouble(),
-        maxHeight: maxHeight.toDouble(),
-        imageQuality: imageQuality,
-      );
+      if (kIsWeb) {
+        // For web, use file_picker and return null - we'll handle bytes directly
+        final result = await FilePicker.platform.pickFiles(
+          type: FileType.image,
+          allowMultiple: false,
+        );
+        
+        if (result != null && result.files.isNotEmpty) {
+          final file = result.files.first;
+          if (file.bytes != null) {
+            // Store bytes globally for web upload
+            _webImageBytes = file.bytes!;
+            // Return a dummy file for web - we'll use bytes directly in upload
+            return File('web_temp.jpg');
+          }
+        }
+        return null;
+      } else {
+        // Use image_picker for mobile platforms
+        final ImagePicker picker = ImagePicker();
+        final XFile? image = await picker.pickImage(
+          source: source,
+          maxWidth: maxWidth.toDouble(),
+          maxHeight: maxHeight.toDouble(),
+          imageQuality: imageQuality,
+        );
 
-      if (image != null) {
-        return File(image.path);
+        if (image != null) {
+          return File(image.path);
+        }
+        return null;
       }
-      return null;
     } catch (e) {
       throw Exception('Failed to pick image: $e');
     }
   }
 
-  /// Upload company logo (legacy method)
+  // Global variable to store web image bytes
+  static Uint8List? _webImageBytes;
+  
+  // Getter for web image bytes (for validation)
+  static Uint8List? get webImageBytes => _webImageBytes;
+
+  /// Upload company logo (web-compatible)
   static Future<String> uploadCompanyLogo({
     required File logoFile,
     String? companyName,
@@ -222,7 +250,12 @@ class UploadService {
           ? '${companyName.replaceAll(RegExp(r'[^a-zA-Z0-9]'), '_')}_${DateTime.now().millisecondsSinceEpoch}.jpg'
           : 'logo_${DateTime.now().millisecondsSinceEpoch}.jpg';
 
-      return await uploadImage(logoFile, 'clc_images', 'logos', fileName);
+      // For web, use stored bytes directly to avoid file system issues
+      if (kIsWeb && _webImageBytes != null) {
+        return await uploadImageBytes(_webImageBytes!, 'clc_images', 'logos', fileName);
+      } else {
+        return await uploadImage(logoFile, 'clc_images', 'logos', fileName);
+      }
     } catch (e) {
       throw Exception('Failed to upload company logo: $e');
     }

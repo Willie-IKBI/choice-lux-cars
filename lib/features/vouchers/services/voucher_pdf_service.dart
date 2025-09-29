@@ -39,33 +39,37 @@ class VoucherPdfService {
       pw.MultiPage(
         pageTheme: pageTheme,
         header: (context) => context.pageNumber == 1
-            ? PdfTheme.buildHeroHeader(
+            ? PdfTheme.buildClientBrandedHeader(
                 logo: logoImage,
                 companyName: data.companyName,
+                website: data.clientWebsite,
+                phone: data.clientContactPhone,
+                email: data.clientContactEmail,
               ) // page 1
             : PdfTheme.buildCompactHeader(
                 logo: logoImage,
                 documentNumber: 'VN#${data.jobId}',
               ), // page 2+
-        footer: (context) => PdfTheme.buildFooter(
-          'www.choiceluxcars.com | bookings@choiceluxcars.com',
+        footer: (context) => PdfTheme.buildClientFooter(
+          clientWebsite: data.clientWebsite,
+          clientEmail: data.clientContactEmail,
         ),
         build: (context) => [
           _sectionVoucherSummary(data, dateFormat),
-          pw.SizedBox(height: PdfTheme.spacing20),
+          PdfTheme.buildProfessionalSpacing(),
 
           _sectionAgentPassenger(data),
-          pw.SizedBox(height: PdfTheme.spacing20),
+          PdfTheme.buildProfessionalSpacing(),
 
           _sectionDriverVehicle(data),
-          pw.SizedBox(height: PdfTheme.spacing20),
+          PdfTheme.buildProfessionalSpacing(),
 
           if (data.hasTransportDetails)
             _sectionTransportDetails(data, dateFormat, timeFormat),
-          if (data.hasTransportDetails) pw.SizedBox(height: PdfTheme.spacing20),
+          if (data.hasTransportDetails) PdfTheme.buildProfessionalSpacing(),
 
           if (data.hasNotes) _sectionNotes(data),
-          if (data.hasNotes) pw.SizedBox(height: PdfTheme.spacing20),
+          if (data.hasNotes) PdfTheme.buildProfessionalSpacing(),
 
           _sectionTermsAndConditions(),
         ],
@@ -79,16 +83,12 @@ class VoucherPdfService {
 
   // ---- SECTIONS -------------------------------------------------------------
 
-  // Simple section header for long sections
-  pw.Widget _sectionHeader(String title) {
-    return PdfTheme.buildSectionHeader(title);
-  }
 
   pw.Widget _sectionVoucherSummary(VoucherData data, DateFormat dateFormat) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('VOUCHER SUMMARY'),
+        PdfTheme.buildCleanSectionHeader('VOUCHER CONFIRMATION'),
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -124,43 +124,31 @@ class VoucherPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('AGENT & PASSENGER INFORMATION'),
+        PdfTheme.buildCleanSectionHeader('AGENT & PASSENGER INFORMATION'),
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            // Agent
+            // Agent Card
             pw.Expanded(
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
-                decoration: _innerBox(),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    _subTitle('Agent Information'),
-                    pw.SizedBox(height: PdfTheme.spacing12),
-                    _infoRow('Name', data.agentName),
-                    _infoRow('Contact', data.agentContact),
-                  ],
-                ),
+              child: PdfTheme.buildBalancedCard(
+                title: 'Agent Information',
+                children: [
+                  PdfTheme.buildCleanInfoRow('Name', data.agentName),
+                  PdfTheme.buildCleanInfoRow('Contact', data.agentContact),
+                ],
               ),
             ),
             pw.SizedBox(width: PdfTheme.spacing16),
-            // Passenger
+            // Passenger Card
             pw.Expanded(
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
-                decoration: _innerBox(),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    _subTitle('Passenger Information'),
-                    pw.SizedBox(height: PdfTheme.spacing12),
-                    _infoRow('Name', data.passengerName),
-                    _infoRow('Contact', data.passengerContact),
-                    _infoRow('Passengers', data.numberPassengers.toString()),
-                    _infoRow('Luggage', data.luggage),
-                  ],
-                ),
+              child: PdfTheme.buildBalancedCard(
+                title: 'Passenger Information',
+                children: [
+                  PdfTheme.buildCleanInfoRow('Name', data.passengerName),
+                  PdfTheme.buildCleanInfoRow('Contact', data.passengerContact),
+                  PdfTheme.buildCleanInfoRow('Passengers', data.numberPassengers.toString()),
+                  PdfTheme.buildCleanInfoRow('Luggage', data.luggage),
+                ],
               ),
             ),
           ],
@@ -173,12 +161,12 @@ class VoucherPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('DRIVER & VEHICLE INFORMATION'),
+        PdfTheme.buildCleanSectionHeader('DRIVER & VEHICLE INFORMATION'),
         pw.Column(
           children: [
-            _infoRow('Driver Name', data.driverName),
-            _infoRow('Driver Contact', data.driverContact),
-            _infoRow('Vehicle Type', data.vehicleType),
+            PdfTheme.buildCleanInfoRow('Driver Name', data.driverName),
+            PdfTheme.buildCleanInfoRow('Driver Contact', data.driverContact),
+            PdfTheme.buildCleanInfoRow('Vehicle Type', data.vehicleType),
           ],
         ),
       ],
@@ -219,7 +207,7 @@ class VoucherPdfService {
 
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [_sectionHeader('TRANSPORT DETAILS'), table],
+      children: [PdfTheme.buildCleanSectionHeader('TRANSPORT SCHEDULE'), table],
     );
   }
 
@@ -227,7 +215,7 @@ class VoucherPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('NOTES'),
+        PdfTheme.buildCleanSectionHeader('NOTES'),
         pw.Row(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -256,7 +244,7 @@ class VoucherPdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('TERMS & CONDITIONS'),
+        PdfTheme.buildCleanSectionHeader('TERMS & CONDITIONS'),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
@@ -284,14 +272,6 @@ class VoucherPdfService {
 
   // ---- SMALL HELPERS --------------------------------------------------------
 
-  pw.BoxDecoration _innerBox() => pw.BoxDecoration(
-    color: PdfColors.white,
-    borderRadius: pw.BorderRadius.circular(6),
-    border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-  );
-
-  pw.Widget _subTitle(String text) => pw.Text(text, style: PdfTheme.titleSmall);
-
   pw.Widget _kv(String k, String v) => pw.Padding(
     padding: const pw.EdgeInsets.only(bottom: 4),
     child: pw.Row(
@@ -305,10 +285,6 @@ class VoucherPdfService {
       ],
     ),
   );
-
-  pw.Widget _infoRow(String label, String value) {
-    return PdfTheme.buildInfoRow(label, value);
-  }
 
   pw.Widget _numberedTerm(int n, String text) {
     return pw.Padding(

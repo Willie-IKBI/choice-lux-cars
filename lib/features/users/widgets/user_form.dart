@@ -445,27 +445,34 @@ class _UserFormState extends State<UserForm> {
                     readOnly: true,
                   ),
             const SizedBox(height: 12),
-            DropdownButtonFormField<String>(
-              value: status,
-              decoration: _modernInputDecoration('Status'),
-              items: statuses
-                  .map(
-                    (s) => DropdownMenuItem<String>(
-                      value: s.value,
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(s.icon, size: 18),
-                          const SizedBox(width: 8),
-                          Text(s.label),
-                        ],
-                      ),
-                    ),
+            isAdmin
+                ? DropdownButtonFormField<String>(
+                    value: status,
+                    decoration: _modernInputDecoration('Status'),
+                    items: statuses
+                        .map(
+                          (s) => DropdownMenuItem<String>(
+                            value: s.value,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(s.icon, size: 18),
+                                const SizedBox(width: 8),
+                                Text(s.label),
+                              ],
+                            ),
+                          ),
+                        )
+                        .toList(),
+                    onChanged: (val) => setState(() => status = val),
+                    onSaved: (val) => status = val,
                   )
-                  .toList(),
-              onChanged: (val) => setState(() => status = val),
-              onSaved: (val) => status = val,
-            ),
+                : TextFormField(
+                    initialValue: _getStatusLabel(status),
+                    decoration: _modernInputDecoration('Status'),
+                    style: const TextStyle(fontSize: 15),
+                    readOnly: true,
+                  ),
           ],
         ),
       ),
@@ -908,6 +915,15 @@ class _UserFormState extends State<UserForm> {
         }
       }
     }
+  }
+
+  String _getStatusLabel(String? status) {
+    if (status == null) return 'Unknown';
+    final statusOption = statuses.firstWhere(
+      (s) => s.value == status,
+      orElse: () => const _StatusOption('unknown', 'Unknown', Icons.help_outline),
+    );
+    return statusOption.label;
   }
 }
 

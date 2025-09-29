@@ -35,6 +35,30 @@ class VehiclesRepository {
     }
   }
 
+  /// Fetch a single vehicle by ID
+  Future<Result<Vehicle?>> fetchVehicleById(String vehicleId) async {
+    try {
+      Log.d('Fetching vehicle by ID: $vehicleId');
+
+      final response = await _supabase
+          .from('vehicles')
+          .select()
+          .eq('id', vehicleId)
+          .maybeSingle();
+
+      if (response != null) {
+        Log.d('Vehicle found: ${response['make']} ${response['model']}');
+        return Result.success(Vehicle.fromJson(response));
+      } else {
+        Log.d('Vehicle not found');
+        return const Result.success(null);
+      }
+    } catch (error) {
+      Log.e('Error fetching vehicle by ID: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Create a new vehicle
   Future<Result<Map<String, dynamic>>> createVehicle(Vehicle vehicle) async {
     try {

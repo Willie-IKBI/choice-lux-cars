@@ -682,4 +682,59 @@ class DriverFlowApiService {
       return [];
     }
   }
+
+  /// Get active jobs for monitoring
+  static Future<List<Map<String, dynamic>>> getActiveJobsForMonitoring() async {
+    try {
+      Log.d('Getting active jobs for monitoring');
+      
+      final response = await _supabase
+          .from('jobs')
+          .select('*')
+          .inFilter('status', ['assigned', 'started', 'in_progress'])
+          .order('created_at', ascending: false);
+      
+      return List<Map<String, dynamic>>.from(response);
+    } catch (e) {
+      Log.e('Error getting active jobs: $e');
+      return [];
+    }
+  }
+
+  /// Get driver activity summary
+  static Future<Map<String, dynamic>> getDriverActivitySummary() async {
+    try {
+      Log.d('Getting driver activity summary');
+      
+      // Get total drivers
+      final driversResponse = await _supabase
+          .from('profiles')
+          .select('id')
+          .eq('role', 'driver');
+      
+      // Get active drivers (with active jobs)
+      final activeJobsResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .inFilter('status', ['assigned', 'started', 'in_progress']);
+      
+      final activeDriverIds = activeJobsResponse
+          .map((job) => job['driver_id'])
+          .toSet()
+          .toList();
+      
+      return {
+        'total_drivers': driversResponse.length,
+        'active_drivers': activeDriverIds.length,
+        'inactive_drivers': driversResponse.length - activeDriverIds.length,
+      };
+    } catch (e) {
+      Log.e('Error getting driver activity summary: $e');
+      return {
+        'total_drivers': 0,
+        'active_drivers': 0,
+        'inactive_drivers': 0,
+      };
+    }
+  }
 }

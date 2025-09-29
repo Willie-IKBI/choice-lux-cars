@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
@@ -12,10 +11,8 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
-import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
-import 'package:uuid/uuid.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
   final String? jobId; // null for create, non-null for edit
@@ -742,7 +739,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
           width: 1,
         ),
       ),
@@ -754,7 +751,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: const Icon(
@@ -793,10 +790,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                     width: 1,
                   ),
                 ),
@@ -816,7 +813,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           Container(
             height: 8,
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(4),
             ),
             child: FractionallySizedBox(
@@ -869,10 +866,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
-        color: const Color(0xFF1E1E1E),
+        color: Theme.of(context).colorScheme.surface,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.1),
           width: 1,
         ),
       ),
@@ -884,7 +881,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
@@ -931,7 +928,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
               width: 1,
             ),
           ),
@@ -954,7 +951,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search for a client...',
                   hintStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
                   ),
                   prefixIcon: const Icon(
                     Icons.search,
@@ -991,10 +988,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
                     border: Border(
                       top: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
                         width: 1,
                       ),
                     ),
@@ -1032,7 +1029,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     color: ChoiceLuxTheme.charcoalGray,
                     border: Border(
                       top: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
                         width: 1,
                       ),
                     ),
@@ -1073,10 +1070,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       return Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
             width: 1,
           ),
         ),
@@ -1107,10 +1104,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           return Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
                 width: 1,
               ),
             ),
@@ -1160,10 +1157,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           loading: () => Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
                 width: 1,
               ),
             ),
@@ -1187,10 +1184,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           error: (error, stack) => Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+              color: ChoiceLuxTheme.errorColor.withValues(alpha:0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                color: ChoiceLuxTheme.errorColor.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -1371,10 +1368,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           child: Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFF121212),
+              color: Theme.of(context).colorScheme.surface,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -1394,7 +1391,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     style: TextStyle(
                       color: _selectedJobStartDate != null
                           ? ChoiceLuxTheme.softWhite
-                          : ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                          : ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
                       fontSize: 16,
                     ),
                   ),
@@ -1462,7 +1459,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
             ),
             prefixIcon: Icon(
               icon,
@@ -1470,18 +1467,18 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               size: 20,
             ),
             filled: true,
-            fillColor: const Color(0xFF121212),
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -1549,7 +1546,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
             ),
             prefixIcon: Icon(
               icon,
@@ -1557,18 +1554,18 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               size: 20,
             ),
             filled: true,
-            fillColor: const Color(0xFF121212),
+            fillColor: Theme.of(context).colorScheme.surface,
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 width: 1,
               ),
             ),
@@ -1615,10 +1612,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: const Color(0xFF121212),
+            color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
               width: 1,
             ),
           ),
@@ -1631,7 +1628,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     onChanged: (value) =>
                         setState(() => _collectPayment = value),
                     activeColor: ChoiceLuxTheme.richGold,
-                    activeTrackColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    activeTrackColor: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1659,7 +1656,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.1),
           width: 1,
         ),
       ),
@@ -1710,7 +1707,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     style: OutlinedButton.styleFrom(
                       foregroundColor: ChoiceLuxTheme.platinumSilver,
                       side: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                       ),
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
@@ -1740,7 +1737,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   style: OutlinedButton.styleFrom(
                     foregroundColor: ChoiceLuxTheme.platinumSilver,
                     side: BorderSide(
-                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                     ),
                     padding: const EdgeInsets.symmetric(
                       horizontal: 32,

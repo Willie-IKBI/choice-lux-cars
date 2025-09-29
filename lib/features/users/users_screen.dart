@@ -115,17 +115,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             showBackButton: true,
             onBackPressed: () => context.go('/'),
             onSignOut: () async {
-              await Supabase.instance.client.auth.signOut();
+              await ref.read(auth.authProvider.notifier).signOut();
             },
         actions: [
           IconButton(
             icon: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(10),
                 border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
                   width: 1,
                 ),
               ),
@@ -304,11 +304,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha:0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -319,19 +319,19 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         decoration: InputDecoration(
           hintText: isMobile ? 'Search users...' : 'Search by name or email',
           hintStyle: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
             fontSize: isMobile ? 14 : 16,
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
             size: isMobile ? 20 : 24,
           ),
           suffixIcon: _search.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
                     size: isMobile ? 20 : 24,
                   ),
                   onPressed: () => setState(() => _search = ''),
@@ -365,11 +365,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha:0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -381,7 +381,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         decoration: InputDecoration(
           hintText: hintText,
           hintStyle: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
             fontSize: isMobile ? 14 : 16,
           ),
           border: InputBorder.none,
@@ -397,7 +397,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         ),
         icon: Icon(
           Icons.arrow_drop_down,
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
           size: isMobile ? 20 : 24,
         ),
         items: items,
@@ -424,7 +424,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+          backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
           foregroundColor: ChoiceLuxTheme.richGold,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -432,7 +432,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
               width: 1,
             ),
           ),
@@ -463,7 +463,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -579,13 +579,13 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ), // Ensure minimum 44px touch target
             decoration: BoxDecoration(
               color: isSelected
-                  ? ChoiceLuxTheme.richGold.withOpacity(0.1)
+                  ? ChoiceLuxTheme.richGold.withValues(alpha:0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? ChoiceLuxTheme.richGold
-                    : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
                 width: 1,
               ),
             ),
@@ -636,10 +636,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     required VoidCallback onEdit,
     required VoidCallback onToggleStatus,
   }) {
+    // Check if current user is administrator
+    final userProfile = ref.read(auth.currentUserProfileProvider);
+    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+    
     return Dismissible(
       key: Key(user.id),
-      direction: DismissDirection.endToStart, // Only swipe from right to left
-      confirmDismiss: (direction) async {
+      direction: isAdmin ? DismissDirection.endToStart : DismissDirection.none, // Only allow swipe for administrators
+      confirmDismiss: isAdmin ? (direction) async {
         // Show confirmation dialog
         return await showDialog<bool>(
           context: context,
@@ -675,17 +679,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ],
           ),
         );
-      },
-      onDismissed: (direction) {
+      } : null,
+      onDismissed: isAdmin ? (direction) {
         onToggleStatus();
-      },
+      } : null,
       background: Container(
         margin: EdgeInsets.symmetric(vertical: isSmallMobile ? 4 : 6),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+          color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
             width: 1,
           ),
         ),
@@ -738,7 +742,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   : 24,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
               shape: BoxShape.circle,
             ),
             child: CircularProgressIndicator(
@@ -804,7 +808,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   : 28,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -861,11 +865,29 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   void _toggleUserStatus(User user) {
-    // TODO: Implement user status toggle functionality
-    // This would typically call a provider method to update the user status
+    // Check if current user is administrator
+    final userProfile = ref.read(auth.currentUserProfileProvider);
+    if (userProfile?.role?.toLowerCase() != 'administrator') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Access Denied: Only administrators can change user status'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      return;
+    }
+
+    // Implement user status toggle functionality
+    final newStatus = user.status == 'active' ? 'deactivated' : 'active';
+    final updatedUser = user.copyWith(status: newStatus);
+    
+    // Update user through provider
+    ref.read(usersp.usersProvider.notifier).updateUser(updatedUser);
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('${user.displayName} status updated'),
+        content: Text('${user.displayName} status updated to $newStatus'),
         backgroundColor: ChoiceLuxTheme.richGold,
         behavior: SnackBarBehavior.floating,
       ),

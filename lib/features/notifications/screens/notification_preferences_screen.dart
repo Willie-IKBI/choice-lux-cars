@@ -314,6 +314,12 @@ class _NotificationPreferencesScreenState
           final newTime = await showTimePicker(
             context: context,
             initialTime: time,
+            builder: (BuildContext context, Widget? child) {
+              return MediaQuery(
+                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+                child: child ?? Container(),
+              );
+            },
           );
           if (newTime != null) {
             onChanged(newTime);

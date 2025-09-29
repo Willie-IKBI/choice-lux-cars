@@ -1201,16 +1201,19 @@ class _TransportDialogState extends State<_TransportDialog> {
       context: context,
       initialTime: _selectedPickupTime ?? TimeOfDay.now(),
       builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.dark(
-              primary: ChoiceLuxTheme.richGold,
-              onPrimary: Colors.black,
-              surface: ChoiceLuxTheme.charcoalGray,
-              onSurface: ChoiceLuxTheme.softWhite,
+        return MediaQuery(
+          data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+          child: Theme(
+            data: Theme.of(context).copyWith(
+              colorScheme: const ColorScheme.dark(
+                primary: ChoiceLuxTheme.richGold,
+                onPrimary: Colors.black,
+                surface: ChoiceLuxTheme.charcoalGray,
+                onSurface: ChoiceLuxTheme.softWhite,
+              ),
             ),
+            child: child!,
           ),
-          child: child!,
         );
       },
     );

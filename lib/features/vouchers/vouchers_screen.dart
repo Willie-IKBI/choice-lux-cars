@@ -47,7 +47,8 @@ class VouchersScreen extends StatelessWidget {
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {
-              // TODO: Implement add voucher
+              // Navigate to create voucher screen
+              context.push('/vouchers/create');
             },
             child: const Icon(Icons.add),
           ),

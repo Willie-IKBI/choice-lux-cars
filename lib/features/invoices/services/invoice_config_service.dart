@@ -1,9 +1,10 @@
 import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
+import 'package:choice_lux_cars/core/constants.dart';
 
 class InvoiceConfigService {
   // Tax configuration
   static const double defaultTaxRate = 0.0; // 0% VAT (no tax)
-  static const String defaultCurrency = 'ZAR';
+  static const String defaultCurrency = CurrencyConstants.defaultCurrency;
 
   // Payment terms
   static const int defaultPaymentDays = 30;
@@ -11,23 +12,23 @@ class InvoiceConfigService {
 
   // Banking details
   static const BankingDetails defaultBankingDetails = BankingDetails(
-    bankName: 'Standard Bank',
-    accountName: 'Choice Lux Cars (Pty) Ltd',
-    accountNumber: '1234567890',
-    branchCode: '051001',
-    swiftCode: 'SBZAZAJJ',
+    bankName: CurrencyConstants.bankName,
+    accountName: CurrencyConstants.accountName,
+    accountNumber: CurrencyConstants.accountNumber,
+    branchCode: CurrencyConstants.branchCode,
+    swiftCode: CurrencyConstants.swiftCode,
   );
 
   // Company details
-  static const String defaultCompanyName = 'Choice Lux Cars';
-  static const String defaultCompanyWebsite = 'www.choiceluxcars.com';
+  static const String defaultCompanyName = DefaultValues.defaultCompanyName;
+  static const String defaultCompanyWebsite = DefaultValues.defaultCompanyWebsite;
 
   // Invoice numbering
   static const String invoiceNumberPrefix = 'INV-';
 
   // Storage configuration
-  static const String storageBucket = 'pdfdocuments';
-  static const String storageFolder = 'invoices';
+  static const String storageBucket = StorageConstants.pdfDocumentsBucket;
+  static const String storageFolder = StorageConstants.invoicesFolder;
 
   /// Calculate tax amount based on total
   static double calculateTaxAmount(double totalAmount) {

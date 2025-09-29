@@ -35,6 +35,30 @@ class ClientsRepository {
     }
   }
 
+  /// Fetch a single client by ID
+  Future<Result<Client?>> fetchClientById(String clientId) async {
+    try {
+      Log.d('Fetching client by ID: $clientId');
+
+      final response = await _supabase
+          .from('clients')
+          .select()
+          .eq('id', clientId)
+          .maybeSingle();
+
+      if (response != null) {
+        Log.d('Client found: ${response['company_name']}');
+        return Result.success(Client.fromJson(response));
+      } else {
+        Log.d('Client not found');
+        return const Result.success(null);
+      }
+    } catch (error) {
+      Log.e('Error fetching client by ID: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Create a new client
   Future<Result<Map<String, dynamic>>> createClient(Client client) async {
     try {
@@ -123,7 +147,7 @@ class ClientsRepository {
     }
   }
 
-  /// Search clients by company name
+  /// Search clients by company name, contact person, website, registration number, or VAT number
   Future<Result<List<Client>>> searchClients(String query) async {
     try {
       Log.d('Searching clients with query: $query');
@@ -131,7 +155,7 @@ class ClientsRepository {
       final response = await _supabase
           .from('clients')
           .select()
-          .ilike('company_name', '%$query%')
+          .or('company_name.ilike.%$query%,contact_person.ilike.%$query%,website_address.ilike.%$query%,company_registration_number.ilike.%$query%,vat_number.ilike.%$query%')
           .order('company_name', ascending: true);
 
       Log.d('Found ${response.length} clients matching query: $query');
@@ -165,10 +189,6 @@ class ClientsRepository {
     }
   }
 
-  /// Fetch client by ID (alias for getClientById for consistency)
-  Future<Result<Client?>> fetchClientById(String clientId) async {
-    return getClientById(clientId);
-  }
 
   /// Fetch client with agents
   Future<Result<Map<String, dynamic>?>> fetchClientWithAgents(
