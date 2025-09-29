@@ -30,6 +30,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   final _websiteAddressController = TextEditingController();
   final _companyRegistrationNumberController = TextEditingController();
   final _vatNumberController = TextEditingController();
+  final _billingAddressController = TextEditingController();
 
   bool _isLoading = false;
   String? _companyLogoUrl;
@@ -47,6 +48,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       _websiteAddressController.text = widget.client!.websiteAddress ?? '';
       _companyRegistrationNumberController.text = widget.client!.companyRegistrationNumber ?? '';
       _vatNumberController.text = widget.client!.vatNumber ?? '';
+      _billingAddressController.text = widget.client!.billingAddress ?? '';
       _companyLogoUrl = widget.client!.companyLogo;
     }
   }
@@ -60,6 +62,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     _websiteAddressController.dispose();
     _companyRegistrationNumberController.dispose();
     _vatNumberController.dispose();
+    _billingAddressController.dispose();
     super.dispose();
   }
 
@@ -245,6 +248,22 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             label: 'VAT Number',
             hint: 'Enter VAT number (optional)',
             icon: Icons.receipt_long,
+            validator: (value) {
+              // Optional field - no validation required
+              return null;
+            },
+            isMobile: isMobile,
+          ),
+
+          const SizedBox(height: 16),
+
+          _buildTextField(
+            controller: _billingAddressController,
+            label: 'Billing Address',
+            hint: 'Enter billing address for invoices (optional)',
+            icon: Icons.location_on,
+            keyboardType: TextInputType.multiline,
+            maxLines: 3,
             validator: (value) {
               // Optional field - no validation required
               return null;
@@ -440,10 +459,12 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     required String? Function(String?) validator,
     required bool isMobile,
     TextInputType? keyboardType,
+    int? maxLines,
   }) {
     return TextFormField(
       controller: controller,
       keyboardType: keyboardType,
+      maxLines: maxLines,
       validator: validator,
       style: TextStyle(
         color: ChoiceLuxTheme.softWhite,
@@ -678,7 +699,9 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         websiteAddress: _websiteAddressController.text.trim().isEmpty ? null : _websiteAddressController.text.trim(),
         companyRegistrationNumber: _companyRegistrationNumberController.text.trim().isEmpty ? null : _companyRegistrationNumberController.text.trim(),
         vatNumber: _vatNumberController.text.trim().isEmpty ? null : _vatNumberController.text.trim(),
+        billingAddress: _billingAddressController.text.trim().isEmpty ? null : _billingAddressController.text.trim(),
       );
+
 
       if (widget.client == null) {
         // Add new client
@@ -705,7 +728,13 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       }
 
       if (mounted) {
-        context.go('/clients');
+        if (widget.client == null) {
+          // New client - go to clients list
+          context.go('/clients');
+        } else {
+          // Edit client - go back to client detail screen
+          context.go('/clients/${widget.client!.id}');
+        }
       }
     } catch (error) {
       if (mounted) {

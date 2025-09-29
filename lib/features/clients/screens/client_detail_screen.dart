@@ -42,6 +42,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   }
 
   @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh client data when screen becomes active (e.g., returning from edit)
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      ref.invalidate(clientProvider(widget.clientId));
+    });
+  }
+
+  @override
   void dispose() {
     _tabController.dispose();
     super.dispose();
@@ -51,6 +60,11 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   Widget build(BuildContext context) {
     final clientAsync = ref.watch(clientProvider(widget.clientId));
     final agentsAsync = ref.watch(agentsNotifierProvider(widget.clientId));
+
+    // Add refresh capability
+    void refreshClient() {
+      ref.invalidate(clientProvider(widget.clientId));
+    }
 
     return Stack(
       children: [
@@ -72,6 +86,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             subtitle: 'View and manage client information',
             showBackButton: true,
             onBackPressed: () => context.go('/clients'),
+            actions: [
+              IconButton(
+                onPressed: refreshClient,
+                icon: const Icon(Icons.refresh),
+                tooltip: 'Refresh client data',
+              ),
+            ],
           ),
           body: SafeArea(
             child: LayoutBuilder(
@@ -285,6 +306,32 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                             color: ChoiceLuxTheme.platinumSilver,
                           ),
                           overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                if (client.billingAddress != null && client.billingAddress!.isNotEmpty) ...[
+                  const SizedBox(height: 6),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: isMobile ? 16 : 18,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          'Address: ${client.billingAddress!}',
+                          style: TextStyle(
+                            fontSize: isMobile ? 13 : 15,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                          maxLines: 2,
                         ),
                       ),
                     ],

@@ -1,36 +1,26 @@
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_utilities.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_config.dart';
 
 class InvoicePdfService {
-  static const String logoUrl =
-      'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
-
-  // ---- THEME / TOKENS -------------------------------------------------------
-
-  // Using shared PdfTheme for consistent styling across all documents
 
   // ---- PUBLIC API -----------------------------------------------------------
 
   Future<Uint8List> buildInvoicePdf(InvoiceData data) async {
     try {
-      // Load logo (graceful fallback)
-      pw.MemoryImage? logoImage;
-      try {
-        final response = await http.get(Uri.parse(logoUrl));
-        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-          logoImage = pw.MemoryImage(response.bodyBytes);
-        }
-      } catch (_) {
-        /* ignore */
-      }
+      // Load logo using shared utility
+      final logoImage = await PdfUtilities.loadLogo(PdfConfig.defaultLogoUrl);
 
-      final currency = NumberFormat.currency(locale: 'en_ZA', symbol: 'R');
-      final dateFormat = DateFormat('dd/MM/yyyy');
+      final currency = NumberFormat.currency(
+        locale: PdfConfig.defaultLocale, 
+        symbol: PdfConfig.defaultCurrencySymbol,
+      );
+      final dateFormat = DateFormat(PdfConfig.defaultDateFormat);
 
       final doc = pw.Document();
 
@@ -42,467 +32,335 @@ class InvoicePdfService {
         pw.MultiPage(
           pageTheme: pageTheme,
           header: (context) => context.pageNumber == 1
-              ? PdfTheme.buildHeroHeader(
-                  logo: logoImage,
-                  companyName: 'Choice Lux Cars',
-                ) // page 1
+              ? _buildInvoiceHeader(logoImage) // page 1
               : PdfTheme.buildCompactHeader(
                   logo: logoImage,
                   documentNumber: data.invoiceNumber.replaceFirst('INV-', ''),
                 ), // page 2+
-          footer: (context) => PdfTheme.buildFooter(
-            'www.choiceluxcars.com | bookings@choiceluxcars.com',
-          ),
+          footer: (context) => _buildInvoiceFooter(),
           build: (context) => [
             _sectionInvoiceSummary(data, dateFormat),
-            pw.SizedBox(height: PdfTheme.spacing20),
+            PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
 
-            _sectionEnhancedTwoColumn(data, currency),
-            pw.SizedBox(height: PdfTheme.spacing20),
+            _sectionClientAgent(data),
+            PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
+
+            _sectionServicePayment(data, currency),
+            PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
 
             _sectionTransportDetails(data, dateFormat),
-            pw.SizedBox(height: PdfTheme.spacing20),
+            PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
 
             _sectionBankingDetails(data),
-            pw.SizedBox(height: PdfTheme.spacing20),
+            PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
 
             _sectionTermsAndConditions(),
           ],
         ),
       );
 
-      return doc.save();
+      return await doc.save();
     } catch (e) {
-      throw Exception('Failed to generate invoice PDF: $e');
+      throw PdfUtilities.createPdfException('invoice', e);
     }
   }
 
-  // ---- WATERMARK ------------------------------------------------------------
+  // ---- SECTIONS (using voucher-style layout patterns) ------------------------
 
-  // Using shared PdfTheme.buildInvoiceWatermark() instead
-
-  // ---- HEADERS / FOOTER -----------------------------------------------------
-
-  // Using shared PdfTheme.buildHeroHeader() and PdfTheme.buildCompactHeader() instead
-
-  // ---- SECTION CARDS --------------------------------------------------------
-
-  pw.Widget _sectionCard({
-    required String title,
-    required pw.Widget child,
-    pw.Widget? footer,
-  }) {
-    return pw.Container(
-      decoration: pw.BoxDecoration(
-        border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-        borderRadius: pw.BorderRadius.circular(PdfTheme.radius),
-        color: PdfTheme.grey100,
-      ),
-      child: pw.Column(
-        children: [
-          pw.Container(
-            padding: const pw.EdgeInsets.all(16),
-            child: pw.Text(
-              title,
-              style: pw.TextStyle(
-                font: PdfTheme.fontBold,
-                fontSize: 16,
-                color: PdfColors.black,
-              ),
-            ),
-          ),
-          pw.Container(
-            width: double.infinity,
-            padding: const pw.EdgeInsets.all(16),
-            decoration: pw.BoxDecoration(
-              color: PdfColors.white,
-              borderRadius: pw.BorderRadius.only(
-                bottomLeft: pw.Radius.circular(PdfTheme.radius - 1),
-                bottomRight: pw.Radius.circular(PdfTheme.radius - 1),
-              ),
-            ),
-            child: child,
-          ),
-          if (footer != null) footer,
-        ],
-      ),
-    );
-  }
-
-  // ---- SECTIONS -------------------------------------------------------------
-
-  // Simple section header for long sections
-  pw.Widget _sectionHeader(String title) {
-    return PdfTheme.buildSectionHeader(title);
-  }
-
-  // Sub-section header for smaller sections
-  pw.Widget _sectionSubHeader(String title) {
-    return pw.Text(
-      title,
-      style: pw.TextStyle(
-        font: PdfTheme.fontBold,
-        fontSize: 12,
-        color: PdfTheme.grey700,
-      ),
-    );
-  }
-
-  // Card section for short content (keeps existing design)
   pw.Widget _sectionInvoiceSummary(InvoiceData data, DateFormat dateFormat) {
-    return _sectionCard(
-      title: 'INVOICE SUMMARY',
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Expanded(
-            child: pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                pw.Text(
-                  'Transport Services',
-                  style: pw.TextStyle(
-                    font: PdfTheme.fontBold,
-                    fontSize: 14,
-                    color: PdfTheme.grey700,
-                  ),
-                ),
-                pw.SizedBox(height: 6),
-                pw.Text(
-                  'Professional chauffeur service for ${data.numberPassengers} passenger(s)',
-                  style: pw.TextStyle(
-                    fontSize: 11,
-                    color: PdfTheme.grey700,
-                    lineSpacing: 2,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          pw.SizedBox(width: PdfTheme.spacing20),
-          pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.end,
-            children: [
-              _kv(
-                'Invoice Number',
-                data.invoiceNumber.replaceFirst('INV-', ''),
-              ),
-              _kv('Invoice Date', dateFormat.format(data.invoiceDate)),
-              _kv('Due Date', dateFormat.format(data.dueDate)),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _sectionEnhancedTwoColumn(InvoiceData data, NumberFormat currency) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('SERVICE DETAILS'),
-        
-        // Client & Agent Information (top section)
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _sectionSubHeader('CLIENT & AGENT INFORMATION'),
-            pw.SizedBox(height: 8),
-            pw.Row(
-              crossAxisAlignment: pw.CrossAxisAlignment.start,
-              children: [
-                // Client
-                pw.Expanded(
-                  child: pw.Container(
-                    padding: const pw.EdgeInsets.all(12),
-                    decoration: _innerBox(),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        _subTitle('Client'),
-                        pw.SizedBox(height: 8),
-                        _infoRow('Company', data.companyName),
-                        if (data.clientContactPerson != null)
-                          _infoRow('Contact Person', data.clientContactPerson!),
-                        if (data.clientContactNumber != null)
-                          _infoRow('Phone', data.clientContactNumber!),
-                        if (data.clientContactEmail != null)
-                          _infoRow('Email', data.clientContactEmail!),
-                      ],
+        PdfTheme.buildCleanSectionHeader('INVOICE SUMMARY'),
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Transport Services', style: PdfTheme.titleSmall),
+                    pw.SizedBox(height: 6),
+                    pw.Text(
+                      'Professional chauffeur service for ${data.numberPassengers} passenger(s)',
+                      style: PdfTheme.bodyText.copyWith(lineSpacing: 2),
                     ),
-                  ),
+                  ],
                 ),
-                pw.SizedBox(width: 8),
-                // Agent
-                pw.Expanded(
-                  child: pw.Container(
-                    padding: const pw.EdgeInsets.all(12),
-                    decoration: _innerBox(),
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        _subTitle('Agent'),
-                        pw.SizedBox(height: 8),
-                        _infoRow('Agent', data.agentName),
-                        _infoRow('Contact', data.agentContact),
-                        if (data.agentEmail != null)
-                          _infoRow('Email', data.agentEmail!),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
-        ),
-        
-        pw.SizedBox(height: PdfTheme.spacing16),
-        
-        // Service & Payment Information (bottom section, full width)
-        pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            _sectionSubHeader('SERVICE & PAYMENT'),
-            pw.SizedBox(height: 8),
-            pw.Container(
-              padding: const pw.EdgeInsets.all(16),
-              decoration: _innerBox(),
-              child: pw.Row(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+              ),
+              pw.SizedBox(width: PdfTheme.spacing20),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  // Service Details (left side)
-                  pw.Expanded(
-                    flex: 2,
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        _subTitle('Service Details'),
-                        pw.SizedBox(height: 12),
-                        _infoRow('Passenger', data.passengerName),
-                        _infoRow('Job Number', data.jobId.toString()),
-                        _infoRow('Vehicle', data.vehicleType),
-                        _infoRow('Driver', data.driverName),
-                        _infoRow('Passengers', '${data.numberPassengers}'),
-                        _infoRow('Luggage', data.luggage),
-                      ],
-                    ),
-                  ),
-                  pw.SizedBox(width: PdfTheme.spacing20),
-                  // Payment Summary (right side)
-                  pw.Expanded(
-                    flex: 1,
-                    child: pw.Column(
-                      crossAxisAlignment: pw.CrossAxisAlignment.start,
-                      children: [
-                        _subTitle('Payment Summary'),
-                        pw.SizedBox(height: 12),
-                        pw.Column(
-                          crossAxisAlignment: pw.CrossAxisAlignment.start,
-                          children: [
-                            pw.Text(
-                              'Total Amount:',
-                              style: pw.TextStyle(
-                                font: PdfTheme.fontBold,
-                                fontSize: 12,
-                                color: PdfTheme.grey800,
-                              ),
-                            ),
-                            pw.SizedBox(height: 4),
-                            pw.Text(
-                              data.formattedTotalAmount.replaceAll('ZAR', 'R'),
-                              style: pw.TextStyle(
-                                font: PdfTheme.fontBold,
-                                fontSize: 16,
-                                color: PdfTheme.grey800,
-                              ),
-                            ),
-                          ],
-                        ),
-                        pw.SizedBox(height: 12),
-                        pw.Container(
-                          padding: const pw.EdgeInsets.all(12),
-                          decoration: pw.BoxDecoration(
-                            color: PdfTheme.gold50,
-                            borderRadius: pw.BorderRadius.circular(6),
-                            border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
-                          ),
-                          child: pw.Text(
-                            'Payment on Receipt',
-                            style: pw.TextStyle(
-                              font: PdfTheme.fontBold,
-                              fontSize: 12,
+                  PdfUtilities.buildKeyValue('Invoice Number', data.invoiceNumber.replaceFirst('INV-', '')),
+                  PdfUtilities.buildKeyValue('Invoice Date', dateFormat.format(data.invoiceDate)),
+                  PdfUtilities.buildKeyValue('Due Date', dateFormat.format(data.dueDate)),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _sectionClientAgent(InvoiceData data) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        PdfTheme.buildCleanSectionHeader('CLIENT & AGENT INFORMATION'),
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Client - Enhanced with more balanced content
+              pw.Expanded(
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Client Information',
+                  children: [
+                    PdfTheme.buildCleanInfoRow('Company', data.companyName),
+                    if (data.clientContactPerson != null)
+                      PdfTheme.buildCleanInfoRow('Contact Person', data.clientContactPerson!),
+                    if (data.clientContactNumber != null)
+                      PdfTheme.buildCleanInfoRow('Phone', data.clientContactNumber!),
+                    if (data.clientContactEmail != null)
+                      PdfTheme.buildCleanInfoRow('Email', data.clientContactEmail!),
+                    // Add spacing to balance with agent card
+                    if (data.clientContactPerson == null && data.clientContactNumber == null && data.clientContactEmail == null)
+                      pw.SizedBox(height: PdfTheme.spacing16),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: PdfTheme.spacing12), // Increased spacing for better balance
+              // Agent - Enhanced with more balanced content
+              pw.Expanded(
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Agent Information',
+                  children: [
+                    PdfTheme.buildCleanInfoRow('Agent Name', data.agentName),
+                    PdfTheme.buildCleanInfoRow('Contact Number', data.agentContact),
+                    if (data.agentEmail != null)
+                      PdfTheme.buildCleanInfoRow('Email', data.agentEmail!)
+                    else
+                      pw.SizedBox(height: PdfTheme.spacing8), // Add spacing if no email
+                    // Add extra spacing to balance with client card
+                    pw.SizedBox(height: PdfTheme.spacing8),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  pw.Widget _sectionServicePayment(InvoiceData data, NumberFormat currency) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.start,
+      children: [
+        PdfTheme.buildCleanSectionHeader('SERVICE & PAYMENT'),
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Service Details (left side) - Better balanced
+              pw.Expanded(
+                flex: 2,
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Service Details',
+                  children: [
+                    PdfTheme.buildCleanInfoRow('Passenger Name', data.passengerName),
+                    PdfTheme.buildCleanInfoRow('Job Number', data.jobId.toString()),
+                    PdfTheme.buildCleanInfoRow('Vehicle Type', data.vehicleType),
+                    PdfTheme.buildCleanInfoRow('Driver Name', data.driverName),
+                    PdfTheme.buildCleanInfoRow('Number of Passengers', '${data.numberPassengers}'),
+                    PdfTheme.buildCleanInfoRow('Luggage', data.luggage),
+                    // Add spacing for better balance
+                    pw.SizedBox(height: PdfTheme.spacing8),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: PdfTheme.spacing12), // Increased spacing
+              // Payment Summary (right side) - Enhanced layout
+              pw.Expanded(
+                flex: 1,
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Payment Summary',
+                  children: [
+                    pw.Container(
+                      padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
+                      decoration: pw.BoxDecoration(
+                        color: PdfTheme.gold50,
+                        borderRadius: pw.BorderRadius.circular(8),
+                        border: pw.Border.all(color: PdfTheme.gold400, width: 1),
+                      ),
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.center,
+                        children: [
+                          pw.Text(
+                            'Total Amount',
+                            style: PdfTheme.labelText.copyWith(
                               color: PdfTheme.gold700,
                             ),
                           ),
-                        ),
-                      ],
+                          pw.SizedBox(height: PdfTheme.spacing4),
+                          pw.Text(
+                            data.formattedTotalAmount.replaceAll('ZAR', 'R'),
+                            style: PdfTheme.titleLarge.copyWith(
+                              color: PdfTheme.gold700,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          pw.SizedBox(height: PdfTheme.spacing8),
+                          pw.Container(
+                            padding: const pw.EdgeInsets.symmetric(
+                              horizontal: PdfTheme.spacing8,
+                              vertical: PdfTheme.spacing4,
+                            ),
+                            decoration: pw.BoxDecoration(
+                              color: PdfTheme.gold700,
+                              borderRadius: pw.BorderRadius.circular(4),
+                            ),
+                            child: pw.Text(
+                              'Payment on Receipt',
+                              style: PdfTheme.bodyText.copyWith(
+                                color: PdfColors.white,
+                                fontWeight: pw.FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
   }
 
-
   pw.Widget _sectionTransportDetails(InvoiceData data, DateFormat dateFormat) {
+    if (data.transport.isEmpty) {
+      return pw.SizedBox.shrink();
+    }
+
+    final table = pw.TableHelper.fromTextArray(
+      border: pw.TableBorder.all(color: PdfTheme.grey300, width: 0.5),
+      headerStyle: PdfTheme.labelText.copyWith(color: PdfColors.white),
+      headerDecoration: const pw.BoxDecoration(color: PdfColors.grey700),
+      cellStyle: PdfTheme.bodyText.copyWith(fontSize: 10),
+      cellAlignment: pw.Alignment.centerLeft,
+      cellPadding: const pw.EdgeInsets.symmetric(
+        horizontal: PdfTheme.spacing12,
+        vertical: PdfTheme.spacing8,
+      ),
+      headers: ['Date', 'Time', 'Pick-Up Location', 'Drop-Off Location'],
+      data: data.transport.map((trip) {
+        return [
+          DateFormat('dd MMM yyyy').format(trip.date),
+          trip.time,
+          trip.pickupLocation,
+          trip.dropoffLocation,
+        ];
+      }).toList(),
+      columnWidths: {
+        0: const pw.FixedColumnWidth(85),  // Date column
+        1: const pw.FixedColumnWidth(65),  // Time column
+        2: const pw.FlexColumnWidth(1.2),  // Pick-Up Location
+        3: const pw.FlexColumnWidth(1.2),  // Drop-Off Location
+      },
+    );
+
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
-      children: [
-        _sectionHeader('TRANSPORT DETAILS'),
-        if (data.transport.isNotEmpty)
-          pw.Container(
-            decoration: pw.BoxDecoration(
-              border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-              borderRadius: pw.BorderRadius.circular(6),
-            ),
-            child: pw.TableHelper.fromTextArray(
-              context: null,
-              headers: ['Date', 'Time', 'Pickup Location', 'Dropoff Location'],
-              data: data.transport.map((trip) {
-                return [
-                  trip.formattedDate,
-                  trip.time,
-                  trip.pickupLocation,
-                  trip.dropoffLocation,
-                ];
-              }).toList(),
-              headerStyle: pw.TextStyle(
-                font: PdfTheme.fontBold,
-                fontSize: 11,
-                color: PdfColors.white,
-              ),
-              headerDecoration: pw.BoxDecoration(
-                color: PdfTheme.grey700,
-              ),
-              cellStyle: pw.TextStyle(
-                fontSize: 10,
-                color: PdfTheme.grey800,
-              ),
-              cellDecoration: (int index, dynamic data, int columnIndex) => pw.BoxDecoration(
-                border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-                color: index % 2 == 0 ? PdfColors.white : PdfTheme.grey100,
-              ),
-              columnWidths: {
-                0: const pw.FixedColumnWidth(80), // Date
-                1: const pw.FixedColumnWidth(60), // Time
-                2: const pw.FlexColumnWidth(2),   // Pickup Location
-                3: const pw.FlexColumnWidth(2),   // Dropoff Location
-              },
-            ),
-          )
-        else
-          pw.Container(
-            padding: const pw.EdgeInsets.all(20),
-            decoration: _innerBox(),
-            child: pw.Center(
-              child: pw.Column(
-                children: [
-                  pw.Icon(
-                    pw.IconData(0xe7f2), // transport icon
-                    size: 24,
-                    color: PdfTheme.grey300,
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Text(
-                    'No transport details available',
-                    style: pw.TextStyle(
-                      fontSize: 12,
-                      color: PdfTheme.grey600,
-                      fontStyle: pw.FontStyle.italic,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
-      ],
+      children: [PdfTheme.buildCleanSectionHeader('TRANSPORT DETAILS'), table],
     );
   }
-
 
   pw.Widget _sectionBankingDetails(InvoiceData data) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('BANKING DETAILS'),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            // Banking Information
-            pw.Expanded(
-              flex: 2,
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(16),
-                decoration: _innerBox(),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+        PdfTheme.buildCleanSectionHeader('BANKING DETAILS'),
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Banking Information
+              pw.Expanded(
+                flex: 2,
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Payment Information',
                   children: [
-                    _subTitle('Payment Information'),
-                    pw.SizedBox(height: 12),
-                    _infoRow('Bank', data.bankingDetails.bankName),
-                    _infoRow('Account Name', data.bankingDetails.accountName),
-                    _infoRow('Account Number', data.bankingDetails.accountNumber),
-                    _infoRow('Branch Code', data.bankingDetails.branchCode),
-                    _infoRow('Swift Code', data.bankingDetails.swiftCode),
+                    PdfTheme.buildCleanInfoRow('Bank', 'ABSA Bank'),
+                    PdfTheme.buildCleanInfoRow('Account Name', 'CHOICELUX CARS (PTY) LTD'),
+                    PdfTheme.buildCleanInfoRow('Account Number', '411 511 5471'),
+                    PdfTheme.buildCleanInfoRow('Branch Code', '632005'),
+                    PdfTheme.buildCleanInfoRow('Account Type', 'Current Account'),
                     if (data.bankingDetails.reference != null)
-                      _infoRow('Reference', data.bankingDetails.reference!),
+                      PdfTheme.buildCleanInfoRow('Reference', data.bankingDetails.reference!),
                   ],
                 ),
               ),
-            ),
-            pw.SizedBox(width: PdfTheme.spacing16),
-            // Payment Terms
-            pw.Expanded(
-              flex: 1,
-              child: pw.Container(
-                padding: const pw.EdgeInsets.all(16),
-                decoration: pw.BoxDecoration(
-                  color: PdfTheme.gold50,
-                  borderRadius: pw.BorderRadius.circular(6),
-                  border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
-                ),
-                child: pw.Column(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    _subTitle('Payment Terms'),
-                    pw.SizedBox(height: 12),
-                    pw.Text(
-                      'Payment must be made on receipt of invoice.',
-                      style: pw.TextStyle(
-                        font: PdfTheme.fontBold,
-                        fontSize: 11,
-                        color: PdfTheme.gold700,
+              pw.SizedBox(width: PdfTheme.spacing8),
+              // Payment Terms
+              pw.Expanded(
+                flex: 1,
+                child: pw.Container(
+                  padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
+                  decoration: pw.BoxDecoration(
+                    color: PdfTheme.gold50,
+                    borderRadius: pw.BorderRadius.circular(6),
+                    border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
+                  ),
+                  child: pw.Column(
+                    crossAxisAlignment: pw.CrossAxisAlignment.start,
+                    children: [
+                      pw.Text(
+                        'Payment Terms',
+                        style: PdfTheme.titleSmall,
                       ),
-                    ),
-                    pw.SizedBox(height: 8),
-                    pw.Text(
-                      'No service delivery without payment.',
-                      style: pw.TextStyle(
-                        font: PdfTheme.fontBold,
-                        fontSize: 11,
-                        color: PdfTheme.gold700,
+                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
+                      pw.Text(
+                        'Payment must be made on receipt of invoice.',
+                        style: PdfTheme.bodyText.copyWith(
+                          color: PdfTheme.gold700,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
-                    ),
-                    pw.SizedBox(height: 12),
-                    pw.Divider(color: PdfTheme.gold400, thickness: 0.5),
-                    pw.SizedBox(height: 8),
-                    pw.Text(
-                      'Please use Invoice Number as payment reference',
-                      style: pw.TextStyle(
-                        fontSize: 10,
-                        color: PdfTheme.gold700,
-                        fontStyle: pw.FontStyle.italic,
+                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing4),
+                      pw.Text(
+                        'No service delivery without payment.',
+                        style: PdfTheme.bodyText.copyWith(
+                          color: PdfTheme.gold700,
+                          fontWeight: pw.FontWeight.bold,
+                        ),
                       ),
-                    ),
-                  ],
+                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
+                      pw.Divider(color: PdfTheme.gold400, thickness: 0.5),
+                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing4),
+                      pw.Text(
+                        'Please use Invoice Number as payment reference',
+                        style: PdfTheme.captionText.copyWith(
+                          color: PdfTheme.gold700,
+                          fontStyle: pw.FontStyle.italic,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -512,105 +370,148 @@ class InvoicePdfService {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
-        _sectionHeader('TERMS & CONDITIONS'),
+        PdfTheme.buildCleanSectionHeader('TERMS & CONDITIONS'),
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _numberedTerm(1, 'Payment must be made on receipt of invoice.'),
-            _numberedTerm(2, 'No service delivery without payment.'),
-            _numberedTerm(
-              3,
-              'All prices include VAT and are quoted in South African Rands (ZAR).',
-            ),
-            _numberedTerm(
-              4,
-              'For any queries regarding this invoice, please contact the agent listed.',
-            ),
-            _numberedTerm(
-              5,
-              'Thank you for choosing Choice Lux Cars for your transportation needs.',
-            ),
+            PdfUtilities.buildNumberedTerm(1, 'Payment is due upon receipt of this invoice.'),
+            PdfUtilities.buildNumberedTerm(2, 'Late payments may incur additional charges.'),
+            PdfUtilities.buildNumberedTerm(3, 'All services are subject to our standard terms and conditions.'),
+            PdfUtilities.buildNumberedTerm(4, 'For any queries, please contact us using the details provided.'),
           ],
         ),
       ],
     );
   }
 
-  // ---- SMALL HELPERS --------------------------------------------------------
+  // ---- CUSTOM HEADER & FOOTER FOR INVOICE -------------------------------------
 
-  pw.BoxDecoration _innerBox() => pw.BoxDecoration(
-    color: PdfColors.white,
-    borderRadius: pw.BorderRadius.circular(6),
-    border: pw.Border.all(color: PdfTheme.grey300, width: 0.5),
-  );
-
-  pw.Widget _subTitle(String text) => pw.Text(
-    text,
-    style: pw.TextStyle(
-      font: PdfTheme.fontBold,
-      fontSize: 14,
-      color: PdfTheme.grey800,
-    ),
-  );
-
-  pw.Widget _kv(String k, String v) => pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 4),
-    child: pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
+  /// Build professional invoice header with complete company branding
+  pw.Widget _buildInvoiceHeader(pw.MemoryImage? logoImage) {
+    return pw.Column(
+      crossAxisAlignment: pw.CrossAxisAlignment.stretch,
       children: [
-        pw.Text(
-          '$k: ',
-          style: pw.TextStyle(
-            font: PdfTheme.fontBold,
-            fontSize: 11,
-            color: PdfTheme.grey600,
-          ),
-        ),
-        pw.Text(v, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
-      ],
-    ),
-  );
-
-  pw.Widget _infoRow(String label, String value) {
-    return PdfTheme.buildInfoRow(label, value);
-  }
-
-  pw.Widget _numberedTerm(int n, String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 1, right: 8),
-            width: 16,
-            height: 16,
-            decoration: pw.BoxDecoration(
-              color: PdfTheme.grey700,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Center(
-              child: pw.Text(
-                '$n',
-                style: pw.TextStyle(
-                  font: PdfTheme.fontBold,
-                  fontSize: 8,
-                  color: PdfColors.white,
+        pw.Padding(
+          padding: const pw.EdgeInsets.only(bottom: PdfTheme.spacing8),
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.center,
+            children: [
+              // Logo
+              if (logoImage != null)
+                pw.Container(
+                  height: 50,
+                  width: 120,
+                  child: pw.Image(logoImage, fit: pw.BoxFit.contain),
+                ),
+              pw.SizedBox(width: PdfTheme.spacing12),
+              // Company name and details
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text(
+                      'Choice Lux Cars',
+                      style: PdfTheme.titleLarge.copyWith(
+                        color: PdfTheme.brandBlack,
+                        fontWeight: pw.FontWeight.bold,
+                      ),
+                    ),
+                    pw.SizedBox(height: PdfTheme.spacing4),
+                    pw.Text(
+                      'Professional Chauffeur Services',
+                      style: PdfTheme.bodyText.copyWith(
+                        color: PdfTheme.grey600,
+                        fontStyle: pw.FontStyle.italic,
+                      ),
+                    ),
+                  ],
                 ),
               ),
+              // Contact details
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
+                children: [
+                  pw.Text(
+                    'info@choiceluxcars.com',
+                    style: PdfTheme.bodyText.copyWith(
+                      color: PdfTheme.brandBlack,
+                      fontWeight: pw.FontWeight.bold,
+                    ),
+                  ),
+                  pw.Text(
+                    'www.choiceluxcars.com',
+                    style: PdfTheme.bodyText.copyWith(
+                      color: PdfTheme.grey600,
+                    ),
+                  ),
+                  pw.Text(
+                    'Reg: 202442067307',
+                    style: PdfTheme.captionText.copyWith(
+                      color: PdfTheme.grey600,
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+        // Contact strip
+        pw.Container(
+          padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+          decoration: const pw.BoxDecoration(
+            color: PdfTheme.grey100,
+            borderRadius: pw.BorderRadius.only(
+              bottomLeft: pw.Radius.circular(PdfTheme.radius),
+              bottomRight: pw.Radius.circular(PdfTheme.radius),
             ),
           ),
-          pw.Expanded(
-            child: pw.Text(
-              text,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfTheme.grey700,
-                lineSpacing: 1.2,
+          child: pw.Row(
+            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+            children: [
+              pw.Text(
+                'Phone: +27 74 239 2222',
+                style: PdfTheme.bodyText.copyWith(
+                  color: PdfTheme.grey700,
+                ),
               ),
-              softWrap: true,
-              overflow: pw.TextOverflow.visible,
+              pw.Text(
+                'Address: 25 Johnson Road, Bedfordview, Johannesburg',
+                style: PdfTheme.bodyText.copyWith(
+                  color: PdfTheme.grey700,
+                ),
+              ),
+            ],
+          ),
+        ),
+        pw.SizedBox(height: PdfTheme.spacing16),
+      ],
+    );
+  }
+
+  /// Build professional invoice footer with company details
+  pw.Widget _buildInvoiceFooter() {
+    return pw.Container(
+      padding: const pw.EdgeInsets.only(top: PdfTheme.spacing16),
+      decoration: const pw.BoxDecoration(
+        border: pw.Border(top: pw.BorderSide(color: PdfTheme.grey300, width: 1)),
+      ),
+      child: pw.Column(
+        children: [
+          pw.Text(
+            'www.choiceluxcars.com | info@choiceluxcars.com',
+            style: PdfTheme.captionText.copyWith(
+              color: PdfTheme.grey600,
             ),
+            textAlign: pw.TextAlign.center,
+          ),
+          pw.SizedBox(height: PdfTheme.spacing4),
+          pw.Text(
+            'Company Registration: 202442067307 | VAT Number: 402042067307',
+            style: PdfTheme.captionText.copyWith(
+              color: PdfTheme.grey600,
+              fontSize: 8,
+            ),
+            textAlign: pw.TextAlign.center,
           ),
         ],
       ),

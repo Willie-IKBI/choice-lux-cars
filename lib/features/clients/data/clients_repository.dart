@@ -70,6 +70,7 @@ class ClientsRepository {
         clientData['status'] = 'active';
       }
 
+
       final response = await _supabase
           .from('clients')
           .insert(clientData)
@@ -95,9 +96,11 @@ class ClientsRepository {
         );
       }
 
+      final clientData = client.toJson();
+
       await _supabase
           .from('clients')
-          .update(client.toJson())
+          .update(clientData)
           .eq('id', client.id!);
 
       Log.d('Client updated successfully');

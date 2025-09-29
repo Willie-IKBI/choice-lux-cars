@@ -54,6 +54,10 @@ class ClientsNotifier extends AsyncNotifier<List<Client>> {
       final result = await _clientsRepository.updateClient(client);
       if (result.isSuccess) {
         ref.invalidateSelf(); // Refresh the list
+        // Also invalidate the single client provider to refresh detail screen
+        if (client.id != null) {
+          ref.invalidate(clientProvider(client.id.toString()));
+        }
       } else {
         throw Exception(result.error!.message);
       }

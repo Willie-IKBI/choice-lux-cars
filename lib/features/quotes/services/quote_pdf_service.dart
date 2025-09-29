@@ -1,5 +1,4 @@
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
@@ -7,10 +6,10 @@ import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.dart';
 import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_utilities.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_config.dart';
 
 class QuotePdfService {
-  static const String _logoUrl =
-      'https://hgqrbekphumdlsifuamq.supabase.co/storage/v1/object/public/clc_images/app_images/logo%20-%20512.png';
 
   // ---- THEME / TOKENS -------------------------------------------------------
 
@@ -26,20 +25,16 @@ class QuotePdfService {
     required Map<String, dynamic>? vehicleData,
     required Map<String, dynamic>? driverData,
   }) async {
-    // Load logo (graceful fallback)
-    pw.MemoryImage? logoImage;
     try {
-      final response = await http.get(Uri.parse(_logoUrl));
-      if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-        logoImage = pw.MemoryImage(response.bodyBytes);
-      }
-    } catch (_) {
-      /* ignore */
-    }
+      // Load logo using shared utility
+      final logoImage = await PdfUtilities.loadLogo(PdfConfig.defaultLogoUrl);
 
-    final currency = NumberFormat.currency(locale: 'en_ZA', symbol: 'R');
-    final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
+      final currency = NumberFormat.currency(
+        locale: PdfConfig.defaultLocale, 
+        symbol: PdfConfig.defaultCurrencySymbol,
+      );
+      final dateFormat = DateFormat(PdfConfig.defaultDateFormat);
+      final timeFormat = DateFormat(PdfConfig.defaultTimeFormat);
 
     // Pre-compute table data & totals (single source of truth)
     final validDetails = transportDetails
@@ -118,9 +113,12 @@ class QuotePdfService {
           _sectionPaymentInfo(),
         ],
       ),
-    );
+      );
 
-    return doc.save();
+      return doc.save();
+    } catch (e) {
+      throw PdfUtilities.createPdfException('quote', e);
+    }
   }
 
   // ---- WATERMARK ------------------------------------------------------------
@@ -179,8 +177,8 @@ class QuotePdfService {
             pw.Column(
               crossAxisAlignment: pw.CrossAxisAlignment.end,
               children: [
-                _kv('Quote Number', 'QN#${quote.id}'),
-                _kv('Date', dateFormat.format(quote.quoteDate)),
+                PdfUtilities.buildKeyValue('Quote Number', 'QN#${quote.id}'),
+                PdfUtilities.buildKeyValue('Date', dateFormat.format(quote.quoteDate)),
               ],
             ),
           ],
@@ -201,9 +199,11 @@ class QuotePdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         _sectionHeader('CLIENT & SERVICE INFORMATION'),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
             // Client
             pw.Expanded(
               child: pw.Container(
@@ -214,16 +214,16 @@ class QuotePdfService {
                   children: [
                     _subTitle('Client Information'),
                     pw.SizedBox(height: 12),
-                    _infoRow(
+                    PdfUtilities.buildInfoRow(
                       'Company',
                       (client['company_name'] ?? 'Not specified').toString(),
                     ),
                     if (agent != null)
-                      _infoRow(
+                      PdfUtilities.buildInfoRow(
                         'Contact Person',
                         (agent['agent_name'] ?? 'Not specified').toString(),
                       ),
-                    _infoRow(
+                    PdfUtilities.buildInfoRow(
                       'Contact Number',
                       (quote.passengerContact ?? 'Not specified'),
                     ),
@@ -242,24 +242,25 @@ class QuotePdfService {
                   children: [
                     _subTitle('Service Information'),
                     pw.SizedBox(height: 12),
-                    _infoRow(
+                    PdfUtilities.buildInfoRow(
                       'Vehicle',
                       (vehicle?['make'] != null && vehicle?['model'] != null)
                           ? '${vehicle!['make']} ${vehicle['model']}'
                           : (quote.vehicleType ?? 'Not specified'),
                     ),
                     if (driver != null)
-                      _infoRow(
+                      PdfUtilities.buildInfoRow(
                         'Driver',
                         (driver['display_name'] ?? 'Not specified').toString(),
                       ),
-                    _infoRow('Job Date', dateFormat.format(quote.jobDate)),
-                    _infoRow('Location', (quote.location ?? 'Not specified')),
+                    PdfUtilities.buildInfoRow('Job Date', dateFormat.format(quote.jobDate)),
+                    PdfUtilities.buildInfoRow('Location', (quote.location ?? 'Not specified')),
                   ],
                 ),
               ),
             ),
           ],
+          ),
         ),
       ],
     );
@@ -272,9 +273,9 @@ class QuotePdfService {
         _sectionHeader('PASSENGER INFORMATION'),
         pw.Column(
           children: [
-            _infoRow('Name', quote.passengerName ?? 'Not specified'),
-            _infoRow('Passengers', quote.pasCount.toInt().toString()),
-            _infoRow('Luggage', quote.luggage),
+            PdfUtilities.buildInfoRow('Name', quote.passengerName ?? 'Not specified'),
+            PdfUtilities.buildInfoRow('Passengers', quote.pasCount.toInt().toString()),
+            PdfUtilities.buildInfoRow('Luggage', quote.luggage),
           ],
         ),
       ],
@@ -451,23 +452,23 @@ class QuotePdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               1,
               'Quotes valid for 24 hours. Prices subject to availability.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               2,
               'Confirmation subject to vehicle/driver availability. Payment required for final confirmation.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               3,
               'Itinerary changes may affect pricing. Special requests subject to availability.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               4,
               'Cancellation policy: 24 hours notice required for full refund.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               5,
               'All prices include VAT and are quoted in South African Rands (ZAR).',
             ),
@@ -487,10 +488,10 @@ class QuotePdfService {
           children: [
             _subTitle('Banking Details'),
             pw.SizedBox(height: PdfTheme.spacing12),
-            _infoRow('Bank', 'First Rand Bank'),
-            _infoRow('Account Name', 'Choice Lux Cars JHB'),
-            _infoRow('Account Number', '62808002802'),
-            _infoRow('Branch Code', '250655'),
+            PdfUtilities.buildInfoRow('Bank', PdfConfig.defaultBankName),
+            PdfUtilities.buildInfoRow('Account Name', PdfConfig.defaultAccountName),
+            PdfUtilities.buildInfoRow('Account Number', PdfConfig.defaultAccountNumber),
+            PdfUtilities.buildInfoRow('Branch Code', PdfConfig.defaultBranchCode),
             pw.SizedBox(height: PdfTheme.spacing16),
             pw.Container(
               padding: const pw.EdgeInsets.all(12),
@@ -531,95 +532,7 @@ class QuotePdfService {
     ),
   );
 
-  pw.Widget _kv(String k, String v) => pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 4),
-    child: pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      children: [
-        pw.Text(
-          '$k: ',
-          style: pw.TextStyle(
-            font: PdfTheme.fontBold,
-            fontSize: 11,
-            color: PdfTheme.grey600,
-          ),
-        ),
-        pw.Text(v, style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800)),
-      ],
-    ),
-  );
-
-  pw.Widget _infoRow(String label, String value) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 8),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(
-            width: PdfTheme.labelWidth,
-            child: pw.Text(
-              '$label:',
-              style: pw.TextStyle(
-                font: PdfTheme.fontBold,
-                fontSize: 11,
-                color: PdfTheme.grey600,
-              ),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              value,
-              style: pw.TextStyle(fontSize: 11, color: PdfTheme.grey800),
-              softWrap: true,
-              overflow: pw.TextOverflow.visible,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  pw.Widget _numberedTerm(int n, String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 1, right: 8),
-            width: 16,
-            height: 16,
-            decoration: pw.BoxDecoration(
-              color: PdfTheme.grey700,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Center(
-              child: pw.Text(
-                '$n',
-                style: pw.TextStyle(
-                  font: PdfTheme.fontBold,
-                  fontSize: 8,
-                  color: PdfColors.white,
-                ),
-              ),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              text,
-              style: pw.TextStyle(
-                fontSize: 9,
-                color: PdfTheme.grey700,
-                lineSpacing: 1.2,
-              ),
-              softWrap: true,
-              overflow: pw.TextOverflow.visible,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Using shared PdfUtilities methods instead of custom implementations
 
   bool _hasTripNotes(List<QuoteTransportDetail> details) {
     return details.any((t) => (t.notes ?? '').trim().isNotEmpty);

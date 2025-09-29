@@ -43,40 +43,40 @@ class PdfTheme {
   /// Bold font (Helvetica Bold for compatibility)
   static pw.Font get fontBold => pw.Font.helveticaBold();
 
-  /// Large title style for document headers
+  /// Large title style for document headers (Option 4: Modern Minimalist)
   static pw.TextStyle get titleLarge =>
-      pw.TextStyle(font: fontBold, fontSize: 28, color: grey800);
+      pw.TextStyle(font: fontBold, fontSize: 16, color: grey800); // Reduced from 28
 
   /// Medium title style for section headers
   static pw.TextStyle get titleMedium =>
-      pw.TextStyle(font: fontBold, fontSize: 20, color: grey800);
+      pw.TextStyle(font: fontBold, fontSize: 14, color: grey800); // Reduced from 20
 
   /// Small title style for subsection headers
   static pw.TextStyle get titleSmall =>
-      pw.TextStyle(font: fontBold, fontSize: 16, color: grey800);
+      pw.TextStyle(font: fontBold, fontSize: 12, color: grey800); // Reduced from 16
 
   /// Body text style for regular content
   static pw.TextStyle get bodyText =>
-      pw.TextStyle(font: fontRegular, fontSize: 12, color: grey700);
+      pw.TextStyle(font: fontRegular, fontSize: 10, color: grey700); // Reduced from 12
 
   /// Caption text style for small labels
   static pw.TextStyle get captionText =>
-      pw.TextStyle(font: fontRegular, fontSize: 10, color: grey600);
+      pw.TextStyle(font: fontRegular, fontSize: 8, color: grey600); // Reduced from 10
 
   /// Label text style for form fields
   static pw.TextStyle get labelText =>
-      pw.TextStyle(font: fontBold, fontSize: 12, color: grey700);
+      pw.TextStyle(font: fontBold, fontSize: 10, color: grey700); // Reduced from 12
 
   // ---- SPACING & LAYOUT ----------------------------------------------------
 
-  /// Standard spacing values
-  static const double spacing4 = 4;
-  static const double spacing8 = 8;
-  static const double spacing12 = 12;
-  static const double spacing16 = 16;
-  static const double spacing20 = 20;
-  static const double spacing24 = 24;
-  static const double spacing32 = 32;
+  /// Standard spacing values (Option 4: Modern Minimalist - Tighter spacing)
+  static const double spacing4 = 3; // Reduced from 4
+  static const double spacing8 = 6; // Reduced from 8
+  static const double spacing12 = 8; // Reduced from 12
+  static const double spacing16 = 10; // Reduced from 16
+  static const double spacing20 = 12; // Reduced from 20
+  static const double spacing24 = 14; // Reduced from 24
+  static const double spacing32 = 16; // Reduced from 32
 
   /// Border radius for containers
   static const double radius = 8;
@@ -84,8 +84,8 @@ class PdfTheme {
   /// Label column width for info rows
   static const double labelWidth = 110;
 
-  /// Page margins
-  static const pw.EdgeInsets pageMargins = pw.EdgeInsets.all(25);
+  /// Page margins (Option 4: Modern Minimalist - Tighter margins)
+  static const pw.EdgeInsets pageMargins = pw.EdgeInsets.all(20); // Reduced from 25
 
   // ---- HEADER BUILDERS -----------------------------------------------------
 
@@ -153,26 +153,29 @@ class PdfTheme {
   }) {
     return pw.Container(
       padding: const pw.EdgeInsets.only(bottom: spacing16),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.center,
-        children: [
-          if (logo != null)
-            pw.Container(
-              height: 30,
-              width: 80,
-              child: pw.Image(logo, fit: pw.BoxFit.contain),
-            )
-          else
-            pw.Text('Choice Lux Cars', style: titleSmall),
-          pw.SizedBox(width: spacing12),
-          pw.Expanded(
-            child: pw.Text(
-              documentNumber,
-              style: titleMedium,
-              textAlign: pw.TextAlign.right,
+      child: pw.Container(
+        width: double.infinity,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.center,
+          children: [
+            if (logo != null)
+              pw.Container(
+                height: 30,
+                width: 80,
+                child: pw.Image(logo, fit: pw.BoxFit.contain),
+              )
+            else
+              pw.Text('Choice Lux Cars', style: titleSmall),
+            pw.SizedBox(width: spacing12),
+            pw.Expanded(
+              child: pw.Text(
+                documentNumber,
+                style: titleMedium,
+                textAlign: pw.TextAlign.right,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -235,10 +238,13 @@ class PdfTheme {
 
   /// Build contact information row
   static pw.Widget _buildContactRow(List<String> contacts) {
-    return pw.Row(
-      children: contacts.map((contact) {
-        return pw.Expanded(child: pw.Text(contact, style: captionText));
-      }).toList(),
+    return pw.Container(
+      width: double.infinity,
+      child: pw.Row(
+        children: contacts.map((contact) {
+          return pw.Expanded(child: pw.Text(contact, style: captionText));
+        }).toList(),
+      ),
     );
   }
 
@@ -246,20 +252,23 @@ class PdfTheme {
   static pw.Widget buildInfoRow(String label, String value) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: spacing4),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(
-            width: labelWidth,
-            child: pw.Text(label, style: labelText),
-          ),
-          pw.Expanded(child: pw.Text(value, style: bodyText)),
-        ],
+      child: pw.Container(
+        width: double.infinity,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.SizedBox(
+              width: labelWidth,
+              child: pw.Text(label, style: labelText),
+            ),
+            pw.Expanded(child: pw.Text(value, style: bodyText)),
+          ],
+        ),
       ),
     );
   }
 
-  /// Build section header
+  /// Build section header (Option 4: Modern Minimalist)
   static pw.Widget buildSectionHeader(String title) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -268,21 +277,21 @@ class PdfTheme {
           title,
           style: pw.TextStyle(
             font: fontBold,
-            fontSize: 14, // Reduced from 20
+            fontSize: 12, // Further reduced for minimalism
             color: grey800,
-            letterSpacing: 0.5,
+            letterSpacing: 0.3, // Reduced letter spacing
           ),
         ),
-        pw.SizedBox(height: spacing8),
+        pw.SizedBox(height: spacing4), // Reduced spacing
         pw.Container(
-          height: 2,
-          width: 60,
+          height: 1.5, // Thinner underline
+          width: 40, // Shorter underline
           decoration: pw.BoxDecoration(
             color: brandGold,
             borderRadius: pw.BorderRadius.circular(1),
           ),
         ),
-        pw.SizedBox(height: spacing12),
+        pw.SizedBox(height: spacing8), // Reduced spacing
       ],
     );
   }
@@ -345,11 +354,14 @@ class PdfTheme {
                   pw.Text('Web: $website', style: captionText),
                 if (phone != null || email != null) pw.SizedBox(height: spacing4),
                 if (phone != null && email != null)
-                  pw.Row(
-                    children: [
-                      pw.Expanded(child: pw.Text('Phone: $phone', style: captionText)),
-                      pw.Expanded(child: pw.Text('Email: $email', style: captionText)),
-                    ],
+                  pw.Container(
+                    width: double.infinity,
+                    child: pw.Row(
+                      children: [
+                        pw.Expanded(child: pw.Text('Phone: $phone', style: captionText)),
+                        pw.Expanded(child: pw.Text('Email: $email', style: captionText)),
+                      ],
+                    ),
                   )
                 else if (phone != null)
                   pw.Text('Phone: $phone', style: captionText)
@@ -386,7 +398,7 @@ class PdfTheme {
     );
   }
 
-  /// Build clean section header with professional styling
+  /// Build clean section header with professional styling (Option 4: Modern Minimalist)
   static pw.Widget buildCleanSectionHeader(String title) {
     return pw.Column(
       crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -395,21 +407,21 @@ class PdfTheme {
           title,
           style: pw.TextStyle(
             font: fontBold,
-            fontSize: 16,
+            fontSize: 12, // Reduced from 16
             color: grey800,
-            letterSpacing: 0.5,
+            letterSpacing: 0.3, // Reduced letter spacing
           ),
         ),
-        pw.SizedBox(height: spacing8),
+        pw.SizedBox(height: spacing4), // Reduced spacing
         pw.Container(
-          height: 2,
-          width: 60,
+          height: 1.5, // Thinner underline
+          width: 40, // Shorter underline
           decoration: pw.BoxDecoration(
             color: brandGold,
             borderRadius: pw.BorderRadius.circular(1),
           ),
         ),
-        pw.SizedBox(height: spacing16),
+        pw.SizedBox(height: spacing8), // Reduced spacing
       ],
     );
   }
@@ -448,15 +460,18 @@ class PdfTheme {
   static pw.Widget buildCleanInfoRow(String label, String value) {
     return pw.Padding(
       padding: const pw.EdgeInsets.symmetric(vertical: spacing4),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.SizedBox(
-            width: labelWidth,
-            child: pw.Text(label, style: labelText),
-          ),
-          pw.Expanded(child: pw.Text(value, style: bodyText)),
-        ],
+      child: pw.Container(
+        width: double.infinity,
+        child: pw.Row(
+          crossAxisAlignment: pw.CrossAxisAlignment.start,
+          children: [
+            pw.SizedBox(
+              width: labelWidth,
+              child: pw.Text(label, style: labelText),
+            ),
+            pw.Expanded(child: pw.Text(value, style: bodyText)),
+          ],
+        ),
       ),
     );
   }

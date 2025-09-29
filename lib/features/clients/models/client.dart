@@ -10,6 +10,7 @@ class Client {
   final String? websiteAddress;
   final String? companyRegistrationNumber;
   final String? vatNumber;
+  final String? billingAddress;
   final ClientStatus status;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -25,6 +26,7 @@ class Client {
     this.websiteAddress,
     this.companyRegistrationNumber,
     this.vatNumber,
+    this.billingAddress,
     this.status = ClientStatus.active,
     this.createdAt,
     this.updatedAt,
@@ -43,6 +45,7 @@ class Client {
       websiteAddress: json['website_address'] as String?,
       companyRegistrationNumber: json['company_registration_number'] as String?,
       vatNumber: json['vat_number'] as String?,
+      billingAddress: json['billing_address'] as String?,
       status: _parseStatus(json['status'] as String?),
       createdAt: json['created_at'] != null
           ? DateTime.parse(json['created_at'] as String)
@@ -82,6 +85,7 @@ class Client {
       if (websiteAddress != null) 'website_address': websiteAddress,
       if (companyRegistrationNumber != null) 'company_registration_number': companyRegistrationNumber,
       if (vatNumber != null) 'vat_number': vatNumber,
+      if (billingAddress != null) 'billing_address': billingAddress,
       'status': status.name,
       if (createdAt != null) 'created_at': createdAt!.toIso8601String(),
       if (updatedAt != null) 'updated_at': updatedAt!.toIso8601String(),
@@ -100,6 +104,7 @@ class Client {
     String? websiteAddress,
     String? companyRegistrationNumber,
     String? vatNumber,
+    String? billingAddress,
     ClientStatus? status,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -115,6 +120,7 @@ class Client {
       websiteAddress: websiteAddress ?? this.websiteAddress,
       companyRegistrationNumber: companyRegistrationNumber ?? this.companyRegistrationNumber,
       vatNumber: vatNumber ?? this.vatNumber,
+      billingAddress: billingAddress ?? this.billingAddress,
       status: status ?? this.status,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

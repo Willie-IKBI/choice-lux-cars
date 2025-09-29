@@ -1,10 +1,11 @@
 import 'dart:typed_data';
-import 'package:http/http.dart' as http;
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
 import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_utilities.dart';
+import 'package:choice_lux_cars/features/pdf/pdf_config.dart';
 
 class VoucherPdfService {
   // ---- THEME / TOKENS -------------------------------------------------------
@@ -13,70 +14,64 @@ class VoucherPdfService {
   // ---- PUBLIC API -----------------------------------------------------------
 
   Future<Uint8List> buildVoucherPdf(VoucherData data) async {
-    // Load client logo (graceful fallback)
-    pw.MemoryImage? logoImage;
-    if (data.hasLogo) {
-      try {
-        final response = await http.get(Uri.parse(data.companyLogo!));
-        if (response.statusCode == 200 && response.bodyBytes.isNotEmpty) {
-          logoImage = pw.MemoryImage(response.bodyBytes);
-        }
-      } catch (_) {
-        /* ignore */
-      }
-    }
+    try {
+      // Load client logo using shared utility
+      final logoImage = await PdfUtilities.loadLogo(data.companyLogo);
 
-    final dateFormat = DateFormat('dd/MM/yyyy');
-    final timeFormat = DateFormat('HH:mm');
+      final dateFormat = DateFormat(PdfConfig.defaultDateFormat);
+      final timeFormat = DateFormat(PdfConfig.defaultTimeFormat);
 
-    final doc = pw.Document();
+      final doc = pw.Document();
 
-    final pageTheme = PdfTheme.buildPageTheme(
-      watermarkBuilder: (context) => PdfTheme.buildVoucherWatermark(),
-    );
+      final pageTheme = PdfTheme.buildPageTheme(
+        watermarkBuilder: (context) => PdfTheme.buildVoucherWatermark(),
+      );
 
-    doc.addPage(
-      pw.MultiPage(
-        pageTheme: pageTheme,
-        header: (context) => context.pageNumber == 1
-            ? PdfTheme.buildClientBrandedHeader(
-                logo: logoImage,
-                companyName: data.companyName,
-                website: data.clientWebsite,
-                phone: data.clientContactPhone,
-                email: data.clientContactEmail,
-              ) // page 1
-            : PdfTheme.buildCompactHeader(
-                logo: logoImage,
-                documentNumber: 'VN#${data.jobId}',
-              ), // page 2+
-        footer: (context) => PdfTheme.buildClientFooter(
-          clientWebsite: data.clientWebsite,
-          clientEmail: data.clientContactEmail,
-        ),
+      doc.addPage(
+        pw.MultiPage(
+          pageTheme: pageTheme,
+          header: (context) => context.pageNumber == 1
+              ? PdfTheme.buildClientBrandedHeader(
+                  logo: logoImage,
+                  companyName: data.companyName,
+                  website: data.clientWebsite,
+                  phone: data.clientContactPhone,
+                  email: data.clientContactEmail,
+                ) // page 1
+              : PdfTheme.buildCompactHeader(
+                  logo: logoImage,
+                  documentNumber: 'VN#${data.jobId}',
+                ), // page 2+
+          footer: (context) => PdfTheme.buildClientFooter(
+            clientWebsite: data.clientWebsite,
+            clientEmail: data.clientContactEmail,
+          ),
         build: (context) => [
           _sectionVoucherSummary(data, dateFormat),
-          PdfTheme.buildProfessionalSpacing(),
+          PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8), // Reduced spacing
 
           _sectionAgentPassenger(data),
-          PdfTheme.buildProfessionalSpacing(),
+          PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8), // Reduced spacing
 
           _sectionDriverVehicle(data),
-          PdfTheme.buildProfessionalSpacing(),
+          PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8), // Reduced spacing
 
           if (data.hasTransportDetails)
             _sectionTransportDetails(data, dateFormat, timeFormat),
-          if (data.hasTransportDetails) PdfTheme.buildProfessionalSpacing(),
+          if (data.hasTransportDetails) PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8), // Reduced spacing
 
           if (data.hasNotes) _sectionNotes(data),
-          if (data.hasNotes) PdfTheme.buildProfessionalSpacing(),
+          if (data.hasNotes) PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8), // Reduced spacing
 
           _sectionTermsAndConditions(),
         ],
       ),
-    );
+      );
 
-    return doc.save();
+      return doc.save();
+    } catch (e) {
+      throw PdfUtilities.createPdfException('voucher', e);
+    }
   }
 
   // ---- SECTIONS -------------------------------------------------------------
@@ -89,32 +84,35 @@ class VoucherPdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         PdfTheme.buildCleanSectionHeader('VOUCHER CONFIRMATION'),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Expanded(
-              child: pw.Column(
-                crossAxisAlignment: pw.CrossAxisAlignment.start,
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              pw.Expanded(
+                child: pw.Column(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Text('Confirmation Voucher', style: PdfTheme.titleSmall),
+                    pw.SizedBox(height: 6),
+                    pw.Text(
+                      'This voucher confirms your booking and related services.',
+                      style: PdfTheme.bodyText.copyWith(lineSpacing: 2),
+                    ),
+                  ],
+                ),
+              ),
+              pw.SizedBox(width: PdfTheme.spacing20),
+              pw.Column(
+                crossAxisAlignment: pw.CrossAxisAlignment.end,
                 children: [
-                  pw.Text('Confirmation Voucher', style: PdfTheme.titleSmall),
-                  pw.SizedBox(height: 6),
-                  pw.Text(
-                    'This voucher confirms your booking and related services.',
-                    style: PdfTheme.bodyText.copyWith(lineSpacing: 2),
-                  ),
+                  PdfUtilities.buildKeyValue('Voucher Number', 'VN#${data.jobId}'),
+                  if (data.quoteNo != null) PdfUtilities.buildKeyValue('Quote Number', data.quoteNo!),
+                  PdfUtilities.buildKeyValue('Date', data.formattedQuoteDate),
                 ],
               ),
-            ),
-            pw.SizedBox(width: PdfTheme.spacing20),
-            pw.Column(
-              crossAxisAlignment: pw.CrossAxisAlignment.end,
-              children: [
-                _kv('Voucher Number', 'VN#${data.jobId}'),
-                if (data.quoteNo != null) _kv('Quote Number', data.quoteNo!),
-                _kv('Date', data.formattedQuoteDate),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -125,33 +123,48 @@ class VoucherPdfService {
       crossAxisAlignment: pw.CrossAxisAlignment.start,
       children: [
         PdfTheme.buildCleanSectionHeader('AGENT & PASSENGER INFORMATION'),
-        pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            // Agent Card
-            pw.Expanded(
-              child: PdfTheme.buildBalancedCard(
-                title: 'Agent Information',
-                children: [
-                  PdfTheme.buildCleanInfoRow('Name', data.agentName),
-                  PdfTheme.buildCleanInfoRow('Contact', data.agentContact),
-                ],
+        pw.Container(
+          width: double.infinity,
+          child: pw.Row(
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
+            children: [
+              // Agent Card - Enhanced with more info for balance
+              pw.Expanded(
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Agent Information',
+                  children: [
+                    PdfTheme.buildCleanInfoRow('Name', data.agentName),
+                    PdfTheme.buildCleanInfoRow('Contact', data.agentContact),
+                    PdfTheme.buildCleanInfoRow('Company', data.companyName),
+                  ],
+                ),
               ),
-            ),
-            pw.SizedBox(width: PdfTheme.spacing16),
-            // Passenger Card
-            pw.Expanded(
-              child: PdfTheme.buildBalancedCard(
-                title: 'Passenger Information',
-                children: [
-                  PdfTheme.buildCleanInfoRow('Name', data.passengerName),
-                  PdfTheme.buildCleanInfoRow('Contact', data.passengerContact),
-                  PdfTheme.buildCleanInfoRow('Passengers', data.numberPassengers.toString()),
-                  PdfTheme.buildCleanInfoRow('Luggage', data.luggage),
-                ],
+              pw.SizedBox(width: PdfTheme.spacing8), // Reduced spacing
+              // Passenger Card - Compact layout
+              pw.Expanded(
+                child: PdfTheme.buildBalancedCard(
+                  title: 'Passenger Information',
+                  children: [
+                    PdfTheme.buildCleanInfoRow('Name', data.passengerName),
+                    PdfTheme.buildCleanInfoRow('Contact', data.passengerContact),
+                    pw.Container(
+                      width: double.infinity,
+                      child: pw.Row(
+                        children: [
+                          pw.Expanded(
+                            child: PdfTheme.buildCleanInfoRow('Passengers', data.numberPassengers.toString()),
+                          ),
+                          pw.Expanded(
+                            child: PdfTheme.buildCleanInfoRow('Luggage', data.luggage),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ],
     );
@@ -248,19 +261,19 @@ class VoucherPdfService {
         pw.Column(
           crossAxisAlignment: pw.CrossAxisAlignment.start,
           children: [
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               1,
               'This voucher confirms your booking and related services.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               2,
               'Any changes must be made at least 24 hours in advance.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               3,
               'Errors in details are the responsibility of the client.',
             ),
-            _numberedTerm(
+            PdfUtilities.buildNumberedTerm(
               4,
               'This document is subject to the operator\'s standard conditions.',
             ),
@@ -272,54 +285,5 @@ class VoucherPdfService {
 
   // ---- SMALL HELPERS --------------------------------------------------------
 
-  pw.Widget _kv(String k, String v) => pw.Padding(
-    padding: const pw.EdgeInsets.only(bottom: 4),
-    child: pw.Row(
-      mainAxisSize: pw.MainAxisSize.min,
-      children: [
-        pw.Text(
-          '$k: ',
-          style: PdfTheme.labelText.copyWith(color: PdfTheme.grey600),
-        ),
-        pw.Text(v, style: PdfTheme.bodyText.copyWith(color: PdfTheme.grey800)),
-      ],
-    ),
-  );
-
-  pw.Widget _numberedTerm(int n, String text) {
-    return pw.Padding(
-      padding: const pw.EdgeInsets.only(bottom: 6),
-      child: pw.Row(
-        crossAxisAlignment: pw.CrossAxisAlignment.start,
-        children: [
-          pw.Container(
-            margin: const pw.EdgeInsets.only(top: 1, right: 8),
-            width: 16,
-            height: 16,
-            decoration: pw.BoxDecoration(
-              color: PdfTheme.grey700,
-              borderRadius: pw.BorderRadius.circular(8),
-            ),
-            child: pw.Center(
-              child: pw.Text(
-                '$n',
-                style: PdfTheme.captionText.copyWith(
-                  font: PdfTheme.fontBold,
-                  color: PdfColors.white,
-                ),
-              ),
-            ),
-          ),
-          pw.Expanded(
-            child: pw.Text(
-              text,
-              style: PdfTheme.captionText.copyWith(lineSpacing: 1.2),
-              softWrap: true,
-              overflow: pw.TextOverflow.visible,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  // Using shared PdfUtilities methods instead of custom implementations
 }
