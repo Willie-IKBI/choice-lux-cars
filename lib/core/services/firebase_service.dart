@@ -20,7 +20,7 @@ class FirebaseService {
       FirebaseOptions options;
 
       if (kIsWeb) {
-        // Web configuration
+        // Web configuration (values provided via AppConstants/Env)
         options = const FirebaseOptions(
           apiKey: AppConstants.firebaseApiKey,
           authDomain: AppConstants.firebaseAuthDomain,
@@ -54,10 +54,11 @@ class FirebaseService {
   // Request notification permissions
   Future<bool> requestNotificationPermissions() async {
     try {
-      // Skip FCM on web during development
+      // On web, permission must be requested via Notifications API
       if (kIsWeb) {
-        Log.d('Skipping FCM permissions on web');
-        return false;
+        // Firebase Messaging web uses browser permission prompt; handled in getFCMToken
+        Log.d('Web: notification permission will be requested via getToken');
+        return true;
       }
 
       NotificationSettings settings = await _messaging.requestPermission(
@@ -81,10 +82,18 @@ class FirebaseService {
   // Get FCM token
   Future<String?> getFCMToken() async {
     try {
-      // Skip FCM on web during development
       if (kIsWeb) {
-        Log.d('Skipping FCM token on web');
-        return null;
+        // On web, pass vapidKey for token
+        try {
+          final token = await _messaging.getToken(
+            vapidKey: AppConstants.firebaseVapidKey,
+          );
+          Log.d('Web FCM Token: $token');
+          return token;
+        } catch (e) {
+          Log.e('Error getting web FCM token: $e');
+          return null;
+        }
       }
 
       String? token = await _messaging.getToken();
@@ -99,11 +108,7 @@ class FirebaseService {
   // Update FCM token in Supabase profile
   Future<void> updateFCMTokenInProfile(String userId) async {
     try {
-      // Skip FCM on web during development
-      if (kIsWeb) {
-        Log.d('Skipping FCM token update on web');
-        return;
-      }
+      // Web supported: save token as well
 
       String? token = await getFCMToken();
       if (token != null) {
@@ -121,11 +126,6 @@ class FirebaseService {
   // Check if FCM token needs updating
   Future<bool> shouldUpdateFCMToken(String userId) async {
     try {
-      // Skip FCM on web during development
-      if (kIsWeb) {
-        return false;
-      }
-
       // Get current token
       String? currentToken = await getFCMToken();
       if (currentToken == null) return false;

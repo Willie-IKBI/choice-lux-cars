@@ -113,44 +113,142 @@ class InvoicePdfService {
         PdfTheme.buildCleanSectionHeader('CLIENT & AGENT INFORMATION'),
         pw.Container(
           width: double.infinity,
-          child: pw.Row(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+          ),
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Client - Enhanced with more balanced content
-              pw.Expanded(
-                child: PdfTheme.buildBalancedCard(
-                  title: 'Client Information',
-                  children: [
-                    PdfTheme.buildCleanInfoRow('Company', data.companyName),
-                    if (data.clientContactPerson != null)
-                      PdfTheme.buildCleanInfoRow('Contact Person', data.clientContactPerson!),
-                    if (data.clientContactNumber != null)
-                      PdfTheme.buildCleanInfoRow('Phone', data.clientContactNumber!),
-                    if (data.clientContactEmail != null)
-                      PdfTheme.buildCleanInfoRow('Email', data.clientContactEmail!),
-                    // Add spacing to balance with agent card
-                    if (data.clientContactPerson == null && data.clientContactNumber == null && data.clientContactEmail == null)
-                      pw.SizedBox(height: PdfTheme.spacing16),
-                  ],
+              // Client Information Section - Professional Layout
+              pw.Text(
+                'Bill To:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
                 ),
               ),
-              pw.SizedBox(width: PdfTheme.spacing12), // Increased spacing for better balance
-              // Agent - Enhanced with more balanced content
-              pw.Expanded(
-                child: PdfTheme.buildBalancedCard(
-                  title: 'Agent Information',
-                  children: [
-                    PdfTheme.buildCleanInfoRow('Agent Name', data.agentName),
-                    PdfTheme.buildCleanInfoRow('Contact Number', data.agentContact),
-                    if (data.agentEmail != null)
-                      PdfTheme.buildCleanInfoRow('Email', data.agentEmail!)
-                    else
-                      pw.SizedBox(height: PdfTheme.spacing8), // Add spacing if no email
-                    // Add extra spacing to balance with client card
-                    pw.SizedBox(height: PdfTheme.spacing8),
-                  ],
+              pw.SizedBox(height: 6),
+              pw.Text(
+                data.companyName,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.black,
                 ),
               ),
+              if (data.clientContactPerson != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  data.clientContactPerson!,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientContactNumber != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  data.clientContactNumber!,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientContactEmail != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  data.clientContactEmail!,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientBillingAddress != null && data.clientBillingAddress!.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  data.clientBillingAddress!,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientCompanyRegistration != null && data.clientCompanyRegistration!.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Reg: ${data.clientCompanyRegistration!}',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientVatNumber != null && data.clientVatNumber!.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'VAT: ${data.clientVatNumber!}',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              if (data.clientWebsite != null && data.clientWebsite!.isNotEmpty) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Website: ${data.clientWebsite!}',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
+              
+              pw.SizedBox(height: 12),
+              
+              // Agent Information Section - Professional Layout
+              pw.Text(
+                'Contact:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                data.agentName,
+                style: pw.TextStyle(
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.black,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                data.agentContact,
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              if (data.agentEmail != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  data.agentEmail!,
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -165,79 +263,114 @@ class InvoicePdfService {
         PdfTheme.buildCleanSectionHeader('SERVICE & PAYMENT'),
         pw.Container(
           width: double.infinity,
-          child: pw.Row(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+          ),
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Service Details (left side) - Better balanced
-              pw.Expanded(
-                flex: 2,
-                child: PdfTheme.buildBalancedCard(
-                  title: 'Service Details',
-                  children: [
-                    PdfTheme.buildCleanInfoRow('Passenger Name', data.passengerName),
-                    PdfTheme.buildCleanInfoRow('Job Number', data.jobId.toString()),
-                    PdfTheme.buildCleanInfoRow('Vehicle Type', data.vehicleType),
-                    PdfTheme.buildCleanInfoRow('Driver Name', data.driverName),
-                    PdfTheme.buildCleanInfoRow('Number of Passengers', '${data.numberPassengers}'),
-                    PdfTheme.buildCleanInfoRow('Luggage', data.luggage),
-                    // Add spacing for better balance
-                    pw.SizedBox(height: PdfTheme.spacing8),
-                  ],
+              // Service Details - Professional Layout
+              pw.Text(
+                'Service Details:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
                 ),
               ),
-              pw.SizedBox(width: PdfTheme.spacing12), // Increased spacing
-              // Payment Summary (right side) - Enhanced layout
-              pw.Expanded(
-                flex: 1,
-                child: PdfTheme.buildBalancedCard(
-                  title: 'Payment Summary',
+              pw.SizedBox(height: 6),
+              pw.Text(
+                'Passenger: ${data.passengerName}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Job Number: ${data.jobId}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Vehicle: ${data.vehicleType}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Driver: ${data.driverName}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Passengers: ${data.numberPassengers} | Luggage: ${data.luggage}',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              
+              pw.SizedBox(height: 12),
+              
+              // Payment Summary - Professional Layout
+              pw.Text(
+                'Payment Summary:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Container(
+                width: double.infinity,
+                padding: const pw.EdgeInsets.all(8),
+                decoration: pw.BoxDecoration(
+                  color: PdfColors.grey100,
+                  borderRadius: pw.BorderRadius.circular(4),
+                  border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+                ),
+                child: pw.Row(
+                  mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
                   children: [
-                    pw.Container(
-                      padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
-                      decoration: pw.BoxDecoration(
-                        color: PdfTheme.gold50,
-                        borderRadius: pw.BorderRadius.circular(8),
-                        border: pw.Border.all(color: PdfTheme.gold400, width: 1),
+                    pw.Text(
+                      'Total Amount:',
+                      style: pw.TextStyle(
+                        fontSize: 10,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.grey800,
                       ),
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.center,
-                        children: [
-                          pw.Text(
-                            'Total Amount',
-                            style: PdfTheme.labelText.copyWith(
-                              color: PdfTheme.gold700,
-                            ),
-                          ),
-                          pw.SizedBox(height: PdfTheme.spacing4),
-                          pw.Text(
-                            data.formattedTotalAmount.replaceAll('ZAR', 'R'),
-                            style: PdfTheme.titleLarge.copyWith(
-                              color: PdfTheme.gold700,
-                              fontWeight: pw.FontWeight.bold,
-                            ),
-                          ),
-                          pw.SizedBox(height: PdfTheme.spacing8),
-                          pw.Container(
-                            padding: const pw.EdgeInsets.symmetric(
-                              horizontal: PdfTheme.spacing8,
-                              vertical: PdfTheme.spacing4,
-                            ),
-                            decoration: pw.BoxDecoration(
-                              color: PdfTheme.gold700,
-                              borderRadius: pw.BorderRadius.circular(4),
-                            ),
-                            child: pw.Text(
-                              'Payment on Receipt',
-                              style: PdfTheme.bodyText.copyWith(
-                                color: PdfColors.white,
-                                fontWeight: pw.FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
+                    ),
+                    pw.Text(
+                      data.formattedTotalAmount.replaceAll('ZAR', 'R'),
+                      style: pw.TextStyle(
+                        fontSize: 12,
+                        fontWeight: pw.FontWeight.bold,
+                        color: PdfColors.black,
                       ),
                     ),
                   ],
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                'Payment Terms: ${data.paymentTerms}',
+                style: pw.TextStyle(
+                  fontSize: 9,
+                  color: PdfColors.grey600,
+                  fontStyle: pw.FontStyle.italic,
                 ),
               ),
             ],
@@ -292,71 +425,92 @@ class InvoicePdfService {
         PdfTheme.buildCleanSectionHeader('BANKING DETAILS'),
         pw.Container(
           width: double.infinity,
-          child: pw.Row(
+          padding: const pw.EdgeInsets.all(12),
+          decoration: pw.BoxDecoration(
+            color: PdfColors.grey50,
+            borderRadius: pw.BorderRadius.circular(6),
+            border: pw.Border.all(color: PdfColors.grey300, width: 0.5),
+          ),
+          child: pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
-              // Banking Information
-              pw.Expanded(
-                flex: 2,
-                child: PdfTheme.buildBalancedCard(
-                  title: 'Payment Information',
-                  children: [
-                    PdfTheme.buildCleanInfoRow('Bank', 'ABSA Bank'),
-                    PdfTheme.buildCleanInfoRow('Account Name', 'CHOICELUX CARS (PTY) LTD'),
-                    PdfTheme.buildCleanInfoRow('Account Number', '411 511 5471'),
-                    PdfTheme.buildCleanInfoRow('Branch Code', '632005'),
-                    PdfTheme.buildCleanInfoRow('Account Type', 'Current Account'),
-                    if (data.bankingDetails.reference != null)
-                      PdfTheme.buildCleanInfoRow('Reference', data.bankingDetails.reference!),
-                  ],
+              // Banking Information - Professional Layout
+              pw.Text(
+                'Payment Information:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
                 ),
               ),
-              pw.SizedBox(width: PdfTheme.spacing8),
-              // Payment Terms
-              pw.Expanded(
-                flex: 1,
-                child: pw.Container(
-                  padding: const pw.EdgeInsets.all(PdfTheme.spacing12),
-                  decoration: pw.BoxDecoration(
-                    color: PdfTheme.gold50,
-                    borderRadius: pw.BorderRadius.circular(6),
-                    border: pw.Border.all(color: PdfTheme.gold400, width: 0.5),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                'Bank: ABSA Bank',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Account Name: CHOICELUX CARS (PTY) LTD',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Account Number: 411 511 5471',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Branch Code: 632005',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              pw.SizedBox(height: 2),
+              pw.Text(
+                'Account Type: Current Account',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
+                ),
+              ),
+              if (data.bankingDetails.reference != null) ...[
+                pw.SizedBox(height: 2),
+                pw.Text(
+                  'Reference: ${data.bankingDetails.reference!}',
+                  style: pw.TextStyle(
+                    fontSize: 10,
+                    color: PdfColors.grey700,
                   ),
-                  child: pw.Column(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Text(
-                        'Payment Terms',
-                        style: PdfTheme.titleSmall,
-                      ),
-                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
-                      pw.Text(
-                        'Payment must be made on receipt of invoice.',
-                        style: PdfTheme.bodyText.copyWith(
-                          color: PdfTheme.gold700,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing4),
-                      pw.Text(
-                        'No service delivery without payment.',
-                        style: PdfTheme.bodyText.copyWith(
-                          color: PdfTheme.gold700,
-                          fontWeight: pw.FontWeight.bold,
-                        ),
-                      ),
-                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing8),
-                      pw.Divider(color: PdfTheme.gold400, thickness: 0.5),
-                      PdfTheme.buildProfessionalSpacing(height: PdfTheme.spacing4),
-                      pw.Text(
-                        'Please use Invoice Number as payment reference',
-                        style: PdfTheme.captionText.copyWith(
-                          color: PdfTheme.gold700,
-                          fontStyle: pw.FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
+                ),
+              ],
+              
+              pw.SizedBox(height: 12),
+              
+              // Payment Terms - Professional Layout
+              pw.Text(
+                'Payment Terms:',
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.grey800,
+                ),
+              ),
+              pw.SizedBox(height: 6),
+              pw.Text(
+                data.paymentTerms,
+                style: pw.TextStyle(
+                  fontSize: 10,
+                  color: PdfColors.grey700,
                 ),
               ),
             ],

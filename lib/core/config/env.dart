@@ -27,4 +27,7 @@ class Env {
   static const firebaseStorageBucket = String.fromEnvironment(
     'FIREBASE_STORAGE_BUCKET',
   );
+  static const firebaseVapidKey = String.fromEnvironment(
+    'FIREBASE_VAPID_KEY',
+  );
 }

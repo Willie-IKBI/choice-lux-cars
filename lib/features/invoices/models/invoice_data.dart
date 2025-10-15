@@ -7,6 +7,10 @@ class InvoiceData {
   final String? clientContactPerson;
   final String? clientContactNumber;
   final String? clientContactEmail;
+  final String? clientBillingAddress;
+  final String? clientCompanyRegistration;
+  final String? clientVatNumber;
+  final String? clientWebsite;
   final String agentName;
   final String agentContact;
   final String? agentEmail;
@@ -40,6 +44,10 @@ class InvoiceData {
     this.clientContactPerson,
     this.clientContactNumber,
     this.clientContactEmail,
+    this.clientBillingAddress,
+    this.clientCompanyRegistration,
+    this.clientVatNumber,
+    this.clientWebsite,
     required this.agentName,
     required this.agentContact,
     this.agentEmail,
@@ -75,6 +83,10 @@ class InvoiceData {
       clientContactPerson: json['client_contact_person'] as String?,
       clientContactNumber: json['client_contact_number'] as String?,
       clientContactEmail: json['client_contact_email'] as String?,
+      clientBillingAddress: json['client_billing_address'] as String?,
+      clientCompanyRegistration: json['client_company_registration'] as String?,
+      clientVatNumber: json['client_vat_number'] as String?,
+      clientWebsite: json['client_website'] as String?,
       agentName: json['agent_name'] as String? ?? 'Not available',
       agentContact: json['agent_contact'] as String? ?? 'Not available',
       agentEmail: json['agent_email'] as String?,
@@ -129,6 +141,10 @@ class InvoiceData {
       'client_contact_person': clientContactPerson,
       'client_contact_number': clientContactNumber,
       'client_contact_email': clientContactEmail,
+      'client_billing_address': clientBillingAddress,
+      'client_company_registration': clientCompanyRegistration,
+      'client_vat_number': clientVatNumber,
+      'client_website': clientWebsite,
       'agent_name': agentName,
       'agent_contact': agentContact,
       'agent_email': agentEmail,

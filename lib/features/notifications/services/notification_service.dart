@@ -253,6 +253,31 @@ class NotificationService {
           .single();
 
       Log.d('Created notification: ${response['id']}');
+
+      // Call Edge Function directly to send push notification
+      try {
+        final payload = {
+          'type': 'INSERT',
+          'table': 'app_notifications',
+          'record': response,
+          'schema': 'public',
+          'old_record': null,
+        };
+        
+        Log.d('Sending payload to Edge Function: $payload');
+        
+        final result = await _supabase.functions.invoke(
+          'push-notifications',
+          body: payload,
+        );
+        
+        Log.d('Edge Function response: $result');
+        Log.d('Push notification sent via Edge Function');
+      } catch (pushError) {
+        Log.e('Error sending push notification: $pushError');
+        // Don't rethrow - notification was created successfully
+      }
+
       return app_notification.AppNotification.fromJson(response);
     } catch (e) {
       Log.e('Error creating notification: $e');
@@ -720,7 +745,7 @@ class NotificationService {
 
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase.from('app_notifications').insert({
+        final notification = await supabase.from('app_notifications').insert({
           'user_id': user['id'],
           'message': message,
           'notification_type': 'job_start',
@@ -736,7 +761,23 @@ class NotificationService {
           },
           'created_at': SATimeUtils.getCurrentSATimeISO(),
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        });
+        }).select().single();
+
+        // Send push notification via Edge Function
+        try {
+          await supabase.functions.invoke(
+            'push-notifications',
+            body: {
+              'type': 'INSERT',
+              'table': 'app_notifications',
+              'record': notification,
+              'schema': 'public',
+              'old_record': null,
+            },
+          );
+        } catch (pushError) {
+          Log.e('Error sending push notification for job start: $pushError');
+        }
       }
 
       Log.d('Sent job start notifications to ${usersResponse.length} users');
@@ -768,7 +809,7 @@ class NotificationService {
 
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase.from('app_notifications').insert({
+        final notification = await supabase.from('app_notifications').insert({
           'user_id': user['id'],
           'message': message,
           'notification_type': 'step_completion',
@@ -784,7 +825,23 @@ class NotificationService {
           },
           'created_at': SATimeUtils.getCurrentSATimeISO(),
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        });
+        }).select().single();
+
+        // Send push notification via Edge Function
+        try {
+          await supabase.functions.invoke(
+            'push-notifications',
+            body: {
+              'type': 'INSERT',
+              'table': 'app_notifications',
+              'record': notification,
+              'schema': 'public',
+              'old_record': null,
+            },
+          );
+        } catch (pushError) {
+          Log.e('Error sending push notification for step completion: $pushError');
+        }
       }
 
       Log.d(
@@ -818,7 +875,7 @@ class NotificationService {
 
       // Create notifications for all target users
       for (final user in usersResponse) {
-        await supabase.from('app_notifications').insert({
+        final notification = await supabase.from('app_notifications').insert({
           'user_id': user['id'],
           'message': message,
           'notification_type': 'job_completion',
@@ -834,7 +891,23 @@ class NotificationService {
           },
           'created_at': SATimeUtils.getCurrentSATimeISO(),
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
-        });
+        }).select().single();
+
+        // Send push notification via Edge Function
+        try {
+          await supabase.functions.invoke(
+            'push-notifications',
+            body: {
+              'type': 'INSERT',
+              'table': 'app_notifications',
+              'record': notification,
+              'schema': 'public',
+              'old_record': null,
+            },
+          );
+        } catch (pushError) {
+          Log.e('Error sending push notification for job completion: $pushError');
+        }
       }
 
       Log.d(

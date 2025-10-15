@@ -35,6 +35,7 @@ class AppConstants {
   static const String firebaseStorageBucket = Env.firebaseStorageBucket;
   static const String firebaseMessagingSenderId = Env.firebaseSenderId;
   static const String firebaseAppId = Env.firebaseAppId;
+  static const String firebaseVapidKey = Env.firebaseVapidKey;
 
   // Storage buckets
   static const String quotesBucket = 'quotes';

@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
@@ -418,6 +419,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       MaterialPageRoute(builder: (context) => const NotificationListScreen()),
     );
   }
+
 }
 
 // Dashboard Item Model
