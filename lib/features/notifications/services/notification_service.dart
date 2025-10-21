@@ -297,8 +297,9 @@ class NotificationService {
   }) async {
     try {
       final response = await _supabase.functions.invoke(
-        'send-push-notification',
+        'push-notifications',
         body: {
+          'type': 'MANUAL',
           'user_id': userId,
           'title': title,
           'body': body,
