@@ -1,0 +1,30 @@
+2025/10/23-13:35:38.358 699c Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.ddc53cb9\flutter_tools_chrome_device.319391bb\Default\IndexedDB\http_localhost_55743.indexeddb.leveldb/MANIFEST-000001
+2025/10/23-13:35:38.359 699c Recovering log #40
+2025/10/23-13:35:38.359 699c Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.ddc53cb9\flutter_tools_chrome_device.319391bb\Default\IndexedDB\http_localhost_55743.indexeddb.leveldb/000040.log 
+2025/10/23-13:35:38.359 699c Delete type=2 #7
+2025/10/23-13:35:38.359 699c Delete type=0 #8
+2025/10/23-13:35:38.359 699c Delete type=2 #10
+2025/10/23-13:35:38.359 699c Delete type=0 #12
+2025/10/23-13:35:38.359 699c Delete type=2 #14
+2025/10/23-13:35:38.359 699c Delete type=0 #16
+2025/10/23-13:35:38.359 699c Delete type=2 #18
+2025/10/23-13:35:38.359 699c Delete type=0 #20
+2025/10/23-13:35:38.359 699c Delete type=2 #22
+2025/10/23-13:35:38.359 699c Delete type=0 #24
+2025/10/23-13:35:38.359 699c Delete type=2 #26
+2025/10/23-13:35:38.359 699c Delete type=0 #28
+2025/10/23-13:35:38.359 699c Delete type=2 #30
+2025/10/23-13:35:38.359 699c Delete type=0 #32
+2025/10/23-13:35:38.359 699c Delete type=2 #34
+2025/10/23-13:35:38.359 699c Delete type=0 #36
+2025/10/23-13:35:38.359 699c Delete type=2 #38
+2025/10/23-13:35:38.467 699c Level-0 table #45: started
+2025/10/23-13:35:38.469 699c Level-0 table #45: 654 bytes OK
+2025/10/23-13:35:38.470 699c Delete type=0 #40
+2025/10/23-13:35:38.470 73a0 Manual compaction at level-0 from '\x00\x10\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00\x11\x00\x00\x00' @ 0 : 0; will stop at '\x00\x10\x00\x00\x05' @ 1003 : 1
+2025/10/23-13:35:38.470 73a0 Compacting 1@0 + 1@1 files
+2025/10/23-13:35:38.472 73a0 Generated table #46@0: 204 keys, 5479 bytes
+2025/10/23-13:35:38.472 73a0 Compacted 1@0 + 1@1 files => 5479 bytes
+2025/10/23-13:35:38.472 73a0 compacted to: files[ 0 1 1 0 0 0 0 ]
+2025/10/23-13:35:38.473 73a0 Delete type=2 #45
+2025/10/23-13:35:38.473 73a0 Manual compaction at level-0 from '\x00\x10\x00\x00\x05' @ 1003 : 1 .. '\x00\x11\x00\x00\x00' @ 0 : 0; will stop at (end)

@@ -19,7 +19,7 @@ BEGIN
   FROM http((
     'POST',
     'https://hgqrbekphumdlsifuamq.supabase.co/functions/v1/push-notifications',
-    ARRAY[http_header('Authorization', 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhncXJiZWtwaHVtZGxzaWZ1YW1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTcyNzUxNzY2OCwiZXhwIjoyMDQzMDkzNjY4fQ.zjNZ15cicbJpyYNyhcgc-MAhO0wbVgeE3Lb07IfWlVc')],
+    ARRAY[http_header('Authorization', 'Bearer ' || current_setting('app.supabase_service_role_key')),
     'application/json',
     payload::text
   ));
