@@ -15,11 +15,12 @@ BEGIN
   );
 
   -- Call the Edge Function
+  -- Note: The Edge Function will handle authentication internally
   SELECT content::jsonb INTO response
   FROM http((
     'POST',
     'https://hgqrbekphumdlsifuamq.supabase.co/functions/v1/push-notifications',
-    ARRAY[http_header('Authorization', 'Bearer ' || current_setting('app.supabase_service_role_key')),
+    ARRAY[http_header('Content-Type', 'application/json')],
     'application/json',
     payload::text
   ));
