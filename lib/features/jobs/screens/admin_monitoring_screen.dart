@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class AdminMonitoringScreen extends ConsumerStatefulWidget {
   const AdminMonitoringScreen({Key? key}) : super(key: key);
@@ -140,32 +141,14 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Job Monitoring',
-        subtitle: 'Real-time job and driver tracking',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
         onSignOut: () async {
           await ref.read(authProvider.notifier).signOut();
         },
-        actions: [
-          IconButton(
-            icon: _isRefreshing
-                ? const SizedBox(
-                    width: 20,
-                    height: 20,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2,
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        ChoiceLuxTheme.richGold,
-                      ),
-                    ),
-                  )
-                : const Icon(Icons.refresh_rounded),
-            onPressed: _isRefreshing ? null : _refreshData,
-          ),
-        ],
       ),
       body: Column(
         children: [

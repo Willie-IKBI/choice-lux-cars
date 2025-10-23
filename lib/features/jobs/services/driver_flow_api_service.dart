@@ -45,7 +45,7 @@ class DriverFlowApiService {
       await _supabase.from('driver_flow').upsert({
         'job_id': jobId,
         'driver_user': driverId,
-        'current_step': 'vehicle_collection', // Start with vehicle collection step
+        'current_step': 'pickup_arrival', // Advance to next step immediately
         'job_started_at': SATimeUtils.getCurrentSATimeISO(),
         'odo_start_reading': odoStartReading,
         'pdp_start_image': pdpStartImage,

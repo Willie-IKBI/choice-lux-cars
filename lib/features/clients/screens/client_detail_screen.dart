@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/features/clients/providers/client_stats_provider
 import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
@@ -78,21 +79,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: 'Client Details',
-            subtitle: 'View and manage client information',
             showBackButton: true,
             onBackPressed: () => context.go('/clients'),
-            actions: [
-              IconButton(
-                onPressed: refreshClient,
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh client data',
-              ),
-            ],
           ),
           body: SafeArea(
             child: LayoutBuilder(

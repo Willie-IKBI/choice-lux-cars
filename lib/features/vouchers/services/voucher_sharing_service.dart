@@ -1,14 +1,32 @@
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
+import 'package:choice_lux_cars/shared/screens/pdf_viewer_screen.dart';
+import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
+import 'package:flutter/material.dart';
 
 class VoucherSharingService {
-  /// Open voucher URL in external browser
-  Future<void> openVoucherUrl(String url) async {
+  /// Open voucher URL in platform-specific PDF viewer
+  Future<void> openVoucherUrl(String url, BuildContext context, {Map<String, dynamic>? voucherData}) async {
+    try {
+      await PdfViewerService.openPdf(
+        context: context,
+        pdfUrl: url,
+        title: 'Voucher',
+        documentType: 'voucher',
+        documentData: voucherData,
+      );
+    } catch (e) {
+      throw Exception('Failed to open voucher: $e');
+    }
+  }
+
+  /// Open voucher URL in external browser (fallback method)
+  Future<void> openVoucherUrlExternal(String url) async {
     try {
       final uri = Uri.parse(url);
       if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
+        await launchUrl(uri, mode: LaunchMode.platformDefault);
       } else {
         throw Exception('Could not open voucher URL');
       }

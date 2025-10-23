@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -52,41 +53,16 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: 'Clients',
-            subtitle: 'Manage your clients',
             showBackButton: true,
             onBackPressed: () => context.go('/'),
             onSignOut: () async {
               await ref.read(authProvider.notifier).signOut();
             },
-            actions: [
-              IconButton(
-                icon: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                      width: 1,
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.archive_rounded,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 20,
-                  ),
-                ),
-                onPressed: () {
-                  context.go('/clients/inactive');
-                },
-                tooltip: 'View Inactive Clients',
-              ),
-            ],
           ),
           floatingActionButton: _buildMobileOptimizedFAB(isMobile),
           body: SafeArea(

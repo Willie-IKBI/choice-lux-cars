@@ -7,6 +7,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -106,40 +107,17 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
-            title: 'Manage Users',
-            subtitle: 'User administration',
+            title: 'Users',
             showBackButton: true,
             onBackPressed: () => context.go('/'),
             onSignOut: () async {
               await ref.read(auth.authProvider.notifier).signOut();
             },
-        actions: [
-          IconButton(
-            icon: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(10),
-                border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
-                  width: 1,
-                ),
-              ),
-              child: Icon(
-                Icons.refresh_rounded,
-                color: ChoiceLuxTheme.richGold,
-                size: 20,
-              ),
-            ),
-            onPressed: () => usersNotifier.refresh(),
-            tooltip: 'Refresh',
           ),
-        ],
-      ),
       body: SafeArea(
           child: Padding(
             padding: EdgeInsets.all(

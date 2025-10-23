@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -35,7 +36,7 @@ class UserDetailScreen extends ConsumerWidget {
           Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
-          const Scaffold(
+          const SystemSafeScaffold(
             backgroundColor: Colors.transparent,
             body: Center(child: CircularProgressIndicator()),
           ),
@@ -53,7 +54,7 @@ class UserDetailScreen extends ConsumerWidget {
           Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
-          Scaffold(
+          SystemSafeScaffold(
             backgroundColor: Colors.transparent,
             appBar: LuxuryAppBar(
               title: 'User Not Found',
@@ -76,11 +77,10 @@ class UserDetailScreen extends ConsumerWidget {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        Scaffold(
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: 'Edit User',
-            subtitle: user.displayName,
             showBackButton: true,
             onBackPressed: () => context.go('/users'),
           ),

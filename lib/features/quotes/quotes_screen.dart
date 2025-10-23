@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'providers/quotes_provider.dart';
@@ -18,7 +19,6 @@ class QuotesScreen extends ConsumerStatefulWidget {
 class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   String _selectedStatus = 'all';
   String _searchQuery = '';
-  bool _isGridView = false;
 
   @override
   Widget build(BuildContext context) {
@@ -78,10 +78,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final isSmallMobile = screenWidth < 400;
     final isDesktop = screenWidth > 1200;
 
-    return Scaffold(
+    return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Quotes',
-        subtitle: 'Manage quotations',
         showBackButton: true,
         onBackPressed: () => context.go('/'),
       ),
@@ -112,8 +111,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 // Search and Filter Section
                 _buildSearchAndFilterSection(isMobile),
 
-                // View Toggle - Mobile uses compact version, Desktop uses full version
-                if (isMobile) _buildMobileViewToggle() else _buildViewToggle(),
 
                 // Quotes List/Grid
                 Expanded(
@@ -166,36 +163,18 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Quotes',
-                style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                  color: ChoiceLuxTheme.richGold,
-                  fontWeight: FontWeight.w700,
-                  fontSize: isSmallMobile
-                      ? 20
-                      : isMobile
-                      ? 24
-                      : 28,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                filteredCount == totalCount
-                    ? '$totalCount total quotes'
-                    : '$filteredCount of $totalCount quotes',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: ChoiceLuxTheme.platinumSilver,
-                  fontSize: isSmallMobile
-                      ? 12
-                      : isMobile
-                      ? 14
-                      : 16,
-                ),
-              ),
-            ],
+          Text(
+            filteredCount == totalCount
+                ? '$totalCount total quotes'
+                : '$filteredCount of $totalCount quotes',
+            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+              color: ChoiceLuxTheme.platinumSilver,
+              fontSize: isSmallMobile
+                  ? 12
+                  : isMobile
+                  ? 14
+                  : 16,
+            ),
           ),
           const SizedBox(height: 16),
           Container(
@@ -379,146 +358,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     );
   }
 
-  Widget _buildViewToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Row(
-        children: [
-          const Spacer(),
-          Container(
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildToggleButton(
-                  icon: Icons.view_list,
-                  isSelected: !_isGridView,
-                  onTap: () => setState(() => _isGridView = false),
-                ),
-                _buildToggleButton(
-                  icon: Icons.grid_view,
-                  isSelected: _isGridView,
-                  onTap: () => setState(() => _isGridView = true),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMobileViewToggle() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      child: Row(
-        children: [
-          const Spacer(),
-          Container(
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray,
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                _buildMobileToggleButton(
-                  icon: Icons.view_list,
-                  label: 'List',
-                  isSelected: !_isGridView,
-                  onTap: () => setState(() => _isGridView = false),
-                ),
-                _buildMobileToggleButton(
-                  icon: Icons.grid_view,
-                  label: 'Grid',
-                  isSelected: _isGridView,
-                  onTap: () => setState(() => _isGridView = true),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildMobileToggleButton({
-    required IconData icon,
-    required String label,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 12,
-        ), // Increased vertical padding for better touch target
-        constraints: const BoxConstraints(
-          minHeight: 44,
-        ), // Ensure minimum 44px touch target
-        decoration: BoxDecoration(
-          color: isSelected ? ChoiceLuxTheme.richGold : Colors.transparent,
-          borderRadius: BorderRadius.circular(8),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
-            ),
-            const SizedBox(width: 4),
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                color: isSelected
-                    ? Colors.black
-                    : ChoiceLuxTheme.platinumSilver,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildToggleButton({
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        padding: const EdgeInsets.all(8),
-        decoration: BoxDecoration(
-          color: isSelected ? ChoiceLuxTheme.richGold : Colors.transparent,
-          borderRadius: BorderRadius.circular(6),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: isSelected ? Colors.black : ChoiceLuxTheme.platinumSilver,
-        ),
-      ),
-    );
-  }
 
   Widget _buildQuotesList(
     List<Quote> quotes,
@@ -538,33 +379,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         ? 16.0
         : 24.0;
 
-    if (_isGridView && !isMobile) {
-      // Grid view for desktop
-      return RefreshIndicator(
-        onRefresh: () => ref.read(quotesProvider.notifier).fetchQuotes(),
-        color: ChoiceLuxTheme.richGold,
-        backgroundColor: ChoiceLuxTheme.charcoalGray,
-        child: GridView.builder(
-          padding: EdgeInsets.all(gridPadding),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: isDesktop ? 3 : 2,
-            crossAxisSpacing: 20,
-            mainAxisSpacing: 20,
-            childAspectRatio: 1.2,
-          ),
-          itemCount: quotes.length,
-          itemBuilder: (context, index) {
-            final quote = quotes[index];
-            return QuoteCard(
-              quote: quote,
-              onTap: () => context.go('/quotes/${quote.id ?? ''}'),
-              context: context,
-            );
-          },
-        ),
-      );
-    } else {
-      // List view for mobile and desktop
+    // List view for all screen sizes
       return RefreshIndicator(
         onRefresh: () => ref.read(quotesProvider.notifier).fetchQuotes(),
         color: ChoiceLuxTheme.richGold,
@@ -585,7 +400,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           },
         ),
       );
-    }
   }
 
   Widget _buildEmptyState() {

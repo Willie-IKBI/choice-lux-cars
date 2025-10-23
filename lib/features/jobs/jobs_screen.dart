@@ -14,6 +14,7 @@ import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
@@ -30,7 +31,7 @@ class JobsScreen extends ConsumerStatefulWidget {
 
 class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
-  String _currentFilter = 'open'; // open, closed, in_progress, all
+  String _currentFilter = 'all'; // open, in_progress, completed, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
@@ -132,47 +133,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        // Layer 2: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 2: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: 'Jobs',
-            subtitle: 'Manage transportation jobs',
             showBackButton: true,
             onBackPressed: () => context.go('/'),
-            actions: [
-              // Refresh button
-              IconButton(
-                onPressed: _manualRefresh,
-                icon: const Icon(Icons.refresh),
-                tooltip: 'Refresh jobs',
-              ),
-              if (canCreateJobs)
-                ElevatedButton.icon(
-                  onPressed: () => context.go('/jobs/create'),
-                  icon: const Icon(Icons.add),
-                  label: Text(isMobile ? 'Create' : 'Create Job'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.richGold,
-                    foregroundColor: Colors.black,
-                    padding: EdgeInsets.symmetric(
-                      horizontal: isSmallMobile
-                          ? 12
-                          : isMobile
-                          ? 16
-                          : 20,
-                      vertical: isSmallMobile
-                          ? 6
-                          : isMobile
-                          ? 8
-                          : 10,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-            ],
           ),
           drawer: const LuxuryDrawer(),
           body: Stack( // The body is now just the content stack
@@ -187,7 +154,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                     _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
                     // Enhanced Search Section
-                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop),
+                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
 
                     // Results count with better mobile optimization
                     _buildResultsCount(
@@ -341,6 +308,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     bool isMobile,
     bool isTablet,
     bool isDesktop,
+    bool canCreateJobs,
   ) {
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
@@ -384,6 +352,37 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               ),
             ),
           ),
+          if (canCreateJobs) ...[
+            SizedBox(
+              width: isSmallMobile
+                  ? 8
+                  : isMobile
+                  ? 12
+                  : 16,
+            ),
+            ElevatedButton.icon(
+              onPressed: () => context.go('/jobs/create'),
+              icon: const Icon(Icons.add, size: 18),
+              label: Text(
+                isSmallMobile ? 'New' : 'Create Job',
+                style: TextStyle(
+                  fontSize: isSmallMobile ? 12 : 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.black,
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallMobile ? 12 : 16,
+                  vertical: isSmallMobile ? 8 : 12,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(cornerRadius),
+                ),
+              ),
+            ),
+          ],
           if (_searchQuery.isNotEmpty) ...[
             SizedBox(
               width: isSmallMobile
@@ -719,19 +718,25 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   List<Job> _filterJobs(List<Job> jobs) {
     switch (_currentFilter) {
       case 'open':
-        return jobs.where((job) => job.status == 'open').toList();
+        // Treat 'open' and 'assigned' as open jobs
+        return jobs
+            .where((job) => job.status == 'open' || job.status == 'assigned')
+            .toList();
       case 'in_progress':
         return jobs
             .where(
               (job) =>
                   job.status == 'in_progress' ||
                   job.status == 'started' ||
-                  job.status == 'assigned',
+                  job.status == 'ready_to_close',
             )
             .toList();
       case 'completed':
         return jobs
-            .where((job) => job.status == 'completed' || job.status == 'closed')
+            .where((job) =>
+                job.status == 'completed' ||
+                job.status == 'closed' ||
+                job.status == 'cancelled')
             .toList();
       case 'all':
       default:

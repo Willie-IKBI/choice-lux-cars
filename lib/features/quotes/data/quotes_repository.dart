@@ -149,10 +149,15 @@ class QuotesRepository {
           .order('id', ascending: true);
 
       Log.d('Fetched ${response.length} transport details for quote: $quoteId');
+      Log.d('Transport details data: $response');
 
       return Result.success(response);
     } catch (error) {
       Log.e('Error fetching quote transport details: $error');
+      Log.e('Error type: ${error.runtimeType}');
+      if (error.toString().contains('relation') || error.toString().contains('does not exist')) {
+        Log.e('Database table "quotes_transport_details" may not exist');
+      }
       return _mapSupabaseError(error);
     }
   }
@@ -167,6 +172,12 @@ class QuotesRepository {
       );
       Log.d('Transport detail data: $transportDetail');
 
+      // Ensure required fields are present
+      if (transportDetail['quote_id'] == null) {
+        Log.e('Missing quote_id in transport detail');
+        return Result.failure(UnknownException('Missing quote_id'));
+      }
+
       final response = await _supabase
           .from('quotes_transport_details')
           .insert(transportDetail)
@@ -179,6 +190,10 @@ class QuotesRepository {
     } catch (error) {
       Log.e('Error creating quote transport detail: $error');
       Log.e('Failed transport detail data: $transportDetail');
+      Log.e('Error type: ${error.runtimeType}');
+      if (error.toString().contains('relation') || error.toString().contains('does not exist')) {
+        Log.e('Database table "quotes_transport_details" may not exist');
+      }
       return _mapSupabaseError(error);
     }
   }

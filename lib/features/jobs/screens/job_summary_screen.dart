@@ -21,6 +21,7 @@ import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
 import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
 import 'package:choice_lux_cars/features/users/data/users_repository.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -268,11 +269,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
     
     if (_isLoading) {
-      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+      return const SystemSafeScaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     if (_errorMessage != null) {
-      return Scaffold(
+      return SystemSafeScaffold(
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
@@ -307,7 +308,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
 
     if (_job == null) {
-      return Scaffold(
+      return SystemSafeScaffold(
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
@@ -330,25 +331,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ),
         // Layer 2: The Scaffold with a transparent background
-        Scaffold(
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: 'Job Summary',
-            subtitle: 'Job #${_job!.id}',
             showBackButton: true,
             onBackPressed: () => context.go('/jobs'),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.print),
-                onPressed: () => _printJobSummary(),
-                tooltip: 'Print Summary',
-              ),
-              IconButton(
-                icon: const Icon(Icons.share),
-                onPressed: () => _shareJobSummary(),
-                tooltip: 'Share Summary',
-              ),
-            ],
           ),
           body: Stack( // The body is now just the content stack
             children: [
@@ -527,7 +515,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       elevation: 4,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(20), // Reduced from 24
         decoration: BoxDecoration(
           gradient: LinearGradient(
             colors: [
@@ -543,14 +531,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         child: Row(
           children: [
             Container(
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(10), // Reduced from 12
               decoration: BoxDecoration(
                 color: _getStatusColor(),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.work, color: Colors.white, size: 28),
+              child: Icon(Icons.work, color: Colors.white, size: 24), // Reduced from 28
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12), // Reduced from 16
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -558,7 +546,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   Text(
                     _getStatusText(_job!.status),
                     style: TextStyle(
-                      fontSize: 22,
+                      fontSize: 18, // Reduced from 22
                       fontWeight: FontWeight.bold,
                       color: _getStatusColor(),
                     ),
@@ -575,7 +563,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               ),
             ),
             Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6), // Reduced padding
               decoration: BoxDecoration(
                 color: _getStatusColor(),
                 borderRadius: BorderRadius.circular(20),
@@ -592,7 +580,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
-                  fontSize: 12,
+                  fontSize: 11, // Slightly reduced font size
                 ),
               ),
             ),

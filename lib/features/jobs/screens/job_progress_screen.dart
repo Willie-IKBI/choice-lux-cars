@@ -402,6 +402,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       return;
     }
 
+    Log.d('=== UPDATING STEP STATUS ===');
+    bool hasChanges = false;
+
     // Update step completion status based on job progress
     for (int i = 0; i < _jobSteps.length; i++) {
       final step = _jobSteps[i];
@@ -416,6 +419,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           // Vehicle collection is completed only if vehicle_collected is true
           // Once completed, it cannot be undone
           isCompleted = _jobProgress!['vehicle_collected'] == true;
+          Log.d('Vehicle collection step - completed: $isCompleted, vehicle_collected: ${_jobProgress!['vehicle_collected']}');
           break;
         case 'pickup_arrival':
           // Pickup arrival is completed only when we've moved beyond this step
@@ -468,11 +472,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           break;
       }
 
+      // Check if step status has changed
+      if (_jobSteps[i].isCompleted != isCompleted || _jobSteps[i].isActive != (step.id == _currentStep)) {
+        hasChanges = true;
+        Log.d('Step ${step.id} status changed - completed: $isCompleted, active: ${step.id == _currentStep}');
+      }
+
       // Update the step completion status
-      _jobSteps[i] = step.copyWith(isCompleted: isCompleted);
+      _jobSteps[i] = step.copyWith(
+        isCompleted: isCompleted,
+        isActive: step.id == _currentStep,
+      );
 
       // Debug logging for step completion
-      Log.d('Step ${step.id}: isCompleted = $isCompleted');
+      Log.d('Step ${step.id}: isCompleted = $isCompleted, isActive = ${step.id == _currentStep}');
+    }
+
+    // Only trigger rebuild if there were actual changes
+    if (hasChanges) {
+      Log.d('Step status changes detected, triggering rebuild');
+      if (mounted) {
+        setState(() {
+          // Trigger rebuild
+        });
+      }
+    } else {
+      Log.d('No step status changes, skipping rebuild');
     }
 
     // Update step titles with addresses
@@ -844,13 +869,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   /// Map database step IDs to UI step IDs
   String _mapDatabaseStepToUIStep(String databaseStep) {
+    Log.d('Mapping database step: $databaseStep');
+    
     switch (databaseStep) {
+      case 'not_started':
+        return 'not_started';
       case 'vehicle_collection':
         return 'vehicle_collection';
       case 'pickup_arrival':
         return 'pickup_arrival';
       case 'passenger_pickup':
-        return 'passenger_pickup'; // FIXED: Map to the actual step ID
+        return 'passenger_pickup';
       case 'passenger_onboard':
         return 'passenger_onboard';
       case 'en_route':
@@ -874,7 +903,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }
 
   void _determineCurrentStep() {
-    if (_jobProgress == null) return;
+    if (_jobProgress == null) {
+      Log.d('_determineCurrentStep: _jobProgress is null, returning early');
+      return;
+    }
 
     // Debug logging
     Log.d('=== DETERMINING CURRENT STEP ===');
@@ -885,17 +917,27 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     String newCurrentStep = 'not_started'; // Default to not started
 
+    // Validate step transition logic
+    try {
+
     // Priority 1: Check if job has actually started
     if (_jobProgress!['vehicle_collected'] == false &&
         _jobProgress!['current_step'] == null) {
       newCurrentStep = 'not_started';
       Log.d('Job has not started yet - showing as not started');
     }
-    // Priority 2: If vehicle is collected but current_step is vehicle_collection, progress to next step
-    else if (_jobProgress!['vehicle_collected'] == true &&
-        _jobProgress!['current_step'] == 'vehicle_collection') {
-      newCurrentStep = 'pickup_arrival';
-      Log.d('Vehicle collected, progressing to pickup arrival');
+    // Priority 2: If vehicle is collected, progress to pickup arrival
+    else if (_jobProgress!['vehicle_collected'] == true) {
+      // Check if we're still on vehicle_collection step or need to advance
+      if (_jobProgress!['current_step'] == 'vehicle_collection' || 
+          _jobProgress!['current_step'] == null) {
+        newCurrentStep = 'pickup_arrival';
+        Log.d('Vehicle collected, progressing to pickup arrival');
+      } else {
+        // Use the existing current_step from database
+        newCurrentStep = _mapDatabaseStepToUIStep(_jobProgress!['current_step'].toString());
+        Log.d('Vehicle collected, using existing step: ${_jobProgress!['current_step']} -> $newCurrentStep');
+      }
     }
     // Priority 3: Trust the database current_step if it exists and is valid
     else if (_jobProgress!['current_step'] != null &&
@@ -935,19 +977,48 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     // Update the current step if it changed
     if (_currentStep != newCurrentStep) {
-      Log.d('Step changed from $_currentStep to $newCurrentStep');
+      Log.d('=== STEP CHANGED ===');
+      Log.d('Previous step: $_currentStep');
+      Log.d('New step: $newCurrentStep');
+      Log.d('Reason: Step progression logic determined new step');
+      
       setState(() {
         _currentStep = newCurrentStep;
       });
       
       // Update the database with the new current step
       _updateCurrentStepInDatabase(newCurrentStep);
+      
+      Log.d('=== STEP UPDATE COMPLETE ===');
     } else {
       Log.d('Step unchanged: $_currentStep');
+      Log.d('No database update needed');
     }
 
-    // Force a rebuild of the step status to ensure UI updates
+    // Update step status only if needed
     _updateStepStatus();
+    
+    } catch (e) {
+      Log.e('=== ERROR IN STEP DETERMINATION ===');
+      Log.e('Error: $e');
+      Log.e('Stack trace: ${StackTrace.current}');
+      
+      // Fallback to safe default based on job progress
+      if (_jobProgress != null && _jobProgress!['vehicle_collected'] == true) {
+        newCurrentStep = 'pickup_arrival';
+        Log.d('Fallback: Vehicle collected, defaulting to pickup_arrival');
+      } else {
+        newCurrentStep = 'not_started';
+        Log.d('Fallback: Defaulting to not_started');
+      }
+      
+      // Update the current step even in error case
+      if (_currentStep != newCurrentStep) {
+        setState(() {
+          _currentStep = newCurrentStep;
+        });
+      }
+    }
   }
 
   Future<void> _updateCurrentStepInDatabase(String newStep) async {
@@ -1006,45 +1077,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== JOB STARTED SUCCESSFULLY ===');
                   Log.d('Now loading job progress...');
 
-                  // Add a longer delay to ensure database update is reflected
-                  await Future.delayed(const Duration(milliseconds: 1000));
+                  // Close the modal first
+                  if (modalContext.mounted) {
+                    Navigator.of(modalContext).pop();
+                  }
 
+                  // Single reload with proper state management
                   if (mounted) {
                     await _loadJobProgress();
                     Log.d('=== JOB PROGRESS LOADED ===');
                     Log.d('Current step after reload: $_currentStep');
 
-                    // Force a UI rebuild to ensure step progression is visible
-                    if (mounted) {
-                      setState(() {
-                        // This will trigger a rebuild and ensure the UI updates
-                        // Force rebuild by updating a dummy variable
-                        _isLoading = _isLoading;
-                      });
-                    }
-
-                    // Add another small delay to ensure UI updates are processed
-                    await Future.delayed(const Duration(milliseconds: 200));
-
-                    // Force another reload to ensure we have the latest data
-                    if (mounted) {
-                      await _loadJobProgress();
-                      Log.d('=== SECOND RELOAD COMPLETE ===');
-                      Log.d('Final current step: $_currentStep');
-                    }
-
-                    // Close the modal using the stored context
-                    if (modalContext.mounted) {
-                      Navigator.of(modalContext).pop();
-                    }
-
-                    // Show success message after modal is closed and widget is still mounted
-                    if (mounted) {
-                      SnackBarUtils.showSuccess(
-                        context,
-                        'Job started successfully!',
-                      );
-                    }
+                    // Show success message
+                    SnackBarUtils.showSuccess(
+                      context,
+                      'Job started successfully!',
+                    );
                   }
                 } catch (e) {
                   Log.d('=== ERROR STARTING JOB ===');
@@ -2068,7 +2116,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               // Title with Gold Accent
               Expanded(
                 child: Text(
-                  'Job Progress - ${widget.job.jobNumber}',
+                  'Progress',
                   style: const TextStyle(
                     color: ChoiceLuxTheme.softWhite,
                     fontSize: 20,

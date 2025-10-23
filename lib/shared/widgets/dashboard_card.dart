@@ -142,7 +142,10 @@ class _DashboardCardState extends State<DashboardCard>
               child: Material(
                 color: Colors.transparent,
                 child: InkWell(
-                  onTap: widget.onTap,
+                  onTap: () {
+                    debugPrint('DashboardCard - Tapped: ${widget.title}');
+                    widget.onTap();
+                  },
                   borderRadius: BorderRadius.circular(borderRadius),
                   child: Container(
                     padding: cardPadding,

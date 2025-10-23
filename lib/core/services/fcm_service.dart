@@ -70,9 +70,6 @@ class FCMService {
 
   /// Set up message handlers
   static void _setupMessageHandlers(WidgetRef ref) {
-    // Handle background messages
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
-
     // Handle foreground messages
     FirebaseMessaging.onMessage.listen((RemoteMessage message) {
       _handleForegroundMessage(message, ref);
@@ -127,6 +124,10 @@ class FCMService {
     // Update notification count in provider
     ref.read(notificationProvider.notifier).updateUnreadCount();
 
+    // For foreground messages, we can show both system notification and in-app notification
+    // The system notification should already be handled by FCM automatically
+    // We just need to show the in-app SnackBar for user awareness
+    
     // Show in-app notification based on type
     switch (action) {
       case 'new_job_assigned':
@@ -378,35 +379,3 @@ class FCMService {
   }
 }
 
-// Background message handler
-@pragma('vm:entry-point')
-Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  Log.d('FCMService: Background message received: ${message.data}');
-
-  // Handle different notification types in background
-  final action = message.data['action'];
-
-  switch (action) {
-    case 'new_job_assigned':
-    case 'job_reassigned':
-      Log.d('FCMService: Background job assignment notification');
-      break;
-    case 'job_cancelled':
-      Log.d('FCMService: Background job cancellation notification');
-      break;
-    case 'job_status_changed':
-      Log.d('FCMService: Background job status change notification');
-      break;
-    case 'payment_reminder':
-      Log.d('FCMService: Background payment reminder notification');
-      break;
-    case 'system_alert':
-      Log.d('FCMService: Background system alert notification');
-      break;
-    default:
-      Log.d('FCMService: Background generic notification');
-  }
-
-  // You could show a local notification here if needed
-  // await _showLocalNotification(message);
-}

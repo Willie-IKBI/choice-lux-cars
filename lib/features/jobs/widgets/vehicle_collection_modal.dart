@@ -209,12 +209,159 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     );
   }
 
+  /// Compact dialog for very small screens
+  Widget _buildCompactDialog(BuildContext context, double screenHeight, double screenWidth) {
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      child: Container(
+        width: screenWidth * 0.95,
+        height: screenHeight * 0.95,
+        decoration: BoxDecoration(
+          gradient: ChoiceLuxTheme.cardGradient,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          children: [
+            // Compact Header
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    ChoiceLuxTheme.richGold.withOpacity(0.05),
+                  ],
+                ),
+                borderRadius: const BorderRadius.only(
+                  topLeft: Radius.circular(16),
+                  topRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          ChoiceLuxTheme.richGold,
+                          ChoiceLuxTheme.richGold.withOpacity(0.8),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.directions_car_rounded,
+                      color: Colors.black,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Vehicle Collection',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.softWhite,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        Text(
+                          'Capture odometer reading and location',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            
+            // Scrollable Content
+            Expanded(
+              child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    children: [
+                      _buildImageSection(true), // Force small screen layout
+                      const SizedBox(height: 12),
+                      _buildOdometerInputSection(),
+                      const SizedBox(height: 12),
+                      _buildGpsStatusSection(),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            
+            // Compact Action Buttons
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                borderRadius: const BorderRadius.only(
+                  bottomLeft: Radius.circular(16),
+                  bottomRight: Radius.circular(16),
+                ),
+              ),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: widget.onCancel,
+                      label: 'Cancel',
+                      isPrimary: false,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _isLoading ? null : _confirmVehicleCollection,
+                      label: _isLoading ? 'Processing...' : 'Start Job',
+                      isPrimary: true,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+    
+    // Error boundary for very small screens
+    if (isVerySmallScreen) {
+      return _buildCompactDialog(context, screenHeight, screenWidth);
+    }
+    
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 500),
+        constraints: BoxConstraints(
+          maxWidth: 500,
+          maxHeight: screenHeight * 0.9, // Responsive height
+        ),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           decoration: BoxDecoration(
@@ -299,28 +446,33 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                 ),
               ),
 
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    // Odometer Image Section
-                    _buildImageSection(),
-                    const SizedBox(height: 24),
+              // Content - Make scrollable
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const BouncingScrollPhysics(),
+                  child: Padding(
+                    padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+                    child: Column(
+                      children: [
+                        // Odometer Image Section
+                        _buildImageSection(isSmallScreen),
+                        SizedBox(height: isSmallScreen ? 16 : 20),
 
-                    // Odometer Reading Section
-                    _buildOdometerInputSection(),
-                    const SizedBox(height: 24),
+                        // Odometer Reading Section
+                        _buildOdometerInputSection(),
+                        SizedBox(height: isSmallScreen ? 16 : 20),
 
-                    // GPS Status Section
-                    _buildGpsStatusSection(),
-                  ],
+                        // GPS Status Section
+                        _buildGpsStatusSection(),
+                      ],
+                    ),
+                  ),
                 ),
               ),
 
-              // Action Buttons
+              // Action Buttons - Optimized padding
               Container(
-                padding: const EdgeInsets.all(24),
+                padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
                   borderRadius: const BorderRadius.only(
@@ -335,9 +487,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                         onPressed: widget.onCancel,
                         label: 'Cancel',
                         isPrimary: false,
+                        isCompact: isSmallScreen,
                       ),
                     ),
-                    const SizedBox(width: 16),
+                    SizedBox(width: isSmallScreen ? 12 : 16),
                     Expanded(
                       child: _buildLuxuryButton(
                         onPressed: _isLoading
@@ -345,6 +498,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                             : _confirmVehicleCollection,
                         label: _isLoading ? 'Processing...' : 'Start Job',
                         isPrimary: true,
+                        isCompact: isSmallScreen,
                       ),
                     ),
                   ],
@@ -357,7 +511,12 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     );
   }
 
-  Widget _buildImageSection() {
+  Widget _buildImageSection(bool isSmallScreen) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = isSmallScreen 
+        ? (screenHeight * 0.25).clamp(120.0, 180.0) // Responsive height
+        : 200.0;
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -381,7 +540,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         ),
         const SizedBox(height: 12),
         Container(
-          height: 200,
+          height: imageHeight,
           decoration: BoxDecoration(
             color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
@@ -653,6 +812,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     required VoidCallback? onPressed,
     required String label,
     required bool isPrimary,
+    bool isCompact = false,
   }) {
     if (isPrimary) {
       return Container(
@@ -672,25 +832,28 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             ),
           ],
         ),
-        child: ElevatedButton(
-          onPressed: onPressed,
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 14),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
+          child: ElevatedButton(
+            onPressed: onPressed,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.transparent,
+              shadowColor: Colors.transparent,
+              padding: EdgeInsets.symmetric(
+                vertical: isCompact ? 12 : 14,
+                horizontal: isCompact ? 8 : 16,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                color: Colors.black,
+                fontSize: isCompact ? 14 : 16,
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
-          child: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 16,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
       );
     } else {
       return Container(
@@ -707,7 +870,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(
+              vertical: isCompact ? 12 : 14,
+              horizontal: isCompact ? 8 : 16,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -716,7 +882,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             label,
             style: TextStyle(
               color: ChoiceLuxTheme.richGold,
-              fontSize: 16,
+              fontSize: isCompact ? 14 : 16,
               fontWeight: FontWeight.w600,
             ),
           ),

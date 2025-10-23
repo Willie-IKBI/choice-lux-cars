@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/invoices/providers/invoice_controller.dart';
 import 'package:choice_lux_cars/features/invoices/services/invoice_sharing_service.dart';
+import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 
 class InvoiceActionButtons extends ConsumerStatefulWidget {
@@ -178,7 +179,18 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
     if (widget.invoicePdfUrl == null) return;
 
     try {
-      await _sharingService.openInvoiceUrl(widget.invoicePdfUrl!);
+      await PdfViewerService.openPdf(
+        context: context,
+        pdfUrl: widget.invoicePdfUrl!,
+        title: 'Invoice #${widget.jobId}',
+        documentType: 'invoice',
+        documentData: {
+          'id': widget.jobId,
+          'title': 'Invoice #${widget.jobId}',
+          'recipientEmail': widget.invoiceData?.clientContactEmail,
+          'phoneNumber': widget.invoiceData?.clientContactNumber,
+        },
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

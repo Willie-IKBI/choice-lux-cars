@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class AddEditAgentScreen extends ConsumerStatefulWidget {
@@ -60,12 +61,11 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with a transparent background
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: isEditMode ? 'Edit Agent' : 'Add Agent',
-            subtitle: isEditMode ? 'Update agent details' : 'Create new agent',
             showBackButton: true,
             onBackPressed: () => context.pop(),
           ),

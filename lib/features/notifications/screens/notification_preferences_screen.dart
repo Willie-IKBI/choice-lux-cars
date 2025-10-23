@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
@@ -38,14 +39,11 @@ class _NotificationPreferencesScreenState
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return Scaffold(
+    return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Notification Settings',
         showBackButton: true,
         showLogo: false,
-        actions: [
-          TextButton(onPressed: _savePreferences, child: const Text('Save')),
-        ],
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),

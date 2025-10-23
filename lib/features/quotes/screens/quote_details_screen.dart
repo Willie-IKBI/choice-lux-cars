@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
+import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 
 class QuoteDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
@@ -1285,8 +1286,17 @@ Choice Lux Cars
 
   Future<void> _openPdf(String url) async {
     try {
-      final cacheBustedUrl = '$url?cb=${DateTime.now().millisecondsSinceEpoch}';
-      await launchUrlString(cacheBustedUrl);
+      await PdfViewerService.openPdf(
+        context: context,
+        pdfUrl: url,
+        title: 'Quote #${_quote!.id}',
+        documentType: 'quote',
+        documentData: {
+          'id': _quote!.id,
+          'title': _quote!.quoteTitle ?? 'Untitled Quote',
+          'recipientEmail': _quote!.clientId, // You might want to get actual client email
+        },
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

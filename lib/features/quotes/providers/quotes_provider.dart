@@ -314,11 +314,15 @@ class QuoteTransportDetailsNotifier
   /// Refresh transport details data
   Future<void> refresh() async {
     ref.invalidateSelf();
+    // Wait for the invalidation to complete
+    await Future.delayed(const Duration(milliseconds: 50));
   }
 
   /// Fetch transport details manually (for UI refresh)
   Future<void> fetchTransportDetails() async {
     ref.invalidateSelf();
+    // Wait for the invalidation to complete
+    await Future.delayed(const Duration(milliseconds: 50));
   }
 }
 

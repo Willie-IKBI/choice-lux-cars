@@ -15,19 +15,32 @@ class Env {
   );
 
   /// Firebase configuration
-  static const firebaseApiKey = String.fromEnvironment('FIREBASE_API_KEY');
+  static const firebaseApiKey = String.fromEnvironment(
+    'FIREBASE_API_KEY',
+    defaultValue: 'AIzaSyB90cDtsNrH4pomnp8n4Dd7qU_lcLJl0g4',
+  );
   static const firebaseProjectId = String.fromEnvironment(
     'FIREBASE_PROJECT_ID',
+    defaultValue: 'choice-lux-cars-8d510',
   );
-  static const firebaseAppId = String.fromEnvironment('FIREBASE_APP_ID');
-  static const firebaseSenderId = String.fromEnvironment('FIREBASE_SENDER_ID');
+  static const firebaseAppId = String.fromEnvironment(
+    'FIREBASE_APP_ID',
+    defaultValue: '1:522491134348:android:297f3966013d3d14b7d6a9',
+  );
+  static const firebaseSenderId = String.fromEnvironment(
+    'FIREBASE_SENDER_ID',
+    defaultValue: '522491134348',
+  );
   static const firebaseAuthDomain = String.fromEnvironment(
     'FIREBASE_AUTH_DOMAIN',
+    defaultValue: 'choice-lux-cars-8d510.firebaseapp.com',
   );
   static const firebaseStorageBucket = String.fromEnvironment(
     'FIREBASE_STORAGE_BUCKET',
+    defaultValue: 'choice-lux-cars-8d510.firebasestorage.app',
   );
   static const firebaseVapidKey = String.fromEnvironment(
     'FIREBASE_VAPID_KEY',
+    defaultValue: '',
   );
 }

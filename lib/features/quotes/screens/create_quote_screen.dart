@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.da
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
@@ -267,14 +268,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        // Layer 2: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 2: The SystemSafeScaffold with a transparent background
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: widget.quoteId != null ? 'Edit Quote' : 'Create New Quote',
-            subtitle: widget.quoteId != null
-                ? 'Update Quote Details'
-                : 'Step 1: Quote Details',
             showBackButton: true,
             onBackPressed: () => widget.quoteId != null
                 ? context.go('/quotes/${widget.quoteId}/summary')

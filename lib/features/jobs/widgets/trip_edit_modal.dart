@@ -57,6 +57,54 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
     super.dispose();
   }
 
+  Future<void> _confirmAndDeleteTrip() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Delete Trip'),
+        content: const Text('Are you sure you want to delete this trip? This action cannot be undone.'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.errorColor,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Delete'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      try {
+        setState(() => _isLoading = true);
+        await ref
+            .read(tripsByJobProvider(widget.jobId).notifier)
+            .deleteTrip(widget.trip.id!);
+
+        if (mounted) {
+          Navigator.of(context).pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Trip deleted successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text('Error deleting trip: $e')),
+          );
+        }
+      } finally {
+        if (mounted) setState(() => _isLoading = false);
+      }
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -201,8 +249,11 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                                   color: ChoiceLuxTheme.richGold,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  '${_pickupDate.day}/${_pickupDate.month}/${_pickupDate.year}',
+                                Expanded(
+                                  child: Text(
+                                    '${_pickupDate.day}/${_pickupDate.month}/${_pickupDate.year}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -236,8 +287,11 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                                   color: ChoiceLuxTheme.richGold,
                                 ),
                                 const SizedBox(width: 8),
-                                Text(
-                                  '${_pickupTime.hour.toString().padLeft(2, '0')}:${_pickupTime.minute.toString().padLeft(2, '0')}',
+                                Expanded(
+                                  child: Text(
+                                    '${_pickupTime.hour.toString().padLeft(2, '0')}:${_pickupTime.minute.toString().padLeft(2, '0')}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
                                 ),
                               ],
                             ),
@@ -328,7 +382,27 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                       child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 16),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _confirmAndDeleteTrip,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ChoiceLuxTheme.errorColor,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : const Text('Delete Trip'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _saveTrip,

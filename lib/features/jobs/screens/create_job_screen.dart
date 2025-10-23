@@ -13,6 +13,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
   final String? jobId; // null for create, non-null for edit
@@ -433,13 +434,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           ),
         ),
         // Layer 2: The Scaffold with a transparent background
-        Scaffold(
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
-            subtitle: widget.jobId != null
-                ? 'Update Job Details'
-                : 'Step 1: Job Details',
             showBackButton: true,
             onBackPressed: () => widget.jobId != null
                 ? context.go('/jobs/${widget.jobId}/summary')
@@ -1085,11 +1083,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               size: 20,
             ),
             const SizedBox(width: 12),
-            Text(
-              'Please select a client first to choose an agent',
-              style: TextStyle(
-                color: ChoiceLuxTheme.platinumSilver,
-                fontSize: 14,
+            Expanded(
+              child: Text(
+                'Please select a client first to choose an agent',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: 14,
+                ),
               ),
             ),
           ],

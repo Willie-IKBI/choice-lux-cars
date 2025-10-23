@@ -271,37 +271,14 @@ class JobListCard extends ConsumerWidget {
         borderRadius: BorderRadius.circular(6),
         border: Border.all(color: Colors.grey.withValues(alpha: 0.1), width: 1),
       ),
-      child: Row(
+      child: Wrap(
+        spacing: spacing * 0.5,
+        runSpacing: spacing * 0.25,
         children: [
-          // Passenger Count
-          _buildTravelChip(
-            context,
-            Icons.person,
-            '${currentJob.pasCount} pax',
-            spacing,
-          ),
-
-          SizedBox(width: spacing * 0.5),
-
-          // Luggage Count
-          _buildTravelChip(
-            context,
-            Icons.work,
-            '${currentJob.luggageCount} bags',
-            spacing,
-          ),
-
-          if (vehicle?.model != null) ...[
-            SizedBox(width: spacing * 0.5),
-
-            // Vehicle Info
-            _buildTravelChip(
-              context,
-              Icons.directions_car,
-              vehicle!.model,
-              spacing,
-            ),
-          ],
+          _buildTravelChip(context, Icons.person, '${currentJob.pasCount} pax', spacing),
+          _buildTravelChip(context, Icons.work, '${currentJob.luggageCount} bags', spacing),
+          if (vehicle?.model != null)
+            _buildTravelChip(context, Icons.directions_car, vehicle!.model, spacing),
         ],
       ),
     );
@@ -431,6 +408,8 @@ class JobListCard extends ConsumerWidget {
     double spacing,
     Job currentJob,
   ) {
+    final isTiny = isSmallMobile; // stack on very small devices
+
     return Column(
       children: [
         // Primary Action: View Details
@@ -462,9 +441,68 @@ class JobListCard extends ConsumerWidget {
 
         SizedBox(height: spacing),
 
-        // Secondary Actions Row
-        Row(
-          children: [
+        // Secondary Actions responsive
+        if (isTiny)
+          Column(
+            children: [
+              if (DriverFlowUtils.shouldShowDriverConfirmationButton(
+                currentUserId: ref.read(currentUserProfileProvider)?.id,
+                jobDriverId: currentJob.driverId,
+                jobStatus: currentJob.statusEnum,
+                isJobConfirmed: currentJob.driverConfirmation == true,
+              ))
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton.icon(
+                    onPressed: () => _handleDriverConfirmation(context, ref, currentJob),
+                    icon: const Icon(Icons.check_circle, size: 16),
+                    label: Text('Confirm Job', style: TextStyle(fontSize: isSmallMobile ? 12 : 14)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: ChoiceLuxTheme.orange,
+                      foregroundColor: Colors.white,
+                      padding: EdgeInsets.symmetric(horizontal: spacing, vertical: spacing * 0.75),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    ),
+                  ),
+                ),
+              if (DriverFlowUtils.shouldShowDriverFlowButton(
+                currentUserId: ref.read(currentUserProfileProvider)?.id,
+                jobDriverId: currentJob.driverId,
+                jobStatus: currentJob.statusEnum,
+                isJobConfirmed: currentJob.driverConfirmation == true,
+              ))
+                Padding(
+                  padding: EdgeInsets.only(top: spacing),
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleDriverFlow(context, ref, currentJob),
+                      icon: Icon(DriverFlowUtils.getDriverFlowIcon(currentJob.statusEnum), size: 16),
+                      label: Text(DriverFlowUtils.getDriverFlowText(currentJob.statusEnum), style: TextStyle(fontSize: isSmallMobile ? 12 : 14)),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DriverFlowUtils.getDriverFlowColor(currentJob.statusEnum),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(horizontal: spacing, vertical: spacing * 0.75),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                    ),
+                  ),
+                ),
+              if (canCreateVoucher)
+                Padding(
+                  padding: EdgeInsets.only(top: spacing),
+                  child: _buildVoucherSection(context, spacing, currentJob),
+                ),
+              if (canCreateInvoice)
+                Padding(
+                  padding: EdgeInsets.only(top: spacing),
+                  child: _buildInvoiceSection(context, spacing, currentJob),
+                ),
+            ],
+          )
+        else
+          Row(
+            children: [
             // Driver Confirmation Button (if applicable)
             if (DriverFlowUtils.shouldShowDriverConfirmationButton(
               currentUserId: ref.read(currentUserProfileProvider)?.id,
@@ -528,44 +566,44 @@ class JobListCard extends ConsumerWidget {
                 ),
               ),
 
-            // Voucher Actions
-            if (canCreateVoucher) ...[
-              if (DriverFlowUtils.shouldShowDriverConfirmationButton(
+              // Voucher Actions
+              if (canCreateVoucher) ...[
+                if (DriverFlowUtils.shouldShowDriverConfirmationButton(
                     currentUserId: ref.read(currentUserProfileProvider)?.id,
                     jobDriverId: currentJob.driverId,
                     jobStatus: currentJob.statusEnum,
                     isJobConfirmed: currentJob.driverConfirmation == true,
-                  ) ||
-                  DriverFlowUtils.shouldShowDriverFlowButton(
+                    ) ||
+                    DriverFlowUtils.shouldShowDriverFlowButton(
                     currentUserId: ref.read(currentUserProfileProvider)?.id,
                     jobDriverId: currentJob.driverId,
                     jobStatus: currentJob.statusEnum,
                     isJobConfirmed: currentJob.driverConfirmation == true,
-                  ))
-                SizedBox(width: spacing),
-              Expanded(child: _buildVoucherSection(context, spacing, currentJob)),
-            ],
+                    ))
+                  SizedBox(width: spacing),
+                Expanded(child: _buildVoucherSection(context, spacing, currentJob)),
+              ],
 
-            // Invoice Actions
-            if (canCreateInvoice) ...[
-              if (DriverFlowUtils.shouldShowDriverConfirmationButton(
+              // Invoice Actions
+              if (canCreateInvoice) ...[
+                if (DriverFlowUtils.shouldShowDriverConfirmationButton(
                     currentUserId: ref.read(currentUserProfileProvider)?.id,
                     jobDriverId: currentJob.driverId,
                     jobStatus: currentJob.statusEnum,
                     isJobConfirmed: currentJob.driverConfirmation == true,
-                  ) ||
-                  DriverFlowUtils.shouldShowDriverFlowButton(
+                    ) ||
+                    DriverFlowUtils.shouldShowDriverFlowButton(
                     currentUserId: ref.read(currentUserProfileProvider)?.id,
                     jobDriverId: currentJob.driverId,
                     jobStatus: currentJob.statusEnum,
                     isJobConfirmed: currentJob.driverConfirmation == true,
-                  ) ||
-                  canCreateVoucher)
-                SizedBox(width: spacing),
-              Expanded(child: _buildInvoiceSection(context, spacing, currentJob)),
+                    ) ||
+                    canCreateVoucher)
+                  SizedBox(width: spacing),
+                Expanded(child: _buildInvoiceSection(context, spacing, currentJob)),
+              ],
             ],
-          ],
-        ),
+          ),
       ],
     );
   }

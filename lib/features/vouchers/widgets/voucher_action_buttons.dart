@@ -161,7 +161,16 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
     if (widget.voucherPdfUrl == null) return;
 
     try {
-      await _sharingService.openVoucherUrl(widget.voucherPdfUrl!);
+      await _sharingService.openVoucherUrl(
+        widget.voucherPdfUrl!, 
+        context,
+        voucherData: {
+          'id': widget.jobId,
+          'title': 'Voucher #${widget.jobId}',
+          'recipientEmail': widget.voucherData?.agentContact,
+          'phoneNumber': widget.voucherData?.preferredPhoneNumber,
+        },
+      );
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(

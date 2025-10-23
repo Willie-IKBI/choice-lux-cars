@@ -34,6 +34,7 @@ import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
+import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
@@ -327,6 +328,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/notifications',
           name: 'notifications',
           builder: (context, state) => const NotificationListScreen(),
+        ),
+        GoRoute(
+          path: '/insights',
+          name: 'insights',
+          builder: (context, state) => const InsightsScreen(),
         ),
       ],
       errorBuilder: (context, state) => Scaffold(

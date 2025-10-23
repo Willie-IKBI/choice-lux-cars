@@ -71,10 +71,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           ),
         ],
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20),
+        child: Row(
             children: [
               // Back Button or Menu Button
               if (showBackButton)
@@ -141,7 +140,6 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               // Custom Actions
               if (actions != null) ...[...actions!],
             ],
-          ),
         ),
       ),
     );

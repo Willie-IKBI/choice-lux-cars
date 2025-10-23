@@ -12,6 +12,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -31,6 +32,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
     final jobs = ref.watch(jobsProvider);
+    
+    print('Dashboard - Main build - User profile: ${userProfile?.displayName}');
+    print('Dashboard - Main build - User role: ${userProfile?.role}');
+    print('Dashboard - Main build - Current user: ${currentUser?.email}');
 
     // Initialize notification provider once when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -52,6 +57,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isAdmin = userRole == 'administrator';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
+    
 
     // Count today's jobs based on role
     final todayJobsCount = _getTodayJobsCount(
@@ -99,12 +105,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           key: _scaffoldKey,
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
-            title: 'Choice Lux Cars',
+            title: 'Dashboard',
             showLogo: true,
             showProfile: true,
             onNotificationTap: _handleNotifications,
@@ -120,28 +126,27 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             },
           ),
           drawer: isMobile ? null : LuxuryDrawer(),
-          body: SafeArea(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  // Welcome Section
-                  _buildWelcomeSection(context, userName),
-                  SizedBox(height: sectionSpacing),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Welcome Section
+                _buildWelcomeSection(context, userName),
+                SizedBox(height: sectionSpacing),
 
-                  // Dashboard Cards
-                  _buildDashboardCards(
-                    context,
-                    todayJobsCount,
-                    unassignedUsersCount,
-                  ),
-                  SizedBox(height: sectionSpacing),
-                ],
-              ),
+
+                // Dashboard Cards
+                _buildDashboardCards(
+                  context,
+                  todayJobsCount,
+                  unassignedUsersCount,
+                ),
+                SizedBox(height: sectionSpacing),
+              ],
             ),
           ),
         ),
@@ -224,16 +229,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Dashboard',
-            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
-              color: ChoiceLuxTheme.richGold,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 0.5,
-              fontSize: titleSize,
-            ),
-          ),
-          SizedBox(height: spacing),
-          Text(
             'Welcome back, $userName 👋',
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
               color: ChoiceLuxTheme.platinumSilver,
@@ -269,6 +264,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int todayJobsCount,
     int unassignedUsersCount,
   ) {
+    print('Dashboard - _buildDashboardCards called');
     final userProfile = ref.watch(currentUserProfileProvider);
     final users = ref.watch(usersProvider);
     final userRole = userProfile?.role?.toLowerCase();
@@ -276,6 +272,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isAdmin = userRole == 'administrator';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
+    
+    print('Dashboard - User profile: ${userProfile?.displayName}');
+    print('Dashboard - User role: $userRole');
+    print('Dashboard - isAdmin: $isAdmin, isManager: $isManager, isDriver: $isDriver');
 
     // Build dashboard items based on role
     List<DashboardItem> dashboardItems = [];
@@ -342,6 +342,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
         ),
       ];
+      
+      // Add Insights card for admin users
+      if (isAdmin) {
+        print('Dashboard - Adding Insights card for admin user');
+        dashboardItems.add(
+          DashboardItem(
+            title: 'Insights',
+            subtitle: 'View business analytics and reports',
+            icon: Icons.analytics_outlined,
+            route: '/insights',
+            color: ChoiceLuxTheme.richGold,
+          ),
+        );
+      } else {
+        print('Dashboard - NOT adding Insights card - user is not admin');
+      }
     }
 
     // Responsive grid configuration based on screen size

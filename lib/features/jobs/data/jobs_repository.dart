@@ -43,7 +43,7 @@ class JobsRepository {
         query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
         // Drivers only see jobs assigned to them
-        Log.d('Driver - fetching only assigned jobs');
+        Log.d('Driver - fetching only assigned jobs for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
         // Unknown role or missing userId - default to no access
@@ -54,6 +54,14 @@ class JobsRepository {
       final response = await query.order('created_at', ascending: false);
 
       Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole');
+      
+      // Debug: Log the actual query being executed for drivers
+      if (userRole == 'driver') {
+        Log.d('Driver query executed - checking if any jobs have driver_id matching $userId');
+        for (final job in response) {
+          Log.d('Job ${job['id']}: driver_id=${job['driver_id']}, passenger_name=${job['passenger_name']}');
+        }
+      }
 
       final jobs = response.map<Job>((json) => Job.fromJson(json as Map<String, dynamic>)).toList();
       return Result.success(jobs);
@@ -285,7 +293,7 @@ class JobsRepository {
         query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
         // Drivers see jobs assigned to them (current + completed)
-        Log.d('Driver - fetching assigned jobs with status: $status');
+        Log.d('Driver - fetching assigned jobs with status: $status for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
         // Unknown role or missing userId - default to no access
@@ -357,7 +365,7 @@ class JobsRepository {
         query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
         // Drivers see jobs assigned to them (current + completed)
-        Log.d('Driver - fetching assigned jobs for client: $clientId');
+        Log.d('Driver - fetching assigned jobs for client: $clientId for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
         // Unknown role or missing userId - default to no access
@@ -409,7 +417,7 @@ class JobsRepository {
         query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
         // Drivers see jobs assigned to them (current + completed)
-        Log.d('Driver - fetching assigned jobs for client: $clientId');
+        Log.d('Driver - fetching assigned jobs for client: $clientId for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
         // Unknown role or missing userId - default to no access

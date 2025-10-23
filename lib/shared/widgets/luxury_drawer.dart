@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class LuxuryDrawer extends ConsumerStatefulWidget {
   const LuxuryDrawer({super.key});
@@ -56,9 +57,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           topRight: Radius.circular(20),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
+      child: SafeArea(
+        bottom: true, // Ensure bottom padding for system navigation bar
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
           // Handle bar
           Container(
             margin: const EdgeInsets.symmetric(vertical: 12),
@@ -189,11 +192,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         ),
                         _buildMobileMenuItem(
                           icon: Icons.analytics_outlined,
-                          title: 'Reports & Analytics',
+                          title: 'Business Insights',
                           onTap: () {
-                            Log.d('Navigate to Reports & Analytics');
+                            Log.d('Navigate to Business Insights');
                             Navigator.pop(context);
-                            context.push('/reports-analytics');
+                            context.go('/insights');
                           },
                         ),
                       ],
@@ -236,6 +239,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           // Bottom Section - Sign Out & Exit
           _buildMobileBottomSection(context),
         ],
+        ),
       ),
     );
   }
@@ -381,12 +385,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           ),
                           _buildMenuItem(
                             icon: Icons.analytics_outlined,
-                            title: 'Reports & Analytics',
-                            subtitle: 'View business insights',
+                            title: 'Business Insights',
+                            subtitle: 'View analytics and reports',
                             onTap: () {
-                              Log.d('Navigate to Reports & Analytics');
+                              Log.d('Navigate to Business Insights');
                               Navigator.pop(context);
-                              context.push('/reports-analytics');
+                              context.go('/insights');
                             },
                           ),
                         ],

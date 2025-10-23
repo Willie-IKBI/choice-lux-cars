@@ -7,15 +7,34 @@
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:522491134348:android:3035a4d8b64c22d4b7d6a9",
+        "mobilesdk_app_id": "1:522491134348:android:297f3966013d3d14b7d6a9",
         "android_client_info": {
-          "package_name": "com.example.choice_lux_cars"
+          "package_name": "com.choiceluxcars.app"
         }
       },
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyDYZG-hSZIbfhktZmErbpIXWqNrFC_lLyY"
+          "current_key": "AIzaSyB90cDtsNrH4pomnp8n4Dd7qU_lcLJl0g4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:522491134348:android:3035a4d8b64c22d4b7d6a9",
+        "android_client_info": {
+          "package_name": "com.mycompany.choiceluxcars"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyB90cDtsNrH4pomnp8n4Dd7qU_lcLJl0g4"
         }
       ],
       "services": {
@@ -26,4 +45,4 @@
     }
   ],
   "configuration_version": "1"
-} 
+}

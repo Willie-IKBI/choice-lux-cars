@@ -7,6 +7,7 @@ import 'providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -461,9 +462,83 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   }
 
   Widget _buildVehicleDetailsForm(bool isMobile, bool isSmallMobile) {
+    final compactGap = isSmallMobile ? 12.0 : 16.0;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        if (isSmallMobile)
+          Column(
+            children: [
+              TextFormField(
+                initialValue: make,
+                onChanged: (value) => make = value,
+                decoration: InputDecoration(
+                  labelText: 'Make',
+                  hintText: 'Enter vehicle make',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
+                ),
+                validator: (value) =>
+                    value?.isEmpty == true ? 'Make is required' : null,
+              ),
+              SizedBox(height: compactGap),
+              TextFormField(
+                initialValue: model,
+                onChanged: (value) => model = value,
+                decoration: InputDecoration(
+                  labelText: 'Model',
+                  hintText: 'Enter vehicle model',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
+                ),
+                validator: (value) =>
+                    value?.isEmpty == true ? 'Model is required' : null,
+              ),
+            ],
+          )
+        else
         Row(
           children: [
             Expanded(
@@ -577,10 +652,96 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         ),
         const SizedBox(height: fieldSpacing),
 
+        if (isSmallMobile)
+          Column(
+            children: [
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                value: ['Petrol', 'Diesel', 'Hybrid', 'Electric'].contains(fuelType)
+                    ? fuelType
+                    : 'Petrol',
+                items: const [
+                  DropdownMenuItem(value: 'Petrol', child: Text('Petrol')),
+                  DropdownMenuItem(value: 'Diesel', child: Text('Diesel')),
+                  DropdownMenuItem(value: 'Hybrid', child: Text('Hybrid')),
+                  DropdownMenuItem(value: 'Electric', child: Text('Electric')),
+                ],
+                onChanged: (v) => setState(() => fuelType = v ?? 'Petrol'),
+                decoration: InputDecoration(
+                  labelText: 'Fuel Type',
+                  hintText: 'Select fuel type',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
+                ),
+              ),
+              SizedBox(height: compactGap),
+              DropdownButtonFormField<String>(
+                isExpanded: true,
+                value: ['Active', 'Deactivated'].contains(status)
+                    ? status
+                    : 'Active',
+                items: const [
+                  DropdownMenuItem(value: 'Active', child: Text('Active')),
+                  DropdownMenuItem(value: 'Deactivated', child: Text('Deactivated')),
+                ],
+                onChanged: (v) => setState(() => status = v ?? 'Active'),
+                decoration: InputDecoration(
+                  labelText: 'Status',
+                  hintText: 'Select status',
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
+                ),
+              ),
+            ],
+          )
+        else
         Row(
           children: [
             Expanded(
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: ['Petrol', 'Diesel', 'Hybrid', 'Electric'].contains(fuelType)
                     ? fuelType
                     : 'Petrol',
@@ -623,6 +784,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
             const SizedBox(width: 16),
             Expanded(
               child: DropdownButtonFormField<String>(
+                isExpanded: true,
                 value: ['Active', 'Deactivated'].contains(status)
                     ? status
                     : 'Active',
@@ -1210,14 +1372,11 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with a transparent background
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
-            subtitle: isEdit 
-                ? 'Update vehicle details' 
-                : 'Create a new vehicle',
             showBackButton: true,
             onBackPressed: () => Navigator.of(context).pop(),
           ),

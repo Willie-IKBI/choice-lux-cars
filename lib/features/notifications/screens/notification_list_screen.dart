@@ -10,6 +10,8 @@ import 'package:choice_lux_cars/features/notifications/widgets/notification_card
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class NotificationListScreen extends ConsumerStatefulWidget {
   const NotificationListScreen({super.key});
@@ -45,34 +47,120 @@ class _NotificationListScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        // Layer 1: Gradient background
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
+    return SystemSafeScaffold(
+      appBar: LuxuryAppBar(
+        title: 'Notifications',
+        showBackButton: true,
+        showLogo: false,
+        actions: [
+          // Combined Actions Menu
+          PopupMenuButton<String>(
+            icon: Icon(
+              Icons.more_vert,
+              color: ChoiceLuxTheme.richGold,
+              size: 20,
+            ),
+            tooltip: 'More actions',
+            onSelected: (value) {
+              switch (value) {
+                case 'refresh':
+                  ref.read(notificationProvider.notifier).loadNotifications();
+                  ref.read(notificationProvider.notifier).loadStats();
+                  break;
+                case 'mark_all_read':
+                  _showMarkAllReadDialog(context);
+                  break;
+                case 'filter_all':
+                  setState(() => _selectedFilter = 'all');
+                  _loadFilteredNotifications();
+                  break;
+                case 'filter_unread':
+                  setState(() => _selectedFilter = 'unread');
+                  _loadFilteredNotifications();
+                  break;
+              }
+            },
+            color: ChoiceLuxTheme.charcoalGray,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+              side: BorderSide(
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'refresh',
+                child: Row(
+                  children: [
+                    Icon(Icons.refresh, color: ChoiceLuxTheme.richGold, size: 18),
+                    const SizedBox(width: 12),
+                    Text('Refresh', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'filter_all',
+                child: Row(
+                  children: [
+                    Icon(Icons.all_inbox, color: ChoiceLuxTheme.richGold, size: 18),
+                    const SizedBox(width: 12),
+                    Text('All Notifications', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'filter_unread',
+                child: Row(
+                  children: [
+                    Icon(Icons.mark_email_unread, color: ChoiceLuxTheme.richGold, size: 18),
+                    const SizedBox(width: 12),
+                    Text('Unread Only', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'mark_all_read',
+                child: Row(
+                  children: [
+                    Icon(Icons.done_all, color: ChoiceLuxTheme.successColor, size: 18),
+                    const SizedBox(width: 12),
+                    Text('Mark All Read', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
+                  ],
+                ),
+              ),
+            ],
           ),
-        ),
-        // Layer 2: Background pattern
-        const Positioned.fill(
-          child: CustomPaint(
-            painter: BackgroundPatterns.dashboard,
+        ],
+      ),
+      body: Stack(
+        children: [
+          // Layer 1: Gradient background
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
           ),
-        ),
-        // Layer 3: Scaffold with transparent background
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Column(
-            children: [
-              // Custom App Bar
-              _buildCustomAppBar(),
+          // Layer 2: Background pattern
+          const Positioned.fill(
+            child: CustomPaint(
+              painter: BackgroundPatterns.dashboard,
+            ),
+          ),
+          // Layer 3: Content
+          SingleChildScrollView(
+            child: Column(
+              children: [
+                // Filter and Stats Section
+                _buildFilterSection(),
 
-              // Filter and Stats Section
-              _buildFilterSection(),
-
-              // Notifications List
-              Expanded(
-                child: Consumer(
+                // Notifications List
+                SizedBox(
+                  height: MediaQuery.of(context).size.height - 
+                          MediaQuery.of(context).padding.top - 
+                          kToolbarHeight - 
+                          200, // Approximate height for filter section
+                  child: Consumer(
                   builder: (context, ref, child) {
                     final notificationState = ref.watch(notificationProvider);
 
@@ -125,212 +213,15 @@ class _NotificationListScreenState
                     );
                   },
                 ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildCustomAppBar() {
-    return Container(
-      height: 80,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
-            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
-          ],
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-            spreadRadius: 0,
+                ),
+              ],
+            ),
           ),
         ],
       ),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20),
-          child: Row(
-            children: [
-              // Back Button
-              Container(
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: IconButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  icon: Icon(
-                    Icons.arrow_back_ios_new,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 20,
-                  ),
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(8),
-                    minimumSize: const Size(40, 40),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 16),
-
-              // Title
-              Expanded(
-                child: Text(
-                  'Notifications',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w600,
-                    color: ChoiceLuxTheme.softWhite,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-              ),
-
-              // Filter Button
-              Container(
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: PopupMenuButton<String>(
-                  icon: Icon(
-                    Icons.filter_list,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 20,
-                  ),
-                  tooltip: 'Filter notifications',
-                  onSelected: (value) {
-                    setState(() {
-                      _selectedFilter = value;
-                    });
-                    _loadFilteredNotifications();
-                  },
-                  color: ChoiceLuxTheme.charcoalGray,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    side: BorderSide(
-                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-                      width: 1,
-                    ),
-                  ),
-                  itemBuilder: (context) => [
-                    _buildFilterMenuItem('all', 'All', Icons.all_inbox),
-                    _buildFilterMenuItem(
-                      NotificationConstants.jobAssignment,
-                      'Job Assignments',
-                      Icons.work,
-                    ),
-                    _buildFilterMenuItem(
-                      NotificationConstants.jobStatusChange,
-                      'Status Updates',
-                      Icons.update,
-                    ),
-                    _buildFilterMenuItem(
-                      NotificationConstants.paymentReminder,
-                      'Payment Reminders',
-                      Icons.payment,
-                    ),
-                    _buildFilterMenuItem(
-                      NotificationConstants.systemAlert,
-                      'System Alerts',
-                      Icons.warning,
-                    ),
-                  ],
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Refresh Button
-              Container(
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-                    width: 1,
-                  ),
-                ),
-                child: IconButton(
-                  onPressed: () async {
-                    await ref.read(notificationProvider.notifier).loadNotifications();
-                    await ref.read(notificationProvider.notifier).loadStats();
-                  },
-                  icon: Icon(
-                    Icons.refresh,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 20,
-                  ),
-                  tooltip: 'Refresh notifications',
-                  style: IconButton.styleFrom(
-                    padding: const EdgeInsets.all(8),
-                    minimumSize: const Size(40, 40),
-                  ),
-                ),
-              ),
-
-              const SizedBox(width: 12),
-
-              // Mark All Read Button
-              Consumer(
-                builder: (context, ref, child) {
-                  final notificationState = ref.watch(notificationProvider);
-                  final unreadCount = notificationState.unreadCount;
-
-                  if (unreadCount > 0) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.successColor.withValues(
-                          alpha: 0.1,
-                        ),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: ChoiceLuxTheme.successColor.withValues(
-                            alpha: 0.3,
-                          ),
-                          width: 1,
-                        ),
-                      ),
-                      child: IconButton(
-                        onPressed: () => _showMarkAllReadDialog(context),
-                        icon: Icon(
-                          Icons.done_all,
-                          color: ChoiceLuxTheme.successColor,
-                          size: 20,
-                        ),
-                        tooltip: 'Mark all as read',
-                        style: IconButton.styleFrom(
-                          padding: const EdgeInsets.all(8),
-                          minimumSize: const Size(40, 40),
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
-            ],
-          ),
-        ),
-      ),
     );
   }
+
 
   PopupMenuItem<String> _buildFilterMenuItem(
     String value,
@@ -431,36 +322,11 @@ class _NotificationListScreenState
 
               const SizedBox(height: 20),
 
-              // Stats cards
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildStatCard(
-                      'Total',
-                      fallbackTotalCount.toString(),
-                      Icons.all_inbox,
-                      ChoiceLuxTheme.richGold,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'Unread',
-                      fallbackUnreadCount.toString(),
-                      Icons.mark_email_unread,
-                      ChoiceLuxTheme.orange,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildStatCard(
-                      'High Priority',
-                      fallbackHighPriorityCount.toString(),
-                      Icons.priority_high,
-                      ChoiceLuxTheme.errorColor,
-                    ),
-                  ),
-                ],
+              // Single Summary Card
+              _buildSummaryCard(
+                fallbackTotalCount,
+                fallbackUnreadCount,
+                fallbackHighPriorityCount,
               ),
             ],
           ),
@@ -856,6 +722,7 @@ class _NotificationListScreenState
     Color color,
   ) {
     return Container(
+      height: 100, // Fixed height for consistency
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
@@ -863,6 +730,7 @@ class _NotificationListScreenState
         border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
       ),
       child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(icon, color: color, size: 24),
           const SizedBox(height: 8),
@@ -882,9 +750,131 @@ class _NotificationListScreenState
               fontSize: 12,
               fontWeight: FontWeight.w500,
             ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildSummaryCard(
+    int totalCount,
+    int unreadCount,
+    int highPriorityCount,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        children: [
+          // Header with icon and title
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.notifications_active,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Text(
+                'Notification Summary',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Statistics in a clean format
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildSummaryItem(
+                'Total',
+                totalCount.toString(),
+                Icons.all_inbox,
+                ChoiceLuxTheme.richGold,
+              ),
+              Container(
+                height: 30,
+                width: 1,
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+              ),
+              _buildSummaryItem(
+                'Unread',
+                unreadCount.toString(),
+                Icons.mark_email_unread,
+                ChoiceLuxTheme.orange,
+              ),
+              Container(
+                height: 30,
+                width: 1,
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+              ),
+              _buildSummaryItem(
+                'Priority',
+                highPriorityCount.toString(),
+                Icons.priority_high,
+                ChoiceLuxTheme.errorColor,
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryItem(
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Column(
+      children: [
+        Icon(icon, color: color, size: 18),
+        const SizedBox(height: 4),
+        Text(
+          value,
+          style: TextStyle(
+            color: color,
+            fontSize: 18,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 2),
+        Text(
+          label,
+          style: TextStyle(
+            color: ChoiceLuxTheme.platinumSilver,
+            fontSize: 11,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
     );
   }
 

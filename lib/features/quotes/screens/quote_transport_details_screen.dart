@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:intl/intl.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class QuoteTransportDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
@@ -69,36 +70,14 @@ class _QuoteTransportDetailsScreenState
         setState(() => _quote = quote);
       }
 
-      // Force refresh transport details provider
-      final transportNotifier = ref.read(
-        quoteTransportDetailsProvider(widget.quoteId).notifier,
+      // Get transport details from provider and wait for completion
+      final transportDetailsAsync = await ref.read(
+        quoteTransportDetailsProvider(widget.quoteId).future,
       );
       
-      // Invalidate and refresh the provider
-      await transportNotifier.refresh();
+      Log.d('Loaded ${transportDetailsAsync.length} transport details');
+      setState(() => _transportDetails = transportDetailsAsync);
       
-      // Wait a moment for the provider to update
-      await Future.delayed(const Duration(milliseconds: 200));
-      
-      // Get the updated state
-      final transportDetailsAsync = ref.read(
-        quoteTransportDetailsProvider(widget.quoteId),
-      );
-      
-      transportDetailsAsync.when(
-        data: (data) {
-          Log.d('Loaded ${data.length} transport details');
-          setState(() => _transportDetails = data);
-        },
-        loading: () {
-          Log.d('Transport details still loading...');
-          setState(() => _transportDetails = []);
-        },
-        error: (error, stack) {
-          Log.e('Error loading transport details: $error');
-          setState(() => _transportDetails = []);
-        },
-      );
     } catch (e) {
       Log.e('Error loading data: $e');
       setState(() => _transportDetails = []);
@@ -176,8 +155,8 @@ class _QuoteTransportDetailsScreenState
         await transportNotifier.addTransportDetail(transportDetail);
       }
 
-      // Force refresh the provider and reload data
-      await transportNotifier.refresh();
+      // Wait for the provider to update and then reload data
+      await Future.delayed(const Duration(milliseconds: 100));
       await _loadData();
 
       if (mounted) {
@@ -210,20 +189,12 @@ class _QuoteTransportDetailsScreenState
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
+    return SystemSafeScaffold(
       backgroundColor: Colors.transparent,
       appBar: LuxuryAppBar(
         title: 'Transport Details',
-        subtitle: 'Quote #${widget.quoteId}',
         showBackButton: true,
         onBackPressed: () => context.go('/quotes/${widget.quoteId}'),
-        actions: [
-          IconButton(
-            onPressed: _loadData,
-            icon: const Icon(Icons.refresh),
-            tooltip: 'Refresh',
-          ),
-        ],
       ),
       body: Stack(
         children: [
@@ -907,8 +878,8 @@ class _QuoteTransportDetailsScreenState
         );
         await transportNotifier.deleteTransportDetail(transport.id);
         
-        // Force refresh the provider and reload data
-        await transportNotifier.refresh();
+        // Wait for the provider to update and then reload data
+        await Future.delayed(const Duration(milliseconds: 100));
         await _loadData();
 
         if (mounted) {

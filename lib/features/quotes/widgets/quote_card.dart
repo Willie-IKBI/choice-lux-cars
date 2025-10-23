@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
@@ -599,8 +600,17 @@ class QuoteCard extends StatelessWidget {
 
   Future<void> _openPdf(String url, BuildContext context) async {
     try {
-      final cacheBustedUrl = '$url?cb=${DateTime.now().millisecondsSinceEpoch}';
-      await launchUrlString(cacheBustedUrl);
+      await PdfViewerService.openPdf(
+        context: context,
+        pdfUrl: url,
+        title: 'Quote #${quote.id}',
+        documentType: 'quote',
+        documentData: {
+          'id': quote.id,
+          'title': quote.quoteTitle ?? 'Untitled Quote',
+          'recipientEmail': quote.clientId, // You might want to get actual client email
+        },
+      );
     } catch (e) {
       Log.e('Error opening PDF: $e');
       // Show error message to user
