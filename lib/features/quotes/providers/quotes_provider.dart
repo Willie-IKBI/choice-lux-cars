@@ -9,14 +9,11 @@ import 'package:choice_lux_cars/core/types/result.dart';
 
 /// Notifier for managing quotes state using AsyncNotifier
 class QuotesNotifier extends AsyncNotifier<List<Quote>> {
-  late final QuotesRepository _quotesRepository;
-  late final dynamic currentUser;
+  QuotesRepository get _quotesRepository => ref.watch(quotesRepositoryProvider);
+  dynamic get currentUser => ref.watch(currentUserProfileProvider);
 
   @override
   Future<List<Quote>> build() async {
-    _quotesRepository = ref.watch(quotesRepositoryProvider);
-    currentUser = ref.watch(currentUserProfileProvider);
-
     if (currentUser != null) {
       return _fetchQuotes();
     }
@@ -205,11 +202,10 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
 /// Notifier for managing quote transport details using AsyncNotifier
 class QuoteTransportDetailsNotifier
     extends FamilyAsyncNotifier<List<QuoteTransportDetail>, String> {
-  late final QuotesRepository _quotesRepository;
+  QuotesRepository get _quotesRepository => ref.watch(quotesRepositoryProvider);
 
   @override
   Future<List<QuoteTransportDetail>> build(String quoteId) async {
-    _quotesRepository = ref.watch(quotesRepositoryProvider);
     return _fetchTransportDetails(quoteId);
   }
 

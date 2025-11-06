@@ -55,17 +55,38 @@ class NotificationPreferencesService {
         throw Exception('User not authenticated');
       }
 
-      // Create a test notification
-      await _supabase.from('notifications').insert({
-        'user_id': currentUser.id,
-        'message': 'This is a test notification to verify your settings.',
-        'notification_type': 'system_alert',
-        'priority': 'normal',
-        'action_data': {
-          'action': 'test_notification',
-          'message': 'Test notification sent successfully',
-        },
-      });
+      // Create a test notification in the canonical table
+      final inserted = await _supabase
+          .from('app_notifications')
+          .insert({
+            'user_id': currentUser.id,
+            'message': 'This is a test notification to verify your settings.',
+            'notification_type': 'system_alert',
+            'priority': 'normal',
+            'action_data': {
+              'action': 'test_notification',
+              'message': 'Test notification sent successfully',
+              'route': '/',
+            },
+          })
+          .select()
+          .single();
+
+      // Trigger push via Edge Function (same path as NotificationService)
+      try {
+        await _supabase.functions.invoke(
+          'push-notifications',
+          body: {
+            'type': 'INSERT',
+            'table': 'app_notifications',
+            'record': inserted,
+            'schema': 'public',
+            'old_record': null,
+          },
+        );
+      } catch (e) {
+        Log.e('Error invoking push-notifications function: $e');
+      }
 
       Log.d('Test notification sent successfully');
     } catch (e) {

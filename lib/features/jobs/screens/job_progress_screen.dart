@@ -323,21 +323,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         Log.d('=== _loadJobProgress COMPLETED ===');
       }
 
-      // Force a final UI update to ensure all changes are reflected
+      // Final UI update already triggered above; avoid extra delayed rebuilds
       if (mounted) {
-        setState(() {
-          // This ensures the UI reflects the latest step progression
-        });
-
-        // Add a small delay and force another rebuild to ensure UI updates
-        Future.delayed(const Duration(milliseconds: 100), () {
-          if (mounted) {
-            setState(() {
-              // Force another rebuild
-            });
-            _debugCurrentState();
-          }
-        });
+        _debugCurrentState();
       }
     } catch (e) {
       Log.e('ERROR in _loadJobProgress: $e');
@@ -371,19 +359,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               gpsAccuracy: gpsAccuracy,
             );
 
-            // Close the modal
-            Navigator.of(context).pop();
-
-            // Reload job progress after starting the job
-            await _loadJobProgress();
+            // Refresh job progress in background (avoid blocking/flicker)
+            _loadJobProgress();
             
             if (mounted) {
               SnackBarUtils.showSuccess(context, 'Job started successfully!');
             }
           } catch (e) {
-            // Close the modal even on error
-            Navigator.of(context).pop();
-            
             if (mounted) {
               SnackBarUtils.showError(context, 'Failed to start job: $e');
             }
@@ -1139,7 +1121,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
       }
     } catch (e) {
@@ -1180,7 +1162,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       Log.d('=== PICKUP ARRIVAL COMPLETED ===');
 
       if (mounted) {
-        await _loadJobProgress();
+        _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
 
         // Step completed - user must manually proceed to next step
@@ -1218,7 +1200,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
 
         // Step completed - user must manually proceed to next step
@@ -1255,7 +1237,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
 
         // Step completed - user must manually proceed to next step
@@ -1293,7 +1275,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Trip completed!');
 
         // Step completed - user must manually proceed to next step
@@ -1348,7 +1330,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== VEHICLE RETURN COMPLETED ===');
 
                   if (mounted) {
-                    await _loadJobProgress();
+                    _loadJobProgress();
 
                     // Close the modal using the stored context
                     if (modalContext.mounted) {
@@ -1406,7 +1388,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
 
-      await _loadJobProgress();
+      _loadJobProgress();
 
       // Refresh jobs list to update job card status
       ref.invalidate(jobsProvider);
@@ -1477,7 +1459,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         );
 
         // Refresh job progress to get updated status
-        await _loadJobProgress();
+        _loadJobProgress();
 
         // Refresh jobs list to update job card
         ref.invalidate(jobsProvider);
@@ -1499,7 +1481,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       // Refresh job progress to get updated status
-      await _loadJobProgress();
+      _loadJobProgress();
 
       // Refresh jobs list to update job card
       ref.invalidate(jobsProvider);

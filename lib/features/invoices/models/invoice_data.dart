@@ -73,7 +73,7 @@ class InvoiceData {
 
   factory InvoiceData.fromJson(Map<String, dynamic> json) {
     return InvoiceData(
-      jobId: json['job_id'] as int? ?? 0,
+      jobId: (json['job_id'] as num?)?.toInt() ?? 0,
       quoteNo: json['quote_no'] as String?,
       quoteDate: json['quote_date'] != null
           ? DateTime.parse(json['quote_date'] as String)
@@ -92,7 +92,7 @@ class InvoiceData {
       agentEmail: json['agent_email'] as String?,
       passengerName: json['passenger_name'] as String? ?? 'Not specified',
       passengerContact: json['passenger_contact'] as String? ?? 'Not specified',
-      numberPassengers: json['number_passengers'] as int? ?? 0,
+      numberPassengers: (json['number_passengers'] as num?)?.toInt() ?? 0,
       luggage: json['luggage'] as String? ?? 'Not specified',
       driverName: json['driver_name'] as String? ?? 'Not assigned',
       driverContact: json['driver_contact'] as String? ?? 'Not available',

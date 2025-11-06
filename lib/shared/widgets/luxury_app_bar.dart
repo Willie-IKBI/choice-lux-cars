@@ -120,12 +120,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 ),
               ),
 
-              const SizedBox(width: 12),
+              const SizedBox(width: 8), // Reduced from 12px for better spacing
 
               // Notification Icon with Enhanced Badge
               if (onNotificationTap != null) ...[
                 _buildNotificationButton(),
-                const SizedBox(width: 16),
+                const SizedBox(width: 12), // Reduced from 16px for better spacing
               ],
 
               // User Profile Section
@@ -253,8 +253,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         final isMobile = MediaQuery.of(context).size.width < 600;
         return NotificationBell(
           iconColor: ChoiceLuxTheme.richGold,
-          size: isMobile ? 18 : 20,
-          showCount: true, // You can set this to false for just a dot
+          size: isMobile ? 24 : 28, // Increased from 18/20 for better visibility
+          showCount: true,
           onTap: onNotificationTap,
         );
       },
@@ -276,6 +276,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: ChoiceLuxTheme.charcoalGray,
       elevation: 8,
+      onSelected: (value) async {
+        if (value == 'profile') {
+          context.go('/user-profile');
+        } else if (value == 'settings') {
+          Log.d('Navigate to Settings');
+          context.push('/settings');
+        } else if (value == 'logout') {
+          await _showSignOutDialog(context);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
@@ -393,26 +403,19 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         _buildPopupMenuItem(
           icon: Icons.person_outline_rounded,
           title: 'Profile',
-          onTap: () {
-            context.go('/user-profile');
-          },
+          value: 'profile',
         ),
         _buildPopupMenuItem(
           icon: Icons.settings_outlined,
           title: 'Settings',
-          onTap: () {
-            Log.d('Navigate to Settings');
-            context.push('/settings');
-          },
+          value: 'settings',
         ),
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,
           title: 'Sign Out',
+          value: 'logout',
           isDestructive: true,
-          onTap: () async {
-            await _showSignOutDialog(context);
-          },
         ),
       ],
     );
@@ -433,6 +436,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       color: ChoiceLuxTheme.charcoalGray,
       elevation: 8,
+      onSelected: (value) async {
+        if (value == 'profile') {
+          context.go('/user-profile');
+        } else if (value == 'settings') {
+          Log.d('Navigate to Settings');
+          context.push('/settings');
+        } else if (value == 'logout') {
+          await _showSignOutDialog(context);
+        }
+      },
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
@@ -559,26 +572,19 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         _buildPopupMenuItem(
           icon: Icons.person_outline_rounded,
           title: 'Profile',
-          onTap: () {
-            context.go('/user-profile');
-          },
+          value: 'profile',
         ),
         _buildPopupMenuItem(
           icon: Icons.settings_outlined,
           title: 'Settings',
-          onTap: () {
-            Log.d('Navigate to Settings');
-            context.push('/settings');
-          },
+          value: 'settings',
         ),
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,
           title: 'Sign Out',
+          value: 'logout',
           isDestructive: true,
-          onTap: () async {
-            await _showSignOutDialog(context);
-          },
         ),
       ],
     );
@@ -587,12 +593,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   PopupMenuEntry<String> _buildPopupMenuItem({
     required IconData icon,
     required String title,
-    required VoidCallback onTap,
+    required String value,
     bool isDestructive = false,
   }) {
     return PopupMenuItem<String>(
-      value: title,
-      onTap: onTap,
+      value: value,
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 4),
         child: Row(

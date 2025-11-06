@@ -77,27 +77,27 @@ class _DashboardCardState extends State<DashboardCard>
       'DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile',
     );
 
-    // Mobile-optimized sizing with better touch targets
+    // Responsive sizing - small compact cards for desktop, touch-friendly for mobile
     final iconSize = isSmallMobile
         ? 24.0
         : isMobile
         ? 28.0
-        : 36.0;
+        : 22.0; // Smaller icons for desktop (22px)
     final iconContainerPadding = isSmallMobile
         ? 8.0
         : isMobile
         ? 10.0
-        : 16.0;
+        : 8.0; // 8px for desktop
     final cardPadding = isSmallMobile
         ? const EdgeInsets.all(12.0)
         : isMobile
         ? const EdgeInsets.all(16.0)
-        : const EdgeInsets.all(24.0);
+        : const EdgeInsets.all(8.0); // Smaller padding (8px) for desktop
     final titleSpacing = isSmallMobile
         ? 8.0
         : isMobile
         ? 10.0
-        : 16.0;
+        : 6.0; // 6px spacing for desktop
     final borderRadius = isMobile ? context.radiusMd : 20.0;
 
     return MouseRegion(
@@ -217,7 +217,7 @@ class _DashboardCardState extends State<DashboardCard>
                                     ? 14
                                     : isMobile
                                     ? 16
-                                    : 18,
+                                    : 13, // Smaller title (13px) for desktop
                               ),
                           textAlign: TextAlign.center,
                           maxLines: 1,
@@ -226,14 +226,14 @@ class _DashboardCardState extends State<DashboardCard>
 
                         // Subtitle - only show on larger screens for cleaner mobile experience
                         if (widget.subtitle != null && !isMobile) ...[
-                          SizedBox(height: 6),
+                          SizedBox(height: 3),
                           Text(
                             widget.subtitle!,
                             style: Theme.of(context).textTheme.bodySmall
                                 ?.copyWith(
                                   color: ChoiceLuxTheme.platinumSilver,
                                   fontWeight: FontWeight.w400,
-                                  fontSize: 12,
+                                  fontSize: 10, // 10px subtitle for desktop
                                 ),
                             textAlign: TextAlign.center,
                             maxLines: 2,

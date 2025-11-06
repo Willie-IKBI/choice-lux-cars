@@ -556,6 +556,113 @@ class JobsRepository {
       return Result.failure(UnknownException(error.toString()));
     }
   }
+
+  /// Fetch jobs filtered by pickup_date range, location, and status for insights
+  /// Uses earliest pickup_date from transport table per job
+  /// Returns total count and jobs list for pagination
+  Future<Result<Map<String, dynamic>>> fetchJobsWithInsightsFilters({
+    required DateTime startDate,
+    required DateTime endDate,
+    String? location, // 'Jhb', 'Cpt', 'Dbn', or null for all
+    String? status, // 'all', 'completed', 'open' (everything except completed/cancelled)
+    int limit = 12,
+    int offset = 0,
+  }) async {
+    try {
+      Log.d('Fetching jobs with insights filters: startDate=$startDate, endDate=$endDate, location=$location, status=$status, limit=$limit, offset=$offset');
+
+      // Step 1: Get all job IDs that have transport with pickup_date in range
+      var transportQuery = _supabase
+          .from('transport')
+          .select('job_id, pickup_date')
+          .gte('pickup_date', startDate.toIso8601String())
+          .lte('pickup_date', endDate.toIso8601String())
+          .not('pickup_date', 'is', null);
+
+      final transportResponse = await transportQuery;
+      
+      // Get unique job IDs with earliest pickup_date per job
+      final Map<int, DateTime> jobEarliestPickup = {};
+      for (final transport in transportResponse) {
+        final jobId = transport['job_id'] as int?;
+        final pickupDateStr = transport['pickup_date'] as String?;
+        if (jobId != null && pickupDateStr != null) {
+          final pickupDate = DateTime.parse(pickupDateStr);
+          if (!jobEarliestPickup.containsKey(jobId) || 
+              pickupDate.isBefore(jobEarliestPickup[jobId]!)) {
+            jobEarliestPickup[jobId] = pickupDate;
+          }
+        }
+      }
+
+      if (jobEarliestPickup.isEmpty) {
+        Log.d('No jobs found with pickup_date in range');
+        return Result.success({
+          'jobs': <Job>[],
+          'total': 0,
+        });
+      }
+
+      // Step 2: Query jobs with filters
+      // Build filter for multiple IDs using 'in' filter
+      final jobIds = jobEarliestPickup.keys.toList();
+      var jobsQuery = _supabase
+          .from('jobs')
+          .select('*');
+      
+      // Filter by job IDs using 'in' filter
+      if (jobIds.isNotEmpty) {
+        // Use inFilter for multiple values
+        jobsQuery = jobsQuery.inFilter('id', jobIds);
+      }
+
+      // Filter by location (branch location)
+      if (location != null && location.isNotEmpty) {
+        jobsQuery = jobsQuery.eq('location', location);
+      }
+
+      // Filter by status
+      if (status != null && status != 'all') {
+        if (status == 'completed') {
+          jobsQuery = jobsQuery.eq('job_status', 'completed');
+        } else if (status == 'open') {
+          // Open = everything except completed and cancelled
+          jobsQuery = jobsQuery.not('job_status', 'in', '(completed,cancelled)');
+        }
+      }
+
+      final jobsResponse = await jobsQuery;
+
+      Log.d('Fetched ${jobsResponse.length} jobs matching filters');
+
+      // Convert to Job models and attach earliest pickup_date
+      final jobs = jobsResponse.map<Job>((json) => Job.fromJson(json)).toList();
+      
+      // Sort by earliest pickup_date
+      jobs.sort((a, b) {
+        final aPickup = jobEarliestPickup[a.id];
+        final bPickup = jobEarliestPickup[b.id];
+        if (aPickup == null && bPickup == null) return 0;
+        if (aPickup == null) return 1;
+        if (bPickup == null) return -1;
+        return aPickup.compareTo(bPickup);
+      });
+
+      // Apply pagination
+      final total = jobs.length;
+      final paginatedJobs = jobs.skip(offset).take(limit).toList();
+
+      Log.d('Returning ${paginatedJobs.length} jobs (offset=$offset, limit=$limit, total=$total)');
+      
+      return Result.success({
+        'jobs': paginatedJobs,
+        'total': total,
+      });
+    } catch (error) {
+      Log.e('Error fetching jobs with insights filters: $error');
+      return _mapSupabaseError(error);
+    }
+  }
 }
 
 /// Provider for JobsRepository

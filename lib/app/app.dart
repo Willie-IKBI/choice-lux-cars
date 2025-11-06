@@ -35,6 +35,8 @@ import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
+import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
+import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
@@ -333,6 +335,41 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/insights',
           name: 'insights',
           builder: (context, state) => const InsightsScreen(),
+        ),
+        GoRoute(
+          path: '/insights/jobs',
+          name: 'insights-jobs',
+          builder: (context, state) {
+            final timePeriodStr = state.uri.queryParameters['timePeriod'] ?? 'thisMonth';
+            final locationStr = state.uri.queryParameters['location'] ?? 'all';
+            final status = state.uri.queryParameters['status'] ?? 'all';
+
+            TimePeriod timePeriod;
+            try {
+              timePeriod = TimePeriod.values.firstWhere(
+                (e) => e.toString().split('.').last == timePeriodStr,
+                orElse: () => TimePeriod.thisMonth,
+              );
+            } catch (e) {
+              timePeriod = TimePeriod.thisMonth;
+            }
+
+            LocationFilter location;
+            try {
+              location = LocationFilter.values.firstWhere(
+                (e) => e.toString().split('.').last == locationStr,
+                orElse: () => LocationFilter.all,
+              );
+            } catch (e) {
+              location = LocationFilter.all;
+            }
+
+            return InsightsJobsListScreen(
+              timePeriod: timePeriod,
+              location: location,
+              status: status,
+            );
+          },
         ),
       ],
       errorBuilder: (context, state) => Scaffold(

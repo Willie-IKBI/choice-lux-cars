@@ -5,6 +5,9 @@ class NotificationConstants {
   static const String jobReassignment = 'job_reassignment';
   static const String jobStatusChange = 'job_status_change';
   static const String jobCancellation = 'job_cancellation';
+  static const String jobConfirmation = 'job_confirmation';
+  static const String jobStartDeadlineWarning90min = 'job_start_deadline_warning_90min';
+  static const String jobStartDeadlineWarning30min = 'job_start_deadline_warning_30min';
   static const String paymentReminder = 'payment_reminder';
   static const String systemAlert = 'system_alert';
 
@@ -43,6 +46,10 @@ class NotificationConstants {
 
   static String getSystemAlertMessage(String message) {
     return message;
+  }
+
+  static String getJobConfirmationMessage(String jobNumber, String driverName) {
+    return 'Job Confirmed: $driverName confirmed job #$jobNumber';
   }
 
   // Action Types

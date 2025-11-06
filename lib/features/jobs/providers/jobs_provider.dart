@@ -3,6 +3,7 @@ import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 
 /// Notifier for managing jobs state using AsyncNotifier
 class JobsNotifier extends AsyncNotifier<List<Job>> {
@@ -338,6 +339,16 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         state = AsyncValue.data(updatedJobs);
         Log.d('State updated successfully');
         Log.d('New state jobs count: ${state.value?.length ?? 0}');
+
+        // Fan-out notification to administrators/managers/driver_managers
+        try {
+          final int parsedJobId = int.tryParse(jobId) ?? 0;
+          if (parsedJobId > 0) {
+            await NotificationService.sendJobConfirmationNotification(jobId: parsedJobId);
+          }
+        } catch (e) {
+          Log.e('Error sending job confirmation notifications: $e');
+        }
       } else {
         Log.e('Error confirming job: ${result.error!.message}');
         throw Exception(result.error!.message);

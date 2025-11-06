@@ -201,17 +201,17 @@ serve(async (req) => {
     const notification = payload.record
     console.log('Processing notification:', notification.id)
     
-    // Get user's FCM token from profiles table
+    // Get user's FCM tokens from profiles table (both web and mobile)
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('fcm_token, display_name')
+      .select('fcm_token, fcm_token_web, display_name')
       .eq('id', notification.user_id)
       .single()
     
-    if (profileError || !profile?.fcm_token) {
-      console.log('No FCM token found for user:', notification.user_id)
+    if (profileError) {
+      console.log('Error fetching profile for user:', notification.user_id, profileError)
       return new Response(JSON.stringify({ 
-        message: 'No FCM token found',
+        message: 'Error fetching profile',
         user_id: notification.user_id 
       }), {
         headers: { 
@@ -222,7 +222,32 @@ serve(async (req) => {
       })
     }
     
-        console.log('Found FCM token for user:', profile.display_name)
+    // Get all available tokens (web and/or mobile)
+    const tokens: string[] = []
+    if (profile?.fcm_token) {
+      tokens.push(profile.fcm_token)
+      console.log('Found mobile FCM token for user:', profile.display_name)
+    }
+    if (profile?.fcm_token_web) {
+      tokens.push(profile.fcm_token_web)
+      console.log('Found web FCM token for user:', profile.display_name)
+    }
+    
+    if (tokens.length === 0) {
+      console.log('No FCM tokens found for user:', notification.user_id)
+      return new Response(JSON.stringify({ 
+        message: 'No FCM tokens found',
+        user_id: notification.user_id 
+      }), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        status: 200
+      })
+    }
+    
+    console.log(`Found ${tokens.length} FCM token(s) for user: ${profile.display_name}`)
         
         if (!SERVICE_ACCOUNT_KEY) {
           console.log('Firebase Service Account Key not configured')
@@ -240,132 +265,145 @@ serve(async (req) => {
         
         console.log('Firebase service account configured, getting access token...')
         
-        // Prepare FCM message (Admin SDK format)
-        const fcmMessage = {
-          token: profile.fcm_token,
-          notification: {
-            title: getNotificationTitle(notification.notification_type),
-            body: notification.message
-          },
-          data: {
-            notification_id: notification.id,
-            notification_type: notification.notification_type,
-            job_id: notification.job_id || '',
-            action_data: JSON.stringify(notification.action_data || {}),
-            click_action: 'FLUTTER_NOTIFICATION_CLICK'
-          },
-          android: {
-            priority: notification.priority === 'high' ? 'high' : 'normal',
-            notification: {
-              sound: 'default',
-              channelId: 'choice_lux_cars_channel'
-            }
-          },
-          apns: {
-            payload: {
-              aps: {
-                sound: 'default',
-                badge: 1
+        // Get Firebase access token once for all sends
+        const firebaseToken = await getFirebaseAccessToken()
+        
+        // Send to all tokens (web and/or mobile)
+        const fcmResults: any[] = []
+        let successCount = 0
+        let failureCount = 0
+        
+        for (const token of tokens) {
+          try {
+            // Prepare FCM message (Admin SDK format)
+            const fcmMessage = {
+              token: token,
+              notification: {
+                title: getNotificationTitle(notification.notification_type),
+                body: notification.message
+              },
+              data: {
+                notification_id: notification.id,
+                notification_type: notification.notification_type,
+                action: getActionFromNotificationType(notification.notification_type), // Map to Flutter action values
+                job_id: notification.job_id || '',
+                action_data: JSON.stringify(notification.action_data || {}),
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+              },
+              android: {
+                priority: notification.priority === 'high' ? 'high' : 'normal',
+                notification: {
+                  sound: 'default',
+                  channelId: 'choice_lux_cars_channel'
+                }
+              },
+              apns: {
+                payload: {
+                  aps: {
+                    sound: 'default',
+                    badge: 1
+                  }
+                }
               }
             }
-          }
-        }
-    
-    console.log('Sending FCM message:', JSON.stringify(fcmMessage, null, 2))
-    
-    // Send push notification via FCM v1 API with proper authentication
-    let fcmResult
-    try {
-      console.log('Getting Firebase access token...')
-      const token = await getFirebaseAccessToken()
-      
-      console.log('Sending FCM message via v1 API...')
-      const fcmResponse = await fetch('https://fcm.googleapis.com/v1/projects/choice-lux-cars-8d510/messages:send', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          message: fcmMessage
-        })
-      })
-      
-      const responseText = await fcmResponse.text()
-      console.log('FCM raw response:', responseText)
-      
-      if (responseText.startsWith('<')) {
-        // HTML response (error page)
-        console.error('FCM returned HTML error page:', responseText)
-        fcmResult = { 
-          error: 'FCM API returned HTML error page',
-          status: fcmResponse.status,
-          rawResponse: responseText.substring(0, 200) + '...'
-        }
-      } else {
-        // Try to parse as JSON
-        try {
-          fcmResult = JSON.parse(responseText)
-          
-          // Check for FCM errors
-          if (fcmResult.error) {
-            console.error('FCM API error:', fcmResult.error)
-            fcmResult.error = fcmResult.error.message || fcmResult.error
-          } else {
-            // Success - v1 API format
-            if (fcmResult.name) {
-              fcmResult.success = 1
-              fcmResult.message_id = fcmResult.name.split('/').pop()
-              console.log('FCM notification sent successfully via v1 API:', fcmResult.message_id)
+            
+            console.log(`Sending FCM message to token: ${token.substring(0, 20)}...`)
+            
+            const fcmResponse = await fetch('https://fcm.googleapis.com/v1/projects/choice-lux-cars-8d510/messages:send', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${firebaseToken}`
+              },
+              body: JSON.stringify({
+                message: fcmMessage
+              })
+            })
+            
+            const responseText = await fcmResponse.text()
+            let fcmResult: any
+            
+            if (responseText.startsWith('<')) {
+              // HTML response (error page)
+              console.error('FCM returned HTML error page for token:', token.substring(0, 20))
+              fcmResult = { 
+                error: 'FCM API returned HTML error page',
+                status: fcmResponse.status,
+                rawResponse: responseText.substring(0, 200) + '...',
+                token: token.substring(0, 20) + '...'
+              }
+              failureCount++
+            } else {
+              try {
+                fcmResult = JSON.parse(responseText)
+                
+                if (fcmResult.error) {
+                  console.error('FCM API error for token:', token.substring(0, 20), fcmResult.error)
+                  fcmResult.error = fcmResult.error.message || fcmResult.error
+                  failureCount++
+                } else {
+                  if (fcmResult.name) {
+                    fcmResult.success = 1
+                    fcmResult.message_id = fcmResult.name.split('/').pop()
+                    console.log('FCM notification sent successfully:', fcmResult.message_id)
+                    successCount++
+                  }
+                }
+              } catch (parseError) {
+                console.error('Failed to parse FCM response:', parseError)
+                fcmResult = { 
+                  error: 'Invalid JSON response from FCM',
+                  rawResponse: responseText,
+                  token: token.substring(0, 20) + '...'
+                }
+                failureCount++
+              }
             }
-          }
-        } catch (parseError) {
-          console.error('Failed to parse FCM response as JSON:', parseError)
-          fcmResult = { 
-            error: 'Invalid JSON response from FCM',
-            rawResponse: responseText
+            
+            fcmResults.push(fcmResult)
+            
+            // Log delivery for this token
+            try {
+              await supabase
+                .from('notification_delivery_log')
+                .insert({
+                  notification_id: notification.id,
+                  user_id: notification.user_id,
+                  fcm_token: token,
+                  fcm_response: fcmResult,
+                  sent_at: new Date().toISOString(),
+                  success: fcmResult.success === 1
+                })
+            } catch (logError) {
+              console.log('Failed to log delivery (non-critical):', logError)
+            }
+          } catch (error) {
+            console.error('Error sending to token:', token.substring(0, 20), error)
+            fcmResults.push({
+              error: error instanceof Error ? error.message : 'Unknown error',
+              token: token.substring(0, 20) + '...'
+            })
+            failureCount++
           }
         }
-      }
-    } catch (error) {
-      console.error('FCM v1 API error:', error)
-      fcmResult = {
-        error: error.message,
-        code: 'FCM_ERROR'
-      }
-    }
-    
-    console.log('FCM result:', JSON.stringify(fcmResult, null, 2))
-    
-    // Log the notification delivery (optional)
-    try {
-      await supabase
-        .from('notification_delivery_log')
-        .        insert({
+        
+        console.log(`=== PUSH NOTIFICATION SENT ===`)
+        console.log(`Total tokens: ${tokens.length}, Success: ${successCount}, Failed: ${failureCount}`)
+        
+        return new Response(JSON.stringify({
+          success: successCount > 0,
           notification_id: notification.id,
-          user_id: notification.user_id,
-          fcm_token: profile.fcm_token,
-          fcm_response: fcmResult,
-          sent_at: new Date().toISOString(),
-          success: fcmResult.success === 1
+          tokens_sent: tokens.length,
+          success_count: successCount,
+          failure_count: failureCount,
+          fcm_results: fcmResults
+        }), {
+          headers: { 
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+          status: successCount > 0 ? 200 : 500
         })
-    } catch (logError) {
-      console.log('Failed to log delivery (non-critical):', logError)
-    }
-    
-    console.log('=== PUSH NOTIFICATION SENT SUCCESSFULLY ===')
-    
-    return new Response(JSON.stringify({
-      success: true,
-      notification_id: notification.id,
-      fcm_result: fcmResult
-    }), {
-      headers: { 
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*',
-      },
-      status: 200
-    })
     
   } catch (error) {
     console.error('=== PUSH NOTIFICATION ERROR ===')
@@ -394,6 +432,7 @@ function getNotificationTitle(notificationType: string): string {
     case 'job_confirmation':
       return 'Job Confirmed'
     case 'job_cancellation':
+    case 'job_cancelled':
       return 'Job Cancelled'
     case 'job_status_change':
       return 'Job Status Updated'
@@ -401,8 +440,46 @@ function getNotificationTitle(notificationType: string): string {
       return 'Payment Reminder'
     case 'system_alert':
       return 'System Alert'
+    case 'job_start':
+      return 'Job Started'
+    case 'step_completion':
+      return 'Driver Update'
+    case 'job_completion':
+      return 'Job Completed'
+    case 'job_start_deadline_warning_90min':
+      return 'Job Start Warning'
+    case 'job_start_deadline_warning_30min':
+      return 'Job Start Urgent Warning'
     default:
       return 'New Notification'
+  }
+}
+
+// Helper function to map notification types to Flutter action values
+function getActionFromNotificationType(notificationType: string): string {
+  switch (notificationType) {
+    case 'job_assignment':
+      return 'new_job_assigned'
+    case 'job_reassignment':
+      return 'job_reassigned'
+    case 'job_cancellation':
+    case 'job_cancelled':
+      return 'job_cancelled'
+    case 'job_status_change':
+      return 'job_status_changed'
+    case 'payment_reminder':
+      return 'payment_reminder'
+    case 'system_alert':
+      return 'system_alert'
+    case 'job_start':
+    case 'step_completion':
+    case 'job_completion':
+    case 'job_confirmation':
+    case 'job_start_deadline_warning_90min':
+    case 'job_start_deadline_warning_30min':
+      return 'job_status_changed' // Generic job update action
+    default:
+      return notificationType // Fallback to notification type
   }
 }
 

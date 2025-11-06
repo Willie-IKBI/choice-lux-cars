@@ -15,6 +15,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -25,6 +26,26 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _startDeadlineCheckService(WidgetRef ref) {
+    // Start deadline check service when dashboard loads
+    final userProfile = ref.read(currentUserProfileProvider);
+    if (userProfile?.role != null) {
+      JobDeadlineCheckService.instance.start(userRole: userProfile!.role);
+    }
+  }
+
+  @override
+  void dispose() {
+    // Stop the service when leaving dashboard
+    JobDeadlineCheckService.instance.stop();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -40,6 +61,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Initialize notification provider once when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       ref.read(notificationProvider.notifier).initialize();
+      // Start deadline check service for admin/manager/driver_manager
+      _startDeadlineCheckService(ref);
     });
     final isMobile = MediaQuery.of(context).size.width < 600;
 
@@ -86,12 +109,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ? 8.0
         : isMobile
         ? 12.0
-        : 16.0;
+        : 8.0; // Further reduced to 8px for desktop
     final sectionSpacing = isSmallMobile
         ? 16.0
         : isMobile
         ? 24.0
-        : 32.0;
+        : 12.0; // Further reduced to 12px for desktop
 
     return Stack(
       children: [
@@ -107,7 +130,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
         SystemSafeScaffold(
-          key: _scaffoldKey,
+          scaffoldKey: _scaffoldKey,
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: 'Dashboard',
@@ -199,22 +222,22 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ? 18.0
         : isMobile
         ? 20.0
-        : 32.0;
+        : 20.0; // Further reduced to 20px for desktop
     final subtitleSize = isSmallMobile
         ? 12.0
         : isMobile
         ? 14.0
-        : 18.0;
+        : 14.0; // Further reduced to 14px for desktop
     final spacing = isSmallMobile
         ? 3.0
         : isMobile
         ? 4.0
-        : 8.0;
+        : 4.0; // Further reduced to 4px for desktop
     final sectionSpacing = isSmallMobile
         ? 6.0
         : isMobile
         ? 8.0
-        : 16.0;
+        : 6.0; // Further reduced to 6px for desktop
 
     // Add horizontal padding for mobile (accounting for main container padding)
     final horizontalPadding = isSmallMobile
@@ -243,7 +266,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ? 30
                 : isMobile
                 ? 40
-                : 60,
+                : 50, // Reduced from 60px to 50px for desktop
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -367,30 +390,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Debug logging for screen dimensions
     Log.d('Screen dimensions: ${screenWidth}x${screenHeight}');
 
-    // TEMPORARY: Force 2 columns for mobile testing
+    // Responsive grid configuration with compact sizing for desktop
     int crossAxisCount;
     double spacing;
     double childAspectRatio;
-    EdgeInsets outerPadding = const EdgeInsets.all(16);
+    // Reduce outer padding for desktop to save vertical space
+    final EdgeInsets outerPadding = screenWidth >= 600 
+        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8) // Less vertical padding on desktop
+        : const EdgeInsets.all(16);
 
-    if (screenWidth >= 1200) {
-      // Large Desktop - 3 columns (2-3 layout)
-      Log.d('Layout: Large Desktop (3 columns - 2-3 layout)');
+    if (screenWidth >= 600) {
+      // Desktop/Tablet - 3 columns, 2 rows (6 cards), square cards
+      Log.d('Layout: Desktop (3 columns, 2 rows - square cards)');
       crossAxisCount = 3;
-      spacing = 24.0;
-      childAspectRatio = 1.2;
-    } else if (screenWidth >= 900) {
-      // Desktop - 3 columns (2-3 layout)
-      Log.d('Layout: Desktop (3 columns - 2-3 layout)');
-      crossAxisCount = 3;
-      spacing = 20.0;
-      childAspectRatio = 1.1;
-    } else if (screenWidth >= 600) {
-      // Tablet - 2 columns
-      Log.d('Layout: Tablet (2 columns)');
-      crossAxisCount = 2;
-      spacing = 16.0;
-      childAspectRatio = 1.0;
+      spacing = 12.0; // Clean 12px spacing
+      childAspectRatio = 1.0; // Square cards (height = width)
     } else {
       // Mobile - 2 columns
       Log.d('Layout: Mobile (2 columns)');
@@ -403,12 +417,54 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       'Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio',
     );
 
+    // For desktop, center the grid with max width to ensure 2 rows fit without scrolling
+    if (screenWidth >= 600) {
+      // Calculate max width: ensure 2 rows of square cards fit in viewport
+      // Account for: header (~72px), welcome section (~60px), padding/spacing (~40px)
+      // Remaining height for cards: screenHeight - 172px
+      // For 2 rows: (remainingHeight - 12px spacing) / 2 = card height
+      // Card width = card height (square), so max grid width = (card width * 3) + (spacing * 2)
+      final availableHeight = screenHeight - 180; // Reserve space for header, welcome, padding
+      final cardHeight = (availableHeight - spacing) / 2; // 2 rows with spacing
+      final maxGridWidth = (cardHeight * 3) + (spacing * 2); // 3 columns with spacing
+      final constrainedWidth = maxGridWidth < 750.0 ? maxGridWidth : 750.0; // Cap at 750px, ensure double
+      
+      return Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: constrainedWidth),
+          child: Padding(
+            padding: outerPadding,
+            child: GridView.count(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              crossAxisCount: crossAxisCount,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: childAspectRatio,
+              children: dashboardItems
+                  .map(
+                    (item) => DashboardCard(
+                      icon: item.icon,
+                      title: item.title,
+                      subtitle: item.subtitle,
+                      iconColor: item.color,
+                      badge: item.badge,
+                      onTap: () => context.go(item.route),
+                    ),
+                  )
+                  .toList(),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Mobile layout - full width
     return Padding(
       padding: outerPadding,
       child: GridView.count(
         shrinkWrap: true,
-        physics:
-            const NeverScrollableScrollPhysics(), // Prevent internal scrolling
+        physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: crossAxisCount,
         crossAxisSpacing: spacing,
         mainAxisSpacing: spacing,

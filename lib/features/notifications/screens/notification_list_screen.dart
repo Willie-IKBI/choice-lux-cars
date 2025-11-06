@@ -299,30 +299,7 @@ class _NotificationListScreenState
           ),
           child: Column(
             children: [
-              // Filter buttons
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildFilterButton(
-                      'All',
-                      _selectedFilter == 'all',
-                      () => _setFilter('all'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: _buildFilterButton(
-                      'Unread',
-                      _selectedFilter == 'unread',
-                      () => _setFilter('unread'),
-                    ),
-                  ),
-                ],
-              ),
-
-              const SizedBox(height: 20),
-
-              // Single Summary Card
+              // Summary Card with clickable filter numbers
               _buildSummaryCard(
                 fallbackTotalCount,
                 fallbackUnreadCount,
@@ -659,61 +636,16 @@ class _NotificationListScreenState
     switch (_selectedFilter) {
       case 'unread':
         return activeNotifications.where((n) => !n.isRead).toList();
+      case 'priority':
+        return activeNotifications
+            .where((n) => n.isHighPriority || n.isUrgent)
+            .toList();
       case 'all':
       default:
         return activeNotifications;
     }
   }
 
-  Widget _buildFilterButton(
-    String label,
-    bool isSelected,
-    VoidCallback onPressed,
-  ) {
-    return GestureDetector(
-      onTap: onPressed,
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-                  colors: [
-                    ChoiceLuxTheme.richGold,
-                    ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
-                  ],
-                )
-              : null,
-          color: isSelected
-              ? null
-              : ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected
-                ? ChoiceLuxTheme.richGold
-                : ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isSelected) ...[
-              Icon(Icons.check, color: Colors.black, size: 16),
-              const SizedBox(width: 8),
-            ],
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? Colors.black : ChoiceLuxTheme.softWhite,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildStatCard(
     String label,
@@ -808,7 +740,7 @@ class _NotificationListScreenState
             ],
           ),
           const SizedBox(height: 16),
-          // Statistics in a clean format
+          // Statistics in a clean format - clickable
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -817,6 +749,7 @@ class _NotificationListScreenState
                 totalCount.toString(),
                 Icons.all_inbox,
                 ChoiceLuxTheme.richGold,
+                'all',
               ),
               Container(
                 height: 30,
@@ -828,6 +761,7 @@ class _NotificationListScreenState
                 unreadCount.toString(),
                 Icons.mark_email_unread,
                 ChoiceLuxTheme.orange,
+                'unread',
               ),
               Container(
                 height: 30,
@@ -839,6 +773,7 @@ class _NotificationListScreenState
                 highPriorityCount.toString(),
                 Icons.priority_high,
                 ChoiceLuxTheme.errorColor,
+                'priority',
               ),
             ],
           ),
@@ -852,29 +787,52 @@ class _NotificationListScreenState
     String value,
     IconData icon,
     Color color,
+    String filterValue,
   ) {
-    return Column(
-      children: [
-        Icon(icon, color: color, size: 18),
-        const SizedBox(height: 4),
-        Text(
-          value,
-          style: TextStyle(
-            color: color,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+    final isActive = _selectedFilter == filterValue;
+    
+    return GestureDetector(
+      onTap: () => _setFilter(filterValue),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: isActive
+              ? color.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+          border: isActive
+              ? Border.all(
+                  color: color.withValues(alpha: 0.5),
+                  width: 1.5,
+                )
+              : null,
         ),
-        const SizedBox(height: 2),
-        Text(
-          label,
-          style: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver,
-            fontSize: 11,
-            fontWeight: FontWeight.w500,
-          ),
+        child: Column(
+          children: [
+            Icon(icon, color: color, size: 18),
+            const SizedBox(height: 4),
+            Text(
+              value,
+              style: TextStyle(
+                color: color,
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: TextStyle(
+                color: isActive
+                    ? color.withValues(alpha: 0.9)
+                    : ChoiceLuxTheme.platinumSilver,
+                fontSize: 11,
+                fontWeight: isActive ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
-      ],
+      ),
     );
   }
 

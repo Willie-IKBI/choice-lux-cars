@@ -1,7 +1,10 @@
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
@@ -9,6 +12,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 
 class FCMService {
   static final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+  static final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   static String? _currentToken;
   static bool _isInitialized = false;
 
@@ -21,6 +25,24 @@ class FCMService {
 
     try {
       Log.d('FCMService: Initializing...');
+
+      // Initialize local notifications for Android (if not web)
+      if (!kIsWeb) {
+        try {
+          const AndroidInitializationSettings initializationSettingsAndroid =
+              AndroidInitializationSettings('@mipmap/ic_launcher');
+
+          const InitializationSettings initializationSettings = InitializationSettings(
+            android: initializationSettingsAndroid,
+          );
+
+          await _localNotifications.initialize(initializationSettings);
+          Log.d('FCMService: Local notifications initialized');
+        } catch (e) {
+          Log.e('FCMService: Error initializing local notifications: $e');
+          // Continue anyway - notifications may still work
+        }
+      }
 
       // Request permission
       NotificationSettings settings = await _messaging.requestPermission(
@@ -71,8 +93,8 @@ class FCMService {
   /// Set up message handlers
   static void _setupMessageHandlers(WidgetRef ref) {
     // Handle foreground messages
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      _handleForegroundMessage(message, ref);
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      await _handleForegroundMessage(message, ref);
     });
 
     // Handle notification taps when app is in background
@@ -98,36 +120,58 @@ class FCMService {
         return;
       }
 
-      // Save token to user profile in Supabase
+      // Save token to user profile in Supabase (platform-specific)
+      final updateData = <String, dynamic>{
+        'fcm_token_updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+      
+      if (kIsWeb) {
+        updateData['fcm_token_web'] = token;
+      } else {
+        updateData['fcm_token'] = token;
+      }
+      
       await SupabaseService.instance.updateProfile(
         userId: currentUser.id,
-        data: {
-          'fcm_token': token,
-          'fcm_token_updated_at': SATimeUtils.getCurrentSATimeISO(),
-        },
+        data: updateData,
       );
-      Log.d('FCMService: FCM token saved successfully');
+      Log.d('FCMService: FCM token saved successfully (platform: ${kIsWeb ? "web" : "mobile"})');
     } catch (e) {
       Log.e('FCMService: Error saving FCM token: $e');
     }
   }
 
   /// Handle foreground messages
-  static void _handleForegroundMessage(RemoteMessage message, WidgetRef ref) {
+  static Future<void> _handleForegroundMessage(RemoteMessage message, WidgetRef ref) async {
     Log.d('FCMService: Foreground message received: ${message.data}');
 
     final action = message.data['action'];
     final jobId = message.data['job_id'];
+    final title = message.notification?.title ?? 'Choice Lux Cars';
     final messageText =
         message.notification?.body ?? 'New notification received';
 
-    // Update notification count in provider
+    // Update notification count and refresh notification list
     ref.read(notificationProvider.notifier).updateUnreadCount();
+    // Reload notifications to ensure new notification appears in-app immediately
+    ref.read(notificationProvider.notifier).loadNotifications();
 
-    // For foreground messages, we can show both system notification and in-app notification
-    // The system notification should already be handled by FCM automatically
-    // We just need to show the in-app SnackBar for user awareness
-    
+    // Show system notification (required for foreground messages on Android)
+    if (!kIsWeb) {
+      await _showSystemNotification(
+        title: title,
+        body: messageText,
+        data: message.data,
+      );
+    } else {
+      // Web: Use browser Notification API for foreground messages
+      await _showWebNotification(
+        title: title,
+        body: messageText,
+        data: message.data,
+      );
+    }
+
     // Show in-app notification based on type
     switch (action) {
       case 'new_job_assigned':
@@ -149,6 +193,76 @@ class FCMService {
       default:
         _showGenericNotification(messageText, ref);
     }
+  }
+
+  /// Show system notification using flutter_local_notifications
+  static Future<void> _showSystemNotification({
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      const AndroidNotificationDetails androidDetails = AndroidNotificationDetails(
+        'choice_lux_cars_channel',
+        'Choice Lux Cars Notifications',
+        channelDescription: 'Notifications for job updates, assignments, and system alerts',
+        importance: Importance.high,
+        priority: Priority.high,
+        showWhen: true,
+        enableVibration: true,
+        playSound: true,
+      );
+
+      const NotificationDetails notificationDetails = NotificationDetails(
+        android: androidDetails,
+      );
+
+      await _localNotifications.show(
+        DateTime.now().millisecondsSinceEpoch.remainder(100000),
+        title,
+        body,
+        notificationDetails,
+        payload: jsonEncode(data), // Use JSON string instead of toString()
+      );
+
+      Log.d('FCMService: System notification shown');
+    } catch (e) {
+      Log.e('FCMService: Error showing system notification: $e');
+    }
+  }
+
+  /// Show web notification using browser Notification API
+  static Future<void> _showWebNotification({
+    required String title,
+    required String body,
+    required Map<String, dynamic> data,
+  }) async {
+    try {
+      // Check if browser supports notifications
+      if (kIsWeb) {
+        // Request permission if not granted
+        final permission = await _requestWebNotificationPermission();
+        if (permission != 'granted') {
+          Log.d('FCMService: Web notification permission not granted');
+          return;
+        }
+
+        // Show notification using browser API
+        // Note: This requires dart:html, but we'll use a platform channel approach
+        // For now, web notifications are handled by the service worker
+        // This function is a placeholder for future enhancement
+        Log.d('FCMService: Web notification would be shown (handled by service worker)');
+      }
+    } catch (e) {
+      Log.e('FCMService: Error showing web notification: $e');
+    }
+  }
+
+  /// Request web notification permission
+  static Future<String> _requestWebNotificationPermission() async {
+    // Web notifications are handled by service worker
+    // Permission is requested when getting FCM token
+    return 'granted'; // Assume granted if FCM token was obtained
   }
 
   /// Handle notification taps

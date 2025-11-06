@@ -225,99 +225,104 @@ class _NotificationBellState extends State<NotificationBell>
           _pulseController.stop();
         }
 
-        return GestureDetector(
-          onTap: _handleTap,
-          child: Padding(
-            padding: const EdgeInsets.all(2.0),
-            child: Stack(
-              children: [
-                // Bell icon with shake animation
-                AnimatedBuilder(
-                  animation: Listenable.merge([
-                    _scaleAnimation,
-                    _shakeAnimation,
-                  ]),
-                  builder: (context, child) {
-                    return Transform.scale(
-                      scale: _scaleAnimation.value,
-                      child: Transform.rotate(
-                        angle:
-                            _shakeAnimation.value * 0.1 * (hasUrgent ? 2 : 1),
-                        child: Icon(
-                          Icons.notifications_outlined,
-                          color: _getIconColor(hasUrgent, hasHighPriority),
-                          size: widget.size,
-                        ),
+        // Wrap in IconButton for proper 48x48px tap target
+        return IconButton(
+          onPressed: _handleTap,
+          icon: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              // Bell icon with shake animation
+              AnimatedBuilder(
+                animation: Listenable.merge([
+                  _scaleAnimation,
+                  _shakeAnimation,
+                ]),
+                builder: (context, child) {
+                  return Transform.scale(
+                    scale: _scaleAnimation.value,
+                    child: Transform.rotate(
+                      angle:
+                          _shakeAnimation.value * 0.1 * (hasUrgent ? 2 : 1),
+                      child: Icon(
+                        Icons.notifications_outlined,
+                        color: _getIconColor(hasUrgent, hasHighPriority),
+                        size: widget.size,
                       ),
-                    );
-                  },
-                ),
-
-                // Badge - Show for recent notifications (read or unread)
-                if (shouldShowBadge && widget.showCount)
-                  Positioned(
-                    right: -2,
-                    top: -2,
-                    child: AnimatedBuilder(
-                      animation: _pulseAnimation,
-                      builder: (context, child) {
-                        return Transform.scale(
-                          scale: _pulseAnimation.value,
-                          child: Container(
-                            width: displayCount == 1 ? 8 : null,
-                            height: displayCount == 1 ? 8 : 16,
-                            padding: displayCount == 1
-                                ? EdgeInsets.zero
-                                : const EdgeInsets.symmetric(
-                                    horizontal: 4,
-                                    vertical: 1,
-                                  ),
-                            decoration: BoxDecoration(
-                              color: _getBadgeColor(hasUrgent, hasHighPriority),
-                              shape: displayCount == 1
-                                  ? BoxShape.circle
-                                  : BoxShape.rectangle,
-                              borderRadius: displayCount == 1
-                                  ? null
-                                  : BorderRadius.circular(8),
-                              border: Border.all(
-                                color: Theme.of(
-                                  context,
-                                ).scaffoldBackgroundColor,
-                                width: 1.5,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: _getBadgeColor(
-                                    hasUrgent,
-                                    hasHighPriority,
-                                  ).withOpacity(0.3),
-                                  blurRadius: 3,
-                                  offset: const Offset(0, 1),
-                                ),
-                              ],
-                            ),
-                            child: displayCount == 1
-                                ? null // Just show the dot
-                                : Text(
-                                    displayCount > 99
-                                        ? '99+'
-                                        : displayCount.toString(),
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w500,
-                                      height: 1.0,
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                          ),
-                        );
-                      },
                     ),
+                  );
+                },
+              ),
+
+              // Badge - Show for recent notifications (read or unread)
+              if (shouldShowBadge && widget.showCount)
+                Positioned(
+                  right: -2,
+                  top: -2,
+                  child: AnimatedBuilder(
+                    animation: _pulseAnimation,
+                    builder: (context, child) {
+                      return Transform.scale(
+                        scale: _pulseAnimation.value,
+                        child: Container(
+                          width: displayCount == 1 ? 8 : null,
+                          height: displayCount == 1 ? 8 : 16,
+                          padding: displayCount == 1
+                              ? EdgeInsets.zero
+                              : const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
+                          decoration: BoxDecoration(
+                            color: _getBadgeColor(hasUrgent, hasHighPriority),
+                            shape: displayCount == 1
+                                ? BoxShape.circle
+                                : BoxShape.rectangle,
+                            borderRadius: displayCount == 1
+                                ? null
+                                : BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Theme.of(
+                                context,
+                              ).scaffoldBackgroundColor,
+                              width: 1.5,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: _getBadgeColor(
+                                  hasUrgent,
+                                  hasHighPriority,
+                                ).withOpacity(0.3),
+                                blurRadius: 3,
+                                offset: const Offset(0, 1),
+                              ),
+                            ],
+                          ),
+                          child: displayCount == 1
+                              ? null // Just show the dot
+                              : Text(
+                                  displayCount > 99
+                                      ? '99+'
+                                      : displayCount.toString(),
+                                  style: const TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.0,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                ),
+                        ),
+                      );
+                    },
                   ),
-              ],
-            ),
+                ),
+            ],
+          ),
+          style: IconButton.styleFrom(
+            // Ensure 48x48px minimum tap target
+            minimumSize: const Size(48, 48),
+            padding: EdgeInsets.zero, // Remove default padding for icon-only
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         );
       },

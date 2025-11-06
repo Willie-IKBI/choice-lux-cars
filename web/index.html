@@ -34,7 +34,10 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
-        navigator.serviceWorker.register('/firebase-messaging-sw.js').catch(function(err){
+        var base = document.querySelector('base');
+        var baseHref = base && base.getAttribute('href') ? base.getAttribute('href') : '/';
+        var swPath = (baseHref.endsWith('/') ? baseHref : baseHref + '/') + 'firebase-messaging-sw.js';
+        navigator.serviceWorker.register(swPath).catch(function(err){
           console.error('ServiceWorker registration failed:', err);
         });
       });

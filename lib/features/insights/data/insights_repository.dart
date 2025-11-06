@@ -378,28 +378,79 @@ class InsightsRepository {
         }
       }
 
-      // All jobs in period with location filter
-      var query = _supabase
-          .from('jobs')
-          .select('id, job_status, amount, created_at, location')
-          .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
-      
-      if (locationFilter != null) {
-        query = query.eq('location', locationFilter);
-      } else if (location == LocationFilter.unspecified) {
-        query = query.isFilter('location', null);
-      }
-      
-      final jobsResponse = await query;
-      
-      Log.d('Jobs query with location filter returned ${jobsResponse.length} records');
+      // Compute insights based on earliest pickup_date per job (transport table)
+      // Step 1: Fetch transport rows in range and compute earliest pickup per job
+      final transportRows = await _supabase
+          .from('transport')
+          .select('job_id, pickup_date')
+          .gte('pickup_date', dateRange.start.toIso8601String())
+          .lte('pickup_date', dateRange.end.toIso8601String())
+          .not('pickup_date', 'is', null);
 
+      final Map<int, DateTime> jobEarliestPickup = {};
+      for (final row in transportRows) {
+        final jobId = row['job_id'] as int?;
+        final pickupStr = row['pickup_date'] as String?;
+        if (jobId == null || pickupStr == null) continue;
+        final pickup = DateTime.parse(pickupStr);
+        final existing = jobEarliestPickup[jobId];
+        if (existing == null || pickup.isBefore(existing)) {
+          jobEarliestPickup[jobId] = pickup;
+        }
+      }
+
+      if (jobEarliestPickup.isEmpty) {
+        final emptyInsights = JobInsights(
+          totalJobs: 0,
+          jobsThisWeek: 0,
+          jobsThisMonth: 0,
+          openJobs: 0,
+          inProgressJobs: 0,
+          completedJobs: 0,
+          cancelledJobs: 0,
+          averageJobsPerWeek: 0,
+          completionRate: 0,
+        );
+        return Result.success(emptyInsights);
+      }
+
+      // Step 2: Fetch jobs for those IDs, apply location filter
+      final jobIds = jobEarliestPickup.keys.toList();
+      var jobsQuery = _supabase
+          .from('jobs')
+          .select('id, job_status, location');
+
+      // Filter by IDs using in filter
+      // Prefer inFilter if available in current SDK
+      // Fallback to filter('id','in','(1,2,3)') if needed
+      try {
+        // ignore: deprecated_member_use
+        // @ts-ignore - runtime check
+        // dart analyzer will allow if available
+        // dynamic call to support both versions
+        // Will be caught in catch if unsupported
+        // jobsQuery = jobsQuery.inFilter('id', jobIds);
+      } catch (_) {}
+
+      final idsString = jobIds.join(',');
+      jobsQuery = jobsQuery.filter('id', 'in', '($idsString)');
+
+      if (locationFilter != null) {
+        jobsQuery = jobsQuery.eq('location', locationFilter);
+      } else if (location == LocationFilter.unspecified) {
+        jobsQuery = jobsQuery.isFilter('location', null);
+      }
+
+      final jobsResponse = await jobsQuery;
+
+      Log.d('Jobs (by earliest pickup) with location filter returned ${jobsResponse.length} records');
+
+      // Compute counts with OPEN = not in (completed, cancelled)
       final totalJobs = jobsResponse.length;
       final completedJobs = jobsResponse.where((j) => j['job_status'] == 'completed').length;
-      final pendingJobs = jobsResponse.where((j) => j['job_status'] == 'open').length;
       final cancelledJobs = jobsResponse.where((j) => j['job_status'] == 'cancelled').length;
-      final inProgressJobs = jobsResponse.where((j) => j['job_status'] == 'in_progress').length;
+      final inProgressJobs = jobsResponse.where((j) => j['job_status'] == 'in_progress' || j['job_status'] == 'started').length;
+      final openJobs = jobsResponse.where((j) => j['job_status'] != 'completed' && j['job_status'] != 'cancelled').length;
 
       // Jobs this week with location filter
       final weekStart = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
@@ -435,7 +486,7 @@ class InsightsRepository {
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
         jobsThisMonth: jobsThisMonthResponse.length,
-        openJobs: pendingJobs, // Using pending as open
+        openJobs: openJobs,
         inProgressJobs: inProgressJobs,
         completedJobs: completedJobs,
         cancelledJobs: cancelledJobs,

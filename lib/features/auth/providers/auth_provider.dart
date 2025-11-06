@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
 import 'package:choice_lux_cars/core/services/preferences_service.dart';
+import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
@@ -115,16 +117,36 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   // Handle FCM token update
   Future<void> _handleFCMTokenUpdate(String userId) async {
     try {
+      Log.d('AuthProvider: Handling FCM token update for user: $userId');
+      
       // Try to get Firebase service instance
       _firebaseService ??= FirebaseService.instance;
 
       // Request notification permissions
-      await _firebaseService!.requestNotificationPermissions();
+      final permissionGranted = await _firebaseService!.requestNotificationPermissions();
+      Log.d('AuthProvider: Notification permissions granted: $permissionGranted');
 
-      // Check if FCM token needs updating
-      bool shouldUpdate = await _firebaseService!.shouldUpdateFCMToken(userId);
-      if (shouldUpdate) {
+      // Always try to get and save the token after login (web may need explicit fetch)
+      // Get token directly and save it
+      final token = await _firebaseService!.getFCMToken();
+      if (token != null) {
+        Log.d('AuthProvider: FCM token obtained, updating profile...');
         await _firebaseService!.updateFCMTokenInProfile(userId);
+        Log.d('AuthProvider: FCM token updated successfully');
+      } else {
+        Log.d('AuthProvider: No FCM token available yet (may need permissions or VAPID key)');
+        
+        // For web, token might not be available immediately after permission request
+        // Try again after a short delay
+        if (kIsWeb) {
+          Log.d('AuthProvider: Web platform - retrying token fetch after delay...');
+          await Future.delayed(const Duration(seconds: 2));
+          final retryToken = await _firebaseService!.getFCMToken();
+          if (retryToken != null) {
+            Log.d('AuthProvider: FCM token obtained on retry, updating profile...');
+            await _firebaseService!.updateFCMTokenInProfile(userId);
+          }
+        }
       }
     } catch (error) {
       Log.e('Error handling FCM token update: $error');
@@ -251,6 +273,8 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
   Future<void> signOut() async {
     try {
+      // Stop the deadline check service before signing out
+      JobDeadlineCheckService.instance.stop();
       await _supabaseService.signOut();
       state = const AsyncValue.data(null);
     } catch (error) {

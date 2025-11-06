@@ -919,6 +919,87 @@ class NotificationService {
     }
   }
 
+  /// Send job confirmation notification (driver confirmed) to administrators, managers, and driver managers
+  static Future<void> sendJobConfirmationNotification({
+    required int jobId,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+
+      // Fetch minimal job info
+      final job = await supabase
+          .from('jobs')
+          .select('job_number, driver_id')
+          .eq('id', jobId)
+          .single();
+
+      final String jobNumber = job['job_number']?.toString() ?? jobId.toString();
+      final String driverId = job['driver_id']?.toString() ?? '';
+
+      // Get driver display name (fallback to Unknown Driver)
+      String driverName = 'Unknown Driver';
+      if (driverId.isNotEmpty) {
+        try {
+          final driver = await supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', driverId)
+              .single();
+          driverName = driver['display_name']?.toString() ?? driverName;
+        } catch (_) {}
+      }
+
+      // Get all administrators, managers, and driver managers
+      final usersResponse = await supabase
+          .from('profiles')
+          .select('id, role')
+          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .eq('status', 'active');
+
+      final message =
+          'Job Confirmed: $driverName confirmed job #$jobNumber';
+
+      // Create notifications for all target users
+      for (final user in usersResponse) {
+        final notification = await supabase.from('app_notifications').insert({
+          'user_id': user['id'],
+          'message': message,
+          'notification_type': 'job_confirmation',
+          'job_id': jobId,
+          'priority': 'high',
+          'action_data': {
+            'route': '/jobs/$jobId/summary',
+            'job_id': jobId,
+            'driver_name': driverName,
+            'job_number': jobNumber,
+          },
+          'created_at': SATimeUtils.getCurrentSATimeISO(),
+          'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        }).select().single();
+
+        // Send push notification via Edge Function
+        try {
+          await supabase.functions.invoke(
+            'push-notifications',
+            body: {
+              'type': 'INSERT',
+              'table': 'app_notifications',
+              'record': notification,
+              'schema': 'public',
+              'old_record': null,
+            },
+          );
+        } catch (pushError) {
+          Log.e('Error sending push notification for job confirmation: $pushError');
+        }
+      }
+
+      Log.d('Sent job confirmation notifications to ${usersResponse.length} users');
+    } catch (e) {
+      Log.e('Error sending job confirmation notification: $e');
+    }
+  }
+
   /// Get display name for step
   static String _getStepDisplayName(String stepName) {
     switch (stepName) {

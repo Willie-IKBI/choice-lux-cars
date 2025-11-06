@@ -84,20 +84,32 @@ class FirebaseService {
     try {
       if (kIsWeb) {
         // On web, pass vapidKey for token
+        final vapidKey = AppConstants.firebaseVapidKey;
+        if (vapidKey.isEmpty) {
+          Log.e('Web FCM: VAPID key is empty! Token will not work. Build with --dart-define=FIREBASE_VAPID_KEY=...');
+          return null;
+        }
+        
         try {
+          Log.d('Web FCM: Requesting token with VAPID key (length: ${vapidKey.length})...');
           final token = await _messaging.getToken(
-            vapidKey: AppConstants.firebaseVapidKey,
+            vapidKey: vapidKey,
           );
-          Log.d('Web FCM Token: $token');
+          if (token != null) {
+            Log.d('Web FCM Token obtained: ${token.substring(0, 20)}...');
+          } else {
+            Log.e('Web FCM: Token is null - user may not have granted notification permissions');
+          }
           return token;
         } catch (e) {
           Log.e('Error getting web FCM token: $e');
+          Log.e('Web FCM error details: ${e.toString()}');
           return null;
         }
       }
 
       String? token = await _messaging.getToken();
-      Log.d('FCM Token: $token');
+      Log.d('Mobile FCM Token: $token');
       return token;
     } catch (error) {
       Log.e('Error getting FCM token: $error');
@@ -105,25 +117,31 @@ class FirebaseService {
     }
   }
 
-  // Update FCM token in Supabase profile
+  // Update FCM token in Supabase profile (platform-specific)
   Future<void> updateFCMTokenInProfile(String userId) async {
     try {
-      // Web supported: save token as well
-
       String? token = await getFCMToken();
       if (token != null) {
+        // Save to platform-specific column
+        final updateData = <String, dynamic>{};
+        if (kIsWeb) {
+          updateData['fcm_token_web'] = token;
+        } else {
+          updateData['fcm_token'] = token;
+        }
+        
         await _supabaseService.updateProfile(
           userId: userId,
-          data: {'fcm_token': token},
+          data: updateData,
         );
-        Log.d('FCM token updated in profile for user: $userId');
+        Log.d('FCM token updated in profile for user: $userId (platform: ${kIsWeb ? "web" : "mobile"})');
       }
     } catch (error) {
       Log.e('Error updating FCM token in profile: $error');
     }
   }
 
-  // Check if FCM token needs updating
+  // Check if FCM token needs updating (platform-specific)
   Future<bool> shouldUpdateFCMToken(String userId) async {
     try {
       // Get current token
@@ -134,9 +152,16 @@ class FirebaseService {
       final profile = await _supabaseService.getProfile(userId);
       if (profile == null) return true;
 
-      // Check if token is different or missing
-      String? storedToken = profile['fcm_token'];
-      return storedToken != currentToken;
+      // Check if token is different or missing (platform-specific)
+      String? storedToken;
+      if (kIsWeb) {
+        storedToken = profile['fcm_token_web'];
+      } else {
+        storedToken = profile['fcm_token'];
+      }
+      
+      // Update if token is missing or different
+      return storedToken == null || storedToken != currentToken;
     } catch (error) {
       Log.e('Error checking FCM token: $error');
       return false;

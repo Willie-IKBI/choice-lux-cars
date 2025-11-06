@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 /// A Scaffold wrapper that automatically handles system UI insets
 /// to prevent content from being hidden behind Android system navigation bar
 class SystemSafeScaffold extends StatelessWidget {
+  final Key? scaffoldKey;
   final PreferredSizeWidget? appBar;
   final Widget? body;
   final Widget? drawer;
@@ -17,6 +18,7 @@ class SystemSafeScaffold extends StatelessWidget {
 
   const SystemSafeScaffold({
     super.key,
+    this.scaffoldKey,
     this.appBar,
     this.body,
     this.drawer,
@@ -36,6 +38,7 @@ class SystemSafeScaffold extends StatelessWidget {
     final safeAreaBottom = mediaQuery.viewPadding.bottom;
 
     return Scaffold(
+      key: scaffoldKey,
       appBar: appBar,
       drawer: drawer,
       endDrawer: endDrawer,
