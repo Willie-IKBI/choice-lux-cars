@@ -90,39 +90,70 @@ class VehicleInsightsTab extends ConsumerWidget {
           // Key Metrics
           _buildSectionHeader('Vehicle Performance'),
           const SizedBox(height: 16),
-          GridView.count(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            crossAxisCount: 2,
-            childAspectRatio: 1.5,
-            crossAxisSpacing: 16,
-            mainAxisSpacing: 16,
-            children: [
-              _buildMetricCard(
-                'Total Vehicles',
-                insights.totalVehicles.toString(),
-                Icons.directions_car_outlined,
-                ChoiceLuxTheme.richGold,
-              ),
-              _buildMetricCard(
-                'Active Vehicles',
-                insights.activeVehicles.toString(),
-                Icons.directions_car,
-                Colors.green,
-              ),
-              _buildMetricCard(
-                'Avg Jobs/Vehicle',
-                insights.averageJobsPerVehicle.toStringAsFixed(1),
-                Icons.work_outline,
-                Colors.blue,
-              ),
-              _buildMetricCard(
-                'Avg Revenue/Vehicle',
-                'R${insights.averageIncomePerVehicle.toStringAsFixed(0)}',
-                Icons.attach_money,
-                Colors.orange,
-              ),
-            ],
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isLargeDesktop = screenWidth >= 1200;
+              final isDesktop = screenWidth >= 600;
+              
+              // 4 columns on large desktop (all cards in one row), 2 columns on medium desktop/tablet
+              final crossAxisCount = isLargeDesktop ? 4 : 2;
+              final childAspectRatio = isDesktop ? 1.0 : 1.5; // Square cards on desktop, taller on mobile
+              final spacing = isDesktop ? 12.0 : 16.0; // Match dashboard spacing on desktop
+              
+              final gridView = GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                children: [
+                  _buildMetricCard(
+                    'Total Vehicles',
+                    insights.totalVehicles.toString(),
+                    Icons.directions_car_outlined,
+                    ChoiceLuxTheme.richGold,
+                    context: context,
+                  ),
+                  _buildMetricCard(
+                    'Active Vehicles',
+                    insights.activeVehicles.toString(),
+                    Icons.directions_car,
+                    Colors.green,
+                    context: context,
+                  ),
+                  _buildMetricCard(
+                    'Avg Jobs/Vehicle',
+                    insights.averageJobsPerVehicle.toStringAsFixed(1),
+                    Icons.work_outline,
+                    Colors.blue,
+                    context: context,
+                  ),
+                  _buildMetricCard(
+                    'Avg Revenue/Vehicle',
+                    'R${insights.averageIncomePerVehicle.toStringAsFixed(0)}',
+                    Icons.attach_money,
+                    Colors.orange,
+                    context: context,
+                  ),
+                ],
+              );
+              
+              // Center the grid on desktop with max width constraint
+              if (isDesktop) {
+                // Calculate max width: for 4 columns, cap at ~800px; for 2 columns, cap at ~600px
+                final maxWidth = isLargeDesktop ? 800.0 : 600.0;
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: gridView,
+                  ),
+                );
+              }
+              
+              return gridView;
+            },
           ),
         ],
       ),
@@ -140,33 +171,57 @@ class VehicleInsightsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color) {
+  Widget _buildMetricCard(String title, String value, IconData icon, Color color, {required BuildContext context}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 600;
+    
+    // Smaller, more compact cards for desktop
+    final iconSize = isDesktop ? 20.0 : 32.0;
+    final iconContainerPadding = isDesktop ? 6.0 : 12.0;
+    final cardPadding = isDesktop ? const EdgeInsets.all(6.0) : const EdgeInsets.all(16.0);
+    final valueFontSize = isDesktop ? 16.0 : 24.0;
+    final titleFontSize = isDesktop ? 12.0 : 14.0;
+    final titleSpacing = isDesktop ? 4.0 : 8.0;
+    final valueSpacing = isDesktop ? 3.0 : 8.0;
+    final borderRadius = isDesktop ? 16.0 : 12.0;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: cardPadding,
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(borderRadius),
         border: Border.all(color: Colors.white.withOpacity(0.1)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 32),
-          const SizedBox(height: 8),
+          Container(
+            padding: EdgeInsets.all(iconContainerPadding),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(borderRadius * 0.8),
+              border: Border.all(
+                color: color.withOpacity(0.2),
+                width: 1,
+              ),
+            ),
+            child: Icon(icon, color: color, size: iconSize),
+          ),
+          SizedBox(height: valueSpacing),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 20,
+            style: TextStyle(
+              fontSize: valueFontSize,
               fontWeight: FontWeight.bold,
               color: Colors.white,
             ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: titleSpacing),
           Text(
             title,
             style: TextStyle(
-              fontSize: 14,
+              fontSize: titleFontSize,
               color: Colors.white.withOpacity(0.8),
             ),
             textAlign: TextAlign.center,
