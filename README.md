@@ -23,6 +23,10 @@ A professional mobile-first application designed to streamline operations for a 
 - **Notifications**: Firebase Cloud Messaging
 - **PDF Generation**: pdf + printing packages
 
+## 📚 Documentation
+
+All specs, deployment notes, and audits live in [`docs/`](docs/README.md). Start with `docs/README.md` for quick links to product flows, Supabase/Firebase guides, and the latest audit reports.
+
 ## 📁 Project Structure
 
 ```

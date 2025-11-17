@@ -22,6 +22,12 @@ android/app/keystore.properties
 build/
 **/build/
 
+# Flutter tooling artifacts
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+
 # IDE files
 .vscode/
 .idea/
