@@ -1535,13 +1535,14 @@ class InsightsRepository {
   DateRange _getDateRange(TimePeriod period, DateTime? customStart, DateTime? customEnd) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
 
     switch (period) {
       case TimePeriod.today:
-        return DateRange(today, today.add(Duration(days: 1)));
+        return DateRange(today, today.add(const Duration(days: 1)));
       case TimePeriod.thisWeek:
         final weekStart = today.subtract(Duration(days: today.weekday - 1));
-        return DateRange(weekStart, weekStart.add(Duration(days: 7)));
+        return DateRange(weekStart, weekStart.add(const Duration(days: 7)));
       case TimePeriod.thisMonth:
         final monthStart = DateTime(now.year, now.month, 1);
         final monthEnd = DateTime(now.year, now.month + 1, 1);
@@ -1559,7 +1560,12 @@ class InsightsRepository {
         if (customStart != null && customEnd != null) {
           return DateRange(customStart, customEnd);
         }
-        return DateRange(today, today.add(Duration(days: 1)));
+        return DateRange(today, today.add(const Duration(days: 1)));
+      case TimePeriod.tomorrow:
+        return DateRange(tomorrow, tomorrow.add(const Duration(days: 1)));
+      case TimePeriod.next3Days:
+        // Next 3 days: tomorrow + 2 days after (3 days total)
+        return DateRange(tomorrow, tomorrow.add(const Duration(days: 3)));
     }
   }
 

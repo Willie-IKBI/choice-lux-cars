@@ -173,12 +173,16 @@ class FinancialInsights {
 
 /// Time period enum for filtering
 enum TimePeriod {
+  // Historical periods
   today,
   thisWeek,
   thisMonth,
   thisQuarter,
   thisYear,
   custom,
+  // Planning periods
+  tomorrow,
+  next3Days,
 }
 
 extension TimePeriodExtension on TimePeriod {
@@ -196,6 +200,10 @@ extension TimePeriodExtension on TimePeriod {
         return 'This Year';
       case TimePeriod.custom:
         return 'Custom Range';
+      case TimePeriod.tomorrow:
+        return 'Tomorrow';
+      case TimePeriod.next3Days:
+        return 'Next 3 Days';
     }
   }
 }

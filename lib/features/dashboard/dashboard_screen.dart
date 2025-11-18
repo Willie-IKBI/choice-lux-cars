@@ -366,9 +366,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ];
       
-      // Add Insights card for admin users
-      if (isAdmin) {
-        print('Dashboard - Adding Insights card for admin user');
+      // Add Insights card for admin and manager users
+      if (isAdmin || isManager) {
+        print('Dashboard - Adding Insights card for ${isAdmin ? "admin" : "manager"} user');
         dashboardItems.add(
           DashboardItem(
             title: 'Insights',
@@ -379,7 +379,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
       } else {
-        print('Dashboard - NOT adding Insights card - user is not admin');
+        print('Dashboard - NOT adding Insights card - user is not admin or manager');
       }
     }
 

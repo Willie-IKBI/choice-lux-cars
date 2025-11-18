@@ -13,7 +13,7 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 
-/// Tabbed insights screen for administrators
+/// Tabbed insights screen for administrators and managers
 class InsightsScreen extends ConsumerStatefulWidget {
   const InsightsScreen({super.key});
 
@@ -22,19 +22,14 @@ class InsightsScreen extends ConsumerStatefulWidget {
 }
 
 class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTickerProviderStateMixin {
-  TimePeriod _selectedPeriod = TimePeriod.thisMonth;
+  TimePeriod _selectedPeriod = TimePeriod.today;
   LocationFilter _selectedLocation = LocationFilter.all;
-  late TabController _tabController;
-
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-  }
+  TabController? _tabController;
+  int? _previousTabCount;
 
   @override
   void dispose() {
-    _tabController.dispose();
+    _tabController?.dispose();
     super.dispose();
   }
 
@@ -43,13 +38,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
-    // Check if user is administrator
+    // Check if user is administrator or manager
     final userRole = userProfile?.role?.toLowerCase();
     final isAdmin = userRole == 'administrator';
+    final isManager = userRole == 'manager';
+    final hasAccess = isAdmin || isManager;
     
-    print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin');
+    print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin, isManager: $isManager');
     
-    if (!isAdmin) {
+    if (!hasAccess) {
       return Scaffold(
         appBar: LuxuryAppBar(
           title: 'Insights',
@@ -64,6 +61,16 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
           ),
         ),
       );
+    }
+
+    // Determine number of tabs based on role
+    final tabCount = isAdmin ? 5 : 1;
+    
+    // Initialize or update tab controller if length changed
+    if (_tabController == null || _previousTabCount != tabCount) {
+      _tabController?.dispose();
+      _tabController = TabController(length: tabCount, vsync: this);
+      _previousTabCount = tabCount;
     }
 
     final isMobile = MediaQuery.of(context).size.width < 600;
@@ -101,63 +108,77 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
               border: Border.all(color: Colors.white.withOpacity(0.1)),
             ),
             child: TabBar(
-              controller: _tabController,
+              controller: _tabController!,
               isScrollable: true,
               indicatorColor: ChoiceLuxTheme.richGold,
               labelColor: ChoiceLuxTheme.richGold,
               unselectedLabelColor: Colors.white.withOpacity(0.7),
               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.work_outline),
-                  text: 'Jobs',
-                ),
-                Tab(
-                  icon: Icon(Icons.attach_money),
-                  text: 'Financial',
-                ),
-                Tab(
-                  icon: Icon(Icons.person_outline),
-                  text: 'Drivers',
-                ),
-                Tab(
-                  icon: Icon(Icons.directions_car_outlined),
-                  text: 'Vehicles',
-                ),
-                Tab(
-                  icon: Icon(Icons.business_outlined),
-                  text: 'Clients',
-                ),
-              ],
+              tabs: isAdmin
+                  ? const [
+                      Tab(
+                        icon: Icon(Icons.work_outline),
+                        text: 'Jobs',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.attach_money),
+                        text: 'Financial',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.person_outline),
+                        text: 'Drivers',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.directions_car_outlined),
+                        text: 'Vehicles',
+                      ),
+                      Tab(
+                        icon: Icon(Icons.business_outlined),
+                        text: 'Clients',
+                      ),
+                    ]
+                  : const [
+                      Tab(
+                        icon: Icon(Icons.work_outline),
+                        text: 'Jobs',
+                      ),
+                    ],
             ),
           ),
           
           // Tab content
           Expanded(
             child: TabBarView(
-              controller: _tabController,
-              children: [
-                JobsInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                FinancialInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                DriverInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                VehicleInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                ClientInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-              ],
+              controller: _tabController!,
+              children: isAdmin
+                  ? [
+                      JobsInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                      FinancialInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                      DriverInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                      VehicleInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                      ClientInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                    ]
+                  : [
+                      JobsInsightsTab(
+                        selectedPeriod: _selectedPeriod,
+                        selectedLocation: _selectedLocation,
+                      ),
+                    ],
             ),
           ),
         ],
@@ -284,6 +305,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
   }
 
   void _showTimePeriodPicker(BuildContext context) {
+    // Separate periods into historical and planning
+    final historicalPeriods = [
+      TimePeriod.today,
+      TimePeriod.thisWeek,
+      TimePeriod.thisMonth,
+      TimePeriod.thisQuarter,
+      TimePeriod.thisYear,
+      TimePeriod.custom,
+    ];
+    final planningPeriods = [
+      TimePeriod.tomorrow,
+      TimePeriod.next3Days,
+    ];
+
     showModalBottomSheet(
       context: context,
       backgroundColor: const Color(0xFF1a1a1a),
@@ -304,7 +339,60 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
               ),
             ),
             const SizedBox(height: 20),
-            ...TimePeriod.values.map((period) => ListTile(
+            // Historical section
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Text(
+                    'Historical',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...historicalPeriods.map((period) => ListTile(
+              title: Text(
+                period.displayName,
+                style: TextStyle(
+                  color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
+                  fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                ),
+              ),
+              onTap: () {
+                setState(() {
+                  _selectedPeriod = period;
+                });
+                Navigator.pop(context);
+              },
+            )),
+            // Divider
+            Divider(
+              color: Colors.white.withOpacity(0.2),
+              thickness: 1,
+              height: 32,
+            ),
+            // Planning section
+            Padding(
+              padding: const EdgeInsets.symmetric(vertical: 8.0),
+              child: Row(
+                children: [
+                  Text(
+                    'Planning',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            ...planningPeriods.map((period) => ListTile(
               title: Text(
                 period.displayName,
                 style: TextStyle(

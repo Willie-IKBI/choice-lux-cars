@@ -114,6 +114,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
   DateRange _getDateRange(TimePeriod period) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
+    final tomorrow = today.add(const Duration(days: 1));
 
     switch (period) {
       case TimePeriod.today:
@@ -136,6 +137,11 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
         return DateRange(yearStart, yearEnd);
       case TimePeriod.custom:
         return DateRange(today, today.add(const Duration(days: 1)));
+      case TimePeriod.tomorrow:
+        return DateRange(tomorrow, tomorrow.add(const Duration(days: 1)));
+      case TimePeriod.next3Days:
+        // Next 3 days: tomorrow + 2 days after (3 days total)
+        return DateRange(tomorrow, tomorrow.add(const Duration(days: 3)));
     }
   }
 
