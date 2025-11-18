@@ -21,6 +21,7 @@ import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/job_list_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:intl/intl.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -35,6 +36,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
+  DateTime _selectedMonth = DateTime.now();
 
   @override
   void initState() {
@@ -98,9 +100,14 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     // Check if user can create invoices (same permissions as vouchers for now)
     final canCreateInvoice = canCreateVoucher;
 
-    // Apply filters
-    List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
-    Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+    // Apply month filter first
+    final allJobs = jobs.value ?? [];
+    List<Job> monthFilteredJobs = _filterByMonth(allJobs);
+    Log.d('Month filter: ${allJobs.length} total jobs -> ${monthFilteredJobs.length} jobs in ${DateFormat('MMM yyyy').format(_selectedMonth)}');
+    
+    // Apply status filters
+    List<Job> filteredJobs = _filterJobs(monthFilteredJobs);
+    Log.d('Status filter: ${monthFilteredJobs.length} month jobs -> ${filteredJobs.length} jobs (filter: $_currentFilter)');
 
     // Apply search filter
     if (_searchQuery.isNotEmpty) {
@@ -150,6 +157,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               SafeArea(
                 child: Column(
                   children: [
+                    // Month Navigation Section
+                    _buildMonthNavigation(isSmallMobile, isMobile, isTablet, isDesktop),
+                    
                     // Enhanced Filter Section with better mobile layout
                     _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
@@ -220,6 +230,140 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           ),
         ),
       ],
+    );
+  }
+
+  // Month Navigation Section
+  Widget _buildMonthNavigation(
+    bool isSmallMobile,
+    bool isMobile,
+    bool isTablet,
+    bool isDesktop,
+  ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+    final fontSize = ResponsiveTokens.getFontSize(
+      MediaQuery.of(context).size.width,
+      baseSize: 14.0,
+    );
+    final iconSize = ResponsiveTokens.getIconSize(
+      MediaQuery.of(context).size.width,
+    );
+    final cornerRadius = ResponsiveTokens.getCornerRadius(
+      MediaQuery.of(context).size.width,
+    );
+
+    final now = DateTime.now();
+    final isCurrentMonth = _selectedMonth.year == now.year && 
+                          _selectedMonth.month == now.month;
+    final monthYearText = DateFormat('MMM yyyy').format(_selectedMonth);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: padding,
+        vertical: spacing * 0.75,
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Previous month button
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month - 1);
+                _currentPage = 1;
+              });
+            },
+            icon: Icon(
+              Icons.chevron_left,
+              size: iconSize,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+            padding: EdgeInsets.all(isSmallMobile ? 4 : 8),
+            constraints: BoxConstraints(
+              minWidth: isSmallMobile ? 32 : 40,
+              minHeight: isSmallMobile ? 32 : 40,
+            ),
+          ),
+          
+          // Month/Year display with optional "Today" button
+          GestureDetector(
+            onTap: () {
+              if (!isCurrentMonth) {
+                setState(() {
+                  _selectedMonth = DateTime(now.year, now.month);
+                  _currentPage = 1;
+                });
+              }
+            },
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isSmallMobile ? 12 : 16,
+                vertical: isSmallMobile ? 6 : 8,
+              ),
+              decoration: BoxDecoration(
+                color: isCurrentMonth 
+                    ? ChoiceLuxTheme.richGold.withValues(alpha: 0.2)
+                    : Colors.transparent,
+                borderRadius: BorderRadius.circular(cornerRadius),
+                border: Border.all(
+                  color: isCurrentMonth
+                      ? ChoiceLuxTheme.richGold
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    monthYearText,
+                    style: TextStyle(
+                      fontSize: fontSize,
+                      fontWeight: FontWeight.w600,
+                      color: isCurrentMonth
+                          ? ChoiceLuxTheme.richGold
+                          : ChoiceLuxTheme.platinumSilver,
+                    ),
+                  ),
+                  if (isCurrentMonth) ...[
+                    SizedBox(width: isSmallMobile ? 4 : 6),
+                    Icon(
+                      Icons.today,
+                      size: fontSize * 0.9,
+                      color: ChoiceLuxTheme.richGold,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ),
+          
+          // Next month button
+          IconButton(
+            onPressed: () {
+              setState(() {
+                _selectedMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1);
+                _currentPage = 1;
+              });
+            },
+            icon: Icon(
+              Icons.chevron_right,
+              size: iconSize,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+            padding: EdgeInsets.all(isSmallMobile ? 4 : 8),
+            constraints: BoxConstraints(
+              minWidth: isSmallMobile ? 32 : 40,
+              minHeight: isSmallMobile ? 32 : 40,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -675,6 +819,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       onTap: () => setState(() {
         _currentFilter = filter;
         _currentPage = 1; // Reset to first page when filter changes
+        // Reset to current month when changing filters (optional - remove if you want to keep month selection)
+        // _selectedMonth = DateTime.now();
       }),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -713,6 +859,17 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         ),
       ),
     );
+  }
+
+  // Filter jobs by selected month based on jobStartDate
+  List<Job> _filterByMonth(List<Job> jobs) {
+    final targetYear = _selectedMonth.year;
+    final targetMonth = _selectedMonth.month;
+    
+    return jobs.where((job) {
+      final jobDate = job.jobStartDate;
+      return jobDate.year == targetYear && jobDate.month == targetMonth;
+    }).toList();
   }
 
   List<Job> _filterJobs(List<Job> jobs) {

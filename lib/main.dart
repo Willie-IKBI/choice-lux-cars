@@ -31,14 +31,9 @@ void main() async {
       // Set up FCM background message handler (must be top-level)
       FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
       
-      // Note: Android notification channel initialization is handled by FCMService.initialize()
-      // which is called in app.dart after the widget tree is built
-      
-      // Request notification permissions
-      await _requestNotificationPermissions();
-      
-      // Get and save FCM token
-      await _setupFCMToken();
+      // Note: FCM initialization (permissions, token, channel creation) is handled by 
+      // FCMService.initialize() which is called in app.dart after the widget tree is built
+      // This ensures proper context and avoids duplicate initialization
       
     } catch (error) {
       Log.e('Firebase initialization failed: $error');
@@ -110,110 +105,5 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
   Log.d('Background notification shown');
 }
 
-// Request notification permissions
-Future<void> _requestNotificationPermissions() async {
-  try {
-    final messaging = FirebaseMessaging.instance;
-    
-    final settings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: false,
-      criticalAlert: true,
-      announcement: true,
-    );
-    
-    Log.d('Notification permission status: ${settings.authorizationStatus}');
-    
-    if (settings.authorizationStatus == AuthorizationStatus.authorized ||
-        settings.authorizationStatus == AuthorizationStatus.provisional) {
-      Log.d('Notification permissions granted');
-    } else {
-      Log.d('Notification permissions denied');
-    }
-  } catch (error) {
-    Log.e('Error requesting notification permissions: $error');
-  }
-}
-
-// Setup FCM token
-Future<void> _setupFCMToken() async {
-  try {
-    final messaging = FirebaseMessaging.instance;
-    
-    Log.d('Setting up FCM token (platform: ${kIsWeb ? "web" : "mobile"})...');
-    
-    // Get FCM token (web uses VAPID via FirebaseService)
-    final token = await FirebaseService.instance.getFCMToken();
-    if (token != null) {
-      Log.d('FCM Token obtained: ${token.substring(0, 20)}...');
-      
-      // Save token to user profile if user is authenticated
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser != null) {
-        Log.d('User authenticated, saving FCM token...');
-        await _saveFCMTokenToProfile(currentUser.id, token);
-      } else {
-        Log.d('No authenticated user, FCM token will be saved on login');
-      }
-    } else {
-      Log.d('No FCM token available - may need to grant permissions');
-      if (kIsWeb) {
-        Log.d('Web: Ensure notification permissions are granted and VAPID key is configured');
-      }
-    }
-    
-    // Listen for token refresh
-    messaging.onTokenRefresh.listen((newToken) async {
-      Log.d('FCM token refreshed: ${newToken.substring(0, 20)}...');
-      
-      // Save new token to user profile if user is authenticated
-      final currentUser = Supabase.instance.client.auth.currentUser;
-      if (currentUser != null) {
-        await _saveFCMTokenToProfile(currentUser.id, newToken);
-      }
-    });
-    
-  } catch (error) {
-    Log.e('Error setting up FCM token: $error');
-    if (kIsWeb) {
-      Log.e('Web FCM setup error details: $error');
-    }
-  }
-}
-
-// Save FCM token to user profile (platform-specific)
-Future<void> _saveFCMTokenToProfile(String userId, String token) async {
-  try {
-    final supabase = Supabase.instance.client;
-    
-    // Save to platform-specific column
-    // Web: fcm_token_web, Mobile/Android: fcm_token
-    final updateData = <String, dynamic>{};
-    
-    if (kIsWeb) {
-      updateData['fcm_token_web'] = token;
-      Log.d('Saving FCM token to fcm_token_web (web platform)');
-    } else {
-      updateData['fcm_token'] = token;
-      Log.d('Saving FCM token to fcm_token (mobile platform)');
-    }
-    
-    final response = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', userId)
-        .select();
-    
-    if (response.isEmpty) {
-      Log.e('Failed to update profile - no rows affected');
-    } else {
-      Log.d('FCM token saved to profile for user: $userId');
-      Log.d('Updated profile data: $response');
-    }
-  } catch (error) {
-    Log.e('Error saving FCM token to profile: $error');
-    Log.e('Error details: ${error.toString()}');
-  }
-}
+// Note: FCM token setup and permission requests are now handled by FCMService.initialize()
+// which is called in app.dart. This avoids duplicate initialization and ensures proper context.

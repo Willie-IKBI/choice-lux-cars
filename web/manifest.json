@@ -1,11 +1,11 @@
 {
-    "name": "choice_lux_cars",
-    "short_name": "choice_lux_cars",
+    "name": "Choice Lux Cars",
+    "short_name": "CLC",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#1a1a1a",
+    "theme_color": "#D4AF37",
+    "description": "Choice Lux Cars - Premium vehicle transport services",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

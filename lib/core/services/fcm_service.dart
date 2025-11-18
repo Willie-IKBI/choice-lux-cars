@@ -38,6 +38,27 @@ class FCMService {
 
           await _localNotifications.initialize(initializationSettings);
           Log.d('FCMService: Local notifications initialized');
+
+          // Create notification channel for Android 8.0+ (REQUIRED for app to appear in settings)
+          try {
+            const AndroidNotificationChannel channel = AndroidNotificationChannel(
+              'choice_lux_cars_channel', // Channel ID
+              'Choice Lux Cars Notifications', // Channel name
+              description: 'Notifications for job updates, assignments, and system alerts',
+              importance: Importance.high,
+              playSound: true,
+              enableVibration: true,
+            );
+
+            await _localNotifications
+                .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+                ?.createNotificationChannel(channel);
+
+            Log.d('FCMService: Notification channel created successfully');
+          } catch (e) {
+            Log.e('FCMService: Error creating notification channel: $e');
+            // Continue anyway - notifications may still work, but app won't appear in settings
+          }
         } catch (e) {
           Log.e('FCMService: Error initializing local notifications: $e');
           // Continue anyway - notifications may still work

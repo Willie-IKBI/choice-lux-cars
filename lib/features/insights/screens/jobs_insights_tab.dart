@@ -170,7 +170,7 @@ class JobsInsightsTab extends ConsumerWidget {
               final screenWidth = MediaQuery.of(context).size.width;
               final isDesktop = screenWidth >= 600;
               final topSpacing = isDesktop ? 24.0 : 32.0; // More spacing on mobile
-              final headerSpacing = isDesktop ? 16.0 : 20.0; // More spacing after header on mobile
+              final headerSpacing = isDesktop ? 16.0 : 26.0; // More spacing after header on mobile
               
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -220,7 +220,7 @@ class JobsInsightsTab extends ConsumerWidget {
         : const EdgeInsets.symmetric(horizontal: 16, vertical: 20); // More vertical padding on mobile
     final valueFontSize = isDesktop ? 16.0 : 24.0;
     final titleFontSize = isDesktop ? 12.0 : 14.0;
-    final titleSpacing = isDesktop ? 4.0 : 10.0; // Increased spacing on mobile
+    final titleSpacing = isDesktop ? 4.0 : 15.0; // Increased spacing on mobile
     final valueSpacing = isDesktop ? 3.0 : 12.0; // Increased spacing between icon and value on mobile
     final borderRadius = isDesktop ? 16.0 : 12.0;
     
