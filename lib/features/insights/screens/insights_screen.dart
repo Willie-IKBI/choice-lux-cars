@@ -325,12 +325,22 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
+      builder: (context) {
+        // Get safe area insets to account for system navigation bar
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+        final safeBottomPadding = bottomPadding > 0 ? bottomPadding + 20 : 32.0; // Extra padding for system bar
+        
+        return Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: safeBottomPadding,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
               Text(
                 'Select Time Period',
                 style: TextStyle(
@@ -408,10 +418,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                   Navigator.pop(context);
                 },
               )),
-            ],
+              ],
+            ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
@@ -422,11 +433,22 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
+      builder: (context) {
+        // Get safe area insets to account for system navigation bar
+        final bottomPadding = MediaQuery.of(context).padding.bottom;
+        final safeBottomPadding = bottomPadding > 0 ? bottomPadding + 20 : 32.0; // Extra padding for system bar
+        
+        return Container(
+          padding: EdgeInsets.only(
+            left: 20,
+            right: 20,
+            top: 20,
+            bottom: safeBottomPadding,
+          ),
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
             Text(
               'Select Location',
               style: TextStyle(
@@ -451,9 +473,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                 Navigator.pop(context);
               },
             )),
-          ],
-        ),
-      ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

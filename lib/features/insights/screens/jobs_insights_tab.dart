@@ -165,12 +165,25 @@ class JobsInsightsTab extends ConsumerWidget {
               return gridView;
             },
           ),
-          const SizedBox(height: 24),
-
-          // Job Status Breakdown
-          _buildSectionHeader('Job Status Breakdown'),
-          const SizedBox(height: 16),
-          _buildJobStatusCard(insights),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isDesktop = screenWidth >= 600;
+              final topSpacing = isDesktop ? 24.0 : 32.0; // More spacing on mobile
+              final headerSpacing = isDesktop ? 16.0 : 20.0; // More spacing after header on mobile
+              
+              return Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  SizedBox(height: topSpacing),
+                  // Job Status Breakdown
+                  _buildSectionHeader('Job Status Breakdown'),
+                  SizedBox(height: headerSpacing),
+                  _buildJobStatusCard(insights),
+                ],
+              );
+            },
+          ),
           ],
         ),
       ),
@@ -200,14 +213,16 @@ class JobsInsightsTab extends ConsumerWidget {
     final isDesktop = screenWidth >= 600;
     
     // Smaller, more compact cards for desktop
-    final iconSize = isDesktop ? 20.0 : 32.0; // Reduced from 22px
-    final iconContainerPadding = isDesktop ? 6.0 : 12.0; // Reduced from 8px
-    final cardPadding = isDesktop ? const EdgeInsets.all(6.0) : const EdgeInsets.all(16.0); // Reduced from 8px
-    final valueFontSize = isDesktop ? 16.0 : 24.0; // Reduced from 18px
-    final titleFontSize = isDesktop ? 12.0 : 14.0; // Reduced from 13px
-    final titleSpacing = isDesktop ? 4.0 : 8.0; // Reduced from 6px
-    final valueSpacing = isDesktop ? 3.0 : 8.0; // Reduced from 4px
-    final borderRadius = isDesktop ? 16.0 : 12.0; // Slightly smaller radius
+    final iconSize = isDesktop ? 20.0 : 32.0;
+    final iconContainerPadding = isDesktop ? 6.0 : 12.0;
+    final cardPadding = isDesktop 
+        ? const EdgeInsets.all(6.0) 
+        : const EdgeInsets.symmetric(horizontal: 16, vertical: 20); // More vertical padding on mobile
+    final valueFontSize = isDesktop ? 16.0 : 24.0;
+    final titleFontSize = isDesktop ? 12.0 : 14.0;
+    final titleSpacing = isDesktop ? 4.0 : 10.0; // Increased spacing on mobile
+    final valueSpacing = isDesktop ? 3.0 : 12.0; // Increased spacing between icon and value on mobile
+    final borderRadius = isDesktop ? 16.0 : 12.0;
     
     return GestureDetector(
       onTap: status != null
