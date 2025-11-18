@@ -327,87 +327,89 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
       ),
       builder: (context) => Container(
         padding: const EdgeInsets.all(20),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              'Select Time Period',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 20),
-            // Historical section
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  Text(
-                    'Historical',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.7),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            ...historicalPeriods.map((period) => ListTile(
-              title: Text(
-                period.displayName,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Time Period',
                 style: TextStyle(
-                  color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
-                  fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
                 ),
               ),
-              onTap: () {
-                setState(() {
-                  _selectedPeriod = period;
-                });
-                Navigator.pop(context);
-              },
-            )),
-            // Divider
-            Divider(
-              color: Colors.white.withOpacity(0.2),
-              thickness: 1,
-              height: 32,
-            ),
-            // Planning section
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8.0),
-              child: Row(
-                children: [
-                  Text(
-                    'Planning',
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white.withOpacity(0.7),
+              const SizedBox(height: 20),
+              // Historical section
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    Text(
+                      'Historical',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            ),
-            ...planningPeriods.map((period) => ListTile(
-              title: Text(
-                period.displayName,
-                style: TextStyle(
-                  color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
-                  fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                  ],
                 ),
               ),
-              onTap: () {
-                setState(() {
-                  _selectedPeriod = period;
-                });
-                Navigator.pop(context);
-              },
-            )),
-          ],
+              ...historicalPeriods.map((period) => ListTile(
+                title: Text(
+                  period.displayName,
+                  style: TextStyle(
+                    color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
+                    fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedPeriod = period;
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+              // Divider
+              Divider(
+                color: Colors.white.withOpacity(0.2),
+                thickness: 1,
+                height: 32,
+              ),
+              // Planning section
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 8.0),
+                child: Row(
+                  children: [
+                    Text(
+                      'Planning',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              ...planningPeriods.map((period) => ListTile(
+                title: Text(
+                  period.displayName,
+                  style: TextStyle(
+                    color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
+                    fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                onTap: () {
+                  setState(() {
+                    _selectedPeriod = period;
+                  });
+                  Navigator.pop(context);
+                },
+              )),
+            ],
+          ),
         ),
       ),
     );

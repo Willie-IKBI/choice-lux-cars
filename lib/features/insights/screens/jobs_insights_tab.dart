@@ -33,10 +33,16 @@ class JobsInsightsTab extends ConsumerWidget {
   }
 
   Widget _buildJobsContent(BuildContext context, JobInsights insights) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = screenWidth >= 600;
+    final bottomPadding = isDesktop ? 24.0 : 16.0;
+    
     return SingleChildScrollView(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+      child: Padding(
+        padding: EdgeInsets.only(bottom: bottomPadding),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
           // Header
           Container(
             padding: const EdgeInsets.all(20),
@@ -165,7 +171,8 @@ class JobsInsightsTab extends ConsumerWidget {
           _buildSectionHeader('Job Status Breakdown'),
           const SizedBox(height: 16),
           _buildJobStatusCard(insights),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -267,65 +274,92 @@ class JobsInsightsTab extends ConsumerWidget {
   }
 
   Widget _buildJobStatusCard(JobInsights insights) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Column(
-        children: [
-          Row(
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isDesktop = screenWidth >= 600;
+        
+        // Responsive padding: smaller on mobile, larger on desktop
+        final cardPadding = isDesktop 
+            ? const EdgeInsets.all(20) 
+            : const EdgeInsets.symmetric(horizontal: 12, vertical: 16);
+        final iconSize = isDesktop ? 24.0 : 20.0;
+        final titleFontSize = isDesktop ? 18.0 : 16.0;
+        final spacingBetweenItems = isDesktop ? 16.0 : 12.0;
+        final headerSpacing = isDesktop ? 20.0 : 16.0;
+        
+        return Container(
+          padding: cardPadding,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.05),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.1)),
+          ),
+          child: Column(
             children: [
-              Icon(
-                Icons.pie_chart_outline,
-                color: ChoiceLuxTheme.richGold,
-                size: 24,
+              Row(
+                children: [
+                  Icon(
+                    Icons.pie_chart_outline,
+                    color: ChoiceLuxTheme.richGold,
+                    size: iconSize,
+                  ),
+                  SizedBox(width: isDesktop ? 12 : 8),
+                  Text(
+                    'Job Distribution',
+                    style: TextStyle(
+                      fontSize: titleFontSize,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                    ),
+                  ),
+                ],
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'Job Distribution',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
+              SizedBox(height: headerSpacing),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildStatusItem(
+                      'Completed',
+                      insights.completedJobs,
+                      insights.totalJobs,
+                      Colors.green,
+                      isDesktop: isDesktop,
+                    ),
+                  ),
+                  SizedBox(width: spacingBetweenItems),
+                  Expanded(
+                    child: _buildStatusItem(
+                      'Open',
+                      insights.openJobs,
+                      insights.totalJobs,
+                      Colors.orange,
+                      isDesktop: isDesktop,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatusItem(
-                  'Completed',
-                  insights.completedJobs,
-                  insights.totalJobs,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatusItem(
-                  'Open',
-                  insights.openJobs,
-                  insights.totalJobs,
-                  Colors.orange,
-                ),
-              ),
-            ],
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildStatusItem(String label, int count, int total, Color color) {
+  Widget _buildStatusItem(String label, int count, int total, Color color, {bool isDesktop = false}) {
     final percentage = total > 0 ? (count / total * 100) : 0.0;
     
+    // Responsive padding and font sizes
+    final itemPadding = isDesktop 
+        ? const EdgeInsets.all(16) 
+        : const EdgeInsets.symmetric(horizontal: 12, vertical: 12);
+    final countFontSize = isDesktop ? 24.0 : 20.0;
+    final labelFontSize = isDesktop ? 14.0 : 13.0;
+    final percentageFontSize = isDesktop ? 12.0 : 11.0;
+    final spacing = isDesktop ? 4.0 : 3.0;
+    
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: itemPadding,
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
         borderRadius: BorderRadius.circular(8),
@@ -336,24 +370,24 @@ class JobsInsightsTab extends ConsumerWidget {
           Text(
             count.toString(),
             style: TextStyle(
-              fontSize: 24,
+              fontSize: countFontSize,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: spacing),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 14,
+            style: TextStyle(
+              fontSize: labelFontSize,
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 4),
+          SizedBox(height: spacing),
           Text(
             '${percentage.toStringAsFixed(1)}%',
             style: TextStyle(
-              fontSize: 12,
+              fontSize: percentageFontSize,
               color: Colors.white.withOpacity(0.8),
             ),
           ),
