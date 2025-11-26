@@ -67,6 +67,7 @@ class Job {
   final String? agentId;
   final String vehicleId;
   final String driverId;
+  final String? managerId;
   final DateTime jobStartDate;
   final DateTime orderDate;
   final String? passengerName;
@@ -81,6 +82,8 @@ class Job {
   final String? voucherPdf;
   final String? invoicePdf;
   final String? cancelReason;
+  final String? cancelledBy;
+  final DateTime? cancelledAt;
   final String? location; // Branch location (Jhb, Cpt, Dbn)
   final String createdBy;
   final DateTime createdAt;
@@ -98,6 +101,7 @@ class Job {
     this.agentId,
     required this.vehicleId,
     required this.driverId,
+    this.managerId,
     required this.jobStartDate,
     required this.orderDate,
     this.passengerName,
@@ -112,6 +116,8 @@ class Job {
     this.voucherPdf,
     this.invoicePdf,
     this.cancelReason,
+    this.cancelledBy,
+    this.cancelledAt,
     this.location,
     required this.createdBy,
     required this.createdAt,
@@ -140,6 +146,7 @@ class Job {
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString() ?? '',
       driverId: map['driver_id']?.toString() ?? '',
+      managerId: map['manager_id']?.toString(),
       jobStartDate: DateTime.parse(
         map['job_start_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
       ),
@@ -162,6 +169,10 @@ class Job {
       voucherPdf: map['voucher_pdf']?.toString(),
       invoicePdf: map['invoice_pdf']?.toString(),
       cancelReason: map['cancel_reason']?.toString(),
+      cancelledBy: map['cancelled_by']?.toString(),
+      cancelledAt: map['cancelled_at'] != null
+          ? DateTime.tryParse(map['cancelled_at'].toString())
+          : null,
       location: map['location']?.toString(),
       createdBy: map['created_by']?.toString() ?? '',
       createdAt: DateTime.parse(
@@ -194,6 +205,7 @@ class Job {
       if (agentId != null) 'agent_id': int.tryParse(agentId!) ?? agentId,
       'vehicle_id': int.tryParse(vehicleId) ?? vehicleId,
       'driver_id': driverId, // Keep as UUID string
+      'manager_id': managerId,
       'job_start_date': jobStartDate.toIso8601String(),
       'order_date': orderDate.toIso8601String(),
       'passenger_name': passengerName,
@@ -208,6 +220,8 @@ class Job {
       'voucher_pdf': voucherPdf,
       'invoice_pdf': invoicePdf,
       'cancel_reason': cancelReason,
+      'cancelled_by': cancelledBy,
+      if (cancelledAt != null) 'cancelled_at': cancelledAt!.toIso8601String(),
       'location': location,
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
@@ -244,6 +258,8 @@ class Job {
     String? invoicePdf,
     String? cancelReason,
     String? location,
+    String? cancelledBy,
+    DateTime? cancelledAt,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -252,6 +268,7 @@ class Job {
     DateTime? confirmedAt,
     String? confirmedBy,
     String? jobNumber,
+    String? managerId,
   }) {
     return Job(
       id: id ?? this.id,
@@ -259,6 +276,7 @@ class Job {
       agentId: agentId ?? this.agentId,
       vehicleId: vehicleId ?? this.vehicleId,
       driverId: driverId ?? this.driverId,
+      managerId: managerId ?? this.managerId,
       jobStartDate: jobStartDate ?? this.jobStartDate,
       orderDate: orderDate ?? this.orderDate,
       passengerName: passengerName ?? this.passengerName,
@@ -273,6 +291,8 @@ class Job {
       voucherPdf: voucherPdf ?? this.voucherPdf,
       invoicePdf: invoicePdf ?? this.invoicePdf,
       cancelReason: cancelReason ?? this.cancelReason,
+      cancelledBy: cancelledBy ?? this.cancelledBy,
+      cancelledAt: cancelledAt ?? this.cancelledAt,
       location: location ?? this.location,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,

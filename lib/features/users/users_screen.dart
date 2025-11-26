@@ -37,6 +37,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   String _search = '';
   String? _roleFilter;
   String? _statusFilter;
+  bool _hideDeactivated = true;
 
   final List<_RoleOption> roles = const [
     _RoleOption(
@@ -93,7 +94,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           u.userEmail.toLowerCase().contains(_search.toLowerCase());
       final matchesRole = _roleFilter == null || u.role == _roleFilter;
       final matchesStatus = _statusFilter == null || u.status == _statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
+      final shouldHideDeactivated =
+          _hideDeactivated && (_statusFilter == null || _statusFilter!.isEmpty);
+      final passesHideToggle =
+          !shouldHideDeactivated || (u.status?.toLowerCase() != 'deactivated');
+      return matchesSearch && matchesRole && matchesStatus && passesHideToggle;
     }).toList();
     return Stack(
       children: [
@@ -201,6 +206,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           // Search bar
           _buildResponsiveSearchBar(isMobile, isSmallMobile),
           SizedBox(height: isSmallMobile ? 8.0 : 12.0),
+          _buildHideDeactivatedToggle(isMobile, isSmallMobile),
+          SizedBox(height: isSmallMobile ? 8.0 : 12.0),
           // Filter button
           _buildMobileFilterButton(isSmallMobile),
         ],
@@ -210,6 +217,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       return Row(
         children: [
           Expanded(child: _buildResponsiveSearchBar(isMobile, isSmallMobile)),
+          const SizedBox(width: 12),
+          _buildHideDeactivatedToggle(isMobile, isSmallMobile),
           const SizedBox(width: 12),
           SizedBox(
             width: 180,
@@ -474,6 +483,12 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 children: [
+                  _buildHideDeactivatedToggle(
+                    true,
+                    MediaQuery.of(context).size.width < 400,
+                    inSheet: true,
+                  ),
+                  const SizedBox(height: 16),
                   // Role filter section
                   _buildMobileFilterSection(
                     title: 'Role',
@@ -504,6 +519,54 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         ),
       ),
     );
+  }
+
+  Widget _buildHideDeactivatedToggle(
+    bool isMobile,
+    bool isSmallMobile, {
+    bool inSheet = false,
+  }) {
+    final toggle = Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Switch.adaptive(
+          value: _hideDeactivated,
+          onChanged: (val) => setState(() => _hideDeactivated = val),
+          activeColor: ChoiceLuxTheme.richGold,
+        ),
+        const SizedBox(width: 8),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Hide deactivated',
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontWeight: FontWeight.w600,
+                fontSize: isSmallMobile ? 13 : 14,
+              ),
+            ),
+            Text(
+              _hideDeactivated ? 'Showing active users only' : 'Showing all users',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
+                fontSize: isSmallMobile ? 11 : 12,
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+
+    if (isMobile || inSheet) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 4),
+        child: toggle,
+      );
+    }
+
+    return toggle;
   }
 
   Widget _buildMobileFilterSection({

@@ -32,7 +32,7 @@ class JobsScreen extends ConsumerStatefulWidget {
 
 class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
-  String _currentFilter = 'all'; // open, in_progress, completed, all
+  String _currentFilter = 'open'; // open, in_progress, completed, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;

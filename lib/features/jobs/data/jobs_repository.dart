@@ -34,13 +34,15 @@ class JobsRepository {
       PostgrestFilterBuilder query = _supabase.from('jobs').select();
 
       // Apply role-based filtering
-      if (userRole == 'administrator' || userRole == 'manager') {
-        // Administrators and managers see all jobs
-        Log.d('User has full access - fetching all jobs');
-      } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created/assigned + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+      if (userRole == 'administrator') {
+        // Administrators see all jobs
+        Log.d('Administrator access - fetching all jobs');
+      } else if ((userRole == 'manager' || userRole == 'driver_manager') &&
+          userId != null) {
+        // Managers and driver_managers see jobs they manage or drive
+        Log.d(
+            'Manager access - fetching jobs where manager_id or driver_id equals $userId');
+        query = query.or('manager_id.eq.$userId,driver_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
         // Drivers only see jobs assigned to them
         Log.d('Driver - fetching only assigned jobs for userId: $userId');
@@ -258,6 +260,38 @@ class JobsRepository {
       return const Result.success(null);
     } catch (error) {
       Log.e('Error deleting job: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Cancel a job (admin only)
+  Future<Result<Job>> cancelJob({
+    required String jobId,
+    required String reason,
+    required String cancelledBy,
+  }) async {
+    try {
+      Log.d('Cancelling job: $jobId');
+
+      final updatePayload = <String, dynamic>{
+        'job_status': 'cancelled',
+        'cancel_reason': reason,
+        'cancelled_by': cancelledBy,
+        'cancelled_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      final response = await _supabase
+          .from('jobs')
+          .update(updatePayload)
+          .eq('id', jobId)
+          .select()
+          .single();
+
+      Log.d('Job $jobId cancelled successfully');
+      return Result.success(Job.fromJson(response));
+    } catch (error) {
+      Log.e('Error cancelling job: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -567,6 +601,7 @@ class JobsRepository {
     String? status, // 'all', 'completed', 'open' (everything except completed/cancelled)
     int limit = 12,
     int offset = 0,
+    String? managerId, // restrict to manager’s jobs when provided
   }) async {
     try {
       Log.d('Fetching jobs with insights filters: startDate=$startDate, endDate=$endDate, location=$location, status=$status, limit=$limit, offset=$offset');
@@ -614,6 +649,11 @@ class JobsRepository {
       if (jobIds.isNotEmpty) {
         // Use inFilter for multiple values
         jobsQuery = jobsQuery.inFilter('id', jobIds);
+      }
+
+      // Restrict by manager when provided
+      if (managerId != null && managerId.isNotEmpty) {
+        jobsQuery = jobsQuery.eq('manager_id', managerId);
       }
 
       // Filter by location (branch location)

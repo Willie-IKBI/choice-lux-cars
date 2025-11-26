@@ -358,6 +358,49 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       return null;
     }
   }
+
+  /// Cancel a job (admin only)
+  Future<void> cancelJob({
+    required String jobId,
+    required String reason,
+  }) async {
+    try {
+      final currentUser = _ref.read(currentUserProfileProvider);
+      final role = currentUser?.role?.toLowerCase();
+
+      if (currentUser == null || role != 'administrator') {
+        throw Exception('Only administrators can cancel jobs.');
+      }
+
+      final result = await _jobsRepository.cancelJob(
+        jobId: jobId,
+        reason: reason,
+        cancelledBy: currentUser.id,
+      );
+
+      if (result.isSuccess) {
+        final cancelledJob = result.data!;
+        final updatedJobs = (state.value ?? []).map((job) {
+          if (job.id.toString() == jobId) {
+            return job.copyWith(
+              status: 'cancelled',
+              cancelReason: cancelledJob.cancelReason,
+              cancelledBy: cancelledJob.cancelledBy,
+              cancelledAt: cancelledJob.cancelledAt,
+            );
+          }
+          return job;
+        }).toList();
+
+        state = AsyncValue.data(updatedJobs);
+      } else {
+        throw Exception(result.error?.message ?? 'Failed to cancel job');
+      }
+    } catch (error) {
+      Log.e('Error cancelling job: $error');
+      rethrow;
+    }
+  }
 }
 
 /// Provider for JobsNotifier using AsyncNotifierProvider

@@ -80,6 +80,11 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
 
       final offset = (_currentPage - 1) * _itemsPerPage;
 
+      final currentUser = ref.read(currentUserProfileProvider);
+      final role = currentUser?.role?.toLowerCase();
+      final managerId =
+          role == 'manager' ? currentUser?.id : null;
+
       final result = await repository.fetchJobsWithInsightsFilters(
         startDate: dateRange.start,
         endDate: dateRange.end,
@@ -87,6 +92,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
         status: widget.status,
         limit: _itemsPerPage,
         offset: offset,
+        managerId: managerId,
       );
 
       if (result.isSuccess) {

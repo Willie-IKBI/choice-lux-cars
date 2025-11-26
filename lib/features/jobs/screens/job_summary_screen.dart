@@ -52,6 +52,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   dynamic _agent;
   dynamic _vehicle;
   dynamic _driver;
+  dynamic _cancelledByUser;
 
   // Step completion times
   Map<String, dynamic>? _driverFlowData;
@@ -195,6 +196,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         final driverResult = await ref.read(usersRepositoryProvider).getUserProfile(_job!.driverId);
         if (driverResult.isSuccess && driverResult.data != null) {
           _driver = driverResult.data!.toJson();
+        }
+      }
+
+      if (_job!.cancelledBy != null && _job!.cancelledBy!.isNotEmpty) {
+        final cancelledByResult =
+            await ref.read(usersRepositoryProvider).getUserProfile(_job!.cancelledBy!);
+        if (cancelledByResult.isSuccess && cancelledByResult.data != null) {
+          _cancelledByUser = cancelledByResult.data!.toJson();
         }
       }
 
@@ -365,7 +374,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             child: Column(
               children: [
                 _buildStatusCard(),
-                const SizedBox(height: 24),
+                if (_job?.status == 'cancelled') ...[
+                  const SizedBox(height: 16),
+                  _buildCancellationCard(),
+                  const SizedBox(height: 24),
+                ] else ...[
+                  const SizedBox(height: 24),
+                ],
                 _buildJobDetailsCard(),
                 const SizedBox(height: 24),
                 _buildClientAgentCard(),
@@ -410,7 +425,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       child: Column(
         children: [
           _buildStatusCard(),
-          const SizedBox(height: 16),
+          if (_job?.status == 'cancelled') ...[
+            const SizedBox(height: 12),
+            _buildCancellationCard(),
+            const SizedBox(height: 16),
+          ] else ...[
+            const SizedBox(height: 16),
+          ],
           _buildAccordionSection(
             'Job Details',
             'jobDetails',
@@ -590,6 +611,66 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
 
+  Widget _buildCancellationCard() {
+    final cancelledByName =
+        _cancelledByUser?['display_name'] ?? _job!.cancelledBy ?? 'Administrator';
+    final cancelledAtText =
+        _formatDateTime(_job!.cancelledAt?.toIso8601String());
+
+    return Card(
+      color: ChoiceLuxTheme.errorColor.withValues(alpha:0.1),
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+                const SizedBox(width: 12),
+                Text(
+                  'Job Cancelled',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.errorColor,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_job!.cancelReason?.isNotEmpty == true)
+              Text(
+                'Reason: ${_job!.cancelReason}',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: 14,
+                ),
+              ),
+            const SizedBox(height: 6),
+            Text(
+              'Cancelled by $cancelledByName',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 13,
+              ),
+            ),
+            if (_job!.cancelledAt != null)
+              Text(
+                'Cancelled at $cancelledAtText',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: 13,
+                ),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildJobDetailsCard() {
     return Card(
       elevation: 2,
@@ -628,6 +709,19 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           _job!.daysUntilStartText,
           Icons.timer,
         ),
+        if (_job!.status == 'cancelled') ...[
+          _buildDetailRow(
+            'Cancel Reason',
+            _job!.cancelReason ?? 'Not provided',
+            Icons.cancel,
+          ),
+          if (_job!.cancelledAt != null)
+            _buildDetailRow(
+              'Cancelled At',
+              _formatDateTime(_job!.cancelledAt!.toIso8601String()),
+              Icons.schedule,
+            ),
+        ],
       ],
     );
   }
@@ -1909,10 +2003,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final isAssignedDriver = _job?.driverId == currentUser?.id;
     final isConfirmed =
         _job?.isConfirmed == true || _job?.driverConfirmation == true;
-    final needsConfirmation = isAssignedDriver && !isConfirmed;
-    final canEdit =
-        currentUser?.role?.toLowerCase() == 'administrator' ||
-        currentUser?.role?.toLowerCase() == 'manager';
+    final isAdmin = currentUser?.role?.toLowerCase() == 'administrator';
+    final isManager = currentUser?.role?.toLowerCase() == 'manager';
+    final isCancelled = _job?.status == 'cancelled';
+    final needsConfirmation = isAssignedDriver && !isConfirmed && !isCancelled;
+    final canEdit = (isAdmin || isManager) && !isCancelled;
+    final canCancel = isAdmin && !isCancelled;
 
     return Column(
       children: [
@@ -2037,6 +2133,25 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ],
           ),
         ],
+        if (canCancel) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showCancelJobDialogFromSummary,
+              icon: const Icon(Icons.cancel),
+              label: const Text('Cancel Job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.errorColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -2046,10 +2161,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final isAssignedDriver = _job?.driverId == currentUser?.id;
     final isConfirmed =
         _job?.isConfirmed == true || _job?.driverConfirmation == true;
-    final needsConfirmation = isAssignedDriver && !isConfirmed;
-    final canEdit =
-        currentUser?.role?.toLowerCase() == 'administrator' ||
-        currentUser?.role?.toLowerCase() == 'manager';
+    final isAdmin = currentUser?.role?.toLowerCase() == 'administrator';
+    final isManager = currentUser?.role?.toLowerCase() == 'manager';
+    final isCancelled = _job?.status == 'cancelled';
+    final needsConfirmation = isAssignedDriver && !isConfirmed && !isCancelled;
+    final canEdit = (isAdmin || isManager) && !isCancelled;
+    final canCancel = isAdmin && !isCancelled;
 
     return Column(
       children: [
@@ -2170,6 +2287,25 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ),
         ],
+        if (canCancel) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _showCancelJobDialogFromSummary,
+              icon: const Icon(Icons.cancel),
+              label: const Text('Cancel Job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.errorColor,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
       ],
     );
   }
@@ -2240,6 +2376,89 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       if (mounted) {
         setState(() => _isConfirming = false);
       }
+    }
+  }
+
+  Future<void> _showCancelJobDialogFromSummary() async {
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setState) {
+          final isValid = reasonController.text.trim().isNotEmpty;
+          return AlertDialog(
+            backgroundColor: ChoiceLuxTheme.charcoalGray,
+            title: Text(
+              'Cancel Job',
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Provide a reason for cancelling this job.',
+                  style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: reasonController,
+                  autofocus: true,
+                  minLines: 3,
+                  maxLines: 4,
+                  onChanged: (_) => setState(() {}),
+                  decoration: InputDecoration(
+                    hintText: 'Enter cancel reason',
+                    hintStyle: TextStyle(
+                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
+                    ),
+                    filled: true,
+                    fillColor: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.4),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(),
+                child: const Text('Don\'t Cancel'),
+              ),
+              ElevatedButton(
+                onPressed: isValid
+                    ? () => Navigator.of(context)
+                        .pop(reasonController.text.trim())
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ChoiceLuxTheme.errorColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('Cancel Job'),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+
+    if (reason == null || reason.isEmpty) return;
+
+    try {
+      await ref.read(jobsProvider.notifier).cancelJob(
+            jobId: widget.jobId,
+            reason: reason,
+          );
+      await _loadJobData();
+      if (!mounted) return;
+      SnackBarUtils.showSuccess(context, 'Job cancelled successfully.');
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showError(context, 'Failed to cancel job: $e');
     }
   }
 

@@ -8,6 +8,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart' as user_model;
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
@@ -41,23 +42,29 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   String? _selectedAgentId;
   String? _selectedVehicleId;
   String? _selectedDriverId;
+  String? _selectedManagerId;
   String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
   DateTime? _selectedJobStartDate;
   bool _collectPayment = false;
+  bool _isCancelled = false;
+  String? _cancelledReason;
+  String? _cancelledById;
+  DateTime? _cancelledAt;
 
   // Loading states
   bool _isLoading = false;
   bool _isSubmitting = false;
+  bool _managerAutoAssigned = false;
 
   // Search states
   String _clientSearchQuery = '';
   bool _showClientDropdown = false;
 
   // Calculate completion percentage
-  double get _completionPercentage {
+  double _completionPercentage({required bool managerRequired}) {
     int completedFields = 0;
     int totalRequiredFields =
-        7; // client, vehicle, driver, location, date, passenger count, luggage count
+        7 + (managerRequired ? 1 : 0); // add manager slot when required
 
     // Required fields
     if (_selectedClientId != null) completedFields++;
@@ -67,6 +74,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     if (_selectedJobStartDate != null) completedFields++;
     if (_pasCountController.text.isNotEmpty) completedFields++;
     if (_luggageCountController.text.isNotEmpty) completedFields++;
+    if (managerRequired && _selectedManagerId != null) completedFields++;
 
     return (completedFields / totalRequiredFields) * 100;
   }
@@ -195,9 +203,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       _selectedAgentId = job.agentId;
       _selectedVehicleId = job.vehicleId;
       _selectedDriverId = job.driverId;
+      _selectedManagerId = job.managerId ?? _selectedManagerId;
       _selectedLocation = job.location;
       _selectedJobStartDate = job.jobStartDate;
       _collectPayment = job.collectPayment;
+      _isCancelled = job.status.toLowerCase() == 'cancelled';
+      _cancelledReason = job.cancelReason;
+      _cancelledById = job.cancelledBy;
+      _cancelledAt = job.cancelledAt;
 
       _passengerNameController.text = job.passengerName ?? '';
       _passengerContactController.text = job.passengerContact ?? '';
@@ -279,6 +292,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     try {
       final currentUser = ref.read(currentUserProfileProvider);
       if (currentUser == null) throw Exception('User not authenticated');
+      final userRole = currentUser.role?.toLowerCase();
+      final isManager = userRole == 'manager';
+      final isAdmin = userRole == 'administrator';
 
       final isEditing = widget.jobId != null;
 
@@ -305,6 +321,13 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
         // Check if driver is being changed
         final isDriverChanged = _selectedDriverId != existingJob.driverId;
+        final effectiveManagerId = isManager
+            ? existingJob.managerId ?? currentUser.id
+            : _selectedManagerId ?? existingJob.managerId;
+
+        if (effectiveManagerId == null) {
+          throw Exception('Manager assignment is required.');
+        }
 
         final updatedJob = Job(
           id: existingJob.id,
@@ -312,6 +335,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           agentId: _selectedAgentId,
           vehicleId: _selectedVehicleId!,
           driverId: _selectedDriverId!,
+          managerId: effectiveManagerId,
           jobStartDate: _selectedJobStartDate!,
           orderDate: existingJob.orderDate,
           passengerName: _passengerNameController.text.trim().isEmpty
@@ -354,12 +378,18 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         }
       } else {
         // Create new job
+        final managerId = isManager ? currentUser.id : _selectedManagerId;
+        if (managerId == null) {
+          throw Exception('Please select a manager before continuing.');
+        }
+
         final job = Job(
           id: 0, // Let database auto-generate the ID
           clientId: _selectedClientId!,
           agentId: _selectedAgentId,
           vehicleId: _selectedVehicleId!,
           driverId: _selectedDriverId!,
+          managerId: managerId,
           jobStartDate: _selectedJobStartDate!,
           orderDate: DateTime.now(),
           passengerName: _passengerNameController.text.trim().isEmpty
@@ -408,6 +438,128 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     } finally {
       setState(() => _isSubmitting = false);
     }
+  }
+
+  Future<void> _showCancelJobDialog() async {
+    if (widget.jobId == null) return;
+
+    final reasonController = TextEditingController();
+    final reason = await showDialog<String>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setState) {
+            final isValid = reasonController.text.trim().isNotEmpty;
+            return AlertDialog(
+              backgroundColor: ChoiceLuxTheme.charcoalGray,
+              title: Text(
+                'Cancel Job',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    'Please provide a reason for cancelling this job.',
+                    style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: reasonController,
+                    autofocus: true,
+                    maxLines: 4,
+                    minLines: 3,
+                    onChanged: (_) => setState(() {}),
+                    decoration: InputDecoration(
+                      hintText: 'Enter cancel reason',
+                      hintStyle: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.6),
+                      ),
+                      filled: true,
+                      fillColor: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.4),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Don\'t Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isValid
+                      ? () => Navigator.of(context)
+                          .pop(reasonController.text.trim())
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.errorColor,
+                    foregroundColor: Colors.white,
+                  ),
+                  child: const Text('Cancel Job'),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+
+    if (reason == null || reason.isEmpty) return;
+    await _performCancelJob(reason);
+  }
+
+  Future<void> _performCancelJob(String reason) async {
+    if (widget.jobId == null) return;
+    try {
+      await ref.read(jobsProvider.notifier).cancelJob(
+            jobId: widget.jobId!,
+            reason: reason,
+          );
+      final currentUser = ref.read(currentUserProfileProvider);
+      setState(() {
+        _isCancelled = true;
+        _cancelledReason = reason;
+        _cancelledById = currentUser?.id;
+        _cancelledAt = DateTime.now();
+      });
+      if (!mounted) return;
+      SnackBarUtils.showSuccess(context, 'Job cancelled successfully.');
+      await Future.delayed(const Duration(milliseconds: 400));
+      if (mounted) {
+        context.go('/jobs/${widget.jobId}/summary');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      SnackBarUtils.showError(context, 'Error cancelling job: $e');
+    }
+  }
+
+  String _formatDateTime(DateTime? dateTime) {
+    if (dateTime == null) return 'Unknown time';
+    final local = dateTime.toLocal();
+    final year = local.year.toString().padLeft(4, '0');
+    final month = local.month.toString().padLeft(2, '0');
+    final day = local.day.toString().padLeft(2, '0');
+    final hour = local.hour.toString().padLeft(2, '0');
+    final minute = local.minute.toString().padLeft(2, '0');
+    return '$day/$month/$year $hour:$minute';
+  }
+
+  String? _getUserNameById(List<user_model.User> users, String? id) {
+    if (id == null) return null;
+    for (final user in users) {
+      if (user.id == id) {
+        return user.displayName;
+      }
+    }
+    return null;
   }
 
   @override
@@ -524,8 +676,40 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   return clientsAsync.when(
                     data: (clients) {
                       final vehicles = vehiclesState.value ?? [];
-                      final allUsers =
+                      final List<user_model.User> allUsers =
                           users.value ?? []; // Show all users regardless of role
+                      final currentUser = ref.watch(currentUserProfileProvider);
+                      final userRole = currentUser?.role?.toLowerCase();
+                      final isAdmin = userRole == 'administrator';
+                      final isManager = userRole == 'manager';
+
+                      if (isManager &&
+                          !_managerAutoAssigned &&
+                          currentUser != null &&
+                          (_selectedManagerId == null ||
+                              _selectedManagerId == currentUser.id)) {
+                        WidgetsBinding.instance.addPostFrameCallback((_) {
+                          if (!mounted) return;
+                          setState(() {
+                            _selectedManagerId = currentUser.id;
+                            _managerAutoAssigned = true;
+                          });
+                        });
+                      }
+
+                      final managerUsers = allUsers
+                          .where(
+                            (user) =>
+                                user.role?.toLowerCase() == 'manager' &&
+                                user.status?.toLowerCase() != 'deactivated',
+                          )
+                          .toList();
+                      final managerRequired = isAdmin;
+                      final completion = _completionPercentage(
+                        managerRequired: managerRequired,
+                      );
+                      final cancelledByName =
+                          _getUserNameById(allUsers, _cancelledById);
 
                       Log.d('Form rendering - Clients: ${clients.length}, Vehicles: ${vehicles.length}, Users: ${allUsers.length}');
 
@@ -539,8 +723,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
+                                  if (_isCancelled) ...[
+                                    _buildCancelledNotice(
+                                      cancelledByName: cancelledByName,
+                                    ),
+                                    const SizedBox(height: 16),
+                                  ],
                                   // Progress indicator
-                                  _buildProgressIndicator(),
+                                  _buildProgressIndicator(completion),
 
                                   const SizedBox(height: 32),
 
@@ -565,6 +755,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                       _buildVehicleDropdown(vehicles),
                                       const SizedBox(height: 20),
                                       _buildDriverDropdown(allUsers),
+                                      if (isAdmin || isManager) ...[
+                                        const SizedBox(height: 20),
+                                        _buildManagerAssignmentField(
+                                          managers: managerUsers,
+                                          isAdmin: isAdmin,
+                                          isManager: isManager,
+                                          currentUserId: currentUser?.id,
+                                          currentUserName:
+                                              currentUser?.displayName ?? '',
+                                        ),
+                                      ],
                                       const SizedBox(height: 20),
                                       _buildLocationDropdown(),
                                       const SizedBox(height: 20),
@@ -703,7 +904,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
                                   const SizedBox(height: 32),
 
-                                  _buildActionButtons(isMobile),
+                                  _buildActionButtons(
+                                    isMobile,
+                                    isAdmin: isAdmin,
+                                  ),
                                 ],
                               ),
                             ),
@@ -730,7 +934,61 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  Widget _buildProgressIndicator() {
+  Widget _buildCancelledNotice({String? cancelledByName}) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.errorColor.withValues(alpha:0.08),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.errorColor.withValues(alpha:0.5),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+              const SizedBox(width: 8),
+              Text(
+                'This job was cancelled',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.errorColor,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          if (_cancelledReason?.isNotEmpty == true)
+            Padding(
+              padding: const EdgeInsets.only(top: 8),
+              child: Text(
+                'Reason: ${_cancelledReason}',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          if (cancelledByName != null || _cancelledAt != null)
+            Padding(
+              padding: const EdgeInsets.only(top: 4),
+              child: Text(
+                'Cancelled by ${cancelledByName ?? 'Administrator'} on ${_formatDateTime(_cancelledAt)}',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressIndicator(double completion) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -795,8 +1053,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     width: 1,
                   ),
                 ),
-                child: Text(
-                  '${_completionPercentage.toInt()}%',
+              child: Text(
+                '${completion.toInt()}%',
                   style: TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w600,
@@ -816,7 +1074,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             child: FractionallySizedBox(
               alignment: Alignment.centerLeft,
-              widthFactor: _completionPercentage / 100,
+              widthFactor: completion / 100,
               child: Container(
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.richGold,
@@ -828,10 +1086,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           const SizedBox(height: 8),
           // Completion status text
           Text(
-            _getCompletionStatusText(),
+            _getCompletionStatusText(completion),
             style: TextStyle(
               fontSize: 12,
-              color: _completionPercentage == 100
+              color: completion == 100
                   ? ChoiceLuxTheme.successColor
                   : ChoiceLuxTheme.platinumSilver,
               fontWeight: FontWeight.w500,
@@ -842,12 +1100,12 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  String _getCompletionStatusText() {
-    if (_completionPercentage == 0) {
+  String _getCompletionStatusText(double completionPercentage) {
+    if (completionPercentage == 0) {
       return 'Start by selecting a client';
-    } else if (_completionPercentage < 50) {
+    } else if (completionPercentage < 50) {
       return 'Keep going! Fill in the required fields';
-    } else if (_completionPercentage < 100) {
+    } else if (completionPercentage < 100) {
       return 'Almost there! Complete the remaining fields';
     } else {
       return widget.jobId != null
@@ -1272,7 +1530,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  Widget _buildDriverDropdown(List<dynamic> allUsers) {
+  Widget _buildDriverDropdown(List<user_model.User> allUsers) {
     return _buildDropdownField(
       label: 'Driver *',
       hint: 'Select a driver',
@@ -1326,6 +1584,120 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         return null;
       },
     );
+  }
+
+  Widget _buildManagerAssignmentField({
+    required List<user_model.User> managers,
+    required bool isAdmin,
+    required bool isManager,
+    required String? currentUserId,
+    required String currentUserName,
+  }) {
+    final assignedManagerId =
+        _selectedManagerId ?? (isManager ? currentUserId : null);
+
+    if (isManager) {
+      final assignedManager =
+          _findManagerById(managers, assignedManagerId) ??
+              _findManagerById(managers, currentUserId);
+      final displayName =
+          assignedManager?.displayName ?? currentUserName;
+
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.richGold.withValues(alpha:0.4),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.verified_user, color: ChoiceLuxTheme.richGold),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'Assigned Manager: $displayName',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (!isAdmin) {
+      return const SizedBox.shrink();
+    }
+
+    if (managers.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
+          ),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.info_outline,
+                color: ChoiceLuxTheme.platinumSilver),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No managers available. Please create a manager profile first.',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver,
+                  fontSize: 14,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return _buildDropdownField(
+      label: 'Manager *',
+      hint: 'Select a manager',
+      icon: Icons.badge,
+      value: _selectedManagerId,
+      items: managers
+          .map(
+            (manager) => DropdownMenuItem<String>(
+              value: manager.id,
+              child: Text(manager.displayName),
+            ),
+          )
+          .toList(),
+      onChanged: (value) => setState(() => _selectedManagerId = value),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return 'Please select a manager';
+        }
+        return null;
+      },
+    );
+  }
+
+  user_model.User? _findManagerById(
+    List<user_model.User> managers,
+    String? managerId,
+  ) {
+    if (managerId == null) return null;
+    for (final manager in managers) {
+      if (manager.id == managerId) {
+        return manager;
+      }
+    }
+    return null;
   }
 
   Widget _buildLocationDropdown() {
@@ -1649,7 +2021,157 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  Widget _buildActionButtons(bool isMobile) {
+  Widget _buildActionButtons(bool isMobile, {required bool isAdmin}) {
+    final isEditing = widget.jobId != null;
+
+    if (_isCancelled) {
+      return Container(
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.errorColor.withValues(alpha:0.4),
+            width: 1,
+          ),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+                const SizedBox(width: 12),
+                Text(
+                  'Job Cancelled',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.errorColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            if (_cancelledReason?.isNotEmpty == true)
+              Text(
+                'Reason: ${_cancelledReason!}',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontSize: 14,
+                ),
+              ),
+            if (_cancelledAt != null)
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Text(
+                  'Cancelled at: ${_formatDateTime(_cancelledAt)}',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.platinumSilver,
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => widget.jobId != null
+                    ? context.go('/jobs/${widget.jobId}/summary')
+                    : context.go('/jobs'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ChoiceLuxTheme.platinumSilver,
+                  foregroundColor: Colors.black,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: Text(
+                  widget.jobId != null ? 'Back to Job Summary' : 'Back to Jobs',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final cancelNavigationButton = OutlinedButton(
+      onPressed: _isSubmitting
+          ? null
+          : () => widget.jobId != null
+                ? context.go('/jobs/${widget.jobId}/summary')
+                : context.go('/jobs'),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: ChoiceLuxTheme.platinumSilver,
+        side: BorderSide(
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 32,
+          vertical: 16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: const Text(
+        'Cancel',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+      ),
+    );
+
+    final submitButton = ElevatedButton(
+      onPressed: _isSubmitting ? null : _createJob,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: ChoiceLuxTheme.richGold,
+        foregroundColor: Colors.black,
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 32,
+          vertical: 16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      child: _isSubmitting
+          ? const SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+              ),
+            )
+          : Text(
+              widget.jobId != null ? 'Update Job' : 'Create Job',
+              style: const TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+    );
+
+    final cancelJobButton = isAdmin && isEditing
+        ? ElevatedButton(
+            onPressed: _showCancelJobDialog,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.errorColor,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
+            child: const Text(
+              'Cancel Job',
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          )
+        : null;
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -1663,128 +2185,25 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       child: isMobile
           ? Column(
               children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: _isSubmitting ? null : _createJob,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: ChoiceLuxTheme.richGold,
-                      foregroundColor: Colors.black,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: _isSubmitting
-                        ? const SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                Colors.black,
-                              ),
-                            ),
-                          )
-                        : Text(
-                            widget.jobId != null ? 'Update Job' : 'Create Job',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                  ),
-                ),
+                submitButton,
                 const SizedBox(height: 12),
-                SizedBox(
-                  width: double.infinity,
-                  child: OutlinedButton(
-                    onPressed: _isSubmitting
-                        ? null
-                        : () => widget.jobId != null
-                              ? context.go('/jobs/${widget.jobId}/summary')
-                              : context.go('/jobs'),
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: ChoiceLuxTheme.platinumSilver,
-                      side: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      'Cancel',
-                      style: TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ),
+                cancelNavigationButton,
+                if (cancelJobButton != null) ...[
+                  const SizedBox(height: 12),
+                  cancelJobButton,
+                ],
               ],
             )
           : Row(
               mainAxisAlignment: MainAxisAlignment.end,
               children: [
-                OutlinedButton(
-                  onPressed: _isSubmitting
-                      ? null
-                      : () => widget.jobId != null
-                            ? context.go('/jobs/${widget.jobId}/summary')
-                            : context.go('/jobs'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: ChoiceLuxTheme.platinumSilver,
-                    side: BorderSide(
-                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: const Text(
-                    'Cancel',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-                  ),
-                ),
+                cancelNavigationButton,
                 const SizedBox(width: 16),
-                ElevatedButton(
-                  onPressed: _isSubmitting ? null : _createJob,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.richGold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 32,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                  child: _isSubmitting
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Colors.black,
-                            ),
-                          ),
-                        )
-                      : Text(
-                          widget.jobId != null ? 'Update Job' : 'Create Job',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                ),
+                submitButton,
+                if (cancelJobButton != null) ...[
+                  const SizedBox(width: 16),
+                  cancelJobButton,
+                ],
               ],
             ),
     );
