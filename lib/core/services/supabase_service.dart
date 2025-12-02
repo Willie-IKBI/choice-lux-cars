@@ -74,7 +74,11 @@ class SupabaseService {
     try {
       Log.d('Updating profile for user: $userId');
 
-      await supabase.from('profiles').update(data).eq('id', userId);
+      // Remove 'id' from update data as it's the primary key and cannot be updated
+      final updateData = Map<String, dynamic>.from(data);
+      updateData.remove('id');
+
+      await supabase.from('profiles').update(updateData).eq('id', userId);
 
       Log.d('Profile updated successfully for user: $userId');
     } catch (error) {

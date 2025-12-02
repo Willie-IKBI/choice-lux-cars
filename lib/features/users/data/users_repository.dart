@@ -72,7 +72,11 @@ class UsersRepository {
     try {
       Log.d('Updating user profile: $userId');
 
-      await _supabase.from('profiles').update(data).eq('id', userId);
+      // Remove 'id' from update data as it's the primary key and cannot be updated
+      final updateData = Map<String, dynamic>.from(data);
+      updateData.remove('id');
+
+      await _supabase.from('profiles').update(updateData).eq('id', userId);
 
       Log.d('User profile updated successfully');
       return const Result.success(null);
@@ -187,6 +191,9 @@ class UsersRepository {
       Log.d('Updating user: ${user.id}');
 
       final data = user.toJson();
+      // Remove 'id' from update data as it's the primary key and cannot be updated
+      data.remove('id');
+      
       await _supabase
           .from('profiles')
           .update(data)

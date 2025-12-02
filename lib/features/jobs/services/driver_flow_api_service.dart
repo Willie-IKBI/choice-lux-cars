@@ -563,15 +563,15 @@ class DriverFlowApiService {
     }
   }
 
-  /// Get job addresses for pickup and dropoff from trips
+  /// Get job addresses for pickup and dropoff from transport
   static Future<Map<String, String?>> getJobAddresses(int jobId) async {
     try {
       Log.d('=== GETTING JOB ADDRESSES ===');
       Log.d('Job ID: $jobId');
 
-      // First try to get addresses from trips (most accurate)
+      // First try to get addresses from transport (most accurate)
       final tripsResponse = await _supabase
-          .from('trips')
+          .from('transport')
           .select('pickup_location, dropoff_location')
           .eq('job_id', jobId)
           .limit(1)
