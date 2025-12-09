@@ -76,6 +76,7 @@ class UsersRepository {
       final updateData = Map<String, dynamic>.from(data);
       updateData.remove('id');
 
+      Log.d('Updating with data: $updateData');
       await _supabase.from('profiles').update(updateData).eq('id', userId);
 
       Log.d('User profile updated successfully');
@@ -194,6 +195,7 @@ class UsersRepository {
       // Remove 'id' from update data as it's the primary key and cannot be updated
       data.remove('id');
       
+      Log.d('Updating with data: $data');
       await _supabase
           .from('profiles')
           .update(data)

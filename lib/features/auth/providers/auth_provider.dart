@@ -86,7 +86,16 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
 
             // Handle FCM token update for newly signed in user
             _handleFCMTokenUpdate(session.user.id);
+          } else if (event == AuthChangeEvent.tokenRefreshed && session != null) {
+            // Handle token refresh - keep user logged in
+            Log.d('Token refreshed successfully, maintaining session');
+            state = AsyncValue.data(session.user);
+          } else if (event == AuthChangeEvent.userUpdated && session != null) {
+            // Handle user update - keep user logged in
+            Log.d('User updated, maintaining session');
+            state = AsyncValue.data(session.user);
           } else if (event == AuthChangeEvent.signedOut) {
+            Log.d('User signed out');
             state = const AsyncValue.data(null);
           } else if (event == AuthChangeEvent.passwordRecovery) {
             // Handle password recovery event - user clicked reset link
@@ -99,12 +108,23 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
               // Set password recovery state
               setPasswordRecovery(true);
             }
+          } else if (session == null && state.value != null) {
+            // Session lost but we had a user - try to recover
+            Log.w('Session lost but user was logged in, attempting recovery...');
+            _attemptSessionRecovery();
           }
         },
         onError: (error) {
           Log.e('Auth state change error: $error');
-          // Set to not authenticated instead of error to allow app to continue
-          state = const AsyncValue.data(null);
+          // Don't immediately log out on error - try to recover session first
+          final currentSession = _supabaseService.currentSession;
+          if (currentSession != null) {
+            Log.d('Error occurred but session still exists, maintaining state');
+            state = AsyncValue.data(currentSession.user);
+          } else {
+            Log.w('Error occurred and no session, attempting recovery...');
+            _attemptSessionRecovery();
+          }
         },
       );
     } catch (error) {
@@ -172,6 +192,59 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
     } catch (error) {
       Log.e('Error handling remember me: $error');
       // Don't fail authentication if remember me handling fails
+    }
+  }
+
+  // Attempt to recover session when it's lost unexpectedly
+  Future<void> _attemptSessionRecovery() async {
+    try {
+      Log.d('Attempting session recovery...');
+      
+      // First, check if there's a valid session that just needs refresh
+      final currentSession = _supabaseService.currentSession;
+      if (currentSession != null) {
+        Log.d('Session found, restoring user state');
+        state = AsyncValue.data(currentSession.user);
+        return;
+      }
+
+      // Try to refresh the session
+      try {
+        final refreshedSession = await _supabaseService.supabase.auth.refreshSession();
+        if (refreshedSession.session != null) {
+          Log.d('Session refreshed successfully');
+          state = AsyncValue.data(refreshedSession.session!.user);
+          return;
+        }
+      } catch (refreshError) {
+        Log.w('Session refresh failed: $refreshError');
+      }
+
+      // If refresh failed, try remember me auto-login
+      final rememberMe = await _preferencesService.getRememberMe();
+      if (rememberMe) {
+        final credentials = await _preferencesService.getSavedCredentials();
+        final email = credentials['email'];
+        final password = credentials['password'];
+        
+        if (email != null && password != null && email.isNotEmpty && password.isNotEmpty) {
+          Log.d('Attempting auto-login with saved credentials...');
+          try {
+            await signIn(email: email, password: password, rememberMe: true);
+            Log.d('Auto-login successful');
+            return;
+          } catch (autoLoginError) {
+            Log.e('Auto-login failed: $autoLoginError');
+          }
+        }
+      }
+
+      // If all recovery attempts failed, set to not authenticated
+      Log.w('Session recovery failed, user must log in again');
+      state = const AsyncValue.data(null);
+    } catch (error) {
+      Log.e('Error during session recovery: $error');
+      state = const AsyncValue.data(null);
     }
   }
 

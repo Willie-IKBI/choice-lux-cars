@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
@@ -16,12 +15,15 @@ void main() async {
   try {
     Log.d('Initializing Choice Lux Cars app...');
 
-    // Initialize Supabase
+    // Initialize Supabase with auto-refresh token enabled for better session persistence
     await Supabase.initialize(
       url: AppConstants.supabaseUrl,
       anonKey: AppConstants.supabaseAnonKey,
+      authOptions: const FlutterAuthClientOptions(
+        autoRefreshToken: true, // Automatically refresh tokens before expiration
+      ),
     );
-    Log.d('Supabase initialized successfully');
+    Log.d('Supabase initialized successfully with auto-refresh enabled');
 
     // Initialize Firebase (optional, won't crash if fails)
     try {

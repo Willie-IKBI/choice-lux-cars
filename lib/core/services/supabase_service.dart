@@ -78,6 +78,7 @@ class SupabaseService {
       final updateData = Map<String, dynamic>.from(data);
       updateData.remove('id');
 
+      Log.d('Updating with data: $updateData');
       await supabase.from('profiles').update(updateData).eq('id', userId);
 
       Log.d('Profile updated successfully for user: $userId');
