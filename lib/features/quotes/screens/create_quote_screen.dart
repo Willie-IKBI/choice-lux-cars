@@ -13,6 +13,8 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
   final String? quoteId; // null for create, non-null for edit
@@ -51,9 +53,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   String? _selectedAgentId;
   String? _selectedVehicleId;
   String? _selectedDriverId;
+  String? _selectedBranchId; // Branch ID for quotes associated with client branches
   String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
   DateTime? _selectedJobDate;
   String _selectedVehicleType = '';
+
+  // Branch management
+  List<ClientBranch> _clientBranches = [];
+  bool _isLoadingBranches = false;
 
   // Loading states
   bool _isLoading = false;
@@ -164,6 +171,36 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     }
   }
 
+  Future<void> _loadClientBranches(int clientId) async {
+    if (clientId == 0) return;
+
+    setState(() {
+      _isLoadingBranches = true;
+    });
+
+    try {
+      final repository = ref.read(clientsRepositoryProvider);
+      final result = await repository.fetchBranchesByClientId(clientId);
+
+      if (result.isSuccess) {
+        setState(() {
+          _clientBranches = result.data!;
+          _isLoadingBranches = false;
+        });
+      } else {
+        setState(() {
+          _clientBranches = [];
+          _isLoadingBranches = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _clientBranches = [];
+        _isLoadingBranches = false;
+      });
+    }
+  }
+
   Future<void> _createQuote() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -186,6 +223,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           agentId: _selectedAgentId,
           vehicleId: _selectedVehicleId!,
           driverId: _selectedDriverId!,
+          branchId: _selectedBranchId, // Include branch ID
           jobDate: _selectedJobDate!,
           vehicleType: _selectedVehicleType,
           quoteStatus: 'draft',
@@ -377,6 +415,19 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       ? 16.0
                       : 20.0,
                 ),
+
+                // Branch Selection (if client has branches)
+                if (_selectedClientId != null &&
+                    (_isLoadingBranches || _clientBranches.isNotEmpty)) ...[
+                  _buildBranchSelection(isMobile, isSmallMobile),
+                  SizedBox(
+                    height: isSmallMobile
+                        ? 12.0
+                        : isMobile
+                        ? 16.0
+                        : 20.0,
+                  ),
+                ],
 
                 // Vehicle Selection
                 _buildVehicleSelection(vehicles, isMobile, isSmallMobile),
@@ -905,6 +956,8 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                               _selectedClientId = null;
                               _selectedAgentId =
                                   null; // Reset agent when client changes
+                              _selectedBranchId = null; // Reset branch when client changes
+                              _clientBranches = [];
                               _clientSearchController.clear();
                               _clientSearchQuery = '';
                             });
@@ -1018,9 +1071,15 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                             _selectedClientId = client.id.toString();
                             _selectedAgentId =
                                 null; // Reset agent when client changes
+                            _selectedBranchId = null; // Reset branch when client changes
                             _clientSearchController.text = client.companyName;
                             _showClientDropdown = false;
                           });
+                          // Fetch branches for the selected client
+                          final clientIdInt = int.tryParse(client.id.toString());
+                          if (clientIdInt != null) {
+                            _loadClientBranches(clientIdInt);
+                          }
                         },
                       );
                     },
@@ -1264,6 +1323,110 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           ),
         );
       },
+    );
+  }
+
+  // Mobile-optimized branch selection
+  Widget _buildBranchSelection(bool isMobile, bool isSmallMobile) {
+    if (_isLoadingBranches) {
+      return Container(
+        padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          children: [
+            SizedBox(
+              width: isSmallMobile
+                  ? 18
+                  : isMobile
+                  ? 20
+                  : 24,
+              height: isSmallMobile
+                  ? 18
+                  : isMobile
+                  ? 20
+                  : 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
+              ),
+            ),
+            SizedBox(width: isSmallMobile ? 8 : 12),
+            Text(
+              'Loading branches...',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: isSmallMobile
+                    ? 13
+                    : isMobile
+                    ? 14
+                    : 16,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_clientBranches.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Branch',
+          style: TextStyle(
+            fontSize: isSmallMobile
+                ? 14
+                : isMobile
+                ? 16
+                : 18,
+            fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.softWhite,
+          ),
+        ),
+        SizedBox(
+          height: isSmallMobile
+              ? 4
+              : isMobile
+              ? 6
+              : 8,
+        ),
+        _buildResponsiveDropdown(
+          value: _selectedBranchId,
+          hintText: 'Select a branch (optional)',
+          items: [
+            // Add "None" option for optional selection
+            const DropdownMenuItem<String>(
+              value: '',
+              child: Text('None'),
+            ),
+            ..._clientBranches.map(
+              (branch) => DropdownMenuItem<String>(
+                value: branch.id?.toString() ?? '',
+                child: Text(branch.branchName),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _selectedBranchId = value != null && value.isNotEmpty ? value : null;
+            });
+          },
+          isMobile: isMobile,
+          isSmallMobile: isSmallMobile,
+        ),
+      ],
     );
   }
 

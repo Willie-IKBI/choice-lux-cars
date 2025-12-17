@@ -14,6 +14,7 @@ class User {
   final String? kinNumber;
   final String userEmail;
   final String? status;
+  final int? branchId; // Branch allocation: NULL = Admin/National (can see all branches), non-null = specific branch assignment
 
   User({
     required this.id,
@@ -27,9 +28,10 @@ class User {
     this.profileImage,
     this.address,
     this.number,
-    this.kin,
-    this.kinNumber,
-    this.status,
+      this.kin,
+      this.kinNumber,
+      this.status,
+      this.branchId,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
@@ -50,6 +52,9 @@ class User {
       kin: map['kin'] as String?,
       kinNumber: map['kin_number'] as String?,
       status: map['status'] as String?,
+      branchId: map['branch_id'] != null
+          ? int.tryParse(map['branch_id'].toString())
+          : null,
     );
   }
 
@@ -71,6 +76,7 @@ class User {
       'kin': kin,
       'kin_number': kinNumber,
       'status': status,
+      if (branchId != null) 'branch_id': branchId,
     };
   }
 
@@ -91,6 +97,7 @@ class User {
     String? kinNumber,
     String? userEmail,
     String? status,
+    int? branchId,
   }) {
     return User(
       id: id ?? this.id,
@@ -107,6 +114,38 @@ class User {
       kinNumber: kinNumber ?? this.kinNumber,
       userEmail: userEmail ?? this.userEmail,
       status: status ?? this.status,
+      branchId: branchId ?? this.branchId,
     );
+  }
+
+  /// Check if user is an administrator (includes both administrator and super_admin)
+  bool get isAdmin {
+    final roleLower = role?.toLowerCase();
+    return roleLower == 'administrator' || roleLower == 'super_admin';
+  }
+
+  /// Check if user is a super administrator
+  bool get isSuperAdmin {
+    return role?.toLowerCase() == 'super_admin';
+  }
+
+  /// Check if user is a manager
+  bool get isManager {
+    return role?.toLowerCase() == 'manager';
+  }
+
+  /// Check if user is a driver manager
+  bool get isDriverManager {
+    return role?.toLowerCase() == 'driver_manager';
+  }
+
+  /// Check if user is a driver
+  bool get isDriver {
+    return role?.toLowerCase() == 'driver';
+  }
+
+  /// Check if user has national access (admin or super_admin with no branch assignment)
+  bool get hasNationalAccess {
+    return isAdmin && branchId == null;
   }
 }

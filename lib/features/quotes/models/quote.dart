@@ -6,6 +6,7 @@ class Quote {
   final String? agentId;
   final String? vehicleId;
   final String? driverId;
+  final String? branchId; // Optional branch ID for quotes associated with client branches
   final DateTime jobDate;
   final String? vehicleType;
   final String quoteStatus;
@@ -30,6 +31,7 @@ class Quote {
     this.agentId,
     this.vehicleId,
     this.driverId,
+    this.branchId,
     required this.jobDate,
     this.vehicleType,
     required this.quoteStatus,
@@ -56,6 +58,7 @@ class Quote {
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString(),
       driverId: map['driver_id']?.toString(),
+      branchId: map['branch_id']?.toString(),
       jobDate: DateTime.parse(
         map['job_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
       ),
@@ -102,6 +105,7 @@ class Quote {
       if (vehicleId != null)
         'vehicle_id': int.tryParse(vehicleId!) ?? vehicleId,
       if (driverId != null) 'driver_id': driverId,
+      if (branchId != null) 'branch_id': int.tryParse(branchId!) ?? branchId,
       'job_date': jobDate.toIso8601String(),
       'vehicle_type': vehicleType,
       'quote_status': quoteStatus,
@@ -131,6 +135,7 @@ class Quote {
     String? agentId,
     String? vehicleId,
     String? driverId,
+    String? branchId,
     DateTime? jobDate,
     String? vehicleType,
     String? quoteStatus,
@@ -155,6 +160,7 @@ class Quote {
       agentId: agentId ?? this.agentId,
       vehicleId: vehicleId ?? this.vehicleId,
       driverId: driverId ?? this.driverId,
+      branchId: branchId ?? this.branchId,
       jobDate: jobDate ?? this.jobDate,
       vehicleType: vehicleType ?? this.vehicleType,
       quoteStatus: quoteStatus ?? this.quoteStatus,

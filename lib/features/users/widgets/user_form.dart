@@ -7,6 +7,8 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
+import 'package:choice_lux_cars/features/branches/models/branch.dart';
 
 class UserForm extends StatefulWidget {
   final User? user;
@@ -41,9 +43,15 @@ class _UserFormState extends State<UserForm> {
   String? kin;
   String? kinNumber;
   String? profileImage;
+  int? branchId;
   bool _uploading = false;
 
   final List<_RoleOption> roles = const [
+    _RoleOption(
+      'super_admin',
+      'Super Administrator',
+      Icons.supervisor_account_outlined,
+    ),
     _RoleOption(
       'administrator',
       'Administrator',
@@ -81,6 +89,7 @@ class _UserFormState extends State<UserForm> {
     kin = widget.user?.kin;
     kinNumber = widget.user?.kinNumber;
     profileImage = widget.user?.profileImage;
+    branchId = widget.user?.branchId;
   }
 
   Future<void> _pickAndUploadImage(WidgetRef ref, String userId) async {
@@ -108,7 +117,13 @@ class _UserFormState extends State<UserForm> {
     return Consumer(
       builder: (context, ref, _) {
         final userProfile = ref.watch(auth.currentUserProfileProvider);
-        final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+        final isAdmin = userProfile?.isAdmin ?? false;
+        final isSuperAdmin = userProfile != null && 
+            userProfile.role != null && 
+            userProfile.role!.toLowerCase() == 'super_admin';
+        
+        // Expose isAdmin for use in widget build (status and branch dropdowns)
+        // Only role assignment requires super_admin
         final isWide = MediaQuery.of(context).size.width > 900;
         // Error summary state
         String? errorSummary;
@@ -116,6 +131,8 @@ class _UserFormState extends State<UserForm> {
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
           child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (errorSummary != null)
                 Container(
@@ -207,16 +224,24 @@ class _UserFormState extends State<UserForm> {
                   ? Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(child: _buildBasicInfoSection(isAdmin)),
+                        Expanded(
+                          child: _buildBasicInfoSection(isSuperAdmin, isAdmin),
+                        ),
                         const SizedBox(width: 24),
-                        Expanded(child: _buildContactSection()),
+                        Expanded(
+                          child: _buildContactSection(),
+                        ),
                         const SizedBox(width: 24),
-                        Expanded(child: _buildDriverSection()),
+                        Expanded(
+                          child: _buildDriverSection(),
+                        ),
                       ],
                     )
                   : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _buildBasicInfoSection(isAdmin),
+                        _buildBasicInfoSection(isSuperAdmin, isAdmin),
                         const SizedBox(height: 24),
                         _buildContactSection(),
                         const SizedBox(height: 24),
@@ -280,6 +305,7 @@ class _UserFormState extends State<UserForm> {
                                   kin: kin,
                                   kinNumber: kinNumber,
                                   profileImage: profileImage,
+                                  branchId: branchId,
                                 ),
                               );
                             } else {
@@ -344,6 +370,7 @@ class _UserFormState extends State<UserForm> {
                                   kin: kin,
                                   kinNumber: kinNumber,
                                   profileImage: profileImage,
+                                  branchId: branchId,
                                 ),
                               );
                             } else {
@@ -367,7 +394,7 @@ class _UserFormState extends State<UserForm> {
     );
   }
 
-  Widget _buildBasicInfoSection(bool isAdmin) {
+  Widget _buildBasicInfoSection(bool isSuperAdmin, bool isAdmin) {
     return Card(
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
@@ -379,6 +406,7 @@ class _UserFormState extends State<UserForm> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -411,7 +439,7 @@ class _UserFormState extends State<UserForm> {
               readOnly: true,
             ),
             const SizedBox(height: 12),
-            isAdmin
+            isSuperAdmin
                 ? DropdownButtonFormField<String>(
                     value: role,
                     decoration: _modernInputDecoration('Role'),
@@ -473,6 +501,76 @@ class _UserFormState extends State<UserForm> {
                     style: const TextStyle(fontSize: 15),
                     readOnly: true,
                   ),
+            // Branch dropdown (admin only)
+            if (isAdmin) ...[
+              const SizedBox(height: 12),
+              Consumer(
+                builder: (context, ref, _) {
+                  final branchesAsync = ref.watch(branchesProvider);
+                  return branchesAsync.when(
+                    data: (branches) => DropdownButtonFormField<int?>(
+                      value: branchId,
+                      isExpanded: true,
+                      decoration: _modernInputDecoration('Branch'),
+                      items: [
+                        // National option (null)
+                        DropdownMenuItem<int?>(
+                          value: null,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.public, size: 18),
+                              const SizedBox(width: 8),
+                              Flexible(
+                                child: Text(
+                                  'National (All Branches)',
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Branch options
+                        ...branches.map(
+                          (branch) => DropdownMenuItem<int?>(
+                            value: branch.id,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(Icons.location_on, size: 18),
+                                const SizedBox(width: 8),
+                                Flexible(
+                                  child: Text(
+                                    branch.name,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                      onChanged: (val) => setState(() => branchId = val),
+                      onSaved: (val) => branchId = val,
+                    ),
+                    loading: () => DropdownButtonFormField<int?>(
+                      value: branchId,
+                      decoration: _modernInputDecoration('Branch'),
+                      items: const [],
+                      onChanged: null,
+                    ),
+                    error: (error, stack) => TextFormField(
+                      initialValue: branchId != null
+                          ? 'Branch ID: $branchId'
+                          : 'National',
+                      decoration: _modernInputDecoration('Branch'),
+                      style: const TextStyle(fontSize: 15),
+                      readOnly: true,
+                    ),
+                  );
+                },
+              ),
+            ],
           ],
         ),
       ),
@@ -491,6 +589,7 @@ class _UserFormState extends State<UserForm> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -552,6 +651,7 @@ class _UserFormState extends State<UserForm> {
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
@@ -759,6 +859,7 @@ class _UserFormState extends State<UserForm> {
           // Button and label
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
@@ -833,6 +934,7 @@ class _UserFormState extends State<UserForm> {
           // Title and button
           Expanded(
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(

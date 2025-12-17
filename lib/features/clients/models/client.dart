@@ -1,3 +1,5 @@
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
+
 enum ClientStatus { active, pending, vip, inactive }
 
 class Client {
@@ -15,6 +17,7 @@ class Client {
   final DateTime? createdAt;
   final DateTime? updatedAt;
   final DateTime? deletedAt;
+  final List<ClientBranch>? branches; // Fetched separately, not stored in clients table
 
   Client({
     this.id,
@@ -31,6 +34,7 @@ class Client {
     this.createdAt,
     this.updatedAt,
     this.deletedAt,
+    this.branches,
   });
 
   // Create from JSON
@@ -109,6 +113,7 @@ class Client {
     DateTime? createdAt,
     DateTime? updatedAt,
     DateTime? deletedAt,
+    List<ClientBranch>? branches,
   }) {
     return Client(
       id: id ?? this.id,
@@ -125,8 +130,17 @@ class Client {
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,
       deletedAt: deletedAt ?? this.deletedAt,
+      branches: branches ?? this.branches,
     );
   }
+
+  // Helper getters for branches
+  bool get hasBranches => branches != null && branches!.isNotEmpty;
+  
+  int get branchesCount => branches?.length ?? 0;
+  
+  List<ClientBranch> get activeBranches =>
+      branches?.where((branch) => branch.isActive).toList() ?? [];
 
   @override
   bool operator ==(Object other) {

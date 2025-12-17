@@ -7,24 +7,23 @@ import 'package:choice_lux_cars/features/notifications/services/notification_ser
 
 /// Notifier for managing jobs state using AsyncNotifier
 class JobsNotifier extends AsyncNotifier<List<Job>> {
-  late final JobsRepository _jobsRepository;
-  late final Ref _ref;
+  /// Get the jobs repository
+  JobsRepository get _jobsRepository => ref.read(jobsRepositoryProvider);
 
   @override
   Future<List<Job>> build() async {
-    _jobsRepository = ref.watch(jobsRepositoryProvider);
-    _ref = ref;
     _checkPermissions();
     return _fetchJobs();
   }
 
   /// Check if current user can create jobs
   void _checkPermissions() {
-    final userProfile = _ref.read(currentUserProfileProvider);
+    final userProfile = ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
 
+    final isAdmin = userProfile?.isAdmin ?? false;
     final canCreate =
-        userRole == 'administrator' ||
+        isAdmin ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';
@@ -33,22 +32,26 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   }
 
   /// Fetch all jobs from the repository
+  /// Automatically filters by branch_id for non-admin users
   Future<List<Job>> _fetchJobs() async {
     try {
       Log.d('Fetching jobs...');
 
-      final userProfile = _ref.read(currentUserProfileProvider);
+      final userProfile = ref.read(currentUserProfileProvider);
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
+      final branchId = userProfile?.branchId; // Get branchId from current user
 
       if (userId == null || userRole == null) {
         Log.e('User profile or role not available - cannot fetch jobs');
         return [];
       }
 
+      // Admin (branchId == null) sees all jobs, non-admin sees only their branch
       final result = await _jobsRepository.fetchJobs(
         userId: userId,
         userRole: userRole,
+        branchId: branchId,
       );
 
       if (result.isSuccess) {
@@ -239,11 +242,29 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   }
 
   /// Get jobs by client using the repository
-  Future<List<Job>> getJobsByClient(String clientId) async {
+  /// Automatically filters by branch_id for non-admin users
+  /// [branchId] - Optional override branch filter. If not provided, uses current user's branchId (non-admin) or null (admin).
+  Future<List<Job>> getJobsByClient(
+    String clientId, {
+    int? branchId, // Optional override branch filter
+  }) async {
     try {
-      Log.d('Getting jobs by client: $clientId');
+      final currentUser = ref.read(currentUserProfileProvider);
+      final userId = currentUser?.id;
+      final userRole = currentUser?.role?.toLowerCase();
+      
+      // Determine effective branchId: use override if provided, otherwise use current user's branchId
+      // Admin (branchId == null) sees all branches, non-admin sees only their branch
+      final effectiveBranchId = branchId ?? currentUser?.branchId;
+      
+      Log.d('Getting jobs by client: $clientId${effectiveBranchId != null ? ' (branch: $effectiveBranchId)' : ' (all branches - admin)'}');
 
-      final result = await _jobsRepository.getJobsByClient(clientId);
+      final result = await _jobsRepository.getJobsByClient(
+        clientId,
+        userId: userId,
+        userRole: userRole,
+        branchId: effectiveBranchId,
+      );
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -276,10 +297,11 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 
   /// Check if current user can create jobs
   bool get canCreateJobs {
-    final userProfile = _ref.read(currentUserProfileProvider);
+    final userProfile = ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userProfile?.isAdmin ?? false;
 
-    return userRole == 'administrator' ||
+    return isAdmin ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';
@@ -365,7 +387,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     required String reason,
   }) async {
     try {
-      final currentUser = _ref.read(currentUserProfileProvider);
+      final currentUser = ref.read(currentUserProfileProvider);
       final role = currentUser?.role?.toLowerCase();
 
       if (currentUser == null || role != 'administrator') {

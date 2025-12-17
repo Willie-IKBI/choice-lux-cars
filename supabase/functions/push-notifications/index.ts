@@ -201,10 +201,10 @@ serve(async (req) => {
     const notification = payload.record
     console.log('Processing notification:', notification.id)
     
-    // Get user's FCM tokens from profiles table (both web and mobile)
+    // Get user's FCM tokens and notification preferences from profiles table
     const { data: profile, error: profileError } = await supabase
       .from('profiles')
-      .select('fcm_token, fcm_token_web, display_name')
+      .select('fcm_token, fcm_token_web, display_name, notification_prefs')
       .eq('id', notification.user_id)
       .single()
     
@@ -237,6 +237,25 @@ serve(async (req) => {
       console.log('No FCM tokens found for user:', notification.user_id)
       return new Response(JSON.stringify({ 
         message: 'No FCM tokens found',
+        user_id: notification.user_id 
+      }), {
+        headers: { 
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+        status: 200
+      })
+    }
+    
+    // Check user's notification preferences
+    const notificationType = notification.notification_type
+    const prefs = profile?.notification_prefs as Record<string, boolean> | null
+    
+    if (prefs && prefs[notificationType] === false) {
+      console.log(`Push notification skipped - user ${profile.display_name} has disabled ${notificationType}`)
+      return new Response(JSON.stringify({ 
+        message: 'Push notification disabled by user preference',
+        notification_type: notificationType,
         user_id: notification.user_id 
       }), {
         headers: { 

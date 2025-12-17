@@ -36,9 +36,10 @@ class QuotesRepository {
   }
 
   /// Create a new quote
+  /// Includes branch_id if provided (from Quote model's toJson/toMap method)
   Future<Result<Map<String, dynamic>>> createQuote(Quote quote) async {
     try {
-      Log.d('Creating quote for client: ${quote.clientId}');
+      Log.d('Creating quote for client: ${quote.clientId}${quote.branchId != null ? ' (branch: ${quote.branchId})' : ''}');
 
       final response = await _supabase
           .from('quotes')
@@ -55,9 +56,10 @@ class QuotesRepository {
   }
 
   /// Update an existing quote
+  /// Includes branch_id if provided (from Quote model's toJson/toMap method)
   Future<Result<void>> updateQuote(Quote quote) async {
     try {
-      Log.d('Updating quote: ${quote.id}');
+      Log.d('Updating quote: ${quote.id}${quote.branchId != null ? ' (branch: ${quote.branchId})' : ''}');
 
       await _supabase.from('quotes').update(quote.toJson()).eq('id', quote.id);
 
@@ -239,17 +241,28 @@ class QuotesRepository {
   }
 
   /// Get quotes by client
-  Future<Result<List<Quote>>> getQuotesByClient(String clientId) async {
+  /// Optionally filter by branch_id if provided
+  Future<Result<List<Quote>>> getQuotesByClient(
+    String clientId, {
+    int? branchId, // Optional branch filter
+  }) async {
     try {
-      Log.d('Fetching quotes for client: $clientId');
+      Log.d('Fetching quotes for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''}');
 
-      final response = await _supabase
+      PostgrestFilterBuilder query = _supabase
           .from('quotes')
           .select()
-          .eq('client_id', clientId)
-          .order('created_at', ascending: false);
+          .eq('client_id', clientId);
 
-      Log.d('Fetched ${response.length} quotes for client: $clientId');
+      // Filter by branch_id if provided
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering quotes by branch_id: $branchId');
+      }
+
+      final response = await query.order('created_at', ascending: false);
+
+      Log.d('Fetched ${response.length} quotes for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''}');
 
       final quotes = response.map((json) => Quote.fromJson(json)).toList();
       return Result.success(quotes);

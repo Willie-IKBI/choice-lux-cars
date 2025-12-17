@@ -5,12 +5,29 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
+import 'package:choice_lux_cars/features/branches/models/branch.dart';
 
 /// Repository for insights and analytics data operations
 class InsightsRepository {
   final SupabaseClient _supabase;
 
   InsightsRepository(this._supabase);
+
+  /// Helper function to map location filter to branch_id
+  /// Returns branch_id (int) or null for all/unspecified
+  int? _locationFilterToBranchId(LocationFilter location) {
+    switch (location) {
+      case LocationFilter.jhb:
+        return Branch.johannesburgId;
+      case LocationFilter.cpt:
+        return Branch.capeTownId;
+      case LocationFilter.dbn:
+        return Branch.durbanId;
+      case LocationFilter.all:
+      case LocationFilter.unspecified:
+        return null;
+    }
+  }
 
   /// Fetch comprehensive insights data
   Future<Result<InsightsData>> fetchInsights({
@@ -357,26 +374,8 @@ class InsightsRepository {
     try {
       Log.d('Fetching job insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
+      // Map location filter to branch_id
+      final branchId = _locationFilterToBranchId(location);
 
       // Compute insights based on earliest pickup_date per job (transport table)
       // Step 1: Fetch transport rows in range and compute earliest pickup per job
@@ -414,31 +413,20 @@ class InsightsRepository {
         return Result.success(emptyInsights);
       }
 
-      // Step 2: Fetch jobs for those IDs, apply location filter
+      // Step 2: Fetch jobs for those IDs, apply branch filter
       final jobIds = jobEarliestPickup.keys.toList();
       var jobsQuery = _supabase
           .from('jobs')
-          .select('id, job_status, location');
+          .select('id, job_status, branch_id');
 
       // Filter by IDs using in filter
-      // Prefer inFilter if available in current SDK
-      // Fallback to filter('id','in','(1,2,3)') if needed
-      try {
-        // ignore: deprecated_member_use
-        // @ts-ignore - runtime check
-        // dart analyzer will allow if available
-        // dynamic call to support both versions
-        // Will be caught in catch if unsupported
-        // jobsQuery = jobsQuery.inFilter('id', jobIds);
-      } catch (_) {}
-
       final idsString = jobIds.join(',');
       jobsQuery = jobsQuery.filter('id', 'in', '($idsString)');
 
-      if (locationFilter != null) {
-        jobsQuery = jobsQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        jobsQuery = jobsQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        jobsQuery = jobsQuery.isFilter('location', null);
+        jobsQuery = jobsQuery.isFilter('branch_id', null);
       }
 
       final jobsResponse = await jobsQuery;
@@ -452,32 +440,32 @@ class InsightsRepository {
       final inProgressJobs = jobsResponse.where((j) => j['job_status'] == 'in_progress' || j['job_status'] == 'started').length;
       final openJobs = jobsResponse.where((j) => j['job_status'] != 'completed' && j['job_status'] != 'cancelled').length;
 
-      // Jobs this week with location filter
+      // Jobs this week with branch filter
       final weekStart = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
       var weekQuery = _supabase
           .from('jobs')
           .select('id')
           .gte('created_at', weekStart.toIso8601String());
       
-      if (locationFilter != null) {
-        weekQuery = weekQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        weekQuery = weekQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        weekQuery = weekQuery.isFilter('location', null);
+        weekQuery = weekQuery.isFilter('branch_id', null);
       }
       
       final jobsThisWeekResponse = await weekQuery;
 
-      // Jobs this month with location filter
+      // Jobs this month with branch filter
       final monthStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
       var monthQuery = _supabase
           .from('jobs')
           .select('id')
           .gte('created_at', monthStart.toIso8601String());
       
-      if (locationFilter != null) {
-        monthQuery = monthQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        monthQuery = monthQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        monthQuery = monthQuery.isFilter('location', null);
+        monthQuery = monthQuery.isFilter('branch_id', null);
       }
       
       final jobsThisMonthResponse = await monthQuery;
@@ -587,26 +575,8 @@ class InsightsRepository {
     try {
       Log.d('Fetching driver insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
+      // Map location filter to branch_id
+      final branchId = _locationFilterToBranchId(location);
 
       // Total drivers
       final driversResponse = await _supabase
@@ -619,7 +589,7 @@ class InsightsRepository {
       final totalDrivers = driversResponse.length;
       final activeDrivers = driversResponse.length; // All drivers are considered active
 
-      // Driver job counts and revenue with location filter
+      // Driver job counts and revenue with branch filter
       var driverJobsQuery = _supabase
           .from('jobs')
           .select('driver_id, amount')
@@ -627,10 +597,10 @@ class InsightsRepository {
           .lte('created_at', dateRange.end.toIso8601String())
           .not('driver_id', 'is', null);
       
-      if (locationFilter != null) {
-        driverJobsQuery = driverJobsQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        driverJobsQuery = driverJobsQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        driverJobsQuery = driverJobsQuery.isFilter('location', null);
+        driverJobsQuery = driverJobsQuery.isFilter('branch_id', null);
       }
       
       final driverJobsResponse = await driverJobsQuery;
@@ -698,72 +668,297 @@ class InsightsRepository {
   Future<Result<VehicleInsights>> _fetchVehicleInsights(DateRange dateRange) async {
     try {
       Log.d('Fetching vehicle insights...');
-      // Total vehicles
+      
+      // Fetch vehicles with all needed fields
       final vehiclesResponse = await _supabase
           .from('vehicles')
-          .select('id, make, model, reg_plate');
+          .select('id, make, model, reg_plate, status, branch_id, license_expiry_date');
       
       Log.d('Vehicles query returned ${vehiclesResponse.length} records');
 
       final totalVehicles = vehiclesResponse.length;
-      final activeVehicles = vehiclesResponse.length; // All vehicles are considered active
+      
+      // Calculate status breakdown
+      int activeVehicles = 0;
+      int inactiveVehicles = 0;
+      int underMaintenanceVehicles = 0;
+      
+      for (final vehicle in vehiclesResponse) {
+        final status = (vehicle['status'] as String?)?.toLowerCase() ?? '';
+        if (status.contains('maintenance') || status.contains('repair')) {
+          underMaintenanceVehicles++;
+        } else if (status == 'active' || status.isEmpty) {
+          activeVehicles++;
+        } else {
+          inactiveVehicles++;
+        }
+      }
 
-      // Vehicle job counts and revenue
+      // Fetch vehicle job data with dates for utilization calculation
       final vehicleJobsResponse = await _supabase
           .from('jobs')
-          .select('vehicle_id, amount')
+          .select('id, vehicle_id, amount, created_at, job_start_date')
           .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('vehicle_id', 'is', null);
 
-      // Group by vehicle
+      // Fetch odometer readings from driver_flow for mileage calculation
+      final jobIds = vehicleJobsResponse.map((j) => j['id'] as int).toList();
+      final driverFlowResponse = jobIds.isNotEmpty
+          ? await _supabase
+              .from('driver_flow')
+              .select('job_id, odo_start_reading, job_closed_odo')
+              .inFilter('job_id', jobIds)
+              .not('odo_start_reading', 'is', null)
+              .not('job_closed_odo', 'is', null)
+          : <Map<String, dynamic>>[];
+
+      // Create map of job_id -> mileage
+      final jobMileage = <int, double>{};
+      for (final flow in driverFlowResponse) {
+        final jobId = flow['job_id'] as int?;
+        final startOdo = flow['odo_start_reading'];
+        final endOdo = flow['job_closed_odo'];
+        if (jobId != null && startOdo != null && endOdo != null) {
+          final mileage = (endOdo as num).toDouble() - (startOdo as num).toDouble();
+          if (mileage > 0) {
+            jobMileage[jobId] = mileage;
+          }
+        }
+      }
+
+      // Calculate days in period
+      final daysInPeriod = dateRange.end.difference(dateRange.start).inDays + 1;
+
+      // Group by vehicle and track unique days with jobs
       final vehicleStats = <String, Map<String, dynamic>>{};
+      final vehicleJobDays = <String, Set<String>>{}; // vehicleId -> set of unique dates (YYYY-MM-DD)
+      
       for (final job in vehicleJobsResponse) {
         final vehicleId = job['vehicle_id'].toString();
+        final jobId = job['id'] as int;
         if (!vehicleStats.containsKey(vehicleId)) {
-          vehicleStats[vehicleId] = {'count': 0, 'revenue': 0.0};
+          vehicleStats[vehicleId] = {'count': 0, 'revenue': 0.0, 'mileage': 0.0, 'jobsWithMileage': 0};
+          vehicleJobDays[vehicleId] = <String>{};
         }
         vehicleStats[vehicleId]!['count']++;
         if (job['amount'] != null) {
           vehicleStats[vehicleId]!['revenue'] += (job['amount'] as num).toDouble();
+        }
+        
+        // Add mileage if available
+        if (jobMileage.containsKey(jobId)) {
+          vehicleStats[vehicleId]!['mileage'] += jobMileage[jobId]!;
+          vehicleStats[vehicleId]!['jobsWithMileage']++;
+        }
+        
+        // Track unique days with jobs for utilization
+        final jobDate = job['created_at'] != null 
+            ? DateTime.parse(job['created_at']).toIso8601String().split('T')[0]
+            : null;
+        if (jobDate != null) {
+          vehicleJobDays[vehicleId]!.add(jobDate);
         }
       }
 
       // Calculate averages
       final totalJobCount = vehicleStats.values.fold<int>(0, (sum, stats) => sum + (stats['count'] as int));
       final totalRevenue = vehicleStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['revenue'] as double));
+      final totalMileage = vehicleStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['mileage'] as double));
+      final totalJobsWithMileage = vehicleStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobsWithMileage'] as int));
+      final vehiclesWithJobsCount = vehicleStats.length; // Only vehicles that actually had jobs
       
-      final averageJobsPerVehicle = totalVehicles > 0 ? totalJobCount / totalVehicles : 0.0;
-      final averageIncomePerVehicle = totalVehicles > 0 ? totalRevenue / totalVehicles : 0.0;
+      // Average jobs per vehicle: calculate across vehicles that had jobs for more meaningful metric
+      final averageJobsPerVehicle = vehiclesWithJobsCount > 0 
+          ? totalJobCount / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalJobCount / totalVehicles : 0.0);
+      final averageIncomePerVehicle = vehiclesWithJobsCount > 0 
+          ? totalRevenue / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalRevenue / totalVehicles : 0.0);
+      final averageMileagePerVehicle = vehiclesWithJobsCount > 0 
+          ? totalMileage / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalMileage / totalVehicles : 0.0);
+      final averageMileagePerJob = totalJobsWithMileage > 0 ? totalMileage / totalJobsWithMileage : 0.0;
 
-      // Top vehicles
-      final topVehicles = <TopVehicle>[];
+      // Build vehicle details map
+      final vehicleDetails = <String, Map<String, dynamic>>{};
+      final vehiclesByBranch = <String, int>{};
+      final branchUtilization = <String, List<double>>{}; // branch -> list of utilization rates
+      
+      for (final vehicle in vehiclesResponse) {
+        final vehicleId = vehicle['id'].toString();
+        vehicleDetails[vehicleId] = vehicle;
+        
+        // Track vehicles by branch
+        final branchId = vehicle['branch_id'];
+        if (branchId != null) {
+          // Fetch branch name
+          try {
+            final branchResponse = await _supabase
+                .from('branches')
+                .select('name')
+                .eq('id', branchId)
+                .maybeSingle();
+            final branchName = branchResponse?['name'] ?? 'Unknown Branch';
+            vehiclesByBranch[branchName] = (vehiclesByBranch[branchName] ?? 0) + 1;
+          } catch (_) {
+            // Branch lookup failed, skip
+          }
+        }
+      }
+
+      // Build TopVehicle list with utilization and efficiency scores
+      final allTopVehicles = <TopVehicle>[];
+      double totalUtilizationRate = 0.0;
+      int vehiclesWithJobs = 0;
+      
       for (final entry in vehicleStats.entries) {
         final vehicleId = entry.key;
         final stats = entry.value;
-        final vehicle = vehiclesResponse.firstWhere(
-          (v) => v['id'].toString() == vehicleId,
-          orElse: () => {'id': vehicleId, 'make': 'Unknown', 'model': 'Unknown', 'reg_plate': 'Unknown'},
-        );
+        final vehicle = vehicleDetails[vehicleId] ?? 
+            {'make': 'Unknown', 'model': 'Unknown', 'reg_plate': 'Unknown', 'branch_id': null};
         
-        topVehicles.add(TopVehicle(
-          vehicleId: vehicleId.toString(),
+        // Calculate utilization rate
+        final daysWithJobs = vehicleJobDays[vehicleId]?.length ?? 0;
+        final utilizationRate = daysInPeriod > 0 ? (daysWithJobs / daysInPeriod) * 100 : 0.0;
+        totalUtilizationRate += utilizationRate;
+        if (daysWithJobs > 0) vehiclesWithJobs++;
+        
+        // Calculate efficiency score (jobCount * revenue)
+        final efficiencyScore = stats['count'] * stats['revenue'];
+        
+        // Calculate mileage metrics
+        final totalMileage = stats['mileage'] as double;
+        final jobsWithMileage = stats['jobsWithMileage'] as int;
+        final avgMileagePerJob = jobsWithMileage > 0 ? totalMileage / jobsWithMileage : null;
+        
+        // Get branch name
+        String? branchName;
+        final branchId = vehicle['branch_id'];
+        if (branchId != null) {
+          try {
+            final branchResponse = await _supabase
+                .from('branches')
+                .select('name')
+                .eq('id', branchId)
+                .maybeSingle();
+            branchName = branchResponse?['name'];
+            if (branchName != null) {
+              branchUtilization[branchName] ??= [];
+              branchUtilization[branchName]!.add(utilizationRate);
+            }
+          } catch (_) {
+            // Branch lookup failed
+          }
+        }
+        
+        allTopVehicles.add(TopVehicle(
+          vehicleId: vehicleId,
           vehicleName: '${vehicle['make']} ${vehicle['model']}',
           registration: vehicle['reg_plate'] ?? 'Unknown',
           jobCount: stats['count'],
           revenue: stats['revenue'],
+          utilizationRate: utilizationRate,
+          efficiencyScore: efficiencyScore,
+          totalMileage: totalMileage > 0 ? totalMileage : null,
+          averageMileagePerJob: avgMileagePerJob,
         ));
       }
       
+      // Calculate average utilization rate
+      final averageUtilizationRate = vehiclesWithJobs > 0 
+          ? totalUtilizationRate / vehiclesWithJobs 
+          : 0.0;
+      
       // Sort by job count and take top 5
-      topVehicles.sort((a, b) => b.jobCount.compareTo(a.jobCount));
-      final topVehiclesList = topVehicles.take(5).toList();
+      final topVehiclesByJobs = List<TopVehicle>.from(allTopVehicles);
+      topVehiclesByJobs.sort((a, b) => b.jobCount.compareTo(a.jobCount));
+      final topVehiclesList = topVehiclesByJobs.take(5).toList();
+      
+      // Sort by revenue and take top 5
+      final topVehiclesByRevenue = List<TopVehicle>.from(allTopVehicles);
+      topVehiclesByRevenue.sort((a, b) => b.revenue.compareTo(a.revenue));
+      final topVehiclesByRevenueList = topVehiclesByRevenue.take(5).toList();
+      
+      // Identify underutilized vehicles (< 3 jobs OR < 30% utilization)
+      final underutilizedVehicles = <UnderutilizedVehicle>[];
+      for (final vehicle in allTopVehicles) {
+        if (vehicle.jobCount < 3 || (vehicle.utilizationRate ?? 0) < 30.0) {
+          final vehicleData = vehicleDetails[vehicle.vehicleId] ?? {};
+          String? branchName;
+          final branchId = vehicleData['branch_id'];
+          if (branchId != null) {
+            try {
+              final branchResponse = await _supabase
+                  .from('branches')
+                  .select('name')
+                  .eq('id', branchId)
+                  .maybeSingle();
+              branchName = branchResponse?['name'];
+            } catch (_) {}
+          }
+          
+          underutilizedVehicles.add(UnderutilizedVehicle(
+            vehicleId: vehicle.vehicleId,
+            vehicleName: vehicle.vehicleName,
+            registration: vehicle.registration,
+            jobCount: vehicle.jobCount,
+            revenue: vehicle.revenue,
+            utilizationRate: vehicle.utilizationRate ?? 0.0,
+            branchName: branchName,
+          ));
+        }
+      }
+      
+      // Check license expiry dates
+      final licenseExpiringSoon = <VehicleLicenseAlert>[];
+      final now = DateTime.now();
+      for (final vehicle in vehiclesResponse) {
+        final expiryDate = vehicle['license_expiry_date'];
+        if (expiryDate != null) {
+          try {
+            final expiry = DateTime.parse(expiryDate);
+            final daysUntilExpiry = expiry.difference(now).inDays;
+            if (daysUntilExpiry <= 30) {
+              licenseExpiringSoon.add(VehicleLicenseAlert(
+                vehicleId: vehicle['id'].toString(),
+                vehicleName: '${vehicle['make']} ${vehicle['model']}',
+                registration: vehicle['reg_plate'] ?? 'Unknown',
+                licenseExpiryDate: expiry,
+                daysUntilExpiry: daysUntilExpiry,
+              ));
+            }
+          } catch (_) {
+            // Invalid date format, skip
+          }
+        }
+      }
+      
+      // Calculate average utilization by branch
+      final utilizationByBranch = <String, double>{};
+      for (final entry in branchUtilization.entries) {
+        if (entry.value.isNotEmpty) {
+          final avgUtilization = entry.value.reduce((a, b) => a + b) / entry.value.length;
+          utilizationByBranch[entry.key] = avgUtilization;
+        }
+      }
 
       final insights = VehicleInsights(
         totalVehicles: totalVehicles,
         activeVehicles: activeVehicles,
+        inactiveVehicles: inactiveVehicles,
+        underMaintenanceVehicles: underMaintenanceVehicles,
         averageJobsPerVehicle: averageJobsPerVehicle,
         averageIncomePerVehicle: averageIncomePerVehicle,
+        averageUtilizationRate: averageUtilizationRate,
+        averageMileagePerVehicle: averageMileagePerVehicle,
+        averageMileagePerJob: averageMileagePerJob,
         topVehicles: topVehiclesList,
+        topVehiclesByRevenue: topVehiclesByRevenueList,
+        underutilizedVehicles: underutilizedVehicles,
+        licenseExpiringSoon: licenseExpiringSoon,
+        vehiclesByBranch: vehiclesByBranch,
+        utilizationByBranch: utilizationByBranch,
       );
 
       return Result.success(insights);
@@ -778,103 +973,308 @@ class InsightsRepository {
     try {
       Log.d('Fetching vehicle insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
+      // Map location filter to branch_id
+      final branchId = _locationFilterToBranchId(location);
 
-      // Total vehicles
-      final vehiclesResponse = await _supabase
+      // Fetch vehicles with all needed fields, filtered by branch if specified
+      var vehiclesQuery = _supabase
           .from('vehicles')
-          .select('id, make, model, reg_plate');
+          .select('id, make, model, reg_plate, status, branch_id, license_expiry_date');
       
+      if (branchId != null) {
+        vehiclesQuery = vehiclesQuery.eq('branch_id', branchId);
+      } else if (location == LocationFilter.unspecified) {
+        vehiclesQuery = vehiclesQuery.isFilter('branch_id', null);
+      }
+      
+      final vehiclesResponse = await vehiclesQuery;
       Log.d('Vehicles query returned ${vehiclesResponse.length} records');
 
       final totalVehicles = vehiclesResponse.length;
-      final activeVehicles = vehiclesResponse.length; // All vehicles are considered active
+      
+      // Calculate status breakdown
+      int activeVehicles = 0;
+      int inactiveVehicles = 0;
+      int underMaintenanceVehicles = 0;
+      
+      for (final vehicle in vehiclesResponse) {
+        final status = (vehicle['status'] as String?)?.toLowerCase() ?? '';
+        if (status.contains('maintenance') || status.contains('repair')) {
+          underMaintenanceVehicles++;
+        } else if (status == 'active' || status.isEmpty) {
+          activeVehicles++;
+        } else {
+          inactiveVehicles++;
+        }
+      }
 
-      // Vehicle job counts and revenue with location filter
+      // Calculate days in period
+      final daysInPeriod = dateRange.end.difference(dateRange.start).inDays + 1;
+
+      // Vehicle job counts and revenue with branch filter
       var vehicleJobsQuery = _supabase
           .from('jobs')
-          .select('vehicle_id, amount')
+          .select('id, vehicle_id, amount, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
           .lte('created_at', dateRange.end.toIso8601String())
           .not('vehicle_id', 'is', null);
       
-      if (locationFilter != null) {
-        vehicleJobsQuery = vehicleJobsQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        vehicleJobsQuery = vehicleJobsQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        vehicleJobsQuery = vehicleJobsQuery.isFilter('location', null);
+        vehicleJobsQuery = vehicleJobsQuery.isFilter('branch_id', null);
       }
       
       final vehicleJobsResponse = await vehicleJobsQuery;
 
-      // Calculate vehicle statistics
-      final Map<String, Map<String, dynamic>> vehicleStats = {};
+      // Fetch odometer readings from driver_flow for mileage calculation
+      final jobIds = vehicleJobsResponse.map((j) => j['id'] as int).toList();
+      final driverFlowResponse = jobIds.isNotEmpty
+          ? await _supabase
+              .from('driver_flow')
+              .select('job_id, odo_start_reading, job_closed_odo')
+              .inFilter('job_id', jobIds)
+              .not('odo_start_reading', 'is', null)
+              .not('job_closed_odo', 'is', null)
+          : <Map<String, dynamic>>[];
+
+      // Create map of job_id -> mileage
+      final jobMileage = <int, double>{};
+      for (final flow in driverFlowResponse) {
+        final jobId = flow['job_id'] as int?;
+        final startOdo = flow['odo_start_reading'];
+        final endOdo = flow['job_closed_odo'];
+        if (jobId != null && startOdo != null && endOdo != null) {
+          final mileage = (endOdo as num).toDouble() - (startOdo as num).toDouble();
+          if (mileage > 0) {
+            jobMileage[jobId] = mileage;
+          }
+        }
+      }
+
+      // Group by vehicle and track unique days with jobs
+      final vehicleStats = <String, Map<String, dynamic>>{};
+      final vehicleJobDays = <String, Set<String>>{}; // vehicleId -> set of unique dates
+      
       for (final job in vehicleJobsResponse) {
         final vehicleId = job['vehicle_id'].toString();
+        final jobId = job['id'] as int;
         if (!vehicleStats.containsKey(vehicleId)) {
-          vehicleStats[vehicleId] = {'count': 0, 'revenue': 0.0};
+          vehicleStats[vehicleId] = {'count': 0, 'revenue': 0.0, 'mileage': 0.0, 'jobsWithMileage': 0};
+          vehicleJobDays[vehicleId] = <String>{};
         }
         vehicleStats[vehicleId]!['count']++;
         if (job['amount'] != null) {
           vehicleStats[vehicleId]!['revenue'] += (job['amount'] as num).toDouble();
+        }
+        
+        // Add mileage if available
+        if (jobMileage.containsKey(jobId)) {
+          vehicleStats[vehicleId]!['mileage'] += jobMileage[jobId]!;
+          vehicleStats[vehicleId]!['jobsWithMileage']++;
+        }
+        
+        // Track unique days with jobs for utilization
+        final jobDate = job['created_at'] != null 
+            ? DateTime.parse(job['created_at']).toIso8601String().split('T')[0]
+            : null;
+        if (jobDate != null) {
+          vehicleJobDays[vehicleId]!.add(jobDate);
         }
       }
 
       // Calculate averages
       final totalVehicleJobs = vehicleStats.values.fold<int>(0, (sum, stats) => sum + (stats['count'] as int));
       final totalVehicleRevenue = vehicleStats.values.fold<double>(0.0, (sum, stats) => sum + stats['revenue']);
-      final averageJobsPerVehicle = totalVehicles > 0 ? totalVehicleJobs / totalVehicles : 0.0;
-      final averageRevenuePerVehicle = totalVehicles > 0 ? totalVehicleRevenue / totalVehicles : 0.0;
+      final totalVehicleMileage = vehicleStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['mileage'] as double));
+      final totalJobsWithMileage = vehicleStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobsWithMileage'] as int));
+      final vehiclesWithJobsCount = vehicleStats.length; // Only vehicles that actually had jobs
+      // Average jobs per vehicle: calculate across vehicles that had jobs, but also show overall average
+      final averageJobsPerVehicle = vehiclesWithJobsCount > 0 
+          ? totalVehicleJobs / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalVehicleJobs / totalVehicles : 0.0);
+      final averageRevenuePerVehicle = vehiclesWithJobsCount > 0 
+          ? totalVehicleRevenue / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalVehicleRevenue / totalVehicles : 0.0);
+      final averageMileagePerVehicle = vehiclesWithJobsCount > 0 
+          ? totalVehicleMileage / vehiclesWithJobsCount 
+          : (totalVehicles > 0 ? totalVehicleMileage / totalVehicles : 0.0);
+      final averageMileagePerJob = totalJobsWithMileage > 0 ? totalVehicleMileage / totalJobsWithMileage : 0.0;
 
-      // Get top vehicles
-      final List<TopVehicle> topVehicles = [];
+      // Build vehicle details map
+      final vehicleDetails = <String, Map<String, dynamic>>{};
+      final vehiclesByBranch = <String, int>{};
+      final branchUtilization = <String, List<double>>{};
+      
+      for (final vehicle in vehiclesResponse) {
+        final vehicleId = vehicle['id'].toString();
+        vehicleDetails[vehicleId] = vehicle;
+        
+        // Track vehicles by branch
+        final vehicleBranchId = vehicle['branch_id'];
+        if (vehicleBranchId != null) {
+          try {
+            final branchResponse = await _supabase
+                .from('branches')
+                .select('name')
+                .eq('id', vehicleBranchId)
+                .maybeSingle();
+            final branchName = branchResponse?['name'] ?? 'Unknown Branch';
+            vehiclesByBranch[branchName] = (vehiclesByBranch[branchName] ?? 0) + 1;
+          } catch (_) {}
+        }
+      }
+
+      // Build TopVehicle list with utilization and efficiency scores
+      final allTopVehicles = <TopVehicle>[];
+      double totalUtilizationRate = 0.0;
+      int vehiclesWithJobs = 0;
+      
       for (final entry in vehicleStats.entries) {
         final vehicleId = entry.key;
         final stats = entry.value;
+        final vehicle = vehicleDetails[vehicleId] ?? 
+            {'make': 'Unknown', 'model': 'Unknown', 'reg_plate': 'Unknown', 'branch_id': null};
         
-        // Get vehicle details
-        final vehicle = vehiclesResponse.firstWhere(
-          (v) => v['id'].toString() == vehicleId,
-          orElse: () => {'make': 'Unknown', 'model': 'Vehicle', 'reg_plate': 'Unknown'},
-        );
+        // Calculate utilization rate
+        final daysWithJobs = vehicleJobDays[vehicleId]?.length ?? 0;
+        final utilizationRate = daysInPeriod > 0 ? (daysWithJobs / daysInPeriod) * 100 : 0.0;
+        totalUtilizationRate += utilizationRate;
+        if (daysWithJobs > 0) vehiclesWithJobs++;
         
-        topVehicles.add(TopVehicle(
+        // Calculate efficiency score
+        final efficiencyScore = stats['count'] * stats['revenue'];
+        
+        // Calculate mileage metrics
+        final totalMileage = stats['mileage'] as double;
+        final jobsWithMileage = stats['jobsWithMileage'] as int;
+        final avgMileagePerJob = jobsWithMileage > 0 ? totalMileage / jobsWithMileage : null;
+        
+        // Get branch name
+        String? branchName;
+        final vehicleBranchId = vehicle['branch_id'];
+        if (vehicleBranchId != null) {
+          try {
+            final branchResponse = await _supabase
+                .from('branches')
+                .select('name')
+                .eq('id', vehicleBranchId)
+                .maybeSingle();
+            branchName = branchResponse?['name'];
+            if (branchName != null) {
+              branchUtilization[branchName] ??= [];
+              branchUtilization[branchName]!.add(utilizationRate);
+            }
+          } catch (_) {}
+        }
+        
+        allTopVehicles.add(TopVehicle(
           vehicleId: vehicleId,
           vehicleName: '${vehicle['make']} ${vehicle['model']}',
           registration: vehicle['reg_plate'] ?? 'Unknown',
           jobCount: stats['count'],
           revenue: stats['revenue'],
+          utilizationRate: utilizationRate,
+          efficiencyScore: efficiencyScore,
+          totalMileage: totalMileage > 0 ? totalMileage : null,
+          averageMileagePerJob: avgMileagePerJob,
         ));
       }
       
+      // Calculate average utilization rate
+      final averageUtilizationRate = vehiclesWithJobs > 0 
+          ? totalUtilizationRate / vehiclesWithJobs 
+          : 0.0;
+      
       // Sort by job count and take top 5
-      topVehicles.sort((a, b) => b.jobCount.compareTo(a.jobCount));
-      final top5Vehicles = topVehicles.take(5).toList();
+      final topVehiclesByJobs = List<TopVehicle>.from(allTopVehicles);
+      topVehiclesByJobs.sort((a, b) => b.jobCount.compareTo(a.jobCount));
+      final topVehiclesList = topVehiclesByJobs.take(5).toList();
+      
+      // Sort by revenue and take top 5
+      final topVehiclesByRevenue = List<TopVehicle>.from(allTopVehicles);
+      topVehiclesByRevenue.sort((a, b) => b.revenue.compareTo(a.revenue));
+      final topVehiclesByRevenueList = topVehiclesByRevenue.take(5).toList();
+      
+      // Identify underutilized vehicles
+      final underutilizedVehicles = <UnderutilizedVehicle>[];
+      for (final vehicle in allTopVehicles) {
+        if (vehicle.jobCount < 3 || (vehicle.utilizationRate ?? 0) < 30.0) {
+          final vehicleData = vehicleDetails[vehicle.vehicleId] ?? {};
+          String? branchName;
+          final vehicleBranchId = vehicleData['branch_id'];
+          if (vehicleBranchId != null) {
+            try {
+              final branchResponse = await _supabase
+                  .from('branches')
+                  .select('name')
+                  .eq('id', vehicleBranchId)
+                  .maybeSingle();
+              branchName = branchResponse?['name'];
+            } catch (_) {}
+          }
+          
+          underutilizedVehicles.add(UnderutilizedVehicle(
+            vehicleId: vehicle.vehicleId,
+            vehicleName: vehicle.vehicleName,
+            registration: vehicle.registration,
+            jobCount: vehicle.jobCount,
+            revenue: vehicle.revenue,
+            utilizationRate: vehicle.utilizationRate ?? 0.0,
+            branchName: branchName,
+          ));
+        }
+      }
+      
+      // Check license expiry dates
+      final licenseExpiringSoon = <VehicleLicenseAlert>[];
+      final now = DateTime.now();
+      for (final vehicle in vehiclesResponse) {
+        final expiryDate = vehicle['license_expiry_date'];
+        if (expiryDate != null) {
+          try {
+            final expiry = DateTime.parse(expiryDate);
+            final daysUntilExpiry = expiry.difference(now).inDays;
+            if (daysUntilExpiry <= 30) {
+              licenseExpiringSoon.add(VehicleLicenseAlert(
+                vehicleId: vehicle['id'].toString(),
+                vehicleName: '${vehicle['make']} ${vehicle['model']}',
+                registration: vehicle['reg_plate'] ?? 'Unknown',
+                licenseExpiryDate: expiry,
+                daysUntilExpiry: daysUntilExpiry,
+              ));
+            }
+          } catch (_) {
+            // Invalid date format, skip
+          }
+        }
+      }
+      
+      // Calculate average utilization by branch
+      final utilizationByBranch = <String, double>{};
+      for (final entry in branchUtilization.entries) {
+        if (entry.value.isNotEmpty) {
+          final avgUtilization = entry.value.reduce((a, b) => a + b) / entry.value.length;
+          utilizationByBranch[entry.key] = avgUtilization;
+        }
+      }
 
       final vehicleInsights = VehicleInsights(
         totalVehicles: totalVehicles,
         activeVehicles: activeVehicles,
+        inactiveVehicles: inactiveVehicles,
+        underMaintenanceVehicles: underMaintenanceVehicles,
         averageJobsPerVehicle: averageJobsPerVehicle,
         averageIncomePerVehicle: averageRevenuePerVehicle,
-        topVehicles: top5Vehicles,
+        averageUtilizationRate: averageUtilizationRate,
+        averageMileagePerVehicle: averageMileagePerVehicle,
+        averageMileagePerJob: averageMileagePerJob,
+        topVehicles: topVehiclesList,
+        topVehiclesByRevenue: topVehiclesByRevenueList,
+        underutilizedVehicles: underutilizedVehicles,
+        licenseExpiringSoon: licenseExpiringSoon,
+        vehiclesByBranch: vehiclesByBranch,
+        utilizationByBranch: utilizationByBranch,
       );
 
       Log.d('Vehicle insights with location filter: ${vehicleInsights.totalVehicles} vehicles, ${vehicleInsights.averageJobsPerVehicle.toStringAsFixed(1)} avg jobs');
@@ -889,93 +1289,463 @@ class InsightsRepository {
   Future<Result<ClientInsights>> _fetchClientInsights(DateRange dateRange) async {
     try {
       Log.d('Fetching client insights...');
-      // Total clients
+      
+      // Fetch all clients with status and dates
       final clientsResponse = await _supabase
           .from('clients')
-          .select('id, company_name');
+          .select('id, company_name, status, created_at, deleted_at');
       
       Log.d('Clients query returned ${clientsResponse.length} records');
 
       final totalClients = clientsResponse.length;
-      final activeClients = clientsResponse.length; // All clients are considered active
+      
+      // Calculate client status breakdown
+      int activeClients = 0;
+      int vipClients = 0;
+      int pendingClients = 0;
+      int inactiveClients = 0;
+      final clientsByStatus = <String, int>{};
+      
+      for (final client in clientsResponse) {
+        final status = (client['status'] as String?)?.toLowerCase() ?? 'active';
+        final deletedAt = client['deleted_at'];
+        final isDeleted = deletedAt != null;
+        
+        if (isDeleted) {
+          inactiveClients++;
+        } else {
+          switch (status) {
+            case 'active':
+              activeClients++;
+              break;
+            case 'vip':
+              vipClients++;
+              activeClients++; // VIP is also active
+              break;
+            case 'pending':
+              pendingClients++;
+              break;
+            case 'inactive':
+              inactiveClients++;
+              break;
+          }
+        }
+        
+        clientsByStatus[status] = (clientsByStatus[status] ?? 0) + 1;
+      }
 
-      // Client job counts and revenue
+      // Fetch all jobs (period and all-time for engagement metrics)
       final clientJobsResponse = await _supabase
           .from('jobs')
-          .select('client_id, amount')
+          .select('client_id, amount, job_status, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('client_id', 'is', null);
 
-      // Client quote counts
+      // Fetch all-time jobs for engagement metrics
+      final allTimeJobsResponse = await _supabase
+          .from('jobs')
+          .select('client_id, amount, created_at')
+          .not('client_id', 'is', null);
+
+      // Fetch quotes (period and all-time)
       final clientQuotesResponse = await _supabase
           .from('quotes')
-          .select('client_id, quote_amount')
+          .select('client_id, agent_id, quote_amount, quote_status, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('client_id', 'is', null);
 
-      // Group by client
+      // Fetch all-time quotes
+      final allTimeQuotesResponse = await _supabase
+          .from('quotes')
+          .select('client_id, quote_amount, created_at')
+          .not('client_id', 'is', null);
+
+      // Fetch agents
+      final agentsResponse = await _supabase
+          .from('agents')
+          .select('id, agent_name, client_key, is_deleted')
+          .eq('is_deleted', false);
+
+      // Build client details map
+      final clientDetails = <String, Map<String, dynamic>>{};
+      for (final client in clientsResponse) {
+        final clientId = client['id'].toString();
+        clientDetails[clientId] = {
+          'company_name': client['company_name'],
+          'status': client['status'],
+          'created_at': client['created_at'],
+          'deleted_at': client['deleted_at'],
+        };
+      }
+
+      // Group by client for period stats
       final clientStats = <String, Map<String, dynamic>>{};
+      final clientAllTimeStats = <String, Map<String, dynamic>>{};
+      final clientFirstActivity = <String, DateTime?>{};
+      final clientLastActivity = <String, DateTime?>{};
+      final clientJobStatuses = <String, Map<String, int>>{};
+      final clientQuoteStatuses = <String, Map<String, int>>{};
+      final agentStats = <String, Map<String, dynamic>>{}; // agentId -> stats
+      final clientAgentMap = <String, Set<String>>{}; // clientId -> Set<agentId>
       
-      // Process jobs
+      // Process period jobs
       for (final job in clientJobsResponse) {
         final clientId = job['client_id'].toString();
         if (!clientStats.containsKey(clientId)) {
-          clientStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0, 'quoteCount': 0, 'quoteValue': 0.0};
+          clientStats[clientId] = {
+            'jobCount': 0,
+            'jobRevenue': 0.0,
+            'quoteCount': 0,
+            'quoteValue': 0.0,
+            'jobs': [],
+            'quotes': [],
+          };
+          clientJobStatuses[clientId] = {};
         }
         clientStats[clientId]!['jobCount']++;
+        final jobStatus = (job['job_status'] as String?)?.toLowerCase() ?? 'open';
+        clientJobStatuses[clientId]![jobStatus] = (clientJobStatuses[clientId]![jobStatus] ?? 0) + 1;
         if (job['amount'] != null) {
           clientStats[clientId]!['jobRevenue'] += (job['amount'] as num).toDouble();
         }
+        final createdAt = job['created_at'] != null ? DateTime.parse(job['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
       }
 
-      // Process quotes
+      // Process all-time jobs
+      for (final job in allTimeJobsResponse) {
+        final clientId = job['client_id'].toString();
+        if (!clientAllTimeStats.containsKey(clientId)) {
+          clientAllTimeStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0};
+        }
+        clientAllTimeStats[clientId]!['jobCount']++;
+        if (job['amount'] != null) {
+          clientAllTimeStats[clientId]!['jobRevenue'] += (job['amount'] as num).toDouble();
+        }
+        final createdAt = job['created_at'] != null ? DateTime.parse(job['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process period quotes
       for (final quote in clientQuotesResponse) {
         final clientId = quote['client_id'].toString();
+        final agentId = quote['agent_id']?.toString();
+        
         if (!clientStats.containsKey(clientId)) {
-          clientStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0, 'quoteCount': 0, 'quoteValue': 0.0};
+          clientStats[clientId] = {
+            'jobCount': 0,
+            'jobRevenue': 0.0,
+            'quoteCount': 0,
+            'quoteValue': 0.0,
+            'jobs': [],
+            'quotes': [],
+          };
+          clientQuoteStatuses[clientId] = {};
         }
         clientStats[clientId]!['quoteCount']++;
+        final quoteStatus = (quote['quote_status'] as String?)?.toLowerCase() ?? 'draft';
+        clientQuoteStatuses[clientId]![quoteStatus] = (clientQuoteStatuses[clientId]![quoteStatus] ?? 0) + 1;
         if (quote['quote_amount'] != null) {
           clientStats[clientId]!['quoteValue'] += (quote['quote_amount'] as num).toDouble();
+        }
+        
+        // Track agent relationships
+        if (agentId != null) {
+          clientAgentMap.putIfAbsent(clientId, () => <String>{}).add(agentId);
+          if (!agentStats.containsKey(agentId)) {
+            agentStats[agentId] = {
+              'jobCount': 0,
+              'quoteCount': 0,
+              'totalValue': 0.0,
+              'clientId': clientId,
+            };
+          }
+          agentStats[agentId]!['quoteCount']++;
+          if (quote['quote_amount'] != null) {
+            agentStats[agentId]!['totalValue'] += (quote['quote_amount'] as num).toDouble();
+          }
+        }
+        
+        final createdAt = quote['created_at'] != null ? DateTime.parse(quote['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process all-time quotes
+      for (final quote in allTimeQuotesResponse) {
+        final clientId = quote['client_id'].toString();
+        final createdAt = quote['created_at'] != null ? DateTime.parse(quote['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process agent jobs
+      final agentJobsResponse = await _supabase
+          .from('jobs')
+          .select('client_id, agent_id, amount')
+          .gte('created_at', dateRange.start.toIso8601String())
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('agent_id', 'is', null);
+      
+      for (final job in agentJobsResponse) {
+        final agentId = job['agent_id'].toString();
+        final clientId = job['client_id'].toString();
+        if (!agentStats.containsKey(agentId)) {
+          agentStats[agentId] = {
+            'jobCount': 0,
+            'quoteCount': 0,
+            'totalValue': 0.0,
+            'clientId': clientId,
+          };
+        }
+        agentStats[agentId]!['jobCount']++;
+        if (job['amount'] != null) {
+          agentStats[agentId]!['totalValue'] += (job['amount'] as num).toDouble();
+        }
+      }
+
+      // Calculate job status breakdown (aggregated)
+      final jobsByStatus = <String, int>{};
+      for (final job in clientJobsResponse) {
+        final status = (job['job_status'] as String?)?.toLowerCase() ?? 'open';
+        jobsByStatus[status] = (jobsByStatus[status] ?? 0) + 1;
+      }
+
+      // Calculate quote status breakdown (aggregated)
+      final quotesByStatus = <String, int>{};
+      for (final quote in clientQuotesResponse) {
+        final status = (quote['quote_status'] as String?)?.toLowerCase() ?? 'draft';
+        quotesByStatus[status] = (quotesByStatus[status] ?? 0) + 1;
+      }
+
+      // Calculate revenue by status
+      final revenueByStatus = <String, double>{};
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final client = clientDetails[clientId];
+        final status = (client?['status'] as String?)?.toLowerCase() ?? 'active';
+        final revenue = (entry.value['jobRevenue'] as double) + (entry.value['quoteValue'] as double);
+        revenueByStatus[status] = (revenueByStatus[status] ?? 0.0) + revenue;
+      }
+
+      // Calculate clients by tier (VIP vs Regular)
+      final clientsByTier = <String, int>{'VIP': vipClients, 'Regular': activeClients - vipClients};
+      final revenueByTier = <String, double>{'VIP': 0.0, 'Regular': 0.0};
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final client = clientDetails[clientId];
+        final status = (client?['status'] as String?)?.toLowerCase() ?? 'active';
+        final revenue = (entry.value['jobRevenue'] as double) + (entry.value['quoteValue'] as double);
+        if (status == 'vip') {
+          revenueByTier['VIP'] = (revenueByTier['VIP'] ?? 0.0) + revenue;
+        } else {
+          revenueByTier['Regular'] = (revenueByTier['Regular'] ?? 0.0) + revenue;
         }
       }
 
       // Calculate averages
       final totalJobCount = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobCount'] as int));
+      final totalQuoteCount = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['quoteCount'] as int));
       final totalJobRevenue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['jobRevenue'] as double));
+      final totalQuoteValue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['quoteValue'] as double));
       
       final averageJobsPerClient = totalClients > 0 ? totalJobCount / totalClients : 0.0;
-      final averageRevenuePerClient = totalClients > 0 ? totalJobRevenue / totalClients : 0.0;
+      final averageQuotesPerClient = totalClients > 0 ? totalQuoteCount / totalClients : 0.0;
+      final averageRevenuePerClient = totalClients > 0 ? (totalJobRevenue + totalQuoteValue) / totalClients : 0.0;
+      final averageJobValuePerClient = clientStats.isNotEmpty ? totalJobRevenue / clientStats.length : 0.0;
+      final averageQuoteValuePerClient = clientStats.isNotEmpty ? totalQuoteValue / clientStats.length : 0.0;
 
-      // Top clients
-      final topClients = <TopClient>[];
+      // Calculate quote-to-job conversion rate
+      final clientsWithQuotes = clientStats.values.where((s) => (s['quoteCount'] as int) > 0).length;
+      final clientsWithJobsFromQuotes = clientStats.values.where((s) => 
+        (s['quoteCount'] as int) > 0 && (s['jobCount'] as int) > 0
+      ).length;
+      final quoteToJobConversionRate = clientsWithQuotes > 0 
+          ? (clientsWithJobsFromQuotes / clientsWithQuotes) * 100 
+          : 0.0;
+
+      // Calculate average agents per client
+      final totalAgents = clientAgentMap.values.fold<int>(0, (sum, agents) => sum + agents.length);
+      final averageAgentsPerClient = clientAgentMap.isNotEmpty ? totalAgents / clientAgentMap.length : 0.0;
+
+      // Build TopClient list with all details
+      final allTopClients = <TopClient>[];
+      final now = DateTime.now();
+      
       for (final entry in clientStats.entries) {
         final clientId = entry.key;
         final stats = entry.value;
-        final client = clientsResponse.firstWhere(
-          (c) => c['id'].toString() == clientId,
-          orElse: () => {'id': clientId, 'company_name': 'Unknown Client'},
-        );
+        final client = clientDetails[clientId] ?? {};
+        final jobRevenue = stats['jobRevenue'] as double;
+        final quoteValue = stats['quoteValue'] as double;
+        final jobCount = stats['jobCount'] as int;
+        final quoteCount = stats['quoteCount'] as int;
+        final conversionRate = quoteCount > 0 ? (jobCount / quoteCount) * 100 : null;
+        final avgJobValue = jobCount > 0 ? jobRevenue / jobCount : null;
+        final avgQuoteValue = quoteCount > 0 ? quoteValue / quoteCount : null;
+        final agentCount = clientAgentMap[clientId]?.length;
+        final lastActivity = clientLastActivity[clientId];
+        final daysSinceLastActivity = lastActivity != null ? now.difference(lastActivity).inDays : null;
         
-        topClients.add(TopClient(
-          clientId: clientId.toString(),
+        allTopClients.add(TopClient(
+          clientId: clientId,
           clientName: client['company_name'] ?? 'Unknown Client',
-          jobCount: stats['jobCount'],
-          quoteCount: stats['quoteCount'],
-          totalValue: stats['jobRevenue'] + stats['quoteValue'],
+          clientStatus: client['status'] as String?,
+          jobCount: jobCount,
+          quoteCount: quoteCount,
+          jobRevenue: jobRevenue,
+          quoteValue: quoteValue,
+          totalValue: jobRevenue + quoteValue,
+          conversionRate: conversionRate,
+          averageJobValue: avgJobValue,
+          averageQuoteValue: avgQuoteValue,
+          agentCount: agentCount,
+          lastActivityDate: lastActivity,
+          daysSinceLastActivity: daysSinceLastActivity,
         ));
       }
+
+      // Sort and create top lists
+      final topClientsByTotal = List<TopClient>.from(allTopClients);
+      topClientsByTotal.sort((a, b) => b.totalValue.compareTo(a.totalValue));
       
-      // Sort by total value and take top 5
-      topClients.sort((a, b) => b.totalValue.compareTo(a.totalValue));
-      final topClientsList = topClients.take(5).toList();
+      final topClientsByJobs = List<TopClient>.from(allTopClients);
+      topClientsByJobs.sort((a, b) => b.jobCount.compareTo(a.jobCount));
+      
+      final topClientsByRevenue = List<TopClient>.from(allTopClients);
+      topClientsByRevenue.sort((a, b) => b.jobRevenue.compareTo(a.jobRevenue));
+      
+      final topClientsByQuotes = List<TopClient>.from(allTopClients);
+      topClientsByQuotes.sort((a, b) => b.quoteValue.compareTo(a.quoteValue));
+      
+      final topClientsByConversion = List<TopClient>.from(allTopClients.where((c) => c.conversionRate != null));
+      topClientsByConversion.sort((a, b) => (b.conversionRate ?? 0).compareTo(a.conversionRate ?? 0));
+
+      // Identify at-risk clients (no activity in 30+ days)
+      final atRiskClientsList = <AtRiskClient>[];
+      for (final clientId in clientDetails.keys) {
+        final lastActivity = clientLastActivity[clientId];
+        if (lastActivity != null) {
+          final daysSince = now.difference(lastActivity).inDays;
+          if (daysSince >= 30) {
+            final allTimeStats = clientAllTimeStats[clientId] ?? {'jobCount': 0, 'jobRevenue': 0.0};
+            final allTimeQuotes = allTimeQuotesResponse.where((q) => q['client_id'].toString() == clientId).length;
+            final client = clientDetails[clientId] ?? {};
+            atRiskClientsList.add(AtRiskClient(
+              clientId: clientId,
+              clientName: client['company_name'] ?? 'Unknown Client',
+              lastActivityDate: lastActivity,
+              daysSinceLastActivity: daysSince,
+              totalJobs: allTimeStats['jobCount'] as int,
+              totalQuotes: allTimeQuotes,
+              lifetimeValue: allTimeStats['jobRevenue'] as double,
+            ));
+          }
+        }
+      }
+      atRiskClientsList.sort((a, b) => b.daysSinceLastActivity.compareTo(a.daysSinceLastActivity));
+
+      // Identify new clients (first activity in period)
+      final newClientsList = <NewClient>[];
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final firstActivity = clientFirstActivity[clientId];
+        if (firstActivity != null && 
+            firstActivity.isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
+            firstActivity.isBefore(dateRange.end.add(const Duration(days: 1)))) {
+          final stats = entry.value;
+          final client = clientDetails[clientId] ?? {};
+          newClientsList.add(NewClient(
+            clientId: clientId,
+            clientName: client['company_name'] ?? 'Unknown Client',
+            firstActivityDate: firstActivity,
+            jobCount: stats['jobCount'] as int,
+            quoteCount: stats['quoteCount'] as int,
+            revenue: (stats['jobRevenue'] as double) + (stats['quoteValue'] as double),
+          ));
+        }
+      }
+
+      // Build top agents list
+      final topAgentsList = <TopAgent>[];
+      for (final entry in agentStats.entries) {
+        final agentId = entry.key;
+        final stats = entry.value;
+        final agent = agentsResponse.firstWhere(
+          (a) => a['id'].toString() == agentId,
+          orElse: () => {'agent_name': 'Unknown Agent'},
+        );
+        final clientId = stats['clientId'] as String;
+        final client = clientDetails[clientId] ?? {};
+        topAgentsList.add(TopAgent(
+          agentId: agentId,
+          agentName: agent['agent_name'] ?? 'Unknown Agent',
+          clientId: clientId,
+          clientName: client['company_name'] ?? 'Unknown Client',
+          jobCount: stats['jobCount'] as int,
+          quoteCount: stats['quoteCount'] as int,
+          totalValue: stats['totalValue'] as double,
+        ));
+      }
+      topAgentsList.sort((a, b) => b.totalValue.compareTo(a.totalValue));
 
       final insights = ClientInsights(
         totalClients: totalClients,
         activeClients: activeClients,
+        vipClients: vipClients,
+        pendingClients: pendingClients,
+        inactiveClients: inactiveClients,
+        newClients: newClientsList.length,
+        atRiskClients: atRiskClientsList.length,
         averageJobsPerClient: averageJobsPerClient,
         averageRevenuePerClient: averageRevenuePerClient,
-        topClients: topClientsList,
+        averageJobValuePerClient: averageJobValuePerClient,
+        averageQuoteValuePerClient: averageQuoteValuePerClient,
+        averageQuotesPerClient: averageQuotesPerClient,
+        quoteToJobConversionRate: quoteToJobConversionRate,
+        averageAgentsPerClient: averageAgentsPerClient,
+        topClients: topClientsByTotal.take(5).toList(),
+        topClientsByJobs: topClientsByJobs.take(5).toList(),
+        topClientsByRevenue: topClientsByRevenue.take(5).toList(),
+        topClientsByQuotes: topClientsByQuotes.take(5).toList(),
+        topClientsByConversionRate: topClientsByConversion.take(5).toList(),
+        atRiskClientsList: atRiskClientsList.take(10).toList(),
+        newClientsList: newClientsList,
+        topAgents: topAgentsList.take(10).toList(),
+        clientsByStatus: clientsByStatus,
+        revenueByStatus: revenueByStatus,
+        jobsByStatus: jobsByStatus,
+        quotesByStatus: quotesByStatus,
+        clientsByTier: clientsByTier,
+        revenueByTier: revenueByTier,
       );
 
       return Result.success(insights);
@@ -990,138 +1760,484 @@ class InsightsRepository {
     try {
       Log.d('Fetching client insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
+      // Map location filter to branch_id
+      final branchId = _locationFilterToBranchId(location);
 
-      // Total clients
+      // Fetch all clients with status and dates
       final clientsResponse = await _supabase
           .from('clients')
-          .select('id, company_name');
+          .select('id, company_name, status, created_at, deleted_at');
       
       Log.d('Clients query returned ${clientsResponse.length} records');
 
       final totalClients = clientsResponse.length;
+      
+      // Calculate client status breakdown
+      int activeClients = 0;
+      int vipClients = 0;
+      int pendingClients = 0;
+      int inactiveClients = 0;
+      final clientsByStatus = <String, int>{};
+      
+      for (final client in clientsResponse) {
+        final status = (client['status'] as String?)?.toLowerCase() ?? 'active';
+        final deletedAt = client['deleted_at'];
+        final isDeleted = deletedAt != null;
+        
+        if (isDeleted) {
+          inactiveClients++;
+        } else {
+          switch (status) {
+            case 'active':
+              activeClients++;
+              break;
+            case 'vip':
+              vipClients++;
+              activeClients++; // VIP is also active
+              break;
+            case 'pending':
+              pendingClients++;
+              break;
+            case 'inactive':
+              inactiveClients++;
+              break;
+          }
+        }
+        
+        clientsByStatus[status] = (clientsByStatus[status] ?? 0) + 1;
+      }
 
-      // Client job counts and revenue with location filter
+      // Fetch jobs with branch filter
       var clientJobsQuery = _supabase
           .from('jobs')
-          .select('client_id, amount')
+          .select('client_id, agent_id, amount, job_status, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
           .lte('created_at', dateRange.end.toIso8601String())
           .not('client_id', 'is', null);
       
-      if (locationFilter != null) {
-        clientJobsQuery = clientJobsQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        clientJobsQuery = clientJobsQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        clientJobsQuery = clientJobsQuery.isFilter('location', null);
+        clientJobsQuery = clientJobsQuery.isFilter('branch_id', null);
       }
       
       final clientJobsResponse = await clientJobsQuery;
 
-      // Client quotes with location filter
-      var clientQuotesQuery = _supabase
+      // Fetch all-time jobs (no branch filter for engagement metrics)
+      final allTimeJobsResponse = await _supabase
+          .from('jobs')
+          .select('client_id, amount, created_at')
+          .not('client_id', 'is', null);
+
+      // Fetch quotes (no branch filter - quotes don't have branch_id)
+      final clientQuotesResponse = await _supabase
           .from('quotes')
-          .select('client_id, quote_amount')
+          .select('client_id, agent_id, quote_amount, quote_status, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
           .lte('created_at', dateRange.end.toIso8601String())
           .not('client_id', 'is', null);
-      
-      if (locationFilter != null) {
-        clientQuotesQuery = clientQuotesQuery.eq('location', locationFilter);
-      } else if (location == LocationFilter.unspecified) {
-        clientQuotesQuery = clientQuotesQuery.isFilter('location', null);
-      }
-      
-      final clientQuotesResponse = await clientQuotesQuery;
 
-      // Calculate client statistics
-      final Map<String, Map<String, dynamic>> clientStats = {};
+      // Fetch all-time quotes
+      final allTimeQuotesResponse = await _supabase
+          .from('quotes')
+          .select('client_id, quote_amount, created_at')
+          .not('client_id', 'is', null);
+
+      // Fetch agents
+      final agentsResponse = await _supabase
+          .from('agents')
+          .select('id, agent_name, client_key, is_deleted')
+          .eq('is_deleted', false);
+
+      // Build client details map
+      final clientDetails = <String, Map<String, dynamic>>{};
+      for (final client in clientsResponse) {
+        final clientId = client['id'].toString();
+        clientDetails[clientId] = {
+          'company_name': client['company_name'],
+          'status': client['status'],
+          'created_at': client['created_at'],
+          'deleted_at': client['deleted_at'],
+        };
+      }
+
+      // Group by client for period stats (same logic as _fetchClientInsights)
+      final clientStats = <String, Map<String, dynamic>>{};
+      final clientAllTimeStats = <String, Map<String, dynamic>>{};
+      final clientFirstActivity = <String, DateTime?>{};
+      final clientLastActivity = <String, DateTime?>{};
+      final clientJobStatuses = <String, Map<String, int>>{};
+      final clientQuoteStatuses = <String, Map<String, int>>{};
+      final agentStats = <String, Map<String, dynamic>>{};
+      final clientAgentMap = <String, Set<String>>{};
       
-      // Process jobs
+      // Process period jobs
       for (final job in clientJobsResponse) {
         final clientId = job['client_id'].toString();
         if (!clientStats.containsKey(clientId)) {
-          clientStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0, 'quoteCount': 0, 'quoteValue': 0.0};
+          clientStats[clientId] = {
+            'jobCount': 0,
+            'jobRevenue': 0.0,
+            'quoteCount': 0,
+            'quoteValue': 0.0,
+            'jobs': [],
+            'quotes': [],
+          };
+          clientJobStatuses[clientId] = {};
         }
         clientStats[clientId]!['jobCount']++;
+        final jobStatus = (job['job_status'] as String?)?.toLowerCase() ?? 'open';
+        clientJobStatuses[clientId]![jobStatus] = (clientJobStatuses[clientId]![jobStatus] ?? 0) + 1;
         if (job['amount'] != null) {
           clientStats[clientId]!['jobRevenue'] += (job['amount'] as num).toDouble();
         }
+        final createdAt = job['created_at'] != null ? DateTime.parse(job['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
       }
 
-      // Process quotes
+      // Process all-time jobs
+      for (final job in allTimeJobsResponse) {
+        final clientId = job['client_id'].toString();
+        if (!clientAllTimeStats.containsKey(clientId)) {
+          clientAllTimeStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0};
+        }
+        clientAllTimeStats[clientId]!['jobCount']++;
+        if (job['amount'] != null) {
+          clientAllTimeStats[clientId]!['jobRevenue'] += (job['amount'] as num).toDouble();
+        }
+        final createdAt = job['created_at'] != null ? DateTime.parse(job['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process period quotes
       for (final quote in clientQuotesResponse) {
         final clientId = quote['client_id'].toString();
+        final agentId = quote['agent_id']?.toString();
+        
         if (!clientStats.containsKey(clientId)) {
-          clientStats[clientId] = {'jobCount': 0, 'jobRevenue': 0.0, 'quoteCount': 0, 'quoteValue': 0.0};
+          clientStats[clientId] = {
+            'jobCount': 0,
+            'jobRevenue': 0.0,
+            'quoteCount': 0,
+            'quoteValue': 0.0,
+            'jobs': [],
+            'quotes': [],
+          };
+          clientQuoteStatuses[clientId] = {};
         }
         clientStats[clientId]!['quoteCount']++;
+        final quoteStatus = (quote['quote_status'] as String?)?.toLowerCase() ?? 'draft';
+        clientQuoteStatuses[clientId]![quoteStatus] = (clientQuoteStatuses[clientId]![quoteStatus] ?? 0) + 1;
         if (quote['quote_amount'] != null) {
           clientStats[clientId]!['quoteValue'] += (quote['quote_amount'] as num).toDouble();
+        }
+        
+        if (agentId != null) {
+          clientAgentMap.putIfAbsent(clientId, () => <String>{}).add(agentId);
+          if (!agentStats.containsKey(agentId)) {
+            agentStats[agentId] = {
+              'jobCount': 0,
+              'quoteCount': 0,
+              'totalValue': 0.0,
+              'clientId': clientId,
+            };
+          }
+          agentStats[agentId]!['quoteCount']++;
+          if (quote['quote_amount'] != null) {
+            agentStats[agentId]!['totalValue'] += (quote['quote_amount'] as num).toDouble();
+          }
+        }
+        
+        final createdAt = quote['created_at'] != null ? DateTime.parse(quote['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process all-time quotes
+      for (final quote in allTimeQuotesResponse) {
+        final clientId = quote['client_id'].toString();
+        final createdAt = quote['created_at'] != null ? DateTime.parse(quote['created_at']) : null;
+        if (createdAt != null) {
+          if (clientLastActivity[clientId] == null || createdAt.isAfter(clientLastActivity[clientId]!)) {
+            clientLastActivity[clientId] = createdAt;
+          }
+          if (clientFirstActivity[clientId] == null || createdAt.isBefore(clientFirstActivity[clientId]!)) {
+            clientFirstActivity[clientId] = createdAt;
+          }
+        }
+      }
+
+      // Process agent jobs
+      var agentJobsQuery = _supabase
+          .from('jobs')
+          .select('client_id, agent_id, amount')
+          .gte('created_at', dateRange.start.toIso8601String())
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('agent_id', 'is', null);
+      
+      if (branchId != null) {
+        agentJobsQuery = agentJobsQuery.eq('branch_id', branchId);
+      } else if (location == LocationFilter.unspecified) {
+        agentJobsQuery = agentJobsQuery.isFilter('branch_id', null);
+      }
+      
+      final agentJobsResponse = await agentJobsQuery;
+      
+      for (final job in agentJobsResponse) {
+        final agentId = job['agent_id'].toString();
+        final clientId = job['client_id'].toString();
+        if (!agentStats.containsKey(agentId)) {
+          agentStats[agentId] = {
+            'jobCount': 0,
+            'quoteCount': 0,
+            'totalValue': 0.0,
+            'clientId': clientId,
+          };
+        }
+        agentStats[agentId]!['jobCount']++;
+        if (job['amount'] != null) {
+          agentStats[agentId]!['totalValue'] += (job['amount'] as num).toDouble();
+        }
+      }
+
+      // Calculate job status breakdown (aggregated)
+      final jobsByStatus = <String, int>{};
+      for (final job in clientJobsResponse) {
+        final status = (job['job_status'] as String?)?.toLowerCase() ?? 'open';
+        jobsByStatus[status] = (jobsByStatus[status] ?? 0) + 1;
+      }
+
+      // Calculate quote status breakdown (aggregated)
+      final quotesByStatus = <String, int>{};
+      for (final quote in clientQuotesResponse) {
+        final status = (quote['quote_status'] as String?)?.toLowerCase() ?? 'draft';
+        quotesByStatus[status] = (quotesByStatus[status] ?? 0) + 1;
+      }
+
+      // Calculate revenue by status
+      final revenueByStatus = <String, double>{};
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final client = clientDetails[clientId];
+        final status = (client?['status'] as String?)?.toLowerCase() ?? 'active';
+        final revenue = (entry.value['jobRevenue'] as double) + (entry.value['quoteValue'] as double);
+        revenueByStatus[status] = (revenueByStatus[status] ?? 0.0) + revenue;
+      }
+
+      // Calculate clients by tier (VIP vs Regular)
+      final clientsByTier = <String, int>{'VIP': vipClients, 'Regular': activeClients - vipClients};
+      final revenueByTier = <String, double>{'VIP': 0.0, 'Regular': 0.0};
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final client = clientDetails[clientId];
+        final status = (client?['status'] as String?)?.toLowerCase() ?? 'active';
+        final revenue = (entry.value['jobRevenue'] as double) + (entry.value['quoteValue'] as double);
+        if (status == 'vip') {
+          revenueByTier['VIP'] = (revenueByTier['VIP'] ?? 0.0) + revenue;
+        } else {
+          revenueByTier['Regular'] = (revenueByTier['Regular'] ?? 0.0) + revenue;
         }
       }
 
       // Calculate averages
-      final totalClientJobs = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobCount'] as int));
-      final totalClientQuotes = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['quoteCount'] as int));
-      final totalClientRevenue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + stats['jobRevenue'] + stats['quoteValue']);
-      final averageJobsPerClient = totalClients > 0 ? totalClientJobs / totalClients : 0.0;
-      final averageQuotesPerClient = totalClients > 0 ? totalClientQuotes / totalClients : 0.0;
-      final averageRevenuePerClient = totalClients > 0 ? totalClientRevenue / totalClients : 0.0;
+      final totalJobCount = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobCount'] as int));
+      final totalQuoteCount = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['quoteCount'] as int));
+      final totalJobRevenue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['jobRevenue'] as double));
+      final totalQuoteValue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['quoteValue'] as double));
+      
+      final averageJobsPerClient = totalClients > 0 ? totalJobCount / totalClients : 0.0;
+      final averageQuotesPerClient = totalClients > 0 ? totalQuoteCount / totalClients : 0.0;
+      final averageRevenuePerClient = totalClients > 0 ? (totalJobRevenue + totalQuoteValue) / totalClients : 0.0;
+      final averageJobValuePerClient = clientStats.isNotEmpty ? totalJobRevenue / clientStats.length : 0.0;
+      final averageQuoteValuePerClient = clientStats.isNotEmpty ? totalQuoteValue / clientStats.length : 0.0;
 
-      // Get top clients
-      final List<TopClient> topClients = [];
+      // Calculate quote-to-job conversion rate
+      final clientsWithQuotes = clientStats.values.where((s) => (s['quoteCount'] as int) > 0).length;
+      final clientsWithJobsFromQuotes = clientStats.values.where((s) => 
+        (s['quoteCount'] as int) > 0 && (s['jobCount'] as int) > 0
+      ).length;
+      final quoteToJobConversionRate = clientsWithQuotes > 0 
+          ? (clientsWithJobsFromQuotes / clientsWithQuotes) * 100 
+          : 0.0;
+
+      // Calculate average agents per client
+      final totalAgents = clientAgentMap.values.fold<int>(0, (sum, agents) => sum + agents.length);
+      final averageAgentsPerClient = clientAgentMap.isNotEmpty ? totalAgents / clientAgentMap.length : 0.0;
+
+      // Build TopClient list with all details
+      final allTopClients = <TopClient>[];
+      final now = DateTime.now();
+      
       for (final entry in clientStats.entries) {
         final clientId = entry.key;
         final stats = entry.value;
+        final client = clientDetails[clientId] ?? {};
+        final jobRevenue = stats['jobRevenue'] as double;
+        final quoteValue = stats['quoteValue'] as double;
+        final jobCount = stats['jobCount'] as int;
+        final quoteCount = stats['quoteCount'] as int;
+        final conversionRate = quoteCount > 0 ? (jobCount / quoteCount) * 100 : null;
+        final avgJobValue = jobCount > 0 ? jobRevenue / jobCount : null;
+        final avgQuoteValue = quoteCount > 0 ? quoteValue / quoteCount : null;
+        final agentCount = clientAgentMap[clientId]?.length;
+        final lastActivity = clientLastActivity[clientId];
+        final daysSinceLastActivity = lastActivity != null ? now.difference(lastActivity).inDays : null;
         
-        // Get client name
-        final client = clientsResponse.firstWhere(
-          (c) => c['id'].toString() == clientId,
-          orElse: () => {'company_name': 'Unknown Client'},
-        );
-        
-        topClients.add(TopClient(
+        allTopClients.add(TopClient(
           clientId: clientId,
           clientName: client['company_name'] ?? 'Unknown Client',
-          jobCount: stats['jobCount'],
-          quoteCount: stats['quoteCount'],
-          totalValue: stats['jobRevenue'] + stats['quoteValue'],
+          clientStatus: client['status'] as String?,
+          jobCount: jobCount,
+          quoteCount: quoteCount,
+          jobRevenue: jobRevenue,
+          quoteValue: quoteValue,
+          totalValue: jobRevenue + quoteValue,
+          conversionRate: conversionRate,
+          averageJobValue: avgJobValue,
+          averageQuoteValue: avgQuoteValue,
+          agentCount: agentCount,
+          lastActivityDate: lastActivity,
+          daysSinceLastActivity: daysSinceLastActivity,
         ));
       }
-      
-      // Sort by total value and take top 5
-      topClients.sort((a, b) => b.totalValue.compareTo(a.totalValue));
-      final top5Clients = topClients.take(5).toList();
 
-      final clientInsights = ClientInsights(
+      // Sort and create top lists
+      final topClientsByTotal = List<TopClient>.from(allTopClients);
+      topClientsByTotal.sort((a, b) => b.totalValue.compareTo(a.totalValue));
+      
+      final topClientsByJobs = List<TopClient>.from(allTopClients);
+      topClientsByJobs.sort((a, b) => b.jobCount.compareTo(a.jobCount));
+      
+      final topClientsByRevenue = List<TopClient>.from(allTopClients);
+      topClientsByRevenue.sort((a, b) => b.jobRevenue.compareTo(a.jobRevenue));
+      
+      final topClientsByQuotes = List<TopClient>.from(allTopClients);
+      topClientsByQuotes.sort((a, b) => b.quoteValue.compareTo(a.quoteValue));
+      
+      final topClientsByConversion = List<TopClient>.from(allTopClients.where((c) => c.conversionRate != null));
+      topClientsByConversion.sort((a, b) => (b.conversionRate ?? 0).compareTo(a.conversionRate ?? 0));
+
+      // Identify at-risk clients (no activity in 30+ days)
+      final atRiskClientsList = <AtRiskClient>[];
+      for (final clientId in clientDetails.keys) {
+        final lastActivity = clientLastActivity[clientId];
+        if (lastActivity != null) {
+          final daysSince = now.difference(lastActivity).inDays;
+          if (daysSince >= 30) {
+            final allTimeStats = clientAllTimeStats[clientId] ?? {'jobCount': 0, 'jobRevenue': 0.0};
+            final allTimeQuotes = allTimeQuotesResponse.where((q) => q['client_id'].toString() == clientId).length;
+            final client = clientDetails[clientId] ?? {};
+            atRiskClientsList.add(AtRiskClient(
+              clientId: clientId,
+              clientName: client['company_name'] ?? 'Unknown Client',
+              lastActivityDate: lastActivity,
+              daysSinceLastActivity: daysSince,
+              totalJobs: allTimeStats['jobCount'] as int,
+              totalQuotes: allTimeQuotes,
+              lifetimeValue: allTimeStats['jobRevenue'] as double,
+            ));
+          }
+        }
+      }
+      atRiskClientsList.sort((a, b) => b.daysSinceLastActivity.compareTo(a.daysSinceLastActivity));
+
+      // Identify new clients (first activity in period)
+      final newClientsList = <NewClient>[];
+      for (final entry in clientStats.entries) {
+        final clientId = entry.key;
+        final firstActivity = clientFirstActivity[clientId];
+        if (firstActivity != null && 
+            firstActivity.isAfter(dateRange.start.subtract(const Duration(days: 1))) &&
+            firstActivity.isBefore(dateRange.end.add(const Duration(days: 1)))) {
+          final stats = entry.value;
+          final client = clientDetails[clientId] ?? {};
+          newClientsList.add(NewClient(
+            clientId: clientId,
+            clientName: client['company_name'] ?? 'Unknown Client',
+            firstActivityDate: firstActivity,
+            jobCount: stats['jobCount'] as int,
+            quoteCount: stats['quoteCount'] as int,
+            revenue: (stats['jobRevenue'] as double) + (stats['quoteValue'] as double),
+          ));
+        }
+      }
+
+      // Build top agents list
+      final topAgentsList = <TopAgent>[];
+      for (final entry in agentStats.entries) {
+        final agentId = entry.key;
+        final stats = entry.value;
+        final agent = agentsResponse.firstWhere(
+          (a) => a['id'].toString() == agentId,
+          orElse: () => {'agent_name': 'Unknown Agent'},
+        );
+        final clientId = stats['clientId'] as String;
+        final client = clientDetails[clientId] ?? {};
+        topAgentsList.add(TopAgent(
+          agentId: agentId,
+          agentName: agent['agent_name'] ?? 'Unknown Agent',
+          clientId: clientId,
+          clientName: client['company_name'] ?? 'Unknown Client',
+          jobCount: stats['jobCount'] as int,
+          quoteCount: stats['quoteCount'] as int,
+          totalValue: stats['totalValue'] as double,
+        ));
+      }
+      topAgentsList.sort((a, b) => b.totalValue.compareTo(a.totalValue));
+
+      final insights = ClientInsights(
         totalClients: totalClients,
-        activeClients: totalClients, // All clients are considered active
+        activeClients: activeClients,
+        vipClients: vipClients,
+        pendingClients: pendingClients,
+        inactiveClients: inactiveClients,
+        newClients: newClientsList.length,
+        atRiskClients: atRiskClientsList.length,
         averageJobsPerClient: averageJobsPerClient,
         averageRevenuePerClient: averageRevenuePerClient,
-        topClients: top5Clients,
+        averageJobValuePerClient: averageJobValuePerClient,
+        averageQuoteValuePerClient: averageQuoteValuePerClient,
+        averageQuotesPerClient: averageQuotesPerClient,
+        quoteToJobConversionRate: quoteToJobConversionRate,
+        averageAgentsPerClient: averageAgentsPerClient,
+        topClients: topClientsByTotal.take(5).toList(),
+        topClientsByJobs: topClientsByJobs.take(5).toList(),
+        topClientsByRevenue: topClientsByRevenue.take(5).toList(),
+        topClientsByQuotes: topClientsByQuotes.take(5).toList(),
+        topClientsByConversionRate: topClientsByConversion.take(5).toList(),
+        atRiskClientsList: atRiskClientsList.take(10).toList(),
+        newClientsList: newClientsList,
+        topAgents: topAgentsList.take(10).toList(),
+        clientsByStatus: clientsByStatus,
+        revenueByStatus: revenueByStatus,
+        jobsByStatus: jobsByStatus,
+        quotesByStatus: quotesByStatus,
+        clientsByTier: clientsByTier,
+        revenueByTier: revenueByTier,
       );
 
-      Log.d('Client insights with location filter: ${clientInsights.totalClients} clients, ${clientInsights.averageJobsPerClient.toStringAsFixed(1)} avg jobs');
-      return Result.success(clientInsights);
+      Log.d('Client insights with location filter: ${insights.totalClients} clients, ${insights.averageJobsPerClient.toStringAsFixed(1)} avg jobs');
+      return Result.success(insights);
     } catch (error) {
       Log.e('Error fetching client insights with location filter: $error');
       return _mapSupabaseError(error);
@@ -1215,28 +2331,10 @@ class InsightsRepository {
     try {
       Log.d('Fetching financial insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
+      // Map location filter to branch_id
+      final branchId = _locationFilterToBranchId(location);
 
-      // Total revenue in period with location filter
+      // Total revenue in period with branch filter
       var revenueQuery = _supabase
           .from('jobs')
           .select('amount')
@@ -1244,21 +2342,21 @@ class InsightsRepository {
           .lte('created_at', dateRange.end.toIso8601String())
           .not('amount', 'is', null);
       
-      if (locationFilter != null) {
-        revenueQuery = revenueQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        revenueQuery = revenueQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        revenueQuery = revenueQuery.isFilter('location', null);
+        revenueQuery = revenueQuery.isFilter('branch_id', null);
       }
       
       final revenueResponse = await revenueQuery;
       
-      Log.d('Revenue query with location filter returned ${revenueResponse.length} records');
+      Log.d('Revenue query with branch filter returned ${revenueResponse.length} records');
 
       final totalRevenue = revenueResponse
           .where((r) => r['amount'] != null)
           .fold<double>(0.0, (sum, r) => sum + (r['amount'] as num).toDouble());
 
-      // Revenue this week with location filter
+      // Revenue this week with branch filter
       final weekStart = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
       var weekRevenueQuery = _supabase
           .from('jobs')
@@ -1266,15 +2364,15 @@ class InsightsRepository {
           .gte('created_at', weekStart.toIso8601String())
           .not('amount', 'is', null);
       
-      if (locationFilter != null) {
-        weekRevenueQuery = weekRevenueQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        weekRevenueQuery = weekRevenueQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        weekRevenueQuery = weekRevenueQuery.isFilter('location', null);
+        weekRevenueQuery = weekRevenueQuery.isFilter('branch_id', null);
       }
       
       final revenueThisWeekResponse = await weekRevenueQuery;
 
-      // Revenue this month with location filter
+      // Revenue this month with branch filter
       final monthStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
       var monthRevenueQuery = _supabase
           .from('jobs')
@@ -1282,10 +2380,10 @@ class InsightsRepository {
           .gte('created_at', monthStart.toIso8601String())
           .not('amount', 'is', null);
       
-      if (locationFilter != null) {
-        monthRevenueQuery = monthRevenueQuery.eq('location', locationFilter);
+      if (branchId != null) {
+        monthRevenueQuery = monthRevenueQuery.eq('branch_id', branchId);
       } else if (location == LocationFilter.unspecified) {
-        monthRevenueQuery = monthRevenueQuery.isFilter('location', null);
+        monthRevenueQuery = monthRevenueQuery.isFilter('branch_id', null);
       }
       
       final revenueThisMonthResponse = await monthRevenueQuery;
@@ -1536,10 +2634,17 @@ class InsightsRepository {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
+    final yesterday = today.subtract(const Duration(days: 1));
 
     switch (period) {
       case TimePeriod.today:
         return DateRange(today, today.add(const Duration(days: 1)));
+      case TimePeriod.yesterday:
+        return DateRange(yesterday, yesterday.add(const Duration(days: 1)));
+      case TimePeriod.last3Days:
+        // Last 3 days: yesterday + 2 days before (3 days total ending at yesterday)
+        final threeDaysAgo = yesterday.subtract(const Duration(days: 2));
+        return DateRange(threeDaysAgo, yesterday.add(const Duration(days: 1)));
       case TimePeriod.thisWeek:
         final weekStart = today.subtract(Duration(days: today.weekday - 1));
         return DateRange(weekStart, weekStart.add(const Duration(days: 7)));

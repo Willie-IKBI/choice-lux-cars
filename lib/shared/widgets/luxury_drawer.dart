@@ -45,6 +45,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     String displayName,
     userProfile,
   ) {
+    final isAdmin = userProfile?.isAdmin ?? false;
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -169,8 +170,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                     ],
                   ),
 
-                  // Administration Section (Role-based)
-                  if (userProfile?.role == 'administrator') ...[
+                  // Administration Section (Role-based) - Admin and Super Admin
+                  if (isAdmin) ...[
                     _buildMobileMenuSection(
                       title: 'Administration',
                       items: [
@@ -249,6 +250,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     String displayName,
     userProfile,
   ) {
+    final isAdmin = userProfile?.isAdmin ?? false;
     return Drawer(
       width: 280,
       child: Container(
@@ -360,8 +362,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       ],
                     ),
 
-                    // Administration Section (Role-based)
-                    if (userProfile?.role == 'administrator') ...[
+                    // Administration Section (Role-based) - Admin and Super Admin
+                    if (isAdmin) ...[
                       _buildMenuSection(
                         title: 'Administration',
                         items: [

@@ -91,8 +91,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
     // Check if user can create vouchers based on role
     final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userProfile?.isAdmin ?? false;
     final canCreateVoucher =
-            userRole == 'administrator' ||
+            isAdmin ||
     userRole == 'manager' ||
     userRole == 'driver_manager' ||
     userRole == 'drivermanager';

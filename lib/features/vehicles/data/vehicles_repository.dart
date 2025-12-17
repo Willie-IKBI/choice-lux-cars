@@ -16,14 +16,25 @@ class VehiclesRepository {
   VehiclesRepository(this._supabase);
 
   /// Fetch all vehicles from the database
-  Future<Result<List<Vehicle>>> fetchVehicles() async {
+  /// 
+  /// [branchId] - Optional branch ID to filter vehicles. If null (admin), returns all vehicles.
+  /// If provided (non-admin), returns only vehicles assigned to that branch.
+  Future<Result<List<Vehicle>>> fetchVehicles({int? branchId}) async {
     try {
-      Log.d('Fetching vehicles from database');
+      if (branchId != null) {
+        Log.d('Fetching vehicles from database for branch: $branchId');
+      } else {
+        Log.d('Fetching all vehicles from database (admin access)');
+      }
 
-      final response = await _supabase
-          .from('vehicles')
-          .select()
-          .order('make', ascending: true);
+      var query = _supabase.from('vehicles').select();
+
+      // Filter by branch_id if provided (non-admin user)
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      final response = await query.order('make', ascending: true);
 
       Log.d('Fetched ${response.length} vehicles from database');
 

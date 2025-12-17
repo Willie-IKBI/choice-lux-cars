@@ -34,6 +34,7 @@ import 'package:choice_lux_cars/features/users/users_screen.dart';
 import 'package:choice_lux_cars/features/users/user_detail_screen.dart';
 import 'package:choice_lux_cars/features/users/user_profile_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
+import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
@@ -263,7 +264,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
               cancelReason: null,
               cancelledBy: null,
               cancelledAt: null,
-              location: '',
+              branchId: null,
               createdBy: '',
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
@@ -333,6 +334,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/notifications',
           name: 'notifications',
           builder: (context, state) => const NotificationListScreen(),
+        ),
+        GoRoute(
+          path: '/notification-settings',
+          name: 'notification-settings',
+          builder: (context, state) => const NotificationPreferencesScreen(),
         ),
         GoRoute(
           path: '/insights',

@@ -2,23 +2,34 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 /// Notifier for managing vehicles state using AsyncNotifier
 class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
-  late final VehiclesRepository _vehiclesRepository;
+  /// Get the vehicles repository
+  VehiclesRepository get _vehiclesRepository => ref.read(vehiclesRepositoryProvider);
 
   @override
   Future<List<Vehicle>> build() async {
-    _vehiclesRepository = ref.watch(vehiclesRepositoryProvider);
-    return _fetchVehicles();
+    // Watch current user to get branchId for filtering
+    final currentUser = ref.watch(currentUserProfileProvider);
+    final branchId = currentUser?.branchId;
+    
+    return _fetchVehicles(branchId: branchId);
   }
 
   /// Fetch all vehicles from the repository
-  Future<List<Vehicle>> _fetchVehicles() async {
+  /// 
+  /// [branchId] - Optional branch ID to filter vehicles. If null (admin), returns all vehicles.
+  Future<List<Vehicle>> _fetchVehicles({int? branchId}) async {
     try {
-      Log.d('Fetching vehicles...');
+      if (branchId != null) {
+        Log.d('Fetching vehicles for branch: $branchId');
+      } else {
+        Log.d('Fetching all vehicles (admin access)');
+      }
 
-      final result = await _vehiclesRepository.fetchVehicles();
+      final result = await _vehiclesRepository.fetchVehicles(branchId: branchId);
 
       if (result.isSuccess) {
         final vehicles = result.data!;

@@ -11,6 +11,7 @@ class Vehicle {
   final DateTime licenseExpiryDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+  final int? branchId; // Branch allocation for vehicle. Required for non-admin operations. NULL temporarily allowed for existing vehicles until manually assigned.
 
   Vehicle({
     this.id,
@@ -24,6 +25,7 @@ class Vehicle {
     required this.licenseExpiryDate,
     this.createdAt,
     this.updatedAt,
+    this.branchId,
   });
 
   factory Vehicle.fromJson(Map<String, dynamic> json) => Vehicle(
@@ -46,6 +48,9 @@ class Vehicle {
     updatedAt: json['updated_at'] != null
         ? DateTime.parse(json['updated_at'])
         : null,
+    branchId: json['branch_id'] != null
+        ? int.tryParse(json['branch_id'].toString())
+        : null,
   );
 
   Map<String, dynamic> toJson() => {
@@ -60,5 +65,6 @@ class Vehicle {
     'license_expiry_date': licenseExpiryDate.toIso8601String(),
     'created_at': createdAt?.toIso8601String(),
     'updated_at': updatedAt?.toIso8601String(),
+    if (branchId != null) 'branch_id': branchId,
   };
 }

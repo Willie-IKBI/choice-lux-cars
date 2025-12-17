@@ -11,6 +11,7 @@ import 'dart:io';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/features/clients/widgets/branch_management_modal.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
@@ -270,6 +271,14 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             },
             isMobile: isMobile,
           ),
+
+          // Manage Branches Section (only for existing clients)
+          if (widget.client != null && widget.client!.id != null) ...[
+            const SizedBox(height: 24),
+            _buildSectionTitle('Branches', isMobile),
+            const SizedBox(height: 16),
+            _buildManageBranchesButton(isMobile),
+          ],
 
           const SizedBox(height: 32),
 
@@ -675,6 +684,50 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Future<void> _showManageBranchesModal() async {
+    if (widget.client?.id == null) return;
+
+    await showDialog(
+      context: context,
+      builder: (context) => BranchManagementModal(
+        clientId: widget.client!.id!,
+        clientName: widget.client!.companyName,
+      ),
+    );
+  }
+
+  Widget _buildManageBranchesButton(bool isMobile) {
+    return OutlinedButton.icon(
+      onPressed: _showManageBranchesModal,
+      icon: Icon(
+        Icons.business,
+        color: ChoiceLuxTheme.richGold,
+        size: isMobile ? 18 : 20,
+      ),
+      label: Text(
+        'Manage Branches',
+        style: TextStyle(
+          color: ChoiceLuxTheme.richGold,
+          fontSize: isMobile ? 14 : 16,
+          fontWeight: FontWeight.w500,
+        ),
+      ),
+      style: OutlinedButton.styleFrom(
+        side: BorderSide(
+          color: ChoiceLuxTheme.richGold,
+          width: 1.5,
+        ),
+        padding: EdgeInsets.symmetric(
+          horizontal: isMobile ? 16 : 24,
+          vertical: isMobile ? 12 : 16,
+        ),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
       ),
     );
   }

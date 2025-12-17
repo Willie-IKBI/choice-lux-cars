@@ -395,7 +395,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             return QuoteCard(
               quote: quote,
               onTap: () => context.go('/quotes/${quote.id ?? ''}'),
-              context: context,
             );
           },
         ),

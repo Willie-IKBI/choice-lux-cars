@@ -12,6 +12,8 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
 
 class QuoteDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
@@ -434,6 +436,22 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
           children: [
             _buildInfoRow('Job Date', _formatDate(_quote!.jobDate)),
             _buildInfoRow('Location', _quote!.location ?? 'Not specified'),
+            // Branch Name (if exists)
+            if (_quote!.branchId != null)
+              FutureBuilder<ClientBranch?>(
+                future: ref.read(clientsRepositoryProvider).fetchBranchById(int.tryParse(_quote!.branchId!) ?? 0).then((result) => result.data),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return _buildInfoRow('Branch', 'Loading...');
+                  }
+                  
+                  if (snapshot.hasData && snapshot.data != null) {
+                    return _buildInfoRow('Branch', snapshot.data!.branchName);
+                  }
+                  
+                  return const SizedBox.shrink();
+                },
+              ),
             _buildInfoRow(
               'Vehicle Type',
               _quote!.vehicleType ?? 'Not specified',

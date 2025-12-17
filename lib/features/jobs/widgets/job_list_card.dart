@@ -14,6 +14,9 @@ import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
 import 'package:choice_lux_cars/shared/utils/date_utils.dart' as app_date_utils;
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
+import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
 
 class JobListCard extends ConsumerWidget {
   final Job job;
@@ -88,7 +91,7 @@ class JobListCard extends ConsumerWidget {
             SizedBox(height: spacing),
 
             // 2. Client Details (Primary)
-            _buildClientDetails(context, spacing, currentJob),
+            _buildClientDetails(context, ref, spacing, currentJob),
 
             SizedBox(height: spacing),
 
@@ -189,7 +192,7 @@ class JobListCard extends ConsumerWidget {
   }
 
   // 2. Client Details (Primary)
-  Widget _buildClientDetails(BuildContext context, double spacing, Job currentJob) {
+  Widget _buildClientDetails(BuildContext context, WidgetRef ref, double spacing, Job currentJob) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -213,29 +216,82 @@ class JobListCard extends ConsumerWidget {
         SizedBox(height: spacing * 0.5),
 
         // Location (Secondary) - Show branch location with better formatting
-        Row(
-          children: [
-            Icon(
-              Icons.location_on,
-              size: isSmallMobile ? 14 : 16,
-              color: ChoiceLuxTheme.platinumSilver,
-            ),
-            SizedBox(width: spacing * 0.25),
-            Expanded(
-              child: Text(
-                _formatLocation(currentJob.location),
-                style: TextStyle(
-                  fontSize: isSmallMobile ? 12 : 14,
-                  color: ChoiceLuxTheme.platinumSilver,
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-          ],
-        ),
+        if (currentJob.branchId != null)
+          Consumer(
+            builder: (context, ref, child) {
+              final branchesAsync = ref.watch(branchesProvider);
+              return branchesAsync.when(
+                loading: () => const SizedBox.shrink(),
+                error: (_, __) => const SizedBox.shrink(),
+                data: (branches) {
+                  final branch = branches.where((b) => b.id == currentJob.branchId).firstOrNull;
+                  if (branch == null) return const SizedBox.shrink();
+                  
+                  return Row(
+                    children: [
+                      Icon(
+                        Icons.location_on,
+                        size: isSmallMobile ? 14 : 16,
+                        color: ChoiceLuxTheme.platinumSilver,
+                      ),
+                      SizedBox(width: spacing * 0.25),
+                      Expanded(
+                        child: Text(
+                          branch.name,
+                          style: TextStyle(
+                            fontSize: isSmallMobile ? 12 : 14,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  );
+                },
+              );
+            },
+          ),
 
         SizedBox(height: spacing * 0.25),
+
+        // Branch Name (if exists)
+        if (currentJob.branchId != null)
+          FutureBuilder<ClientBranch?>(
+            future: ref.read(clientsRepositoryProvider).fetchBranchById(currentJob.branchId!).then((result) => result.data),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const SizedBox.shrink(); // Don't show anything while loading
+              }
+              
+              if (snapshot.hasData && snapshot.data != null) {
+                return Padding(
+                  padding: EdgeInsets.only(bottom: spacing * 0.25),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.business,
+                        size: isSmallMobile ? 12 : 14,
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                      ),
+                      SizedBox(width: spacing * 0.25),
+                      Text(
+                        snapshot.data!.branchName,
+                        style: TextStyle(
+                          fontSize: isSmallMobile ? 11 : 12,
+                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                );
+              }
+              
+              return const SizedBox.shrink();
+            },
+          ),
 
         // Date (Tertiary)
         Row(
@@ -688,25 +744,7 @@ class JobListCard extends ConsumerWidget {
 
   // Helper Methods
 
-  String _formatLocation(String? location) {
-    if (location == null || location.isEmpty) {
-      return 'Location not specified';
-    }
-    
-    // Convert branch codes to full names for better readability
-    switch (location.toUpperCase()) {
-      case 'JHB':
-        return 'Johannesburg';
-      case 'CPT':
-        return 'Cape Town';
-      case 'DBN':
-        return 'Durban';
-      case 'PTA':
-        return 'Pretoria';
-      default:
-        return location; // Return as-is if not a known code
-    }
-  }
+  // Removed _formatLocation - now using branchId with branches provider
 
   Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref, Job currentJob) async {
     try {

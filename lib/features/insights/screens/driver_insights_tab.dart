@@ -7,11 +7,15 @@ import 'package:choice_lux_cars/app/theme.dart';
 class DriverInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
   final LocationFilter selectedLocation;
+  final DateTime? customStartDate;
+  final DateTime? customEndDate;
 
   const DriverInsightsTab({
     super.key,
     required this.selectedPeriod,
     required this.selectedLocation,
+    this.customStartDate,
+    this.customEndDate,
   });
 
   @override
@@ -19,6 +23,8 @@ class DriverInsightsTab extends ConsumerWidget {
     final driverInsightsAsync = ref.watch(driverInsightsProvider((
       selectedPeriod,
       selectedLocation,
+      customStartDate,
+      customEndDate,
     )));
 
     return Container(

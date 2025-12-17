@@ -4,9 +4,9 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 
 /// Provider for financial insights data
-final financialInsightsProvider = FutureProvider.family<FinancialInsights, (TimePeriod, LocationFilter)>((ref, params) async {
+final financialInsightsProvider = FutureProvider.family<FinancialInsights, (TimePeriod, LocationFilter, DateTime?, DateTime?)>((ref, params) async {
   final repository = ref.watch(insightsRepositoryProvider);
-  final (period, location) = params;
+  final (period, location, customStartDate, customEndDate) = params;
   
   print('FinancialInsightsProvider - Fetching financial insights for period: ${period.displayName}, location: ${location.displayName}');
   
@@ -14,6 +14,8 @@ final financialInsightsProvider = FutureProvider.family<FinancialInsights, (Time
     final result = await repository.fetchFinancialInsights(
       period: period,
       location: location,
+      customStartDate: customStartDate,
+      customEndDate: customEndDate,
     );
     
     if (result.isSuccess) {

@@ -3,15 +3,21 @@ import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/users/data/users_repository.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 /// Notifier for managing users state using AsyncNotifier
 class UsersNotifier extends AsyncNotifier<List<User>> {
-  late final UsersRepository _repo = ref.read(usersRepositoryProvider);
+  /// Get the users repository
+  UsersRepository get _repo => ref.read(usersRepositoryProvider);
 
   @override
   Future<List<User>> build() async {
-    // Fetch all users (adjust filter if needed)
-    final result = await _repo.fetchUsers();
+    // Watch current user to get branchId for filtering
+    final currentUser = ref.watch(currentUserProfileProvider);
+    final branchId = currentUser?.branchId;
+    
+    // Fetch users filtered by branch (admin sees all, non-admin sees only their branch)
+    final result = await _repo.fetchUsers(branchId: branchId);
     if (result.isSuccess) {
       return result.data!;
     } else {
@@ -22,7 +28,11 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
   Future<void> fetchUsers() async {
     state = const AsyncLoading();
     state = await AsyncValue.guard(() async {
-      final result = await _repo.fetchUsers();
+      // Get current user branchId for filtering
+      final currentUser = ref.read(currentUserProfileProvider);
+      final branchId = currentUser?.branchId;
+      
+      final result = await _repo.fetchUsers(branchId: branchId);
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -37,6 +47,24 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
   }
 
   Future<void> updateUser(User user) async {
+    // Check if role is being changed - only super_admin can change roles
+    final currentUser = ref.read(currentUserProfileProvider);
+    final isSuperAdmin = currentUser != null && 
+        currentUser.role != null && 
+        currentUser.role!.toLowerCase() == 'super_admin';
+    
+    // Get existing user to check if role changed
+    final existingUsers = state.value ?? [];
+    final existingUser = existingUsers.firstWhere(
+      (u) => u.id == user.id,
+      orElse: () => user,
+    );
+    
+    // If role is being changed and user is not super_admin, throw error
+    if (existingUser.role != user.role && !isSuperAdmin) {
+      throw Exception('Only Super Administrators can assign or change user roles');
+    }
+    
     await _repo.updateUser(user);
     await fetchUsers();
   }
@@ -117,11 +145,11 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
 
 /// Notifier for managing users by role using FamilyAsyncNotifier
 class UsersByRoleNotifier extends FamilyAsyncNotifier<List<User>, String> {
-  late final UsersRepository _usersRepository;
+  /// Get the users repository
+  UsersRepository get _usersRepository => ref.read(usersRepositoryProvider);
 
   @override
   Future<List<User>> build(String role) async {
-    _usersRepository = ref.watch(usersRepositoryProvider);
     return _fetchUsersByRole(role);
   }
 

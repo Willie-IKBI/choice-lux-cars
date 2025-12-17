@@ -20,6 +20,7 @@ class UserProfile {
   final String? kinNumber;
   final String? profileImage;
   final String? status;
+  final int? branchId; // Branch allocation: NULL = Admin/National (can see all branches), non-null = specific branch assignment
 
   UserProfile({
     required this.id,
@@ -31,6 +32,7 @@ class UserProfile {
     this.kinNumber,
     this.profileImage,
     this.status,
+    this.branchId,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
@@ -44,11 +46,43 @@ class UserProfile {
       kinNumber: map['kin_number'],
       profileImage: map['profile_image'],
       status: map['status'],
+      branchId: map['branch_id'] != null ? int.tryParse(map['branch_id'].toString()) : null,
     );
   }
 
   String get displayNameOrEmail =>
       displayName?.isNotEmpty == true ? displayName! : 'User';
+
+  /// Check if user is an administrator (includes both administrator and super_admin)
+  bool get isAdmin {
+    final roleLower = role?.toLowerCase();
+    return roleLower == 'administrator' || roleLower == 'super_admin';
+  }
+
+  /// Check if user is a super administrator
+  bool get isSuperAdmin {
+    return role?.toLowerCase() == 'super_admin';
+  }
+
+  /// Check if user is a manager
+  bool get isManager {
+    return role?.toLowerCase() == 'manager';
+  }
+
+  /// Check if user is a driver manager
+  bool get isDriverManager {
+    return role?.toLowerCase() == 'driver_manager';
+  }
+
+  /// Check if user is a driver
+  bool get isDriver {
+    return role?.toLowerCase() == 'driver';
+  }
+
+  /// Check if user has national access (admin or super_admin with no branch assignment)
+  bool get hasNationalAccess {
+    return isAdmin && branchId == null;
+  }
 }
 
 // Auth state notifier
@@ -110,7 +144,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             }
           } else if (session == null && state.value != null) {
             // Session lost but we had a user - try to recover
-            Log.w('Session lost but user was logged in, attempting recovery...');
+            Log.d('Session lost but user was logged in, attempting recovery...');
             _attemptSessionRecovery();
           }
         },
@@ -122,7 +156,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
             Log.d('Error occurred but session still exists, maintaining state');
             state = AsyncValue.data(currentSession.user);
           } else {
-            Log.w('Error occurred and no session, attempting recovery...');
+            Log.d('Error occurred and no session, attempting recovery...');
             _attemptSessionRecovery();
           }
         },
@@ -217,7 +251,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
           return;
         }
       } catch (refreshError) {
-        Log.w('Session refresh failed: $refreshError');
+        Log.d('Session refresh failed: $refreshError');
       }
 
       // If refresh failed, try remember me auto-login
@@ -240,7 +274,7 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
       }
 
       // If all recovery attempts failed, set to not authenticated
-      Log.w('Session recovery failed, user must log in again');
+      Log.d('Session recovery failed, user must log in again');
       state = const AsyncValue.data(null);
     } catch (error) {
       Log.e('Error during session recovery: $error');

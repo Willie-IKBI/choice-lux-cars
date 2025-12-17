@@ -60,21 +60,21 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
       // Get date range from time period
       final dateRange = _getDateRange(widget.timePeriod);
 
-      // Map location filter to location string
-      String? location;
+      // Map location filter to branch_id
+      int? branchId;
       switch (widget.location) {
         case LocationFilter.jhb:
-          location = 'Jhb';
+          branchId = 3; // Johannesburg
           break;
         case LocationFilter.cpt:
-          location = 'Cpt';
+          branchId = 2; // Cape Town
           break;
         case LocationFilter.dbn:
-          location = 'Dbn';
+          branchId = 1; // Durban
           break;
         case LocationFilter.all:
         case LocationFilter.unspecified:
-          location = null;
+          branchId = null;
           break;
       }
 
@@ -88,7 +88,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
       final result = await repository.fetchJobsWithInsightsFilters(
         startDate: dateRange.start,
         endDate: dateRange.end,
-        location: location,
+        branchId: branchId,
         status: widget.status,
         limit: _itemsPerPage,
         offset: offset,
@@ -121,10 +121,17 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final tomorrow = today.add(const Duration(days: 1));
+    final yesterday = today.subtract(const Duration(days: 1));
 
     switch (period) {
       case TimePeriod.today:
         return DateRange(today, today.add(const Duration(days: 1)));
+      case TimePeriod.yesterday:
+        return DateRange(yesterday, yesterday.add(const Duration(days: 1)));
+      case TimePeriod.last3Days:
+        // Last 3 days: yesterday + 2 days before (3 days total ending at yesterday)
+        final threeDaysAgo = yesterday.subtract(const Duration(days: 2));
+        return DateRange(threeDaysAgo, yesterday.add(const Duration(days: 1)));
       case TimePeriod.thisWeek:
         final weekStart = today.subtract(Duration(days: today.weekday - 1));
         return DateRange(weekStart, weekStart.add(const Duration(days: 7)));

@@ -1,20 +1,22 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher_string.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
 
-class QuoteCard extends StatelessWidget {
+class QuoteCard extends ConsumerWidget {
   final Quote quote;
   final VoidCallback? onTap;
-  final BuildContext context;
 
-  const QuoteCard({super.key, required this.quote, this.onTap, required this.context});
+  const QuoteCard({super.key, required this.quote, this.onTap});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
@@ -86,7 +88,7 @@ class QuoteCard extends StatelessWidget {
                 ),
 
                 // Trip Details
-                _buildTripDetails(isMobile, isSmallMobile),
+                _buildTripDetails(context, ref, isMobile, isSmallMobile),
 
                 SizedBox(
                   height: isSmallMobile
@@ -97,7 +99,7 @@ class QuoteCard extends StatelessWidget {
                 ),
 
                 // Footer with Amount and Action
-                _buildFooter(isMobile, isSmallMobile),
+                _buildFooter(context, isMobile, isSmallMobile),
               ],
             ),
           ),
@@ -300,7 +302,7 @@ class QuoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTripDetails(bool isMobile, bool isSmallMobile) {
+  Widget _buildTripDetails(BuildContext context, WidgetRef ref, bool isMobile, bool isSmallMobile) {
     return Row(
       children: [
         Expanded(
@@ -365,6 +367,53 @@ class QuoteCard extends StatelessWidget {
                   ),
                 ],
               ),
+              // Branch Name (if exists)
+              if (quote.branchId != null)
+                FutureBuilder<ClientBranch?>(
+                  future: ref.read(clientsRepositoryProvider).fetchBranchById(int.tryParse(quote.branchId!) ?? 0).then((result) => result.data),
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const SizedBox.shrink();
+                    }
+                    
+                    if (snapshot.hasData && snapshot.data != null) {
+                      return Padding(
+                        padding: EdgeInsets.only(top: isSmallMobile ? 4 : isMobile ? 6 : 8),
+                        child: Row(
+                          children: [
+                            Icon(
+                              Icons.business,
+                              size: isSmallMobile
+                                  ? 12
+                                  : isMobile
+                                  ? 14
+                                  : 16,
+                              color: ChoiceLuxTheme.platinumSilver,
+                            ),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                snapshot.data!.branchName,
+                                style: TextStyle(
+                                  fontSize: isSmallMobile
+                                      ? 11
+                                      : isMobile
+                                      ? 12
+                                      : 13,
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                          ],
+                        ),
+                      );
+                    }
+                    
+                    return const SizedBox.shrink();
+                  },
+                ),
             ],
           ),
         ),
@@ -419,7 +468,7 @@ class QuoteCard extends StatelessWidget {
     );
   }
 
-  Widget _buildFooter(bool isMobile, bool isSmallMobile) {
+  Widget _buildFooter(BuildContext context, bool isMobile, bool isSmallMobile) {
     return Row(
       children: [
         // View Details Button

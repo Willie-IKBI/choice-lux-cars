@@ -18,15 +18,20 @@ class JobsRepository {
   JobsRepository(this._supabase);
 
   /// Fetch jobs based on user role and permissions
+  /// 
+  /// [branchId] - Optional branch ID to filter jobs. If null (admin), returns all jobs.
+  /// If provided (non-admin), returns only jobs assigned to that branch.
   Future<Result<List<Job>>> fetchJobs({
     String? userId,
     String? userRole,
+    int? branchId, // Optional branch filter
   }) async {
     try {
-      Log.d('Fetching jobs for user: $userId with role: $userRole');
+      Log.d('Fetching jobs for user: $userId with role: $userRole${branchId != null ? ' (branch: $branchId)' : ''}');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+      if (userId == null && !isAdmin && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -34,9 +39,9 @@ class JobsRepository {
       PostgrestFilterBuilder query = _supabase.from('jobs').select();
 
       // Apply role-based filtering
-      if (userRole == 'administrator') {
-        // Administrators see all jobs
-        Log.d('Administrator access - fetching all jobs');
+      if (isAdmin) {
+        // Administrators and super_admin see all jobs
+        Log.d('Admin/Super Admin access - fetching all jobs');
       } else if ((userRole == 'manager' || userRole == 'driver_manager') &&
           userId != null) {
         // Managers and driver_managers see jobs they manage or drive
@@ -52,6 +57,14 @@ class JobsRepository {
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
       }
+
+      // Apply branch filtering (after role-based filtering, before ordering)
+      if (branchId != null) {
+        // Non-admin user: filter by their branch
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering jobs by branch_id: $branchId');
+      }
+      // Admin (branchId == null): no branch filter, see all jobs
 
       final response = await query.order('created_at', ascending: false);
 
@@ -74,9 +87,10 @@ class JobsRepository {
   }
 
   /// Create a new job
+  /// Includes branch_id if provided (from Job model's toJson/toMap method)
   Future<Result<Map<String, dynamic>>> createJob(Job job) async {
     try {
-      Log.d('Creating job: ${job.passengerName}');
+      Log.d('Creating job: ${job.passengerName}${job.branchId != null ? ' (branch: ${job.branchId})' : ''}');
 
       final response = await _supabase
           .from('jobs')
@@ -111,9 +125,10 @@ class JobsRepository {
   }
 
   /// Update an existing job
+  /// Includes branch_id if provided (from Job model's toJson/toMap method)
   Future<Result<void>> updateJob(Job job) async {
     try {
-      Log.d('Updating job: ${job.id}');
+      Log.d('Updating job: ${job.id}${job.branchId != null ? ' (branch: ${job.branchId})' : ''}');
 
       // Get the current job to check for driver changes
       final currentJobResponse = await _supabase
@@ -306,7 +321,8 @@ class JobsRepository {
       Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+      if (userId == null && !isAdmin && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -317,7 +333,7 @@ class JobsRepository {
           .eq('status', status);
 
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (isAdmin || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all jobs with status: $status');
         // No additional filtering needed
@@ -369,16 +385,19 @@ class JobsRepository {
   }
 
   /// Get jobs by client with role-based filtering
+  /// Optionally filter by branch_id if provided
   Future<Result<List<Job>>> getJobsByClient(
     String clientId, {
     String? userId,
     String? userRole,
+    int? branchId, // Optional branch filter
   }) async {
     try {
-      Log.d('Fetching jobs for client: $clientId for user: $userId with role: $userRole');
+      Log.d('Fetching jobs for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+      if (userId == null && !isAdmin && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -388,8 +407,14 @@ class JobsRepository {
           .select('*')
           .eq('client_id', clientId);
 
+      // Filter by branch_id if provided
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering jobs by branch_id: $branchId');
+      }
+
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (isAdmin || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all jobs for client: $clientId');
         // No additional filtering needed
@@ -409,7 +434,7 @@ class JobsRepository {
 
       final response = await query.order('created_at', ascending: false);
 
-      Log.d('Fetched ${response.length} jobs for client: $clientId for user: $userId with role: $userRole');
+      Log.d('Fetched ${response.length} jobs for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole');
 
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
@@ -420,13 +445,15 @@ class JobsRepository {
   }
 
   /// Get completed jobs by client with role-based filtering
+  /// Optionally filter by branch_id if provided
   Future<Result<List<Job>>> getCompletedJobsByClient(
     String clientId, {
     String? userId,
     String? userRole,
+    int? branchId, // Optional branch filter
   }) async {
     try {
-      Log.d('Fetching completed jobs for client: $clientId for user: $userId with role: $userRole');
+      Log.d('Fetching completed jobs for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
       if (userId == null && userRole != 'administrator' && userRole != 'manager') {
@@ -439,6 +466,12 @@ class JobsRepository {
           .select('*')
           .eq('client_id', clientId)
           .eq('job_status', 'completed');
+
+      // Filter by branch_id if provided
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering completed jobs by branch_id: $branchId');
+      }
 
       // Apply role-based filtering based on confirmed requirements
       if (userRole == 'administrator' || userRole == 'manager') {
@@ -461,7 +494,7 @@ class JobsRepository {
 
       final response = await query.order('created_at', ascending: false);
 
-      Log.d('Fetched ${response.length} completed jobs for client: $clientId for user: $userId with role: $userRole');
+      Log.d('Fetched ${response.length} completed jobs for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole');
 
       final jobs = response.map((json) => Job.fromJson(json)).toList();
       return Result.success(jobs);
@@ -472,16 +505,19 @@ class JobsRepository {
   }
 
   /// Get completed jobs revenue by client with role-based filtering
+  /// Optionally filter by branch_id if provided
   Future<Result<double>> getCompletedJobsRevenueByClient(
     String clientId, {
     String? userId,
     String? userRole,
+    int? branchId, // Optional branch filter
   }) async {
     try {
-      Log.d('Fetching completed jobs revenue for client: $clientId for user: $userId with role: $userRole');
+      Log.d('Fetching completed jobs revenue for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+      if (userId == null && !isAdmin && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success(0.0);
       }
@@ -493,8 +529,14 @@ class JobsRepository {
           .eq('job_status', 'completed')
           .not('amount', 'is', null);
 
+      // Filter by branch_id if provided
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering revenue by branch_id: $branchId');
+      }
+
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (isAdmin || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all completed jobs revenue for client: $clientId');
         // No additional filtering needed
@@ -515,7 +557,7 @@ class JobsRepository {
       final response = await query;
 
       Log.d(
-        'Fetched ${response.length} completed jobs with revenue for client: $clientId for user: $userId with role: $userRole',
+        'Fetched ${response.length} completed jobs with revenue for client: $clientId${branchId != null ? ' (branch: $branchId)' : ''} for user: $userId with role: $userRole',
       );
 
       double totalRevenue = 0.0;
@@ -597,11 +639,12 @@ class JobsRepository {
   Future<Result<Map<String, dynamic>>> fetchJobsWithInsightsFilters({
     required DateTime startDate,
     required DateTime endDate,
-    String? location, // 'Jhb', 'Cpt', 'Dbn', or null for all
+    String? location, // 'Jhb', 'Cpt', 'Dbn', or null for all (deprecated - use branchId)
+    int? branchId, // branch_id for filtering (preferred over location)
     String? status, // 'all', 'completed', 'open' (everything except completed/cancelled)
     int limit = 12,
     int offset = 0,
-    String? managerId, // restrict to manager’s jobs when provided
+    String? managerId, // restrict to manager's jobs when provided
   }) async {
     try {
       Log.d('Fetching jobs with insights filters: startDate=$startDate, endDate=$endDate, location=$location, status=$status, limit=$limit, offset=$offset');
@@ -656,9 +699,26 @@ class JobsRepository {
         jobsQuery = jobsQuery.eq('manager_id', managerId);
       }
 
-      // Filter by location (branch location)
-      if (location != null && location.isNotEmpty) {
-        jobsQuery = jobsQuery.eq('location', location);
+      // Filter by branch_id (preferred) or fallback to location string for backward compatibility
+      if (branchId != null) {
+        jobsQuery = jobsQuery.eq('branch_id', branchId);
+      } else if (location != null && location.isNotEmpty) {
+        // Map location string to branch_id for backward compatibility
+        int? mappedBranchId;
+        switch (location) {
+          case 'Jhb':
+            mappedBranchId = 3; // Johannesburg
+            break;
+          case 'Cpt':
+            mappedBranchId = 2; // Cape Town
+            break;
+          case 'Dbn':
+            mappedBranchId = 1; // Durban
+            break;
+        }
+        if (mappedBranchId != null) {
+          jobsQuery = jobsQuery.eq('branch_id', mappedBranchId);
+        }
       }
 
       // Filter by status

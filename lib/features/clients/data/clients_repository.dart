@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:choice_lux_cars/core/supabase/supabase_client_provider.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
@@ -260,6 +261,126 @@ class ClientsRepository {
       return const Result.success(null);
     } catch (error) {
       Log.e('Error permanently deleting client: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Fetch all branches for a client (active branches only)
+  Future<Result<List<ClientBranch>>> fetchBranchesByClientId(int clientId) async {
+    try {
+      Log.d('Fetching branches for client ID: $clientId');
+
+      final response = await _supabase
+          .from('client_branches')
+          .select()
+          .eq('client_id', clientId)
+          .isFilter('deleted_at', null) // Only fetch active branches
+          .order('branch_name', ascending: true);
+
+      Log.d('Fetched ${response.length} branches for client $clientId');
+
+      final branches = response.map((json) => ClientBranch.fromJson(json)).toList();
+      return Result.success(branches);
+    } catch (error) {
+      Log.e('Error fetching branches for client: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Fetch a branch by ID
+  Future<Result<ClientBranch?>> fetchBranchById(int branchId) async {
+    try {
+      Log.d('Fetching branch by ID: $branchId');
+
+      final response = await _supabase
+          .from('client_branches')
+          .select()
+          .eq('id', branchId)
+          .isFilter('deleted_at', null) // Only fetch active branches
+          .maybeSingle();
+
+      if (response == null) {
+        Log.d('Branch not found: $branchId');
+        return const Result.success(null);
+      }
+
+      final branch = ClientBranch.fromJson(response);
+      Log.d('Fetched branch: ${branch.branchName}');
+      return Result.success(branch);
+    } catch (error) {
+      Log.e('Error fetching branch by ID: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Create a new branch for a client
+  Future<Result<ClientBranch>> createBranch({
+    required int clientId,
+    required String branchName,
+  }) async {
+    try {
+      Log.d('Creating branch "$branchName" for client ID: $clientId');
+
+      final branchData = {
+        'client_id': clientId,
+        'branch_name': branchName.trim(),
+      };
+
+      final response = await _supabase
+          .from('client_branches')
+          .insert(branchData)
+          .select()
+          .single();
+
+      Log.d('Branch created successfully with ID: ${response['id']}');
+      return Result.success(ClientBranch.fromJson(response));
+    } catch (error) {
+      Log.e('Error creating branch: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Update an existing branch
+  Future<Result<ClientBranch>> updateBranch({
+    required int branchId,
+    required String branchName,
+  }) async {
+    try {
+      Log.d('Updating branch ID: $branchId');
+
+      final branchData = {
+        'branch_name': branchName.trim(),
+      };
+
+      final response = await _supabase
+          .from('client_branches')
+          .update(branchData)
+          .eq('id', branchId)
+          .select()
+          .single();
+
+      Log.d('Branch updated successfully');
+      return Result.success(ClientBranch.fromJson(response));
+    } catch (error) {
+      Log.e('Error updating branch: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Soft delete a branch (set deleted_at timestamp)
+  Future<Result<void>> deleteBranch(int branchId) async {
+    try {
+      Log.d('Deleting branch ID: $branchId');
+
+      await _supabase
+          .from('client_branches')
+          .update({'deleted_at': DateTime.now().toIso8601String()})
+          .eq('id', branchId);
+
+      Log.d('Branch deleted successfully');
+      return const Result.success(null);
+    } catch (error) {
+      Log.e('Error deleting branch: $error');
       return _mapSupabaseError(error);
     }
   }

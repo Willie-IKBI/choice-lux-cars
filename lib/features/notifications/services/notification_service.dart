@@ -254,28 +254,38 @@ class NotificationService {
 
       Log.d('Created notification: ${response['id']}');
 
-      // Call Edge Function directly to send push notification
-      try {
-        final payload = {
-          'type': 'INSERT',
-          'table': 'app_notifications',
-          'record': response,
-          'schema': 'public',
-          'old_record': null,
-        };
-        
-        Log.d('Sending payload to Edge Function: $payload');
-        
-        final result = await _supabase.functions.invoke(
-          'push-notifications',
-          body: payload,
-        );
-        
-        Log.d('Edge Function response: $result');
-        Log.d('Push notification sent via Edge Function');
-      } catch (pushError) {
-        Log.e('Error sending push notification: $pushError');
-        // Don't rethrow - notification was created successfully
+      // Check user preferences before sending push notification
+      final pushEnabled = await isPushNotificationEnabled(
+        userId: userId,
+        notificationType: notificationType,
+      );
+
+      if (pushEnabled) {
+        // Call Edge Function directly to send push notification
+        try {
+          final payload = {
+            'type': 'INSERT',
+            'table': 'app_notifications',
+            'record': response,
+            'schema': 'public',
+            'old_record': null,
+          };
+          
+          Log.d('Sending payload to Edge Function: $payload');
+          
+          final result = await _supabase.functions.invoke(
+            'push-notifications',
+            body: payload,
+          );
+          
+          Log.d('Edge Function response: $result');
+          Log.d('Push notification sent via Edge Function');
+        } catch (pushError) {
+          Log.e('Error sending push notification: $pushError');
+          // Don't rethrow - notification was created successfully
+        }
+      } else {
+        Log.d('Push notification skipped - user has disabled $notificationType');
       }
 
       return app_notification.AppNotification.fromJson(response);
@@ -296,6 +306,22 @@ class NotificationService {
     int? badge,
   }) async {
     try {
+      // Extract notification type from data if available
+      final notificationType = data?['notification_type'] as String?;
+      
+      // Check user preferences if notification type is provided
+      if (notificationType != null) {
+        final pushEnabled = await isPushNotificationEnabled(
+          userId: userId,
+          notificationType: notificationType,
+        );
+        
+        if (!pushEnabled) {
+          Log.d('Push notification skipped - user has disabled $notificationType');
+          return {'skipped': true, 'reason': 'user_preference_disabled'};
+        }
+      }
+
       final response = await _supabase.functions.invoke(
         'push-notifications',
         body: {
@@ -579,6 +605,38 @@ class NotificationService {
     }
   }
 
+  /// Check if user has push notifications enabled for a specific notification type
+  /// Returns true if enabled, false if disabled, defaults to true if preference not set
+  Future<bool> isPushNotificationEnabled({
+    required String userId,
+    required String notificationType,
+  }) async {
+    try {
+      final profileResponse = await _supabase
+          .from('profiles')
+          .select('notification_prefs')
+          .eq('id', userId)
+          .single();
+
+      final prefs = profileResponse['notification_prefs'] as Map<String, dynamic>?;
+      
+      if (prefs == null || prefs.isEmpty) {
+        // Default to enabled if preferences not set
+        return true;
+      }
+
+      // Check if this notification type is explicitly disabled
+      final isEnabled = prefs[notificationType] as bool?;
+      
+      // Default to true if key doesn't exist (backward compatibility)
+      return isEnabled ?? true;
+    } catch (e) {
+      Log.e('Error checking notification preference: $e');
+      // Default to enabled on error (fail open)
+      return true;
+    }
+  }
+
   /// Get real-time notifications stream
   Stream<List<app_notification.AppNotification>> getNotificationsStream({
     bool unreadOnly = false,
@@ -723,6 +781,38 @@ class NotificationService {
     }
   }
 
+  /// Static helper to check if user has push notifications enabled for a notification type
+  static Future<bool> isPushNotificationEnabledStatic({
+    required String userId,
+    required String notificationType,
+  }) async {
+    try {
+      final supabase = Supabase.instance.client;
+      final profileResponse = await supabase
+          .from('profiles')
+          .select('notification_prefs')
+          .eq('id', userId)
+          .single();
+
+      final prefs = profileResponse['notification_prefs'] as Map<String, dynamic>?;
+      
+      if (prefs == null || prefs.isEmpty) {
+        // Default to enabled if preferences not set
+        return true;
+      }
+
+      // Check if this notification type is explicitly disabled
+      final isEnabled = prefs[notificationType] as bool?;
+      
+      // Default to true if key doesn't exist (backward compatibility)
+      return isEnabled ?? true;
+    } catch (e) {
+      Log.e('Error checking notification preference: $e');
+      // Default to enabled on error (fail open)
+      return true;
+    }
+  }
+
   /// Send job start notification to administrators, managers, and driver managers
   static Future<void> sendJobStartNotification({
     required int jobId,
@@ -734,11 +824,11 @@ class NotificationService {
     try {
       final supabase = Supabase.instance.client;
 
-      // Get all administrators, managers, and driver managers
+      // Get all administrators, super admins, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =
@@ -764,20 +854,30 @@ class NotificationService {
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
         }).select().single();
 
-        // Send push notification via Edge Function
-        try {
-          await supabase.functions.invoke(
-            'push-notifications',
-            body: {
-              'type': 'INSERT',
-              'table': 'app_notifications',
-              'record': notification,
-              'schema': 'public',
-              'old_record': null,
-            },
-          );
-        } catch (pushError) {
-          Log.e('Error sending push notification for job start: $pushError');
+        // Check user preferences before sending push notification
+        final pushEnabled = await isPushNotificationEnabledStatic(
+          userId: user['id'],
+          notificationType: 'job_start',
+        );
+
+        if (pushEnabled) {
+          // Send push notification via Edge Function
+          try {
+            await supabase.functions.invoke(
+              'push-notifications',
+              body: {
+                'type': 'INSERT',
+                'table': 'app_notifications',
+                'record': notification,
+                'schema': 'public',
+                'old_record': null,
+              },
+            );
+          } catch (pushError) {
+            Log.e('Error sending push notification for job start: $pushError');
+          }
+        } else {
+          Log.d('Push notification skipped for user ${user['id']} - job_start disabled');
         }
       }
 
@@ -797,11 +897,11 @@ class NotificationService {
     try {
       final supabase = Supabase.instance.client;
 
-      // Get all administrators, managers, and driver managers
+      // Get all administrators, super admins, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final stepDisplayName = _getStepDisplayName(stepName);
@@ -828,20 +928,30 @@ class NotificationService {
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
         }).select().single();
 
-        // Send push notification via Edge Function
-        try {
-          await supabase.functions.invoke(
-            'push-notifications',
-            body: {
-              'type': 'INSERT',
-              'table': 'app_notifications',
-              'record': notification,
-              'schema': 'public',
-              'old_record': null,
-            },
-          );
-        } catch (pushError) {
-          Log.e('Error sending push notification for step completion: $pushError');
+        // Check user preferences before sending push notification
+        final pushEnabled = await isPushNotificationEnabledStatic(
+          userId: user['id'],
+          notificationType: 'step_completion',
+        );
+
+        if (pushEnabled) {
+          // Send push notification via Edge Function
+          try {
+            await supabase.functions.invoke(
+              'push-notifications',
+              body: {
+                'type': 'INSERT',
+                'table': 'app_notifications',
+                'record': notification,
+                'schema': 'public',
+                'old_record': null,
+              },
+            );
+          } catch (pushError) {
+            Log.e('Error sending push notification for step completion: $pushError');
+          }
+        } else {
+          Log.d('Push notification skipped for user ${user['id']} - step_completion disabled');
         }
       }
 
@@ -864,11 +974,11 @@ class NotificationService {
     try {
       final supabase = Supabase.instance.client;
 
-      // Get all administrators, managers, and driver managers
+      // Get all administrators, super admins, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =
@@ -894,20 +1004,30 @@ class NotificationService {
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
         }).select().single();
 
-        // Send push notification via Edge Function
-        try {
-          await supabase.functions.invoke(
-            'push-notifications',
-            body: {
-              'type': 'INSERT',
-              'table': 'app_notifications',
-              'record': notification,
-              'schema': 'public',
-              'old_record': null,
-            },
-          );
-        } catch (pushError) {
-          Log.e('Error sending push notification for job completion: $pushError');
+        // Check user preferences before sending push notification
+        final pushEnabled = await isPushNotificationEnabledStatic(
+          userId: user['id'],
+          notificationType: 'job_completion',
+        );
+
+        if (pushEnabled) {
+          // Send push notification via Edge Function
+          try {
+            await supabase.functions.invoke(
+              'push-notifications',
+              body: {
+                'type': 'INSERT',
+                'table': 'app_notifications',
+                'record': notification,
+                'schema': 'public',
+                'old_record': null,
+              },
+            );
+          } catch (pushError) {
+            Log.e('Error sending push notification for job completion: $pushError');
+          }
+        } else {
+          Log.d('Push notification skipped for user ${user['id']} - job_completion disabled');
         }
       }
 
@@ -949,11 +1069,11 @@ class NotificationService {
         } catch (_) {}
       }
 
-      // Get all administrators, managers, and driver managers
+      // Get all administrators, super admins, managers, and driver managers
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =
@@ -977,20 +1097,30 @@ class NotificationService {
           'updated_at': SATimeUtils.getCurrentSATimeISO(),
         }).select().single();
 
-        // Send push notification via Edge Function
-        try {
-          await supabase.functions.invoke(
-            'push-notifications',
-            body: {
-              'type': 'INSERT',
-              'table': 'app_notifications',
-              'record': notification,
-              'schema': 'public',
-              'old_record': null,
-            },
-          );
-        } catch (pushError) {
-          Log.e('Error sending push notification for job confirmation: $pushError');
+        // Check user preferences before sending push notification
+        final pushEnabled = await isPushNotificationEnabledStatic(
+          userId: user['id'],
+          notificationType: 'job_confirmation',
+        );
+
+        if (pushEnabled) {
+          // Send push notification via Edge Function
+          try {
+            await supabase.functions.invoke(
+              'push-notifications',
+              body: {
+                'type': 'INSERT',
+                'table': 'app_notifications',
+                'record': notification,
+                'schema': 'public',
+                'old_record': null,
+              },
+            );
+          } catch (pushError) {
+            Log.e('Error sending push notification for job confirmation: $pushError');
+          }
+        } else {
+          Log.d('Push notification skipped for user ${user['id']} - job_confirmation disabled');
         }
       }
 

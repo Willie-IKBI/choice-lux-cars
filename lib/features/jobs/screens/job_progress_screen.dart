@@ -38,7 +38,7 @@ class JobProgressScreen extends ConsumerStatefulWidget {
   ConsumerState<JobProgressScreen> createState() => _JobProgressScreenState();
 }
 
-class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
+class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isUpdating = false;
   Map<String, dynamic>? _jobProgress;
@@ -204,12 +204,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadJobProgress();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Refresh job progress when app is resumed
+      Log.d('App resumed, refreshing job progress');
+      _loadJobProgress();
+    }
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    // Refresh job progress when screen becomes active
+    _loadJobProgress();
+    
     // Check if all steps are completed and update job status if needed
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndUpdateJobStatus();

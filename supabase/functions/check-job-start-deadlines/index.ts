@@ -86,11 +86,16 @@ serve(async (req) => {
           continue
         }
 
-        // Get all users with the target role
+        // Get all users with the target role (including notification preferences)
+        // For administrator role, also include super_admin
+        const rolesToQuery = recipient_role === 'administrator' 
+          ? ['administrator', 'super_admin']
+          : [recipient_role]
+        
         const { data: recipients, error: recipientsError } = await supabase
           .from('profiles')
-          .select('id, role')
-          .eq('role', recipient_role)
+          .select('id, role, notification_prefs')
+          .in('role', rolesToQuery)
           .eq('status', 'active')
 
         if (recipientsError) {
@@ -135,21 +140,29 @@ serve(async (req) => {
             continue
           }
 
-          // Trigger push notification via webhook (existing push-notifications Edge Function)
-          try {
-            await supabase.functions.invoke('push-notifications', {
-              body: {
-                'type': 'INSERT',
-                'table': 'app_notifications',
-                'record': notification,
-                'schema': 'public',
-                'old_record': null,
-              },
-            })
-            notifiedCount++
-          } catch (pushError) {
-            console.error(`Error sending push notification for job ${job_id}:`, pushError)
-            // Don't fail the whole process if push fails
+          // Check user preferences before sending push notification
+          const prefs = recipient.notification_prefs as Record<string, boolean> | null
+          const pushEnabled = prefs?.[notification_type] !== false // Default to true if not set
+          
+          if (pushEnabled) {
+            // Trigger push notification via webhook (existing push-notifications Edge Function)
+            try {
+              await supabase.functions.invoke('push-notifications', {
+                body: {
+                  'type': 'INSERT',
+                  'table': 'app_notifications',
+                  'record': notification,
+                  'schema': 'public',
+                  'old_record': null,
+                },
+              })
+              notifiedCount++
+            } catch (pushError) {
+              console.error(`Error sending push notification for job ${job_id}:`, pushError)
+              // Don't fail the whole process if push fails
+            }
+          } else {
+            console.log(`Push notification skipped for user ${recipient.id} - ${notification_type} disabled`)
           }
         }
 

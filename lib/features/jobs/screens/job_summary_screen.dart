@@ -18,6 +18,7 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
 import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
 import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
 import 'package:choice_lux_cars/features/users/data/users_repository.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
@@ -42,7 +43,7 @@ class JobSummaryScreen extends ConsumerStatefulWidget {
   ConsumerState<JobSummaryScreen> createState() => _JobSummaryScreenState();
 }
 
-class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
+class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
   bool _isConfirming = false; // Prevent duplicate confirmation calls
   String? _errorMessage;
@@ -74,7 +75,24 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _loadJobData();
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed && mounted) {
+      // Refresh job data when app is resumed
+      Log.d('App resumed, refreshing job data');
+      _refreshJobData();
+    }
   }
 
   @override
@@ -85,6 +103,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     
     // Refresh trips when screen is focused/opened
     _refreshTrips();
+    
+    // Refresh job data when screen becomes active
+    _refreshJobData();
   }
   
   Future<void> _refreshTrips() async {
@@ -94,6 +115,25 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       Log.d('Trips refreshed on screen focus');
     } catch (e) {
       Log.e('Error refreshing trips on screen focus: $e');
+    }
+  }
+
+  Future<void> _refreshJobData() async {
+    try {
+      // Fetch fresh job data for this specific job
+      final jobsNotifier = ref.read(jobsProvider.notifier);
+      final fetchedJob = await jobsNotifier.fetchJobById(widget.jobId);
+      
+      if (fetchedJob != null && mounted) {
+        setState(() {
+          _job = fetchedJob;
+        });
+        // Reload related entities
+        await _loadRelatedEntities();
+        Log.d('Job data refreshed on screen focus');
+      }
+    } catch (e) {
+      Log.e('Error refreshing job data on screen focus: $e');
     }
   }
 
@@ -758,6 +798,30 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             _agent['agent_name'] ?? 'Unknown',
             Icons.person_outline,
           ),
+        // Branch Name (if exists)
+        if (_job!.branchId != null)
+          FutureBuilder<ClientBranch?>(
+            future: ref.read(clientsRepositoryProvider).fetchBranchById(_job!.branchId!).then((result) => result.data),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return _buildDetailRow(
+                  'Branch',
+                  'Loading...',
+                  Icons.business,
+                );
+              }
+              
+              if (snapshot.hasData && snapshot.data != null) {
+                return _buildDetailRow(
+                  'Branch',
+                  snapshot.data!.branchName,
+                  Icons.business,
+                );
+              }
+              
+              return const SizedBox.shrink();
+            },
+          ),
         _buildDetailRow(
           'Passenger Name',
           _job!.passengerName ?? 'Not provided',
@@ -1302,6 +1366,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         'completed'; // Default to completed for backward compatibility
     final isCompleted = status == 'completed';
     final isCurrent = status == 'current';
+    final stepColor = step['color'] as Color?;
+    // Use step color if provided, otherwise use default colors
+    final totalColor = stepColor ?? Colors.indigo;
     final isUpcoming = status == 'upcoming';
 
     return Padding(
@@ -1314,7 +1381,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             height: 40,
             decoration: BoxDecoration(
               color: isTotal
-                  ? Colors.indigo.withValues(alpha:0.2)
+                  ? totalColor.withValues(alpha:0.2)
                   : isCurrent
                   ? ChoiceLuxTheme.richGold.withValues(alpha:0.2)
                   : isCompleted
@@ -1323,7 +1390,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               borderRadius: BorderRadius.circular(20),
               border: Border.all(
                 color: isTotal
-                    ? Colors.indigo.withValues(alpha:0.5)
+                    ? totalColor.withValues(alpha:0.5)
                     : isCurrent
                     ? ChoiceLuxTheme.richGold.withValues(alpha:0.5)
                     : isCompleted
@@ -1335,7 +1402,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             child: Icon(
               step['icon'],
               color: isTotal
-                  ? Colors.indigo
+                  ? totalColor
                   : isCurrent
                   ? ChoiceLuxTheme.richGold
                   : isCompleted
@@ -1360,7 +1427,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               ? FontWeight.w700
                               : FontWeight.bold,
                           color: isTotal
-                              ? Colors.indigo
+                              ? totalColor
                               : isCurrent
                               ? ChoiceLuxTheme.richGold
                               : isCompleted
@@ -1567,12 +1634,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                     decoration: BoxDecoration(
                       color: isTotal
-                          ? Colors.indigo.withValues(alpha:0.1)
+                          ? totalColor.withValues(alpha:0.1)
                           : Colors.grey.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(4),
                       border: Border.all(
                         color: isTotal
-                            ? Colors.indigo.withValues(alpha:0.3)
+                            ? totalColor.withValues(alpha:0.3)
                             : Colors.grey.withValues(alpha:0.3),
                       ),
                     ),
@@ -1581,7 +1648,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       style: TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
-                        color: isTotal ? Colors.indigo : Colors.white,
+                        color: isTotal ? totalColor : Colors.white,
                       ),
                     ),
                   ),
@@ -1853,10 +1920,20 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.attach_money,
-                color: ChoiceLuxTheme.richGold,
-                size: 24,
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha:0.15),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'R',
+                  style: TextStyle(
+                    color: Colors.black,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 16,
+                  ),
+                ),
               ),
               const SizedBox(width: 12),
               Text(
@@ -2003,7 +2080,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final isAssignedDriver = _job?.driverId == currentUser?.id;
     final isConfirmed =
         _job?.isConfirmed == true || _job?.driverConfirmation == true;
-    final isAdmin = currentUser?.role?.toLowerCase() == 'administrator';
+    final isAdmin = currentUser?.isAdmin ?? false;
     final isManager = currentUser?.role?.toLowerCase() == 'manager';
     final isCancelled = _job?.status == 'cancelled';
     final needsConfirmation = isAssignedDriver && !isConfirmed && !isCancelled;
@@ -2161,7 +2238,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final isAssignedDriver = _job?.driverId == currentUser?.id;
     final isConfirmed =
         _job?.isConfirmed == true || _job?.driverConfirmation == true;
-    final isAdmin = currentUser?.role?.toLowerCase() == 'administrator';
+    final isAdmin = currentUser?.isAdmin ?? false;
     final isManager = currentUser?.role?.toLowerCase() == 'manager';
     final isCancelled = _job?.status == 'cancelled';
     final needsConfirmation = isAssignedDriver && !isConfirmed && !isCancelled;
@@ -2715,11 +2792,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           stepData['startOdometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
         } else if (stepId == 'vehicle_return' && endOdo > 0) {
           stepData['endOdometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
-          // Also show total distance if we have both readings
-          if (startOdo > 0 && endOdo > startOdo) {
-            final totalKm = endOdo - startOdo;
-            stepData['totalDistance'] = 'Total: ${totalKm.toStringAsFixed(1)} km';
-          }
+          // Total distance is shown in the separate "Total Distance Traveled" summary section
         }
 
         steps.add(stepData);
@@ -2817,6 +2890,67 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         'color': Colors.indigo,
         'odometer': 'Total: ${totalKm.toStringAsFixed(1)} km',
         'status': 'completed',
+        'isTotal': true,
+      });
+    }
+
+    // Add total time duration if we have both timestamps
+    final vehicleCollectedAt = _driverFlowData?['vehicle_collected_at'];
+    final jobClosedTime = _driverFlowData?['job_closed_time'];
+    
+    if (vehicleCollectedAt != null && jobClosedTime != null) {
+      try {
+        final startTime = DateTime.parse(vehicleCollectedAt);
+        final endTime = DateTime.parse(jobClosedTime);
+        final duration = endTime.difference(startTime);
+        
+        final hours = duration.inHours;
+        final minutes = duration.inMinutes.remainder(60);
+        
+        String timeText;
+        if (hours > 0 && minutes > 0) {
+          timeText = '$hours ${hours == 1 ? 'hour' : 'hours'} and $minutes min';
+        } else if (hours > 0) {
+          timeText = '$hours ${hours == 1 ? 'hour' : 'hours'}';
+        } else if (minutes > 0) {
+          timeText = '$minutes min';
+        } else {
+          timeText = 'Less than 1 min';
+        }
+        
+        steps.add({
+          'title': 'Total Time Duration',
+          'description': 'Time from vehicle collection to job completion',
+          'completedAt': null,
+          'icon': Icons.access_time,
+          'color': Colors.teal,
+          'odometer': 'Total: $timeText',
+          'status': 'completed',
+          'isTotal': true,
+        });
+      } catch (e) {
+        Log.e('Error parsing timestamps for total time: $e');
+        steps.add({
+          'title': 'Total Time Duration',
+          'description': 'Time from vehicle collection to job completion',
+          'completedAt': null,
+          'icon': Icons.access_time,
+          'color': Colors.teal,
+          'odometer': 'Incomplete',
+          'status': 'incomplete',
+          'isTotal': true,
+        });
+      }
+    } else {
+      // Show incomplete if either timestamp is missing
+      steps.add({
+        'title': 'Total Time Duration',
+        'description': 'Time from vehicle collection to job completion',
+        'completedAt': null,
+        'icon': Icons.access_time,
+        'color': Colors.teal,
+        'odometer': 'Incomplete',
+        'status': 'incomplete',
         'isTotal': true,
       });
     }

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
+import 'package:choice_lux_cars/features/notifications/services/notification_preferences_service.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 // Notification State
@@ -659,4 +660,68 @@ final notificationProvider =
 
 final notificationServiceProvider = Provider<NotificationService>((ref) {
   return NotificationService();
+});
+
+// Notification Preferences Provider
+class NotificationPreferencesNotifier extends StateNotifier<AsyncValue<Map<String, bool>>> {
+  NotificationPreferencesNotifier() : super(const AsyncValue.loading()) {
+    _loadPreferences();
+  }
+
+  final NotificationPreferencesService _prefsService = NotificationPreferencesService();
+
+  Future<void> _loadPreferences() async {
+    try {
+      state = const AsyncValue.loading();
+      final prefs = await _prefsService.getPreferences();
+      state = AsyncValue.data(prefs);
+    } catch (e, stackTrace) {
+      Log.e('Error loading notification preferences: $e');
+      state = AsyncValue.error(e, stackTrace);
+    }
+  }
+
+  Future<void> refresh() => _loadPreferences();
+
+  Future<void> updatePreference(String notificationType, bool enabled) async {
+    try {
+      await _prefsService.updatePreference(notificationType, enabled);
+      // Reload preferences to get updated state
+      await _loadPreferences();
+    } catch (e) {
+      Log.e('Error updating notification preference: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> updatePreferences(Map<String, bool> preferences) async {
+    try {
+      await _prefsService.savePreferences(preferences);
+      // Reload preferences to get updated state
+      await _loadPreferences();
+    } catch (e) {
+      Log.e('Error updating notification preferences: $e');
+      rethrow;
+    }
+  }
+
+  Future<void> resetToDefaults() async {
+    try {
+      await _prefsService.resetToDefaults();
+      // Reload preferences to get updated state
+      await _loadPreferences();
+    } catch (e) {
+      Log.e('Error resetting notification preferences: $e');
+      rethrow;
+    }
+  }
+}
+
+final notificationPreferencesProvider =
+    StateNotifierProvider<NotificationPreferencesNotifier, AsyncValue<Map<String, bool>>>((ref) {
+  return NotificationPreferencesNotifier();
+});
+
+final notificationPreferencesServiceProvider = Provider<NotificationPreferencesService>((ref) {
+  return NotificationPreferencesService();
 });

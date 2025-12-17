@@ -282,6 +282,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         } else if (value == 'settings') {
           Log.d('Navigate to Settings');
           context.push('/settings');
+        } else if (value == 'notification_settings') {
+          Log.d('Navigate to Notification Settings');
+          context.push('/notification-settings');
         } else if (value == 'logout') {
           await _showSignOutDialog(context);
         }
@@ -410,6 +413,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Settings',
           value: 'settings',
         ),
+        // Notification Settings - only for super_admin
+        if (userProfile != null && 
+            userProfile.role != null && 
+            userProfile.role!.toLowerCase() == 'super_admin') ...[
+          _buildPopupMenuItem(
+            icon: Icons.notifications_active_outlined,
+            title: 'Notification Settings',
+            value: 'notification_settings',
+          ),
+        ],
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,
@@ -442,6 +455,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         } else if (value == 'settings') {
           Log.d('Navigate to Settings');
           context.push('/settings');
+        } else if (value == 'notification_settings') {
+          Log.d('Navigate to Notification Settings');
+          context.push('/notification-settings');
         } else if (value == 'logout') {
           await _showSignOutDialog(context);
         }
@@ -579,6 +595,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Settings',
           value: 'settings',
         ),
+        // Notification Settings - only for super_admin
+        if (userProfile != null && 
+            userProfile.role != null && 
+            userProfile.role!.toLowerCase() == 'super_admin') ...[
+          _buildPopupMenuItem(
+            icon: Icons.notifications_active_outlined,
+            title: 'Notification Settings',
+            value: 'notification_settings',
+          ),
+        ],
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,

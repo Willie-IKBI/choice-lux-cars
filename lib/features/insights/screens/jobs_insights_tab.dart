@@ -8,11 +8,15 @@ import 'package:choice_lux_cars/app/theme.dart';
 class JobsInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
   final LocationFilter selectedLocation;
+  final DateTime? customStartDate;
+  final DateTime? customEndDate;
 
   const JobsInsightsTab({
     super.key,
     required this.selectedPeriod,
     required this.selectedLocation,
+    this.customStartDate,
+    this.customEndDate,
   });
 
   @override
@@ -20,6 +24,8 @@ class JobsInsightsTab extends ConsumerWidget {
     final jobsInsightsAsync = ref.watch(jobsInsightsProvider((
       selectedPeriod,
       selectedLocation,
+      customStartDate,
+      customEndDate,
     )));
 
     return Container(

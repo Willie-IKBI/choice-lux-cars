@@ -21,14 +21,25 @@ class UsersRepository {
   UsersRepository(this._supabase);
 
   /// Fetch all users from the database
-  Future<Result<List<User>>> fetchUsers() async {
+  /// 
+  /// [branchId] - Optional branch ID to filter users. If null (admin), returns all users.
+  /// If provided (non-admin), returns only users assigned to that branch.
+  Future<Result<List<User>>> fetchUsers({int? branchId}) async {
     try {
-      Log.d('Fetching users from database');
+      if (branchId != null) {
+        Log.d('Fetching users from database for branch: $branchId');
+      } else {
+        Log.d('Fetching all users from database (admin access)');
+      }
 
-      final response = await _supabase
-          .from('profiles')
-          .select()
-          .order('display_name', ascending: true);
+      var query = _supabase.from('profiles').select();
+
+      // Filter by branch_id if provided (non-admin user)
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      final response = await query.order('display_name', ascending: true);
 
       Log.d('Fetched ${response.length} users from database');
 
@@ -187,13 +198,22 @@ class UsersRepository {
   }
 
   /// Update user
+  /// Includes branch_id field which is saved to profiles table
   Future<Result<void>> updateUser(User user) async {
     try {
-      Log.d('Updating user: ${user.id}');
+      Log.d('Updating user: ${user.id}${user.branchId != null ? ' (branch: ${user.branchId})' : ' (National/Admin)'}');
 
       final data = user.toJson();
       // Remove 'id' from update data as it's the primary key and cannot be updated
       data.remove('id');
+      
+      // Ensure branch_id is included if present (null for Admin/National, non-null for branch assignment)
+      if (user.branchId != null) {
+        data['branch_id'] = user.branchId;
+      } else {
+        // Explicitly set to null for Admin/National access
+        data['branch_id'] = null;
+      }
       
       Log.d('Updating with data: $data');
       await _supabase

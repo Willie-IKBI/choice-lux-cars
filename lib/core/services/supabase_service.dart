@@ -191,37 +191,78 @@ class SupabaseService {
   // They are best-effort queries; adjust table/column names if needed
 
   /// Get jobs by client (compat shim)
-  Future<List<Map<String, dynamic>>> getJobsByClient(String clientId) async {
+  Future<List<Map<String, dynamic>>> getJobsByClient(
+    String clientId, {
+    int? branchId, // Optional branch filter
+  }) async {
     final c = Supabase.instance.client;
-    return await c.from('jobs').select().eq('client_id', clientId);
+    var query = c.from('jobs').select().eq('client_id', clientId);
+    
+    // Filter by branch_id if provided
+    if (branchId != null) {
+      query = query.eq('branch_id', branchId);
+    }
+    
+    return await query;
   }
 
   /// Get completed jobs by client (compat shim)
+  /// Optionally filter by branch_id if provided
   Future<List<Map<String, dynamic>>> getCompletedJobsByClient(
-    String clientId,
-  ) async {
+    String clientId, {
+    int? branchId, // Optional branch filter
+  }) async {
     final c = Supabase.instance.client;
-    return await c
+    var query = c
         .from('jobs')
         .select()
         .eq('client_id', clientId)
         .eq('job_status', 'completed');
+    
+    // Filter by branch_id if provided
+    if (branchId != null) {
+      query = query.eq('branch_id', branchId);
+    }
+    
+    return await query;
   }
 
   /// Get quotes by client (compat shim)
-  Future<List<Map<String, dynamic>>> getQuotesByClient(String clientId) async {
+  /// Optionally filter by branch_id if provided
+  Future<List<Map<String, dynamic>>> getQuotesByClient(
+    String clientId, {
+    int? branchId, // Optional branch filter
+  }) async {
     final c = Supabase.instance.client;
-    return await c.from('quotes').select().eq('client_id', clientId);
+    var query = c.from('quotes').select().eq('client_id', clientId);
+    
+    // Filter by branch_id if provided
+    if (branchId != null) {
+      query = query.eq('branch_id', branchId);
+    }
+    
+    return await query;
   }
 
   /// Get completed jobs revenue by client (compat shim)
-  Future<double> getCompletedJobsRevenueByClient(String clientId) async {
+  /// Optionally filter by branch_id if provided
+  Future<double> getCompletedJobsRevenueByClient(
+    String clientId, {
+    int? branchId, // Optional branch filter
+  }) async {
     final c = Supabase.instance.client;
-    final rows = await c
+    var query = c
         .from('jobs')
         .select('amount, job_status')
         .eq('client_id', clientId)
         .eq('job_status', 'completed');
+    
+    // Filter by branch_id if provided
+    if (branchId != null) {
+      query = query.eq('branch_id', branchId);
+    }
+    
+    final rows = await query;
     return rows.fold<double>(
       0.0,
       (sum, r) => sum + ((r['amount'] ?? 0) as num).toDouble(),

@@ -8,6 +8,8 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -28,6 +30,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   late DateTime regDate;
   late DateTime licenseExpiryDate;
   String? vehicleImage;
+  int? branchId; // Branch allocation for vehicle
   bool isLoading = false;
   bool showSuccessMessage = false;
 
@@ -50,6 +53,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     regDate = v?.regDate ?? DateTime.now();
     licenseExpiryDate = v?.licenseExpiryDate ?? DateTime.now();
     vehicleImage = v?.vehicleImage;
+    branchId = v?.branchId;
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -183,6 +187,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           licenseExpiryDate: licenseExpiryDate,
           createdAt: widget.vehicle?.createdAt,
           updatedAt: DateTime.now(),
+          branchId: branchId,
         );
 
         final notifier = ref.read(vehiclesProvider.notifier);
@@ -823,6 +828,70 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: fieldSpacing),
+        // Branch dropdown (only visible to admin)
+        Consumer(
+          builder: (context, ref, child) {
+            final currentUser = ref.watch(currentUserProfileProvider);
+            final isAdmin = currentUser?.isAdmin ?? false;
+            final branchesAsync = ref.watch(branchesProvider);
+
+            if (!isAdmin) {
+              return const SizedBox.shrink(); // Hide branch dropdown for non-admin
+            }
+
+            return branchesAsync.when(
+              loading: () => const SizedBox.shrink(),
+              error: (_, __) => const SizedBox.shrink(),
+              data: (branches) {
+                return DropdownButtonFormField<int>(
+                  isExpanded: true,
+                  value: branchId,
+                  decoration: InputDecoration(
+                    labelText: 'Branch',
+                    hintText: 'Select branch',
+                    labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                    hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                    floatingLabelBehavior: FloatingLabelBehavior.always,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                    ),
+                    errorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                    ),
+                    focusedErrorBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                    ),
+                  ),
+                  items: [
+                    const DropdownMenuItem<int>(
+                      value: null,
+                      child: Text('Not Assigned'),
+                    ),
+                    ...branches.map((branch) {
+                      return DropdownMenuItem<int>(
+                        value: branch.id,
+                        child: Text(branch.name),
+                      );
+                    }),
+                  ],
+                  onChanged: (value) => setState(() => branchId = value),
+                );
+              },
+            );
+          },
         ),
       ],
     );

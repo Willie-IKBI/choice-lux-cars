@@ -15,6 +15,10 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
+import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
+import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
+import 'package:choice_lux_cars/features/branches/models/branch.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
   final String? jobId; // null for create, non-null for edit
@@ -43,13 +47,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   String? _selectedVehicleId;
   String? _selectedDriverId;
   String? _selectedManagerId;
-  String? _selectedLocation; // Branch location (Jhb, Cpt, Dbn)
+  int? _selectedBranchId; // Company branch ID (Durban, Cape Town, Johannesburg)
   DateTime? _selectedJobStartDate;
   bool _collectPayment = false;
   bool _isCancelled = false;
   String? _cancelledReason;
   String? _cancelledById;
   DateTime? _cancelledAt;
+
+  // Branch management
+  List<ClientBranch> _clientBranches = [];
+  bool _isLoadingBranches = false;
 
   // Loading states
   bool _isLoading = false;
@@ -70,7 +78,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     if (_selectedClientId != null) completedFields++;
     if (_selectedVehicleId != null) completedFields++;
     if (_selectedDriverId != null) completedFields++;
-    if (_selectedLocation != null) completedFields++;
+    if (_selectedBranchId != null) completedFields++;
     if (_selectedJobStartDate != null) completedFields++;
     if (_pasCountController.text.isNotEmpty) completedFields++;
     if (_luggageCountController.text.isNotEmpty) completedFields++;
@@ -88,6 +96,48 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     // If editing, load the job data
     if (widget.jobId != null) {
       _loadJobForEditing();
+    } else {
+      // For new jobs, auto-set branch_id for Manager/Driver Manager
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final currentUser = ref.read(currentUserProfileProvider);
+        if (currentUser != null) {
+          final userRole = currentUser.role?.toLowerCase();
+          final isManager = userRole == 'manager';
+          final isDriverManager = userRole == 'driver_manager';
+          
+          if ((isManager || isDriverManager) && currentUser.branchId != null) {
+            setState(() {
+              _selectedBranchId = currentUser.branchId;
+              Log.d('Auto-set branch_id to ${currentUser.branchId} for ${userRole}');
+            });
+          }
+        }
+      });
+    }
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh related data when screen becomes active (e.g., returning from another screen)
+    // This ensures clients, vehicles, drivers are up-to-date
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _refreshRelatedData();
+    });
+  }
+
+  Future<void> _refreshRelatedData() async {
+    try {
+      // Refresh providers to get latest data
+      ref.invalidate(clientsProvider);
+      ref.invalidate(vehiclesProvider);
+      ref.invalidate(usersProvider);
+      
+      // Reload data
+      await _loadData();
+      Log.d('Related data refreshed on screen focus');
+    } catch (e) {
+      Log.e('Error refreshing related data on screen focus: $e');
     }
   }
 
@@ -204,13 +254,21 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       _selectedVehicleId = job.vehicleId;
       _selectedDriverId = job.driverId;
       _selectedManagerId = job.managerId ?? _selectedManagerId;
-      _selectedLocation = job.location;
+      _selectedBranchId = job.branchId; // Load company branch ID
       _selectedJobStartDate = job.jobStartDate;
       _collectPayment = job.collectPayment;
       _isCancelled = job.status.toLowerCase() == 'cancelled';
       _cancelledReason = job.cancelReason;
       _cancelledById = job.cancelledBy;
       _cancelledAt = job.cancelledAt;
+
+      // Load branches for the client
+      if (job.clientId != null) {
+        final clientIdInt = int.tryParse(job.clientId);
+        if (clientIdInt != null) {
+          _loadClientBranches(clientIdInt);
+        }
+      }
 
       _passengerNameController.text = job.passengerName ?? '';
       _passengerContactController.text = job.passengerContact ?? '';
@@ -252,8 +310,49 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     setState(() {
       _selectedClientId = clientId;
       _selectedAgentId = null;
+      _selectedBranchId = null; // Reset branch when client changes
       _showClientDropdown = false;
     });
+    // Fetch branches for the selected client
+    if (clientId != null) {
+      _loadClientBranches(int.tryParse(clientId) ?? 0);
+    } else {
+      setState(() {
+        _clientBranches = [];
+      });
+    }
+  }
+
+  Future<void> _loadClientBranches(int clientId) async {
+    if (clientId == 0) return;
+
+    setState(() {
+      _isLoadingBranches = true;
+    });
+
+    try {
+      final repository = ref.read(clientsRepositoryProvider);
+      final result = await repository.fetchBranchesByClientId(clientId);
+
+      if (result.isSuccess) {
+        setState(() {
+          _clientBranches = result.data!;
+          _isLoadingBranches = false;
+        });
+      } else {
+        Log.e('Error loading branches: ${result.error!.message}');
+        setState(() {
+          _clientBranches = [];
+          _isLoadingBranches = false;
+        });
+      }
+    } catch (e) {
+      Log.e('Error loading branches: $e');
+      setState(() {
+        _clientBranches = [];
+        _isLoadingBranches = false;
+      });
+    }
   }
 
   Future<void> _selectJobStartDate() async {
@@ -294,7 +393,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       if (currentUser == null) throw Exception('User not authenticated');
       final userRole = currentUser.role?.toLowerCase();
       final isManager = userRole == 'manager';
-      final isAdmin = userRole == 'administrator';
+      final isAdmin = currentUser.isAdmin;
 
       final isEditing = widget.jobId != null;
 
@@ -329,6 +428,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           throw Exception('Manager assignment is required.');
         }
 
+        // Determine branch_id: Manager/Driver Manager use their branchId, Admin uses selected branch
+        final effectiveBranchId = (isManager || userRole == 'driver_manager')
+            ? currentUser.branchId ?? _selectedBranchId ?? existingJob.branchId
+            : _selectedBranchId ?? existingJob.branchId;
+
         final updatedJob = Job(
           id: existingJob.id,
           clientId: _selectedClientId!,
@@ -336,6 +440,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           vehicleId: _selectedVehicleId!,
           driverId: _selectedDriverId!,
           managerId: effectiveManagerId,
+          branchId: effectiveBranchId, // Company branch ID
           jobStartDate: _selectedJobStartDate!,
           orderDate: existingJob.orderDate,
           passengerName: _passengerNameController.text.trim().isEmpty
@@ -354,7 +459,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               ? double.tryParse(_paymentAmountController.text)
               : existingJob.paymentAmount,
           status: existingJob.status,
-          location: _selectedLocation,
           createdBy: existingJob.createdBy,
           createdAt: existingJob.createdAt,
           driverConfirmation: isDriverChanged
@@ -383,6 +487,16 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           throw Exception('Please select a manager before continuing.');
         }
 
+        // Determine branch_id: Manager/Driver Manager use their branchId, Admin uses selected branch
+        final effectiveBranchId = (isManager || userRole == 'driver_manager')
+            ? currentUser.branchId ?? _selectedBranchId
+            : _selectedBranchId;
+
+        // Validate branch_id (required unless admin with National access)
+        if (effectiveBranchId == null && !isAdmin) {
+          throw Exception('Branch assignment is required. Please ensure your user profile has a branch assigned.');
+        }
+
         final job = Job(
           id: 0, // Let database auto-generate the ID
           clientId: _selectedClientId!,
@@ -390,6 +504,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           vehicleId: _selectedVehicleId!,
           driverId: _selectedDriverId!,
           managerId: managerId,
+          branchId: effectiveBranchId, // Company branch ID
           jobStartDate: _selectedJobStartDate!,
           orderDate: DateTime.now(),
           passengerName: _passengerNameController.text.trim().isEmpty
@@ -407,7 +522,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           paymentAmount:
               null, // Amount will be completed later in transport details
           status: 'open',
-          location: _selectedLocation,
           createdBy: currentUser.id,
           createdAt: DateTime.now(),
           driverConfirmation: false, // Set to false when creating new job
@@ -680,7 +794,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                           users.value ?? []; // Show all users regardless of role
                       final currentUser = ref.watch(currentUserProfileProvider);
                       final userRole = currentUser?.role?.toLowerCase();
-                      final isAdmin = userRole == 'administrator';
+                      final isAdmin = currentUser?.isAdmin ?? false;
                       final isManager = userRole == 'manager';
 
                       if (isManager &&
@@ -742,6 +856,12 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                       _buildSearchableClientDropdown(clients),
                                       const SizedBox(height: 20),
                                       _buildAgentDropdown(),
+                                      // Show branch dropdown if client is selected and has branches or is loading
+                                      if (_selectedClientId != null &&
+                                          (_isLoadingBranches || _clientBranches.isNotEmpty)) ...[
+                                        const SizedBox(height: 20),
+                                        _buildBranchDropdown(),
+                                      ],
                                     ],
                                   ),
 
@@ -752,9 +872,15 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                     title: 'Job Details',
                                     icon: Icons.work,
                                     children: [
-                                      _buildVehicleDropdown(vehicles),
+                                      _buildVehicleDropdown(
+                                        vehicles,
+                                        currentUser: currentUser,
+                                      ),
                                       const SizedBox(height: 20),
-                                      _buildDriverDropdown(allUsers),
+                                      _buildDriverDropdown(
+                                        allUsers,
+                                        currentUser: currentUser,
+                                      ),
                                       if (isAdmin || isManager) ...[
                                         const SizedBox(height: 20),
                                         _buildManagerAssignmentField(
@@ -767,7 +893,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                         ),
                                       ],
                                       const SizedBox(height: 20),
-                                      _buildLocationDropdown(),
+                                      _buildCompanyBranchDropdown(
+                                        currentUser: currentUser,
+                                        isAdmin: isAdmin,
+                                        isManager: isManager,
+                                      ),
                                       const SizedBox(height: 20),
                                       _buildJobStartDatePicker(),
                                     ],
@@ -1472,9 +1602,135 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  Widget _buildVehicleDropdown(List<dynamic> vehicles) {
+  Widget _buildBranchDropdown() {
+    if (_isLoadingBranches) {
+      return Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha:0.5),
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
+            width: 1,
+          ),
+        ),
+        child: const Row(
+          children: [
+            SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
+              ),
+            ),
+            SizedBox(width: 12),
+            Text('Loading branches...'),
+          ],
+        ),
+      );
+    }
+
+    if (_clientBranches.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              'Branch',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                color: ChoiceLuxTheme.softWhite,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        DropdownButtonFormField<String>(
+          value: _selectedBranchId?.toString() ?? '',
+          isExpanded: true,
+          decoration: InputDecoration(
+            hintText: 'Select a branch (optional)',
+            hintStyle: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
+            ),
+            prefixIcon: const Icon(
+              Icons.business,
+              color: ChoiceLuxTheme.platinumSilver,
+              size: 20,
+            ),
+            filled: true,
+            fillColor: Theme.of(context).colorScheme.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
+                width: 1,
+              ),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
+                width: 1,
+              ),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+            ),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 16,
+              vertical: 16,
+            ),
+          ),
+          items: [
+            // Add "None" option for optional selection
+            const DropdownMenuItem<String>(
+              value: '',
+              child: Text('None'),
+            ),
+            ..._clientBranches.map(
+              (branch) => DropdownMenuItem<String>(
+                value: branch.id?.toString() ?? '',
+                child: Text(branch.branchName),
+              ),
+            ),
+          ],
+          onChanged: (value) {
+            setState(() {
+              _selectedBranchId = value != null && value.isNotEmpty
+                  ? int.tryParse(value)
+                  : null;
+            });
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildVehicleDropdown(
+    List<dynamic> vehicles, {
+    required UserProfile? currentUser,
+  }) {
+    // Filter vehicles by user branch (unless admin)
+    List<dynamic> filteredVehicles = vehicles;
+    if (currentUser != null && currentUser.branchId != null) {
+      // Non-admin user: filter by their branch
+      // Only show vehicles explicitly assigned to their branch
+      filteredVehicles = vehicles.where((v) => v.branchId == currentUser.branchId).toList();
+    }
+    // Admin (branchId == null): show all vehicles
+
     // Sort vehicles by make alphabetically
-    final sortedVehicles = List.from(vehicles)
+    final sortedVehicles = List.from(filteredVehicles)
       ..sort((a, b) => (a.make ?? '').compareTo(b.make ?? ''));
 
     return _buildDropdownField(
@@ -1530,13 +1786,32 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  Widget _buildDriverDropdown(List<user_model.User> allUsers) {
+  Widget _buildDriverDropdown(
+    List<user_model.User> allUsers, {
+    required UserProfile? currentUser,
+  }) {
+    // Filter drivers by user branch (unless admin) and by driver role
+    List<user_model.User> filteredDrivers = allUsers.where((user) {
+      // Only show users with driver role
+      return user.role?.toLowerCase() == 'driver' &&
+          user.status?.toLowerCase() != 'deactivated';
+    }).toList();
+
+    if (currentUser != null && currentUser.branchId != null) {
+      // Non-admin user: filter by their branch
+      // Only show drivers explicitly assigned to their branch
+      filteredDrivers = filteredDrivers
+          .where((d) => d.branchId == currentUser.branchId)
+          .toList();
+    }
+    // Admin (branchId == null): show all drivers
+
     return _buildDropdownField(
       label: 'Driver *',
       hint: 'Select a driver',
       icon: Icons.person,
       value: _selectedDriverId,
-      items: allUsers.map((user) {
+      items: filteredDrivers.map((user) {
         final hasValidLicense =
             user.driverLicExp != null &&
             user.driverLicExp!.isAfter(DateTime.now());
@@ -1700,23 +1975,79 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return null;
   }
 
-  Widget _buildLocationDropdown() {
-    return _buildDropdownField(
-      label: 'Branch (Location) *',
-      hint: 'Select branch location',
-      icon: Icons.location_on,
-      value: _selectedLocation,
-      items: const [
-        DropdownMenuItem(value: 'Jhb', child: Text('Johannesburg (Jhb)')),
-        DropdownMenuItem(value: 'Cpt', child: Text('Cape Town (Cpt)')),
-        DropdownMenuItem(value: 'Dbn', child: Text('Durban (Dbn)')),
-      ],
-      onChanged: (value) => setState(() => _selectedLocation = value),
-      validator: (value) {
-        if (value == null || value.isEmpty) {
-          return 'Please select a branch location';
-        }
-        return null;
+  Widget _buildCompanyBranchDropdown({
+    required UserProfile? currentUser,
+    required bool isAdmin,
+    required bool isManager,
+  }) {
+    final userRole = currentUser?.role?.toLowerCase();
+    final isDriverManager = userRole == 'driver_manager';
+    final isNonAdmin = isManager || isDriverManager;
+    final isBranchLocked = isNonAdmin && currentUser?.branchId != null;
+
+    return Consumer(
+      builder: (context, ref, _) {
+        final branchesAsync = ref.watch(branchesProvider);
+        
+        return branchesAsync.when(
+          data: (branches) {
+            // Auto-set branch_id for Manager/Driver Manager if not already set
+            if (isNonAdmin && currentUser?.branchId != null && _selectedBranchId == null) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _selectedBranchId = currentUser!.branchId;
+                  });
+                }
+              });
+            }
+
+            return _buildDropdownField(
+              label: 'Branch *',
+              hint: isBranchLocked ? 'Branch (locked to your assignment)' : 'Select branch',
+              icon: Icons.location_on,
+              value: _selectedBranchId?.toString(),
+              items: branches.map((branch) {
+                return DropdownMenuItem(
+                  value: branch.id.toString(),
+                  child: Text(branch.name),
+                );
+              }).toList(),
+              isEnabled: !isBranchLocked, // Disabled for Manager/Driver Manager
+              onChanged: (value) {
+                setState(() {
+                  _selectedBranchId = value != null && value.isNotEmpty
+                      ? int.tryParse(value)
+                      : null;
+                });
+              },
+              validator: (value) {
+                if (value == null || value.isEmpty) {
+                  return 'Please select a branch';
+                }
+                return null;
+              },
+            );
+          },
+          loading: () => _buildDropdownField(
+            label: 'Branch *',
+            hint: 'Loading branches...',
+            icon: Icons.location_on,
+            value: null,
+            items: const [],
+            isEnabled: false,
+            onChanged: (_) {},
+          ),
+          error: (error, stack) => _buildDropdownField(
+            label: 'Branch *',
+            hint: 'Error loading branches',
+            icon: Icons.location_on,
+            value: _selectedBranchId?.toString(),
+            items: const [],
+            isEnabled: false,
+            onChanged: (_) {},
+          ),
+        );
       },
     );
   }
@@ -1885,6 +2216,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     required Function(String?) onChanged,
     String? Function(String?)? validator,
     bool isRequired = true,
+    bool isEnabled = true,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -1915,6 +2247,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         DropdownButtonFormField<String>(
           value: value,
           isExpanded: true,
+          onChanged: isEnabled ? onChanged : null,
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(
@@ -1951,7 +2284,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
           ),
           items: items,
-          onChanged: onChanged,
           validator: validator,
         ),
       ],

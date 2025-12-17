@@ -26,6 +26,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
   LocationFilter _selectedLocation = LocationFilter.all;
   TabController? _tabController;
   int? _previousTabCount;
+  DateTime? _customStartDate;
+  DateTime? _customEndDate;
 
   @override
   void dispose() {
@@ -38,10 +40,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
-    // Check if user is administrator or manager
+    // Check if user is administrator, super_admin, or manager
     final userRole = userProfile?.role?.toLowerCase();
-    final isAdmin = userRole == 'administrator';
-    final isManager = userRole == 'manager';
+    final isAdmin = userProfile?.isAdmin ?? false;
+    final isManager = userProfile?.role?.toLowerCase() == 'manager';
     final hasAccess = isAdmin || isManager;
     
     print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin, isManager: $isManager');
@@ -155,28 +157,40 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                       JobsInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                       FinancialInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                       DriverInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                       VehicleInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                       ClientInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                     ]
                   : [
                       JobsInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
+                        customStartDate: _customStartDate,
+                        customEndDate: _customEndDate,
                       ),
                     ],
             ),
@@ -234,9 +248,11 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                       ),
                       child: Row(
                         children: [
-                          Expanded(
+                              Expanded(
                             child: Text(
-                              _selectedPeriod.displayName,
+                              _selectedPeriod == TimePeriod.custom && _customStartDate != null && _customEndDate != null
+                                  ? '${_formatDate(_customStartDate!)} - ${_formatDate(_customEndDate!)}'
+                                  : _selectedPeriod.displayName,
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 14,
@@ -308,6 +324,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     // Separate periods into historical and planning
     final historicalPeriods = [
       TimePeriod.today,
+      TimePeriod.yesterday,
+      TimePeriod.last3Days,
       TimePeriod.thisWeek,
       TimePeriod.thisMonth,
       TimePeriod.thisQuarter,
@@ -366,21 +384,68 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                   ],
                 ),
               ),
-              ...historicalPeriods.map((period) => ListTile(
-                title: Text(
-                  period.displayName,
-                  style: TextStyle(
-                    color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
-                    fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+              ...historicalPeriods.map((period) {
+                final isCustom = period == TimePeriod.custom;
+                final hasCustomDates = _customStartDate != null && _customEndDate != null;
+                
+                return ListTile(
+                  title: Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          period.displayName,
+                          style: TextStyle(
+                            color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
+                            fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                      ),
+                      if (isCustom && hasCustomDates)
+                        Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                        ),
+                    ],
                   ),
-                ),
-                onTap: () {
-                  setState(() {
-                    _selectedPeriod = period;
-                  });
-                  Navigator.pop(context);
-                },
-              )),
+                  subtitle: isCustom && hasCustomDates
+                      ? Text(
+                          '${_formatDate(_customStartDate!)} - ${_formatDate(_customEndDate!)}',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.white.withOpacity(0.6),
+                          ),
+                        )
+                      : null,
+                  trailing: isCustom
+                      ? IconButton(
+                          icon: Icon(
+                            Icons.date_range,
+                            color: ChoiceLuxTheme.richGold,
+                            size: 20,
+                          ),
+                          onPressed: () {
+                            Navigator.pop(context);
+                            _showCustomDateRangePicker(context);
+                          },
+                        )
+                      : null,
+                  onTap: () {
+                    if (isCustom) {
+                      Navigator.pop(context);
+                      _showCustomDateRangePicker(context);
+                    } else {
+                      setState(() {
+                        _selectedPeriod = period;
+                        // Clear custom dates when selecting a non-custom period
+                        _customStartDate = null;
+                        _customEndDate = null;
+                      });
+                      Navigator.pop(context);
+                    }
+                  },
+                );
+              }),
               // Divider
               Divider(
                 color: Colors.white.withOpacity(0.2),
@@ -424,6 +489,45 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
         );
       },
     );
+  }
+
+  void _showCustomDateRangePicker(BuildContext context) async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2000),
+      lastDate: DateTime(2100),
+      initialDateRange: _customStartDate != null && _customEndDate != null
+          ? DateTimeRange(start: _customStartDate!, end: _customEndDate!)
+          : DateTimeRange(
+              start: DateTime.now().subtract(const Duration(days: 7)),
+              end: DateTime.now(),
+            ),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.dark(
+              primary: ChoiceLuxTheme.richGold,
+              onPrimary: Colors.black,
+              surface: ChoiceLuxTheme.charcoalGray,
+              onSurface: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _selectedPeriod = TimePeriod.custom;
+        _customStartDate = DateTime(picked.start.year, picked.start.month, picked.start.day);
+        _customEndDate = DateTime(picked.end.year, picked.end.month, picked.end.day, 23, 59, 59);
+      });
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return '${date.day}/${date.month}/${date.year}';
   }
 
   void _showLocationPicker(BuildContext context) {
