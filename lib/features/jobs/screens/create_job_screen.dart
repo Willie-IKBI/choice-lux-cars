@@ -48,6 +48,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   String? _selectedDriverId;
   String? _selectedManagerId;
   int? _selectedBranchId; // Company branch ID (Durban, Cape Town, Johannesburg)
+  int? _selectedClientBranchId; // Client branch ID (client-specific branches)
   DateTime? _selectedJobStartDate;
   bool _collectPayment = false;
   bool _isCancelled = false;
@@ -310,7 +311,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     setState(() {
       _selectedClientId = clientId;
       _selectedAgentId = null;
-      _selectedBranchId = null; // Reset branch when client changes
+      _selectedClientBranchId = null; // Reset client branch when client changes
       _showClientDropdown = false;
     });
     // Fetch branches for the selected client
@@ -1653,63 +1654,89 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           ],
         ),
         const SizedBox(height: 8),
-        DropdownButtonFormField<String>(
-          value: _selectedBranchId?.toString() ?? '',
-          isExpanded: true,
-          decoration: InputDecoration(
-            hintText: 'Select a branch (optional)',
-            hintStyle: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
-            ),
-            prefixIcon: const Icon(
-              Icons.business,
-              color: ChoiceLuxTheme.platinumSilver,
-              size: 20,
-            ),
-            filled: true,
-            fillColor: Theme.of(context).colorScheme.surface,
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
-                width: 1,
+        Builder(
+          builder: (context) {
+            // Build dropdown items first
+            final dropdownItems = [
+              // Add "None" option for optional selection
+              const DropdownMenuItem<String>(
+                value: '',
+                child: Text('None'),
               ),
-            ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
-                width: 1,
+              ..._clientBranches.map(
+                (branch) => DropdownMenuItem<String>(
+                  value: branch.id?.toString() ?? '',
+                  child: Text(branch.branchName),
+                ),
               ),
-            ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
-            ),
-            contentPadding: const EdgeInsets.symmetric(
-              horizontal: 16,
-              vertical: 16,
-            ),
-          ),
-          items: [
-            // Add "None" option for optional selection
-            const DropdownMenuItem<String>(
-              value: '',
-              child: Text('None'),
-            ),
-            ..._clientBranches.map(
-              (branch) => DropdownMenuItem<String>(
-                value: branch.id?.toString() ?? '',
-                child: Text(branch.branchName),
+            ];
+
+            // Validate that selectedClientBranchId exists in client branches
+            // If not, use empty string to prevent assertion error
+            final selectedValue = _selectedClientBranchId?.toString() ?? '';
+            final valueExists = selectedValue.isEmpty ||
+                dropdownItems.any((item) => item.value == selectedValue);
+            
+            // Clear invalid client branch ID if it doesn't exist in client branches
+            if (_selectedClientBranchId != null && !valueExists) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _selectedClientBranchId = null;
+                  });
+                }
+              });
+            }
+
+            final validValue = valueExists ? selectedValue : '';
+
+            return DropdownButtonFormField<String>(
+              value: validValue,
+              isExpanded: true,
+              decoration: InputDecoration(
+                hintText: 'Select a branch (optional)',
+                hintStyle: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
+                ),
+                prefixIcon: const Icon(
+                  Icons.business,
+                  color: ChoiceLuxTheme.platinumSilver,
+                  size: 20,
+                ),
+                filled: true,
+                fillColor: Theme.of(context).colorScheme.surface,
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
+                    width: 1,
+                  ),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide(
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.3),
+                    width: 1,
+                  ),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+                ),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
-            ),
-          ],
-          onChanged: (value) {
-            setState(() {
-              _selectedBranchId = value != null && value.isNotEmpty
-                  ? int.tryParse(value)
-                  : null;
-            });
+              items: dropdownItems,
+              onChanged: (value) {
+                setState(() {
+                  _selectedClientBranchId = value != null && value.isNotEmpty
+                      ? int.tryParse(value)
+                      : null;
+                });
+              },
+            );
           },
         ),
       ],
@@ -2002,17 +2029,46 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               });
             }
 
+            // Build dropdown items first
+            final dropdownItems = branches.map((branch) {
+              return DropdownMenuItem<String>(
+                value: branch.id.toString(),
+                child: Text(branch.name),
+              );
+            }).toList();
+
+            // Validate that selectedBranchId exists in branches list
+            // If not, reset it to null to prevent dropdown assertion error
+            final branchExists = _selectedBranchId != null &&
+                branches.any((branch) => branch.id == _selectedBranchId);
+            
+            // Also verify the value exists in dropdown items (double-check)
+            final selectedValue = _selectedBranchId?.toString();
+            final valueExistsInItems = selectedValue != null &&
+                dropdownItems.any((item) => item.value == selectedValue);
+            
+            // Clear invalid branch ID if it doesn't exist in branches or items
+            if (_selectedBranchId != null && (!branchExists || !valueExistsInItems)) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (mounted) {
+                  setState(() {
+                    _selectedBranchId = null;
+                  });
+                }
+              });
+            }
+
+            // Only use branch ID if it exists in both branches list and dropdown items
+            final validBranchId = (branchExists && valueExistsInItems) 
+                ? selectedValue 
+                : null;
+
             return _buildDropdownField(
               label: 'Branch *',
               hint: isBranchLocked ? 'Branch (locked to your assignment)' : 'Select branch',
               icon: Icons.location_on,
-              value: _selectedBranchId?.toString(),
-              items: branches.map((branch) {
-                return DropdownMenuItem(
-                  value: branch.id.toString(),
-                  child: Text(branch.name),
-                );
-              }).toList(),
+              value: validBranchId,
+              items: dropdownItems,
               isEnabled: !isBranchLocked, // Disabled for Manager/Driver Manager
               onChanged: (value) {
                 setState(() {
