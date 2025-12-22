@@ -350,6 +350,73 @@ class InsightsRepository {
       // Completion rate
       final completionRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0.0;
 
+      // Calculate average km and time for completed jobs
+      double averageKmPerCompletedJob = 0.0;
+      double averageTimePerCompletedJob = 0.0;
+      
+      if (completedJobs > 0) {
+        // Get completed job IDs
+        final completedJobIds = jobsResponse
+            .where((j) => j['job_status'] == 'completed')
+            .map((j) => j['id'] as int)
+            .toList();
+        
+        if (completedJobIds.isNotEmpty) {
+          // Query driver_flow for completed jobs
+          final idsString = completedJobIds.join(',');
+          final driverFlowQuery = _supabase
+              .from('driver_flow')
+              .select('job_id, odo_start_reading, job_closed_odo, vehicle_collected_at, job_closed_time')
+              .filter('job_id', 'in', '($idsString)')
+              .not('job_closed_odo', 'is', null)
+              .not('odo_start_reading', 'is', null)
+              .not('vehicle_collected_at', 'is', null)
+              .not('job_closed_time', 'is', null);
+          
+          final driverFlowResponse = await driverFlowQuery;
+          
+          // Calculate distances and times
+          final distances = <double>[];
+          final times = <double>[];
+          
+          for (final flow in driverFlowResponse) {
+            final startOdo = flow['odo_start_reading'];
+            final endOdo = flow['job_closed_odo'];
+            final vehicleCollectedAt = flow['vehicle_collected_at'];
+            final jobClosedTime = flow['job_closed_time'];
+            
+            if (startOdo != null && endOdo != null) {
+              final distance = (endOdo as num).toDouble() - (startOdo as num).toDouble();
+              if (distance >= 0) {
+                distances.add(distance);
+              }
+            }
+            
+            if (vehicleCollectedAt != null && jobClosedTime != null) {
+              try {
+                final startTime = DateTime.parse(vehicleCollectedAt);
+                final endTime = DateTime.parse(jobClosedTime);
+                final duration = endTime.difference(startTime);
+                final hours = duration.inMinutes / 60.0;
+                if (hours >= 0) {
+                  times.add(hours);
+                }
+              } catch (e) {
+                Log.e('Error parsing timestamps: $e');
+              }
+            }
+          }
+          
+          if (distances.isNotEmpty) {
+            averageKmPerCompletedJob = distances.reduce((a, b) => a + b) / distances.length;
+          }
+          
+          if (times.isNotEmpty) {
+            averageTimePerCompletedJob = times.reduce((a, b) => a + b) / times.length;
+          }
+        }
+      }
+
       final insights = JobInsights(
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
@@ -360,6 +427,8 @@ class InsightsRepository {
         cancelledJobs: cancelledJobs,
         averageJobsPerWeek: averageJobsPerWeek,
         completionRate: completionRate,
+        averageKmPerCompletedJob: averageKmPerCompletedJob,
+        averageTimePerCompletedJob: averageTimePerCompletedJob,
       );
 
       return Result.success(insights);
@@ -409,6 +478,8 @@ class InsightsRepository {
           cancelledJobs: 0,
           averageJobsPerWeek: 0,
           completionRate: 0,
+          averageKmPerCompletedJob: 0.0,
+          averageTimePerCompletedJob: 0.0,
         );
         return Result.success(emptyInsights);
       }
@@ -470,6 +541,73 @@ class InsightsRepository {
       
       final jobsThisMonthResponse = await monthQuery;
 
+      // Calculate average km and time for completed jobs
+      double averageKmPerCompletedJob = 0.0;
+      double averageTimePerCompletedJob = 0.0;
+      
+      if (completedJobs > 0) {
+        // Get completed job IDs
+        final completedJobIds = jobsResponse
+            .where((j) => j['job_status'] == 'completed')
+            .map((j) => j['id'] as int)
+            .toList();
+        
+        if (completedJobIds.isNotEmpty) {
+          // Query driver_flow for completed jobs
+          final idsString = completedJobIds.join(',');
+          final driverFlowQuery = _supabase
+              .from('driver_flow')
+              .select('job_id, odo_start_reading, job_closed_odo, vehicle_collected_at, job_closed_time')
+              .filter('job_id', 'in', '($idsString)')
+              .not('job_closed_odo', 'is', null)
+              .not('odo_start_reading', 'is', null)
+              .not('vehicle_collected_at', 'is', null)
+              .not('job_closed_time', 'is', null);
+          
+          final driverFlowResponse = await driverFlowQuery;
+          
+          // Calculate distances and times
+          final distances = <double>[];
+          final times = <double>[];
+          
+          for (final flow in driverFlowResponse) {
+            final startOdo = flow['odo_start_reading'];
+            final endOdo = flow['job_closed_odo'];
+            final vehicleCollectedAt = flow['vehicle_collected_at'];
+            final jobClosedTime = flow['job_closed_time'];
+            
+            if (startOdo != null && endOdo != null) {
+              final distance = (endOdo as num).toDouble() - (startOdo as num).toDouble();
+              if (distance >= 0) {
+                distances.add(distance);
+              }
+            }
+            
+            if (vehicleCollectedAt != null && jobClosedTime != null) {
+              try {
+                final startTime = DateTime.parse(vehicleCollectedAt);
+                final endTime = DateTime.parse(jobClosedTime);
+                final duration = endTime.difference(startTime);
+                final hours = duration.inMinutes / 60.0;
+                if (hours >= 0) {
+                  times.add(hours);
+                }
+              } catch (e) {
+                Log.e('Error parsing timestamps: $e');
+              }
+            }
+          }
+          
+          if (distances.isNotEmpty) {
+            averageKmPerCompletedJob = distances.reduce((a, b) => a + b) / distances.length;
+          }
+          
+          if (times.isNotEmpty) {
+            averageTimePerCompletedJob = times.reduce((a, b) => a + b) / times.length;
+          }
+        }
+      }
+
       final jobInsights = JobInsights(
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
@@ -480,6 +618,8 @@ class InsightsRepository {
         cancelledJobs: cancelledJobs,
         averageJobsPerWeek: totalJobs > 0 ? (totalJobs / 4.0) : 0.0, // Approximate weeks in month
         completionRate: totalJobs > 0 ? completedJobs / totalJobs : 0.0,
+        averageKmPerCompletedJob: averageKmPerCompletedJob,
+        averageTimePerCompletedJob: averageTimePerCompletedJob,
       );
 
       Log.d('Job insights with location filter: ${jobInsights.totalJobs} total, ${jobInsights.completedJobs} completed');
@@ -2671,6 +2811,183 @@ class InsightsRepository {
       case TimePeriod.next3Days:
         // Next 3 days: tomorrow + 2 days after (3 days total)
         return DateRange(tomorrow, tomorrow.add(const Duration(days: 3)));
+    }
+  }
+
+  /// Fetch completed jobs with km and time metrics
+  Future<Result<List<Map<String, dynamic>>>> fetchCompletedJobsWithMetrics({
+    required DateTime startDate,
+    required DateTime endDate,
+    required LocationFilter location,
+  }) async {
+    try {
+      Log.d('Fetching completed jobs with metrics for period: ${startDate.toIso8601String()} to ${endDate.toIso8601String()}');
+      
+      final branchId = _locationFilterToBranchId(location);
+
+      // Step 1: Get completed jobs in date range
+      // Use transport table to get jobs by pickup_date
+      final transportRows = await _supabase
+          .from('transport')
+          .select('job_id, pickup_date')
+          .gte('pickup_date', startDate.toIso8601String())
+          .lte('pickup_date', endDate.toIso8601String())
+          .not('pickup_date', 'is', null);
+
+      final Map<int, DateTime> jobEarliestPickup = {};
+      for (final row in transportRows) {
+        final jobId = row['job_id'] as int?;
+        final pickupStr = row['pickup_date'] as String?;
+        if (jobId == null || pickupStr == null) continue;
+        final pickup = DateTime.parse(pickupStr);
+        final existing = jobEarliestPickup[jobId];
+        if (existing == null || pickup.isBefore(existing)) {
+          jobEarliestPickup[jobId] = pickup;
+        }
+      }
+
+      if (jobEarliestPickup.isEmpty) {
+        return Result.success([]);
+      }
+
+      // Step 2: Get completed jobs with branch filter
+      final jobIds = jobEarliestPickup.keys.toList();
+      var jobsQuery = _supabase
+          .from('jobs')
+          .select('id, job_number, driver_id, manager_id, job_status')
+          .filter('id', 'in', '(${jobIds.join(',')})')
+          .eq('job_status', 'completed');
+
+      if (branchId != null) {
+        jobsQuery = jobsQuery.eq('branch_id', branchId);
+      } else if (location == LocationFilter.unspecified) {
+        jobsQuery = jobsQuery.isFilter('branch_id', null);
+      }
+
+      final jobsResponse = await jobsQuery;
+
+      if (jobsResponse.isEmpty) {
+        return Result.success([]);
+      }
+
+      // Step 3: Get driver_flow data for completed jobs
+      final completedJobIds = jobsResponse.map((j) => j['id'] as int).toList();
+      final idsString = completedJobIds.join(',');
+      
+      final driverFlowQuery = _supabase
+          .from('driver_flow')
+          .select('job_id, odo_start_reading, job_closed_odo, vehicle_collected_at, job_closed_time')
+          .filter('job_id', 'in', '($idsString)')
+          .not('job_closed_odo', 'is', null)
+          .not('odo_start_reading', 'is', null)
+          .not('vehicle_collected_at', 'is', null)
+          .not('job_closed_time', 'is', null);
+
+      final driverFlowResponse = await driverFlowQuery;
+
+      // Step 4: Get driver and manager names
+      final driverIds = jobsResponse
+          .map((j) => j['driver_id'] as String?)
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+
+      final managerIds = jobsResponse
+          .map((j) => j['manager_id'] as String?)
+          .where((id) => id != null)
+          .toSet()
+          .toList();
+
+      final Map<String, String> driverNames = {};
+      final Map<String, String> managerNames = {};
+      
+      // Fetch all user IDs (drivers + managers) in one query
+      final allUserIds = [...driverIds, ...managerIds].toSet().toList();
+      if (allUserIds.isNotEmpty) {
+        final profilesQuery = _supabase
+            .from('profiles')
+            .select('id, display_name')
+            .inFilter('id', allUserIds);
+        
+        final profilesResponse = await profilesQuery;
+        for (final profile in profilesResponse) {
+          final id = profile['id'] as String?;
+          final name = profile['display_name'] as String?;
+          if (id != null && name != null) {
+            if (driverIds.contains(id)) {
+              driverNames[id] = name;
+            }
+            if (managerIds.contains(id)) {
+              managerNames[id] = name;
+            }
+          }
+        }
+      }
+
+      // Step 5: Combine data
+      final Map<int, Map<String, dynamic>> flowMap = {};
+      for (final flow in driverFlowResponse) {
+        final jobId = flow['job_id'] as int?;
+        if (jobId != null) {
+          flowMap[jobId] = flow;
+        }
+      }
+
+      final List<Map<String, dynamic>> result = [];
+      for (final job in jobsResponse) {
+        final jobId = job['id'] as int;
+        final flow = flowMap[jobId];
+        
+        if (flow != null) {
+          final driverId = job['driver_id'] as String?;
+          final managerId = job['manager_id'] as String?;
+          final driverName = driverId != null ? driverNames[driverId] ?? 'Unknown Driver' : 'Unknown Driver';
+          final managerName = managerId != null ? managerNames[managerId] : null;
+          final jobNumber = job['job_number'] as String? ?? jobId.toString();
+          
+          final startOdo = flow['odo_start_reading'];
+          final endOdo = flow['job_closed_odo'];
+          final vehicleCollectedAt = flow['vehicle_collected_at'];
+          final jobClosedTime = flow['job_closed_time'];
+          
+          double kmTraveled = 0.0;
+          double timeHours = 0.0;
+          
+          if (startOdo != null && endOdo != null) {
+            kmTraveled = (endOdo as num).toDouble() - (startOdo as num).toDouble();
+            if (kmTraveled < 0) kmTraveled = 0.0;
+          }
+          
+          if (vehicleCollectedAt != null && jobClosedTime != null) {
+            try {
+              final startTime = DateTime.parse(vehicleCollectedAt);
+              final endTime = DateTime.parse(jobClosedTime);
+              final duration = endTime.difference(startTime);
+              timeHours = duration.inMinutes / 60.0;
+              if (timeHours < 0) timeHours = 0.0;
+            } catch (e) {
+              Log.e('Error parsing timestamps for job $jobId: $e');
+            }
+          }
+          
+          result.add({
+            'jobId': jobId,
+            'jobNumber': jobNumber,
+            'driverName': driverName,
+            'managerName': managerName,
+            'kmTraveled': kmTraveled,
+            'timeHours': timeHours,
+          });
+        }
+      }
+
+      // Don't sort here - let the screen sort by the metric type it needs
+
+      Log.d('Fetched ${result.length} completed jobs with metrics');
+      return Result.success(result);
+    } catch (error) {
+      Log.e('Error fetching completed jobs with metrics: $error');
+      return _mapSupabaseError(error);
     }
   }
 

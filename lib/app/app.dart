@@ -37,6 +37,7 @@ import 'package:choice_lux_cars/features/notifications/screens/notification_list
 import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
+import 'package:choice_lux_cars/features/insights/screens/completed_jobs_details_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
@@ -377,6 +378,41 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
               timePeriod: timePeriod,
               location: location,
               status: status,
+            );
+          },
+        ),
+        GoRoute(
+          path: '/insights/completed-jobs-details',
+          name: 'completed-jobs-details',
+          builder: (context, state) {
+            final timePeriodStr = state.uri.queryParameters['timePeriod'] ?? 'thisMonth';
+            final locationStr = state.uri.queryParameters['location'] ?? 'all';
+            final metricType = state.uri.queryParameters['metricType'] ?? 'km';
+
+            TimePeriod timePeriod;
+            try {
+              timePeriod = TimePeriod.values.firstWhere(
+                (e) => e.toString().split('.').last == timePeriodStr,
+                orElse: () => TimePeriod.thisMonth,
+              );
+            } catch (e) {
+              timePeriod = TimePeriod.thisMonth;
+            }
+
+            LocationFilter location;
+            try {
+              location = LocationFilter.values.firstWhere(
+                (e) => e.toString().split('.').last == locationStr,
+                orElse: () => LocationFilter.all,
+              );
+            } catch (e) {
+              location = LocationFilter.all;
+            }
+
+            return CompletedJobsDetailsScreen(
+              timePeriod: timePeriod,
+              location: location,
+              metricType: metricType,
             );
           },
         ),

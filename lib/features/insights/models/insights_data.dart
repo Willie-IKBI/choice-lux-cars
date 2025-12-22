@@ -47,6 +47,8 @@ class JobInsights {
   final int cancelledJobs;
   final double averageJobsPerWeek;
   final double completionRate;
+  final double averageKmPerCompletedJob;
+  final double averageTimePerCompletedJob; // in hours
 
   JobInsights({
     required this.totalJobs,
@@ -58,6 +60,8 @@ class JobInsights {
     required this.cancelledJobs,
     required this.averageJobsPerWeek,
     required this.completionRate,
+    this.averageKmPerCompletedJob = 0.0,
+    this.averageTimePerCompletedJob = 0.0,
   });
 }
 

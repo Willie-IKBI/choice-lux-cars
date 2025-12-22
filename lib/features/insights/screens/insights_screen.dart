@@ -123,8 +123,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                         text: 'Jobs',
                       ),
                       Tab(
-                        icon: Icon(Icons.attach_money),
-                        text: 'Financial',
+                        icon: Icon(Icons.business_outlined),
+                        text: 'Clients',
                       ),
                       Tab(
                         icon: Icon(Icons.person_outline),
@@ -135,8 +135,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                         text: 'Vehicles',
                       ),
                       Tab(
-                        icon: Icon(Icons.business_outlined),
-                        text: 'Clients',
+                        icon: Icon(Icons.attach_money),
+                        text: 'Financial',
                       ),
                     ]
                   : const [
@@ -160,7 +160,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                         customStartDate: _customStartDate,
                         customEndDate: _customEndDate,
                       ),
-                      FinancialInsightsTab(
+                      ClientInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
                         customStartDate: _customStartDate,
@@ -178,7 +178,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                         customStartDate: _customStartDate,
                         customEndDate: _customEndDate,
                       ),
-                      ClientInsightsTab(
+                      FinancialInsightsTab(
                         selectedPeriod: _selectedPeriod,
                         selectedLocation: _selectedLocation,
                         customStartDate: _customStartDate,

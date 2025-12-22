@@ -157,18 +157,96 @@ class JobsInsightsTab extends ConsumerWidget {
               );
               
               // Center the grid on desktop with max width constraint
+              Widget mainGridView;
               if (isDesktop) {
                 // Calculate max width: for 4 columns, cap at ~800px; for 2 columns, cap at ~600px
                 final maxWidth = isLargeDesktop ? 800.0 : 600.0;
-                return Center(
+                mainGridView = Center(
                   child: ConstrainedBox(
                     constraints: BoxConstraints(maxWidth: maxWidth),
                     child: gridView,
                   ),
                 );
+              } else {
+                mainGridView = gridView;
               }
               
-              return gridView;
+              // Add completed jobs metrics if there are completed jobs
+              if (insights.completedJobs > 0) {
+                final completedCrossAxisCount = isLargeDesktop ? 2 : 1;
+                final completedChildAspectRatio = isDesktop ? 2.0 : 1.5;
+                final completedSpacing = isDesktop ? 12.0 : 16.0;
+                
+                final completedMetricsGrid = GridView.count(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  crossAxisCount: completedCrossAxisCount,
+                  childAspectRatio: completedChildAspectRatio,
+                  crossAxisSpacing: completedSpacing,
+                  mainAxisSpacing: completedSpacing,
+                  children: [
+                    _buildMetricCard(
+                      'Avg Km per Job',
+                      '${insights.averageKmPerCompletedJob.toStringAsFixed(1)} km',
+                      Icons.straighten,
+                      Colors.teal,
+                      context: context,
+                      onTap: () {
+                        final uri = Uri(
+                          path: '/insights/completed-jobs-details',
+                          queryParameters: {
+                            'timePeriod': selectedPeriod.toString().split('.').last,
+                            'location': selectedLocation.toString().split('.').last,
+                            'metricType': 'km',
+                          },
+                        );
+                        context.go(uri.toString());
+                      },
+                    ),
+                    _buildMetricCard(
+                      'Avg Time per Job',
+                      _formatDuration(insights.averageTimePerCompletedJob),
+                      Icons.access_time,
+                      Colors.purple,
+                      context: context,
+                      onTap: () {
+                        final uri = Uri(
+                          path: '/insights/completed-jobs-details',
+                          queryParameters: {
+                            'timePeriod': selectedPeriod.toString().split('.').last,
+                            'location': selectedLocation.toString().split('.').last,
+                            'metricType': 'time',
+                          },
+                        );
+                        context.go(uri.toString());
+                      },
+                    ),
+                  ],
+                );
+                
+                Widget completedGridView = completedMetricsGrid;
+                if (isDesktop) {
+                  final maxWidth = isLargeDesktop ? 600.0 : 400.0;
+                  completedGridView = Center(
+                    child: ConstrainedBox(
+                      constraints: BoxConstraints(maxWidth: maxWidth),
+                      child: completedMetricsGrid,
+                    ),
+                  );
+                }
+                
+                return Column(
+                  children: [
+                    mainGridView,
+                    SizedBox(height: isDesktop ? 24.0 : 32.0),
+                    _buildSectionHeader('Completed Jobs Metrics'),
+                    SizedBox(height: isDesktop ? 16.0 : 20.0),
+                    completedGridView,
+                  ],
+                );
+              }
+              
+              return mainGridView;
             },
           ),
           LayoutBuilder(
@@ -214,6 +292,7 @@ class JobsInsightsTab extends ConsumerWidget {
     Color color, {
     String? status,
     required BuildContext context,
+    VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
     final isDesktop = screenWidth >= 600;
@@ -231,7 +310,7 @@ class JobsInsightsTab extends ConsumerWidget {
     final borderRadius = isDesktop ? 16.0 : 12.0;
     
     return GestureDetector(
-      onTap: status != null
+      onTap: onTap ?? (status != null
           ? () {
               // Navigate to filtered jobs list
               final uri = Uri(
@@ -244,9 +323,9 @@ class JobsInsightsTab extends ConsumerWidget {
               );
               context.go(uri.toString());
             }
-          : null,
+          : null),
       child: MouseRegion(
-        cursor: status != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
+        cursor: (status != null || onTap != null) ? SystemMouseCursors.click : SystemMouseCursors.basic,
         child: Container(
           padding: cardPadding,
           decoration: BoxDecoration(
@@ -433,6 +512,24 @@ class JobsInsightsTab extends ConsumerWidget {
         ],
       ),
     );
+  }
+
+  String _formatDuration(double hours) {
+    if (hours < 0) return '0 min';
+    
+    final totalMinutes = (hours * 60).round();
+    final h = totalMinutes ~/ 60;
+    final m = totalMinutes % 60;
+    
+    if (h > 0 && m > 0) {
+      return '$h ${h == 1 ? 'hr' : 'hrs'} ${m}min';
+    } else if (h > 0) {
+      return '$h ${h == 1 ? 'hour' : 'hours'}';
+    } else if (m > 0) {
+      return '$m min';
+    } else {
+      return '< 1 min';
+    }
   }
 
   Widget _buildErrorState(String error) {
