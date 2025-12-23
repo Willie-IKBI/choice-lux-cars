@@ -530,7 +530,9 @@ class ClientInsightsTab extends ConsumerWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'R${_getMetricValue(client, metricType).toStringAsFixed(0)}',
+                      metricType == 'Jobs'
+                          ? '${_getMetricValue(client, metricType).toInt()}'
+                          : 'R${_getMetricValue(client, metricType).toStringAsFixed(0)}',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,

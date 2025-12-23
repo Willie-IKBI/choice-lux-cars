@@ -40,6 +40,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   final _notesController = TextEditingController();
   final _paymentAmountController = TextEditingController();
   final _clientSearchController = TextEditingController();
+  final _scrollController = ScrollController();
+  
+  // Focus nodes for passenger fields
+  final _passengerNameFocusNode = FocusNode();
+  final _passengerContactFocusNode = FocusNode();
 
   // Form values
   String? _selectedClientId;
@@ -64,6 +69,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   bool _isLoading = false;
   bool _isSubmitting = false;
   bool _managerAutoAssigned = false;
+  bool _hasInitialLoadCompleted = false;
+  double _previousKeyboardHeight = 0.0;
 
   // Search states
   String _clientSearchQuery = '';
@@ -120,10 +127,28 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Refresh related data when screen becomes active (e.g., returning from another screen)
+    
+    // Check if this is a keyboard-related MediaQuery change
+    final currentKeyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+    final isKeyboardChange = (currentKeyboardHeight > 0) != (_previousKeyboardHeight > 0) ||
+                             (currentKeyboardHeight != _previousKeyboardHeight && _previousKeyboardHeight > 0);
+    
+    _previousKeyboardHeight = currentKeyboardHeight;
+    
+    // Skip refresh if:
+    // 1. Initial load hasn't completed yet (initState will handle it)
+    // 2. This is just a keyboard-related MediaQuery change
+    // 3. We're already loading
+    if (!_hasInitialLoadCompleted || isKeyboardChange || _isLoading) {
+      return;
+    }
+    
+    // Only refresh when screen actually becomes active (e.g., returning from another screen)
     // This ensures clients, vehicles, drivers are up-to-date
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _refreshRelatedData();
+      if (mounted && !_isLoading) {
+        _refreshRelatedData();
+      }
     });
   }
 
@@ -151,6 +176,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     _notesController.dispose();
     _paymentAmountController.dispose();
     _clientSearchController.dispose();
+    _scrollController.dispose();
+    _passengerNameFocusNode.dispose();
+    _passengerContactFocusNode.dispose();
     super.dispose();
   }
 
@@ -169,6 +197,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       ]);
       
       Log.d('Form data loaded successfully');
+      _hasInitialLoadCompleted = true;
     } catch (e) {
       Log.e('Error loading form data: $e');
       if (mounted) {
@@ -703,6 +732,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         // Layer 2: The Scaffold with a transparent background
         SystemSafeScaffold(
           backgroundColor: Colors.transparent, // CRITICAL
+          resizeToAvoidBottomInset: false,
           appBar: LuxuryAppBar(
             title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
             showBackButton: true,
@@ -830,14 +860,26 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
                       return Form(
                         key: _formKey,
-                        child: SingleChildScrollView(
-                          padding: EdgeInsets.all(isMobile ? 16 : 24),
-                          child: Center(
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(maxWidth: getMaxWidth()),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
+                        child: LayoutBuilder(
+                          builder: (context, constraints) {
+                            final keyboardHeight = MediaQuery.of(context).viewInsets.bottom;
+                            return SingleChildScrollView(
+                              controller: _scrollController,
+                              physics: const ClampingScrollPhysics(),
+                              keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.manual,
+                              padding: EdgeInsets.only(
+                                left: isMobile ? 16 : 24,
+                                right: isMobile ? 16 : 24,
+                                top: isMobile ? 16 : 24,
+                                bottom: (isMobile ? 16 : 24) + keyboardHeight,
+                              ),
+                              child: Align(
+                                alignment: Alignment.topCenter,
+                                child: ConstrainedBox(
+                                  constraints: BoxConstraints(maxWidth: getMaxWidth()),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
                                   if (_isCancelled) ...[
                                     _buildCancelledNotice(
                                       cancelledByName: cancelledByName,
@@ -917,6 +959,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                         hint: 'Enter passenger name (optional)',
                                         icon: Icons.person,
                                         isRequired: false,
+                                        focusNode: _passengerNameFocusNode,
                                       ),
                                       const SizedBox(height: 20),
                                       _buildTextField(
@@ -926,6 +969,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                                         icon: Icons.phone,
                                         isRequired: false,
                                         keyboardType: TextInputType.phone,
+                                        focusNode: _passengerContactFocusNode,
                                       ),
                                       const SizedBox(height: 20),
                                       isMobile
@@ -1043,6 +1087,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                               ),
                             ),
                           ),
+                        );
+                          },
                         ),
                       );
                     },
@@ -1819,8 +1865,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }) {
     // Filter drivers by user branch (unless admin) and by driver role
     List<user_model.User> filteredDrivers = allUsers.where((user) {
-      // Only show users with driver role
-      return user.role?.toLowerCase() == 'driver' &&
+      // Show users with driver or driver_manager role
+      final role = user.role?.toLowerCase();
+      return (role == 'driver' || role == 'driver_manager') &&
           user.status?.toLowerCase() != 'deactivated';
     }).toList();
 
@@ -2184,6 +2231,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     String? Function(String?)? validator,
     int maxLines = 1,
     bool isRequired = true,
+    FocusNode? focusNode,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -2213,8 +2261,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         const SizedBox(height: 8),
         TextFormField(
           controller: controller,
+          focusNode: focusNode,
           keyboardType: keyboardType,
           maxLines: maxLines,
+          scrollPadding: const EdgeInsets.all(20.0),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(

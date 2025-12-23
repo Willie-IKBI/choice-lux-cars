@@ -174,6 +174,7 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
     const allowedRoles = [
       'admin',
       'administrator',
+      'super_admin',
       'manager',
       'driver_manager',
       'drivermanager',
@@ -234,6 +235,7 @@ final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
     const allowedRoles = [
       'admin',
       'administrator',
+      'super_admin',
       'manager',
       'driver_manager',
       'drivermanager',
