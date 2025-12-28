@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'models/vehicle.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
-import 'providers/vehicles_provider.dart';
+import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';

@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
-import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
+import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart' as user_model;
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
