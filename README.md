@@ -124,6 +124,77 @@ flutter run --dart-define=SUPABASE_URL=your_supabase_url \
 
 > **Note**: Never commit API keys or sensitive configuration to version control. The app is configured to load these values from build-time flags.
 
+## 🛠️ Tooling Requirements
+
+To ensure consistent builds across different machines, the project uses standardized tooling versions.
+
+### Flutter SDK
+
+**Recommended**: Use Flutter Version Manager (FVM) for consistent Flutter versions across the team.
+
+```bash
+# Install FVM (one-time setup)
+# Windows: choco install fvm
+# macOS: brew tap leoafarias/fvm && brew install fvm
+# Linux: pub global activate fvm
+
+# Install and use Flutter stable
+fvm install stable
+fvm use stable
+
+# Use FVM to run Flutter commands
+fvm flutter pub get
+fvm flutter run
+```
+
+**Alternative**: If not using FVM, ensure Flutter 3.22+ is installed and available in your PATH.
+
+### Supabase CLI
+
+**Required Version**: 2.67.1+
+
+The project uses Supabase CLI for database migrations and local development.
+
+**Installation**:
+```bash
+# Windows (PowerShell)
+# Using Scoop
+scoop bucket add supabase https://github.com/supabase/scoop-bucket.git
+scoop install supabase
+
+# Or download from: https://github.com/supabase/cli/releases
+```
+
+**Verify Installation**:
+```bash
+supabase --version
+# Should output: 2.67.1 or higher
+```
+
+**Common Commands**:
+```bash
+# Link to remote project
+supabase link --project-ref your-project-ref
+
+# Push local migrations to remote
+supabase db push --linked
+
+# Pull remote schema to local
+supabase db pull
+
+# Start local Supabase instance
+supabase start
+
+# Deploy edge functions
+supabase functions deploy function-name
+```
+
+**Environment Setup**:
+For production database operations, use the provided `supabase-cli.ps1` script to set required environment variables:
+```powershell
+.\supabase-cli.ps1
+```
+
 ## 🗄️ Database Schema
 
 ### Core Tables
