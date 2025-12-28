@@ -7,8 +7,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
-import 'package:choice_lux_cars/features/branches/models/branch.dart';
+import 'package:choice_lux_cars/features/branches/branches.dart';
 
 class UserForm extends StatefulWidget {
   final User? user;

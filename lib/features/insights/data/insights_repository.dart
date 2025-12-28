@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
-import 'package:choice_lux_cars/features/branches/models/branch.dart';
+import 'package:choice_lux_cars/features/branches/branches.dart';
 
 /// Repository for insights and analytics data operations
 class InsightsRepository {

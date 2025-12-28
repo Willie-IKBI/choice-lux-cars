@@ -7,7 +7,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
-import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
+import 'package:choice_lux_cars/features/branches/branches.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {

@@ -16,8 +16,7 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
 import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
-import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
-import 'package:choice_lux_cars/features/branches/models/branch.dart';
+import 'package:choice_lux_cars/features/branches/branches.dart';
 
 class CreateJobScreen extends ConsumerStatefulWidget {
   final String? jobId; // null for create, non-null for edit

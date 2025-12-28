@@ -16,7 +16,7 @@ import 'package:choice_lux_cars/shared/utils/date_utils.dart' as app_date_utils;
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
 import 'package:choice_lux_cars/features/clients/models/client_branch.dart';
-import 'package:choice_lux_cars/features/branches/providers/branches_provider.dart';
+import 'package:choice_lux_cars/features/branches/branches.dart';
 
 class JobListCard extends ConsumerWidget {
   final Job job;
