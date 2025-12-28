@@ -277,6 +277,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userProfile?.isAdmin ?? false;
+    final isManager = userRole == 'manager';
     
     print('Dashboard - User profile: ${userProfile?.displayName}');
     print('Dashboard - User role: $userRole');

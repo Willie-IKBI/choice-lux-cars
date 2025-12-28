@@ -136,6 +136,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
+    final isTablet = screenWidth >= 600 && screenWidth < 800;
 
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
     final horizontalPadding = isSmallMobile
