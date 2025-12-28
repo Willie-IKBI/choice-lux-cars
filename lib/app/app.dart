@@ -8,7 +8,7 @@ import 'package:choice_lux_cars/features/auth/signup/signup_screen.dart';
 import 'package:choice_lux_cars/features/auth/forgot_password/forgot_password_screen.dart';
 import 'package:choice_lux_cars/features/auth/reset_password/reset_password_screen.dart';
 import 'package:choice_lux_cars/features/auth/pending_approval_screen.dart';
-import 'package:choice_lux_cars/features/dashboard/dashboard_screen.dart';
+import 'package:choice_lux_cars/features/dashboard/dashboard.dart';
 import 'package:choice_lux_cars/features/clients/clients_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_client_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/edit_client_screen.dart';
