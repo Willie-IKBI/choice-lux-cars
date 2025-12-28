@@ -4,7 +4,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
 import 'package:choice_lux_cars/features/vouchers/services/voucher_repository.dart';
 import 'package:choice_lux_cars/features/vouchers/services/voucher_pdf_service.dart';
-import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/jobs.dart';
 
 // Provider for VoucherRepository
 final voucherRepositoryProvider = Provider<VoucherRepository>((ref) {

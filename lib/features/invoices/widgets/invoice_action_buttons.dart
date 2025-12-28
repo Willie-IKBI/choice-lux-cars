@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/invoices/providers/invoice_controller.dart';
 import 'package:choice_lux_cars/features/invoices/services/invoice_sharing_service.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
-import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/jobs.dart';
 
 class InvoiceActionButtons extends ConsumerStatefulWidget {
   final String jobId;
