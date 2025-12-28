@@ -7,7 +7,6 @@ import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/widgets/notification_card.dart';
-import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/features/notifications/models/notification.dart' as app_notification;
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';

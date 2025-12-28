@@ -10,9 +10,6 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
-import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
-import 'package:url_launcher/url_launcher.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class PdfViewerScreen extends StatefulWidget {

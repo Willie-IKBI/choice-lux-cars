@@ -8,7 +8,6 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
-import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
