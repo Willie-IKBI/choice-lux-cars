@@ -430,6 +430,14 @@ extension LocationFilterExtension on LocationFilter {
   }
 }
 
+/// Date range helper class
+class DateRange {
+  final DateTime start;
+  final DateTime end;
+
+  DateRange(this.start, this.end);
+}
+
 /// Client revenue data model
 class ClientRevenue {
   final String clientId;

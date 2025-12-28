@@ -381,11 +381,3 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
   }
 }
 
-// Date range helper class (same as in insights_repository.dart)
-class DateRange {
-  final DateTime start;
-  final DateTime end;
-
-  DateRange(this.start, this.end);
-}
-

@@ -398,10 +398,3 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
   }
 }
 
-// Date range helper class
-class DateRange {
-  final DateTime start;
-  final DateTime end;
-
-  DateRange(this.start, this.end);
-}

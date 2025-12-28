@@ -3019,14 +3019,6 @@ class InsightsRepository {
   }
 }
 
-/// Date range helper class
-class DateRange {
-  final DateTime start;
-  final DateTime end;
-
-  DateRange(this.start, this.end);
-}
-
 /// Provider for InsightsRepository
 final insightsRepositoryProvider = Provider<InsightsRepository>((ref) {
   final supabase = ref.watch(supabaseClientProvider);
