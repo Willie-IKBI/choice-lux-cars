@@ -1,0 +1,17 @@
+# Normalize text files to LF in repo; Git will convert on checkout if configured.
+* text=auto eol=lf
+
+# Keep Windows scripts as CRLF (optional, but avoids PowerShell weirdness)
+*.ps1 text eol=crlf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Binary files
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.pdf binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+
