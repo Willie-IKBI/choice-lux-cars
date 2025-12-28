@@ -4,7 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
-import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
+import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/features/users/users.dart';
 import 'package:choice_lux_cars/features/vouchers/vouchers.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
