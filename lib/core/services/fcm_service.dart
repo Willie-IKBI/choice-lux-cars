@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
-import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/notifications.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 

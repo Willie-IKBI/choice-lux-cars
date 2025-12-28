@@ -11,7 +11,7 @@ import 'package:choice_lux_cars/features/vouchers/providers/voucher_controller.d
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
-import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/notifications.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/status_pill.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';

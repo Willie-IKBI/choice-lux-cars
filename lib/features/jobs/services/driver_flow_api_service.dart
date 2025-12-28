@@ -1,5 +1,5 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
+import 'package:choice_lux_cars/features/notifications/notifications.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
