@@ -2956,31 +2956,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
     return steps;
   }
 
-  void _printJobSummary() {
-    // Basic print functionality - could be enhanced with PDF generation
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Printing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-  }
 
-  void _shareJobSummary() {
-    // Basic share functionality - could be enhanced with actual sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sharing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-  }
 
   void _showTripEditModal(Trip trip) {
     showDialog(

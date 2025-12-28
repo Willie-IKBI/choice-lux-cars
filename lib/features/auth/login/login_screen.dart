@@ -82,12 +82,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen>
     ref.read(authProvider.notifier).clearError();
   }
 
-  // Trigger shake animation for error feedback
-  void _triggerShakeAnimation() {
-    _shakeAnimationController.forward().then((_) {
-      _shakeAnimationController.reset();
-    });
-  }
 
   // Load saved credentials and remember me preference
   Future<void> _loadSavedCredentials() async {

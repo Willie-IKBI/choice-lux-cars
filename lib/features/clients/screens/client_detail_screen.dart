@@ -62,10 +62,6 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     final clientAsync = ref.watch(clientProvider(widget.clientId));
     final agentsAsync = ref.watch(agentsNotifierProvider(widget.clientId));
 
-    // Add refresh capability
-    void refreshClient() {
-      ref.invalidate(clientProvider(widget.clientId));
-    }
 
     return Stack(
       children: [

@@ -900,7 +900,4 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     }
   }
 
-  void _manualRefresh() {
-    ref.read(jobsProvider.notifier).fetchJobs();
-  }
 }

@@ -434,37 +434,6 @@ class InsightsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionCard(String title, IconData icon, List<Widget> children) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          ...children,
-        ],
-      ),
-    );
-  }
 
   Widget _buildTopPerformersCard(String title, IconData icon, List<String> performers) {
     return Container(
@@ -614,38 +583,6 @@ class InsightsCard extends ConsumerWidget {
     );
   }
 
-  Widget _buildEmptyState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(40),
-        child: Column(
-          children: [
-            Icon(
-              Icons.analytics_outlined,
-              color: Colors.grey.withOpacity(0.7),
-              size: 48,
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'No insights data available',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
-                fontSize: 16,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Data will appear once you have jobs and quotes',
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 
   Widget _buildClientRevenueCard(InsightsData insights) {
     return Container(

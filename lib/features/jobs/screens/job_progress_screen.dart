@@ -43,8 +43,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
 
   /// Responsive design helpers
   bool get _isMobile => MediaQuery.of(context).size.width < 768;
-  bool get _isTablet => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
-  bool get _isDesktop => MediaQuery.of(context).size.width >= 1024;
 
   /// Navigation and contact helper methods
   Future<void> _openNavigation(String address) async {
@@ -81,56 +79,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     }
   }
 
-  /// Safe type conversion helpers
-  int _safeToInt(dynamic value, {int defaultValue = 0}) {
-    if (value == null) return defaultValue;
-    if (value is int) return value;
-    if (value is double) return value.round();
-    if (value is bool) return value ? 1 : 0;
-    if (value is String) {
-      final trimmed = value.trim();
-      if (trimmed.isEmpty) return defaultValue;
-      final parsed = int.tryParse(trimmed);
-      return parsed ?? defaultValue;
-    }
-    return defaultValue;
-  }
 
-  bool _safeToBool(dynamic value) {
-    if (value == null) return false;
-    if (value is bool) return value;
-    if (value is int) return value != 0;
-    if (value is double) return value != 0.0;
-    if (value is String) {
-      final trimmed = value.trim().toLowerCase();
-      if (trimmed.isEmpty) return false;
-      
-      // Truthy strings
-      if (['true', 'yes', 'y', 'completed', 'done', 'closed', 'finished', '1'].contains(trimmed)) {
-        return true;
-      }
-      
-      // Falsy strings
-      if (['false', 'no', 'n', 'pending', 'open', '0'].contains(trimmed)) {
-        return false;
-      }
-      
-      // Check if it's a timestamp-like string (ISO/SQL date format)
-      if (trimmed.contains('-') && (trimmed.contains('T') || trimmed.contains(' '))) {
-        try {
-          final date = DateTime.parse(trimmed);
-          return date.isAfter(DateTime(1900)); // Valid date
-        } catch (_) {
-          // Not a valid date string
-        }
-      }
-      
-      // Default to false for arbitrary strings
-      return false;
-    }
-    if (value is DateTime) return value.isAfter(DateTime(1900));
-    return false;
-  }
 
   final List<JobStep> _jobSteps = [
     JobStep(
@@ -1437,10 +1386,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     return await Geolocator.getCurrentPosition();
   }
 
-  Future<String> _captureOdometerImage() async {
-    // This is a placeholder - in a real implementation, you'd use the OdometerCaptureWidget
-    return 'placeholder_image_url';
-  }
 
   Future<void> _debugCurrentState() async {
     Log.d('=== DEBUG CURRENT STATE ===');
