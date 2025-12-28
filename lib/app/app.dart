@@ -15,10 +15,7 @@ import 'package:choice_lux_cars/features/clients/screens/edit_client_screen.dart
 import 'package:choice_lux_cars/features/clients/screens/client_detail_screen.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import 'package:choice_lux_cars/features/clients/inactive_clients_screen.dart';
-import 'package:choice_lux_cars/features/quotes/quotes_screen.dart';
-import 'package:choice_lux_cars/features/quotes/screens/create_quote_screen.dart';
-import 'package:choice_lux_cars/features/quotes/screens/quote_details_screen.dart';
-import 'package:choice_lux_cars/features/quotes/screens/quote_transport_details_screen.dart';
+import 'package:choice_lux_cars/features/quotes/quotes.dart';
 import 'package:choice_lux_cars/features/jobs/jobs.dart';
 import 'package:choice_lux_cars/features/invoices/invoices_screen.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
