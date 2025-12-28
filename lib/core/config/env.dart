@@ -1,5 +1,6 @@
-/// Central place for environment flags.
-/// Keep secrets in runtime config (Firebase/Vercel/etc) — not in git.
 class Env {
-  static const bool isProd = bool.fromEnvironment('PROD', defaultValue: false);
+  static const appName = 'Choice Lux Cars';
+  static const appVersion = '1.0.0';
+
+  static const bool isProduction = true;
 }
