@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/users.dart';
-import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
+import 'package:choice_lux_cars/features/vouchers/vouchers.dart';
 import 'package:choice_lux_cars/features/invoices/invoices.dart';
 
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
