@@ -19,9 +19,6 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   /// Check if current user can create jobs
   void _checkPermissions() {
     final userProfile = ref.read(currentUserProfileProvider);
-    final userRole = userProfile?.role?.toLowerCase();
-
-    final isAdmin = userProfile?.isAdmin ?? false;
 
     // Note: canCreateJobs is now handled in the UI layer based on user role
   }
