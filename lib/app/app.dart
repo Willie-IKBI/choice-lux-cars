@@ -17,7 +17,7 @@ import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.d
 import 'package:choice_lux_cars/features/clients/inactive_clients_screen.dart';
 import 'package:choice_lux_cars/features/quotes/quotes.dart';
 import 'package:choice_lux_cars/features/jobs/jobs.dart';
-import 'package:choice_lux_cars/features/invoices/invoices_screen.dart';
+import 'package:choice_lux_cars/features/invoices/invoices.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/features/vouchers/vouchers_screen.dart';
 import 'package:choice_lux_cars/features/users/users.dart';

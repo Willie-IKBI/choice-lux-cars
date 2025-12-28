@@ -1,5 +1,6 @@
 // Public exports for the Users feature.
 
+// Screens
 export 'users_screen.dart';
 export 'user_profile_screen.dart';
 export 'user_detail_screen.dart';
@@ -13,6 +14,6 @@ export 'providers/users_provider.dart';
 // Data
 export 'data/users_repository.dart';
 
-// Widgets (public UI building blocks)
+// Widgets
 export 'widgets/user_card.dart';
 export 'widgets/user_form.dart';
