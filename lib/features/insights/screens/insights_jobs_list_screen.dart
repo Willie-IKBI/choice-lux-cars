@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
-import 'package:choice_lux_cars/features/insights/data/insights_repository.dart';
 import 'package:choice_lux_cars/features/jobs/jobs.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
