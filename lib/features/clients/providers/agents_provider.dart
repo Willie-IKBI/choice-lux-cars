@@ -7,13 +7,23 @@ class AgentsNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   @override
   Future<List<Agent>> build(String clientId) async {
     _repo = ref.read(agentsRepositoryProvider);
-    return _repo.fetchAgentsByClient(clientId);
+    return _fetchAgentsByClient(clientId);
+  }
+
+  /// Fetch agents by client ID from the repository
+  Future<List<Agent>> _fetchAgentsByClient(String clientId) async {
+    final result = await _repo.fetchAgentsByClient(clientId);
+    if (result.isSuccess) {
+      return result.data!;
+    } else {
+      throw Exception(result.error!.message);
+    }
   }
 
   Future<void> refresh() async {
     final clientId = arg; // family arg
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repo.fetchAgentsByClient(clientId));
+    state = await AsyncValue.guard(() => _fetchAgentsByClient(clientId));
   }
 
   Future<void> addAgent(Agent agent) async {
@@ -41,7 +51,12 @@ final agentsNotifierProvider = AsyncNotifierProvider.family<AgentsNotifier, List
 final agentsForClientProvider = FutureProvider.family<List<Agent>, String>(
   (ref, clientId) async {
     final repository = ref.read(agentsRepositoryProvider);
-    return repository.fetchAgentsByClient(clientId);
+    final result = await repository.fetchAgentsByClient(clientId);
+    if (result.isSuccess) {
+      return result.data!;
+    } else {
+      throw Exception(result.error!.message);
+    }
   },
 );
 

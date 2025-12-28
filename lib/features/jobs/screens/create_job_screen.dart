@@ -8,7 +8,6 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/features/users/users.dart';
-import 'package:choice_lux_cars/features/users/users.dart' as user_model;
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
@@ -696,7 +695,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return '$day/$month/$year $hour:$minute';
   }
 
-  String? _getUserNameById(List<user_model.User> users, String? id) {
+  String? _getUserNameById(List<User> users, String? id) {
     if (id == null) return null;
     for (final user in users) {
       if (user.id == id) {
@@ -821,7 +820,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   return clientsAsync.when(
                     data: (clients) {
                       final vehicles = vehiclesState.value ?? [];
-                      final List<user_model.User> allUsers =
+                      final List<User> allUsers =
                           users.value ?? []; // Show all users regardless of role
                       final currentUser = ref.watch(currentUserProfileProvider);
                       final userRole = currentUser?.role?.toLowerCase();
@@ -1860,11 +1859,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildDriverDropdown(
-    List<user_model.User> allUsers, {
+    List<User> allUsers, {
     required UserProfile? currentUser,
   }) {
     // Filter drivers by user branch (unless admin) and by driver role
-    List<user_model.User> filteredDrivers = allUsers.where((user) {
+    List<User> filteredDrivers = allUsers.where((user) {
       // Show users with driver or driver_manager role
       final role = user.role?.toLowerCase();
       return (role == 'driver' || role == 'driver_manager') &&
@@ -1936,7 +1935,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildManagerAssignmentField({
-    required List<user_model.User> managers,
+    required List<User> managers,
     required bool isAdmin,
     required bool isManager,
     required String? currentUserId,
@@ -2036,8 +2035,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     );
   }
 
-  user_model.User? _findManagerById(
-    List<user_model.User> managers,
+  User? _findManagerById(
+    List<User> managers,
     String? managerId,
   ) {
     if (managerId == null) return null;
