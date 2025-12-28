@@ -1,7 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/data/insights_repository.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 
 /// Provider for driver insights data
 final driverInsightsProvider = FutureProvider.family<DriverInsights, (TimePeriod, LocationFilter, DateTime?, DateTime?)>((ref, params) async {

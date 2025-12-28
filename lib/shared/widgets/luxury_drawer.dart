@@ -5,7 +5,6 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class LuxuryDrawer extends ConsumerStatefulWidget {
   const LuxuryDrawer({super.key});
