@@ -65,10 +65,11 @@ lib/
 
 ### Prerequisites
 
-- Flutter 3.22+ installed
-- Dart 3.8+ installed
-- Supabase account and project
-- Firebase project (for FCM)
+- **Flutter**: 3.22+ (see [Tooling Requirements](#tooling-requirements) below)
+- **Dart**: 3.8+ (included with Flutter)
+- **Supabase CLI**: 2.67.1+ (see [Tooling Requirements](#tooling-requirements) below)
+- **Supabase account and project**
+- **Firebase project** (for FCM)
 
 ### Installation
 
