@@ -3,7 +3,6 @@ import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as usersp;
-import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/features/branches/branches.dart';

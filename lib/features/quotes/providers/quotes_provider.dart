@@ -4,8 +4,6 @@ import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.da
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/quotes/data/quotes_repository.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/core/types/result.dart';
-
 /// Notifier for managing quotes state using AsyncNotifier
 class QuotesNotifier extends AsyncNotifier<List<Quote>> {
   QuotesRepository get _quotesRepository => ref.watch(quotesRepositoryProvider);
