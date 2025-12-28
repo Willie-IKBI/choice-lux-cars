@@ -5,9 +5,7 @@ import 'package:intl/intl.dart';
 
 import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 import 'package:choice_lux_cars/features/quotes/models/quote_transport_detail.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_utilities.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_config.dart';
+import 'package:choice_lux_cars/features/pdf/pdf.dart';
 
 class QuotePdfService {
 

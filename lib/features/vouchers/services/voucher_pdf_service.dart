@@ -3,9 +3,7 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/features/vouchers/models/voucher_data.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_theme.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_utilities.dart';
-import 'package:choice_lux_cars/features/pdf/pdf_config.dart';
+import 'package:choice_lux_cars/features/pdf/pdf.dart';
 
 class VoucherPdfService {
   // ---- THEME / TOKENS -------------------------------------------------------
