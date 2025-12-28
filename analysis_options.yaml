@@ -1,35 +1,41 @@
-# This file configures the analyzer, which statically analyzes Dart code to
-# check for errors, warnings, and lints.
-#
-# The issues identified by the analyzer are surfaced in the UI of Dart-enabled
-# IDEs (https://dart.dev/tools#ides-and-editors). The analyzer can also be
-# invoked from the command line by running `flutter analyze`.
-
-# The following line activates a set of recommended lints for Flutter apps,
-# packages, and plugins designed to encourage good coding practices.
 include: package:flutter_lints/flutter.yaml
 
-linter:
-  # The lint rules applied to this project can be customized in the
-  # section below to disable rules from the `package:flutter_lints/flutter.yaml`
-  # included above or to enable additional rules. A list of all available lints
-  # and their documentation is published at https://dart.dev/lints.
-  #
-  # Instead of disabling a lint rule for the entire project in the
-  # section below, it can also be suppressed for a single line of code
-  # or a specific dart file by using the `// ignore: name_of_lint` and
-  # `// ignore_for_file: name_of_lint` syntax on the line or in the file
-  # producing the lint.
-  rules:
-    avoid_print: true
-    prefer_final_locals: true
-    unnecessary_late: true
-    always_use_package_imports: true
-    cancel_subscriptions: true
-    depend_on_referenced_packages: true
-    no_leading_underscores_for_local_identifiers: true
-    prefer_const_constructors: true
-    use_build_context_synchronously: false
+analyzer:
+  exclude:
+    - "**/*.g.dart"
+    - "**/*.freezed.dart"
+    - "**/generated/**"
+  errors:
+    # Turn critical issues into errors (fail the build)
+    unused_local_variable: error
+    unused_element: error
+    unused_import: error
+    dead_code: error
+    
+    # Keep style preferences as warnings (don't fail the build)
+    prefer_const_constructors: warning
+    prefer_const_declarations: warning
+    prefer_const_literals_to_create_immutables: warning
+    deprecated_member_use: warning
+    
+  # Note: strict type checking is disabled for now to avoid breaking builds
+  # with pre-existing type issues. Enable gradually as codebase improves.
+  # language:
+  #   strict-casts: true
+  #   strict-inference: true
+  #   strict-raw-types: true
 
-# Additional information about this file can be found at
-# https://dart.dev/guides/language/analysis-options
+linter:
+  rules:
+    # Keep all flutter_lints rules enabled
+    - always_declare_return_types
+    - always_use_package_imports
+    - avoid_print
+    - avoid_relative_lib_imports
+    - avoid_slow_async_io
+    - cancel_subscriptions
+    - close_sinks
+    - prefer_const_constructors
+    - prefer_const_declarations
+    - prefer_const_literals_to_create_immutables
+    - use_key_in_widget_constructors
