@@ -33,10 +33,6 @@ class SystemSafeScaffold extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mediaQuery = MediaQuery.of(context);
-    final bottomPadding = mediaQuery.padding.bottom;
-    final safeAreaBottom = mediaQuery.viewPadding.bottom;
-
     return Scaffold(
       key: scaffoldKey,
       appBar: appBar,
@@ -83,7 +79,6 @@ class SystemSafeContainer extends StatelessWidget {
   Widget build(BuildContext context) {
     final mediaQuery = MediaQuery.of(context);
     final bottomPadding = mediaQuery.padding.bottom;
-    final safeAreaBottom = mediaQuery.viewPadding.bottom;
 
     return Container(
       width: width,
