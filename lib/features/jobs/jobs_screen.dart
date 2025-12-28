@@ -8,10 +8,9 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
-import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/users.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
-import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';

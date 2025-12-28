@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/features/insights/data/insights_repository.dart'
 import 'package:choice_lux_cars/features/jobs/jobs.dart';
 import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart';
 import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
-import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/users.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
