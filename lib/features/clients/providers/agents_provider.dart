@@ -1,6 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:choice_lux_cars/features/clients/models/agent.dart';
-import 'package:choice_lux_cars/features/clients/services/agents_repository.dart';
+import 'package:choice_lux_cars/features/clients/clients.dart';
 
 class AgentsNotifier extends FamilyAsyncNotifier<List<Agent>, String> {
   late AgentsRepository _repo;
