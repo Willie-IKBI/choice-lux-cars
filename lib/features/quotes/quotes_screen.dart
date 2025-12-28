@@ -658,7 +658,6 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   Widget _buildMobileOptimizedFAB() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
 
     if (isMobile) {
       // Mobile: Compact FAB with icon only
