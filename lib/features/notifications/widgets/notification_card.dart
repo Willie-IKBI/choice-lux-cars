@@ -24,7 +24,6 @@ class NotificationCard extends ConsumerWidget {
     final isUnread = notification.isUnread;
     final isHighPriority = notification.isHighPriority;
     final isUrgent = notification.isUrgent;
-    final isExpired = notification.isExpired;
 
     return Dismissible(
       key: Key(notification.id),

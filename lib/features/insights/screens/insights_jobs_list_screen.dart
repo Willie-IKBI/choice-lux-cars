@@ -53,7 +53,6 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
 
     try {
       final repository = ref.read(jobsRepositoryProvider);
-      final insightsRepository = ref.read(insightsRepositoryProvider);
 
       // Get date range from time period
       final dateRange = _getDateRange(widget.timePeriod);

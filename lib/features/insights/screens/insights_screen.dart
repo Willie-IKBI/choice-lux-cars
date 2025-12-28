@@ -37,7 +37,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
     // Check if user is administrator, super_admin, or manager

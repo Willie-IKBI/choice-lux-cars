@@ -357,7 +357,7 @@ class NotificationService {
   }) async {
     try {
       // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: isReassignment
@@ -410,7 +410,7 @@ class NotificationService {
   }) async {
     try {
       // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: 'Job #$jobNumber has been cancelled.',
@@ -474,7 +474,7 @@ class NotificationService {
       }
 
       // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: message,
@@ -526,7 +526,7 @@ class NotificationService {
       final message = 'Payment reminder: Job #$jobNumber - \$$amount due';
 
       // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: message,
@@ -575,7 +575,7 @@ class NotificationService {
   }) async {
     try {
       // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: '', // System alerts don't have job IDs
         message: message,

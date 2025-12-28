@@ -34,8 +34,6 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
 
     final clientsAsync = _searchQuery.isEmpty
         ? ref.watch(clientsProvider)

@@ -22,11 +22,6 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     final userRole = userProfile?.role?.toLowerCase();
 
     final isAdmin = userProfile?.isAdmin ?? false;
-    final canCreate =
-        isAdmin ||
-        userRole == 'manager' ||
-        userRole == 'driver_manager' ||
-        userRole == 'drivermanager';
 
     // Note: canCreateJobs is now handled in the UI layer based on user role
   }

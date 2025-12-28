@@ -292,11 +292,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
-    final isLargeDesktop = screenWidth >= 1200;
-
-    final maxWidth = _getMaxWidth(screenWidth);
 
     return Stack(
       children: [

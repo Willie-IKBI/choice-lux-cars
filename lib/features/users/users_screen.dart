@@ -79,8 +79,6 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
 
     final users = ref.watch(usersp.usersProvider);
     final usersNotifier = ref.read(usersp.usersProvider.notifier);

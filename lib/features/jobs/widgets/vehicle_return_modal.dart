@@ -150,7 +150,7 @@ class _VehicleReturnModalState extends State<VehicleReturnModal> {
 
     try {
       // Upload image using the convenience method
-      final imageUrl = await UploadService.uploadOdometerImage(
+      await UploadService.uploadOdometerImage(
         _selectedImageBytes!,
         'odometer_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );

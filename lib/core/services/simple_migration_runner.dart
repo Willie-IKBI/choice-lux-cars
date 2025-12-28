@@ -120,12 +120,12 @@ class SimpleMigrationRunner {
       Log.d('✅ driver_flow table accessible');
 
       // Test 2: Check if we can connect to jobs
-      final jobsResult = await _supabase.from('jobs').select('id').limit(1);
+      await _supabase.from('jobs').select('id').limit(1);
 
       Log.d('✅ jobs table accessible');
 
       // Test 3: Check if we can connect to transport
-      final transportResult = await _supabase
+      await _supabase
           .from('transport')
           .select('id')
           .limit(1);
@@ -133,7 +133,7 @@ class SimpleMigrationRunner {
       Log.d('✅ transport table accessible');
 
       // Test 4: Check if we can connect to notifications
-      final notificationsResult = await _supabase
+      await _supabase
           .from('notifications')
           .select('id')
           .limit(1);

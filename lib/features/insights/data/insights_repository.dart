@@ -215,27 +215,7 @@ class InsightsRepository {
     try {
       Log.d('Fetching quote insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
-
+      // Location filtering for quotes is currently disabled as quotes may not have location field
       // Total quotes with location filter (skip location filtering for quotes)
       var query = _supabase
           .from('quotes')

@@ -75,8 +75,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userProfile?.isAdmin ?? false;
-    final isManager = userRole == 'manager';
-    final isDriverManager = userRole == 'driver_manager';
     
 
     // Count today's jobs based on role
@@ -215,21 +213,11 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
 
-    final titleSize = isSmallMobile
-        ? 18.0
-        : isMobile
-        ? 20.0
-        : 20.0; // Further reduced to 20px for desktop
     final subtitleSize = isSmallMobile
         ? 12.0
         : isMobile
         ? 14.0
         : 14.0; // Further reduced to 14px for desktop
-    final spacing = isSmallMobile
-        ? 3.0
-        : isMobile
-        ? 4.0
-        : 4.0; // Further reduced to 4px for desktop
     final sectionSpacing = isSmallMobile
         ? 6.0
         : isMobile
@@ -286,12 +274,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   ) {
     print('Dashboard - _buildDashboardCards called');
     final userProfile = ref.watch(currentUserProfileProvider);
-    final users = ref.watch(usersProvider);
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userProfile?.isAdmin ?? false;
-    final isManager = userRole == 'manager';
-    final isDriverManager = userRole == 'driver_manager';
     
     print('Dashboard - User profile: ${userProfile?.displayName}');
     print('Dashboard - User role: $userRole');

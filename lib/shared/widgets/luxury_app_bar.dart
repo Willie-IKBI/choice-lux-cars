@@ -41,7 +41,6 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
-    final tokens = Theme.of(context).extension<AppTokens>()!;
 
     // Get display name from profile, fallback to email, then to 'User'
     String displayName = 'User';

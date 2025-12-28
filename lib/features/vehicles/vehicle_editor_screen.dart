@@ -1424,9 +1424,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
     final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 900;
-    final isDesktop = screenWidth >= 900;
-    final fieldSpacing = isMobile ? 16.0 : 20.0;
 
     return Stack(
       children: [
