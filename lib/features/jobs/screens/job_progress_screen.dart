@@ -16,6 +16,7 @@ import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/job_completion_dialog.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/trip_progress_card.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -1894,6 +1895,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                       ),
                                     ],
                                   ),
+                                ),
+                                SizedBox(height: _isMobile ? 16 : 24),
+                                // Trip Progress Card
+                                TripProgressCard(
+                                  jobId: int.tryParse(widget.jobId) ?? 0,
+                                  isMobile: _isMobile,
                                 ),
                                 SizedBox(height: _isMobile ? 16 : 24),
                                 // Enhanced Job Steps with Responsive Design

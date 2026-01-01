@@ -27,6 +27,14 @@ class AuthException extends AppException {
   String toString() => 'AuthException: $message';
 }
 
+/// Exception for validation-related errors
+class ValidationException extends AppException {
+  const ValidationException(super.message);
+
+  @override
+  String toString() => 'ValidationException: $message';
+}
+
 /// Exception for unknown or unexpected errors
 class UnknownException extends AppException {
   const UnknownException(super.message);

@@ -21,6 +21,7 @@ import 'package:choice_lux_cars/features/vehicles/vehicles.dart';
 import 'package:choice_lux_cars/features/users/users.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/expenses_card.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -447,6 +448,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                 _buildTripsSummaryCard(totalAmount),
                 const SizedBox(height: 24),
                 if (_trips.isNotEmpty) _buildTripsListCard(),
+                const SizedBox(height: 24),
+                if (_job != null)
+                  ExpensesCard(
+                    jobId: int.tryParse(widget.jobId) ?? 0,
+                    job: _job!,
+                    isMobile: false,
+                  ),
                 const SizedBox(height: 32),
                 _buildActionButtons(),
               ],
@@ -498,12 +506,26 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             Icons.payment,
           ),
           const SizedBox(height: 16),
+          if (_job != null)
+            ExpensesCard(
+              jobId: int.tryParse(widget.jobId) ?? 0,
+              job: _job!,
+              isMobile: true,
+            ),
+          const SizedBox(height: 16),
           _buildAccordionSection(
             'Step Timeline',
             'stepTimeline',
             _buildStepTimelineContent(),
             Icons.timeline,
           ),
+          const SizedBox(height: 16),
+          if (_job != null)
+            ExpensesCard(
+              jobId: int.tryParse(widget.jobId) ?? 0,
+              job: _job!,
+              isMobile: true,
+            ),
           if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildAccordionSection(
