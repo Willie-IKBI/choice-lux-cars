@@ -153,6 +153,7 @@ class RouterGuards {
     required bool hasError,
     required bool isPasswordRecovery,
     required String? userRole,
+    String? userStatus,
   }) {
     Log.d('Router Guard - Checking route: $currentRoute, user: ${user?.id}, isPasswordRecovery: $isPasswordRecovery, isLoading: $isLoading, hasError: $hasError');
     
@@ -206,8 +207,9 @@ class RouterGuards {
     }
 
     // Status override checks - block access for deactivated or suspended users
-    final userStatus = user?.userMetadata?['status'] as String?;
-    if (permissionService.isDeactivated(userStatus)) {
+    // Prefer userStatus parameter from userProfile, fallback to userMetadata
+    final status = userStatus ?? (user?.userMetadata?['status'] as String?);
+    if (permissionService.isDeactivated(status)) {
       Log.d('Router Guard - User is deactivated, blocking access');
       return '/login';
     }

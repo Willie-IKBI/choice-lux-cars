@@ -50,7 +50,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
 
     return MaterialApp.router(
       title: 'Choice Lux Cars',
-      theme: ChoiceLuxTheme.lightTheme,
+      theme: ChoiceLuxTheme.darkTheme,
       darkTheme: ChoiceLuxTheme.darkTheme,
       themeMode: ThemeMode.dark,
       debugShowCheckedModeBanner: false,
@@ -74,6 +74,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           hasError: authState.hasError,
           isPasswordRecovery: authNotifier.isPasswordRecovery,
           userRole: userProfile?.role,
+          userStatus: userProfile?.status,
         );
       },
       routes: [
@@ -417,10 +418,10 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
                 Container(
                   padding: const EdgeInsets.all(20),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                    color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
                     shape: BoxShape.circle,
                   ),
-                  child: Icon(
+                  child: const Icon(
                     Icons.error_outline_rounded,
                     size: 64,
                     color: ChoiceLuxTheme.errorColor,
@@ -464,7 +465,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
                       onPressed: () => context.go('/login'),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ChoiceLuxTheme.richGold,
-                        side: BorderSide(color: ChoiceLuxTheme.richGold),
+                        side: const BorderSide(color: ChoiceLuxTheme.richGold),
                         padding: const EdgeInsets.symmetric(
                           horizontal: 24,
                           vertical: 12,

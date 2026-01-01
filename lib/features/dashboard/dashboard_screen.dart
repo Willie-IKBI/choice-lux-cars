@@ -317,13 +317,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 ? unassignedUsersCount.toString()
                 : null,
           ),
-        DashboardItem(
-          title: 'Clients',
-          subtitle: 'Manage client relationships',
-          icon: Icons.people_outline,
-          route: '/clients',
-          color: ChoiceLuxTheme.richGold,
-        ),
+        if (PermissionService().canAccessClients(userRole))
+          DashboardItem(
+            title: 'Clients',
+            subtitle: 'Manage client relationships',
+            icon: Icons.people_outline,
+            route: '/clients',
+            color: ChoiceLuxTheme.richGold,
+          ),
         if (PermissionService().canAccessVehicles(userRole))
           DashboardItem(
             title: 'Vehicles',
