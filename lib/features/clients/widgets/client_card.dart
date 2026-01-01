@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
-import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class ClientCard extends StatefulWidget {
   final Client client;
@@ -97,40 +100,38 @@ class _ClientCardState extends State<ClientCard>
                         begin: Alignment.topLeft,
                         end: Alignment.bottomRight,
                         colors: [
-                          ChoiceLuxTheme.charcoalGray.withOpacity(0.95),
-                          ChoiceLuxTheme.charcoalGray.withOpacity(0.9),
+                          context.colorScheme.surface.withValues(alpha: 0.95),
+                          context.colorScheme.surface.withValues(alpha: 0.9),
                         ],
                       ),
                       border: widget.isSelected
-                          ? Border.all(color: ChoiceLuxTheme.richGold, width: 2)
+                          ? Border.all(color: context.colorScheme.primary, width: 2)
                           : _isHovered
                           ? Border.all(
-                              color: ChoiceLuxTheme.richGold.withOpacity(0.5),
+                              color: context.colorScheme.primary.withValues(alpha: 0.5),
                               width: 1,
                             )
                           : Border.all(
-                              color: ChoiceLuxTheme.platinumSilver.withOpacity(
-                                0.1,
-                              ),
+                              color: context.colorScheme.outline.withValues(alpha: 0.1),
                               width: 1,
                             ),
                       boxShadow: _isHovered
                           ? [
                               BoxShadow(
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                                color: context.colorScheme.primary.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                                 offset: const Offset(0, 4),
                               ),
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: context.colorScheme.background.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: context.colorScheme.background.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 2),
                               ),
@@ -145,10 +146,8 @@ class _ClientCardState extends State<ClientCard>
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: widget.onTap,
-                        splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                        highlightColor: ChoiceLuxTheme.richGold.withOpacity(
-                          0.05,
-                        ),
+                        splashColor: context.colorScheme.primary.withValues(alpha: 0.1),
+                        highlightColor: context.colorScheme.primary.withValues(alpha: 0.05),
                         borderRadius: BorderRadius.circular(12),
                         child: Semantics(
                           label: 'Client card for ${widget.client.companyName}',
@@ -198,11 +197,11 @@ class _ClientCardState extends State<ClientCard>
                                           : 44,
                                       decoration: BoxDecoration(
                                         borderRadius: BorderRadius.circular(8),
-                                        color: ChoiceLuxTheme.richGold
-                                            .withOpacity(0.1),
+                                        color: context.colorScheme.primary
+                                            .withValues(alpha: 0.1),
                                         border: Border.all(
-                                          color: ChoiceLuxTheme.richGold
-                                              .withOpacity(0.3),
+                                          color: context.colorScheme.primary
+                                              .withValues(alpha: 0.3),
                                         ),
                                       ),
                                       // Fix: Check for both null and empty URLs
@@ -226,8 +225,7 @@ class _ClientCardState extends State<ClientCard>
                                                       : isMobile
                                                       ? 15
                                                       : 18,
-                                                  color:
-                                                      ChoiceLuxTheme.softWhite,
+                                                  color: context.tokens.textHeading,
                                                 ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -244,9 +242,8 @@ class _ClientCardState extends State<ClientCard>
                                                       : isMobile
                                                       ? 13
                                                       : 14,
-                                                  color: ChoiceLuxTheme
-                                                      .platinumSilver
-                                                      .withOpacity(0.8),
+                                                  color: context.tokens.textBody
+                                                      .withValues(alpha: 0.8),
                                                 ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -264,14 +261,14 @@ class _ClientCardState extends State<ClientCard>
                                           Container(
                                             padding: const EdgeInsets.all(4),
                                             decoration: BoxDecoration(
-                                              color: ChoiceLuxTheme.richGold,
+                                              color: context.colorScheme.primary,
                                               borderRadius:
                                                   BorderRadius.circular(4),
                                             ),
-                                            child: const Icon(
+                                            child: Icon(
                                               Icons.check,
                                               size: 12,
-                                              color: Colors.black,
+                                              color: context.colorScheme.onPrimary,
                                             ),
                                           ),
                                         ],
@@ -321,14 +318,27 @@ class _ClientCardState extends State<ClientCard>
                                       gradient: LinearGradient(
                                         colors: [
                                           Colors.transparent,
-                                          ChoiceLuxTheme.platinumSilver
-                                              .withOpacity(0.2),
+                                          context.colorScheme.outline
+                                              .withValues(alpha: 0.2),
                                           Colors.transparent,
                                         ],
                                       ),
                                     ),
                                   ),
-                                  _buildActionButtons(isMobile, isSmallMobile),
+                                  Consumer(
+                                    builder: (context, ref, child) {
+                                      final userProfile = ref.watch(currentUserProfileProvider);
+                                      final userRole = userProfile?.role;
+                                      final permissionService = const PermissionService();
+                                      final canAccess = permissionService.canAccessClients(userRole);
+                                      
+                                      if (!canAccess) {
+                                        return const SizedBox.shrink();
+                                      }
+                                      
+                                      return _buildActionButtons(isMobile, isSmallMobile);
+                                    },
+                                  ),
                                 ] else ...[
                                   // Show hint for desktop
                                   Center(
@@ -338,8 +348,7 @@ class _ClientCardState extends State<ClientCard>
                                           .textTheme
                                           .bodySmall
                                           ?.copyWith(
-                                            color: ChoiceLuxTheme.platinumSilver
-                                                .withOpacity(0.6),
+                                            color: context.tokens.textSubtle,
                                             fontStyle: FontStyle.italic,
                                           ),
                                     ),
@@ -370,7 +379,7 @@ class _ClientCardState extends State<ClientCard>
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
         child: Image.network(
-          logo!,
+          logo,
           fit: BoxFit.cover,
           errorBuilder: (_, __, ___) => _buildLogoPlaceholder(),
         ),
@@ -381,7 +390,7 @@ class _ClientCardState extends State<ClientCard>
   }
 
   Widget _buildLogoPlaceholder() {
-    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 20);
+    return Icon(Icons.business, color: context.colorScheme.primary, size: 20);
   }
 
   Widget _buildStatusIndicator() {
@@ -392,27 +401,26 @@ class _ClientCardState extends State<ClientCard>
 
     switch (widget.client.status) {
       case ClientStatus.vip:
-        backgroundColor = ChoiceLuxTheme.richGold;
-        textColor = Colors.black;
+        backgroundColor = context.colorScheme.primary;
+        textColor = context.colorScheme.onPrimary;
         label = 'VIP';
         icon = Icons.star;
         break;
       case ClientStatus.pending:
-        backgroundColor = Colors.orange;
-        textColor = Colors.white;
+        backgroundColor = context.colorScheme.primary;
+        textColor = context.colorScheme.onPrimary;
         label = 'Pending';
         icon = Icons.schedule;
         break;
       case ClientStatus.inactive:
-        backgroundColor = Colors.red;
-        textColor = Colors.white;
+        backgroundColor = context.tokens.warningColor;
+        textColor = context.tokens.onWarning;
         label = 'Inactive';
         icon = Icons.block;
         break;
       case ClientStatus.active:
-      default:
-        backgroundColor = ChoiceLuxTheme.successColor;
-        textColor = Colors.white;
+        backgroundColor = context.tokens.successColor;
+        textColor = context.tokens.onSuccess;
         label = 'Active';
         icon = Icons.check_circle;
         break;
@@ -425,7 +433,7 @@ class _ClientCardState extends State<ClientCard>
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: backgroundColor.withOpacity(0.3),
+            color: backgroundColor.withValues(alpha: 0.3),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -457,8 +465,8 @@ class _ClientCardState extends State<ClientCard>
   ) {
     final displayText = text?.isNotEmpty == true ? text! : '—';
     final textColor = text?.isNotEmpty == true
-        ? ChoiceLuxTheme.softWhite
-        : ChoiceLuxTheme.platinumSilver.withOpacity(0.5);
+        ? context.tokens.textHeading
+        : context.tokens.textSubtle;
 
     return Row(
       children: [
@@ -469,7 +477,7 @@ class _ClientCardState extends State<ClientCard>
               : isMobile
               ? 14
               : 16,
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+          color: context.tokens.textBody,
         ),
         SizedBox(
           width: isSmallMobile
@@ -487,7 +495,7 @@ class _ClientCardState extends State<ClientCard>
                   : isMobile
                   ? 13
                   : 14,
-              color: textColor.withOpacity(0.9),
+              color: textColor.withValues(alpha: 0.9),
             ),
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
@@ -504,10 +512,10 @@ class _ClientCardState extends State<ClientCard>
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
         decoration: BoxDecoration(
           // Fix: Use theme colors instead of hard-coded greys
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
+          color: context.colorScheme.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+            color: context.colorScheme.outline.withValues(alpha: 0.1),
           ),
         ),
         child: Column(
@@ -558,10 +566,10 @@ class _ClientCardState extends State<ClientCard>
         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 3),
         decoration: BoxDecoration(
           // Fix: Use theme colors instead of hard-coded greys
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
+          color: context.colorScheme.surface.withValues(alpha: 0.8),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+            color: context.colorScheme.outline.withValues(alpha: 0.1),
           ),
         ),
         child: Row(
@@ -630,8 +638,8 @@ class _ClientCardState extends State<ClientCard>
         ),
       ),
       style: ElevatedButton.styleFrom(
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
+        backgroundColor: context.colorScheme.primary,
+        foregroundColor: context.colorScheme.onPrimary,
         elevation: _isHovered ? 4 : 2,
         padding: EdgeInsets.symmetric(
           horizontal: isSmallMobile
@@ -721,29 +729,29 @@ class _IconButtonWithHoverState extends State<_IconButtonWithHover> {
         decoration: BoxDecoration(
           color: isHovered
               ? (widget.isDestructive
-                    ? ChoiceLuxTheme.errorColor.withOpacity(0.2)
-                    : ChoiceLuxTheme.richGold.withOpacity(0.2))
+                    ? context.tokens.warningColor.withValues(alpha: 0.2)
+                    : context.colorScheme.primary.withValues(alpha: 0.2))
               : (widget.isDestructive
-                    ? ChoiceLuxTheme.errorColor.withOpacity(0.1)
-                    : ChoiceLuxTheme.richGold.withOpacity(0.1)),
+                    ? context.tokens.warningColor.withValues(alpha: 0.1)
+                    : context.colorScheme.primary.withValues(alpha: 0.1)),
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isHovered
                 ? (widget.isDestructive
-                      ? ChoiceLuxTheme.errorColor.withOpacity(0.5)
-                      : ChoiceLuxTheme.richGold.withOpacity(0.5))
+                      ? context.tokens.warningColor.withValues(alpha: 0.5)
+                      : context.colorScheme.primary.withValues(alpha: 0.5))
                 : (widget.isDestructive
-                      ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
-                      : ChoiceLuxTheme.richGold.withOpacity(0.3)),
+                      ? context.tokens.warningColor.withValues(alpha: 0.3)
+                      : context.colorScheme.primary.withValues(alpha: 0.3)),
           ),
           boxShadow: isHovered
               ? [
                   BoxShadow(
                     color:
                         (widget.isDestructive
-                                ? ChoiceLuxTheme.errorColor
-                                : ChoiceLuxTheme.richGold)
-                            .withOpacity(0.3),
+                                ? context.tokens.warningColor
+                                : context.colorScheme.primary)
+                            .withValues(alpha: 0.3),
                     blurRadius: 8,
                     spreadRadius: 1,
                   ),
@@ -767,8 +775,8 @@ class _IconButtonWithHoverState extends State<_IconButtonWithHover> {
                       ? 16
                       : 22,
                   color: widget.isDestructive
-                      ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.richGold,
+                      ? context.tokens.warningColor
+                      : context.colorScheme.primary,
                 ),
               ),
             ),

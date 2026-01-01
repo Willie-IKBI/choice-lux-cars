@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class AgentCard extends StatefulWidget {
   final Agent agent;
@@ -81,14 +84,14 @@ class _AgentCardState extends State<AgentCard>
                       boxShadow: _isHovered
                           ? [
                               BoxShadow(
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                                 blurRadius: 12,
                                 spreadRadius: 2,
                               ),
                             ]
                           : [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
+                                color: Colors.black.withValues(alpha: 0.2),
                                 blurRadius: 8,
                                 offset: const Offset(0, 4),
                               ),
@@ -111,12 +114,12 @@ class _AgentCardState extends State<AgentCard>
                                   height: isMobile ? 40 : 48,
                                   decoration: BoxDecoration(
                                     borderRadius: BorderRadius.circular(25),
-                                    color: ChoiceLuxTheme.richGold.withOpacity(
+                                    color: ChoiceLuxTheme.richGold.withValues(alpha: 
                                       0.1,
                                     ),
                                     border: Border.all(
                                       color: ChoiceLuxTheme.richGold
-                                          .withOpacity(0.3),
+                                          .withValues(alpha: 0.3),
                                     ),
                                   ),
                                   child: Icon(
@@ -180,24 +183,37 @@ class _AgentCardState extends State<AgentCard>
 
                             // Action buttons
                             if (_isHovered || isMobile) ...[
-                              Row(
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceEvenly,
-                                children: [
-                                  _buildActionButton(
-                                    Icons.edit,
-                                    'Edit',
-                                    widget.onEdit,
-                                    isMobile,
-                                  ),
-                                  _buildActionButton(
-                                    Icons.delete,
-                                    'Delete',
-                                    widget.onDelete,
-                                    isMobile,
-                                    isDestructive: true,
-                                  ),
-                                ],
+                              Consumer(
+                                builder: (context, ref, child) {
+                                  final userProfile = ref.watch(currentUserProfileProvider);
+                                  final userRole = userProfile?.role;
+                                  final permissionService = const PermissionService();
+                                  final canAccess = permissionService.canAccessClients(userRole);
+                                  
+                                  if (!canAccess) {
+                                    return const SizedBox.shrink();
+                                  }
+                                  
+                                  return Row(
+                                    mainAxisAlignment:
+                                        MainAxisAlignment.spaceEvenly,
+                                    children: [
+                                      _buildActionButton(
+                                        Icons.edit,
+                                        'Edit',
+                                        widget.onEdit,
+                                        isMobile,
+                                      ),
+                                      _buildActionButton(
+                                        Icons.delete,
+                                        'Delete',
+                                        widget.onDelete,
+                                        isMobile,
+                                        isDestructive: true,
+                                      ),
+                                    ],
+                                  );
+                                },
                               ),
                             ] else ...[
                               // Show hint for desktop
@@ -207,7 +223,7 @@ class _AgentCardState extends State<AgentCard>
                                   style: Theme.of(context).textTheme.bodySmall
                                       ?.copyWith(
                                         color: ChoiceLuxTheme.platinumSilver
-                                            .withOpacity(0.7),
+                                            .withValues(alpha: 0.7),
                                         fontStyle: FontStyle.italic,
                                       ),
                                 ),

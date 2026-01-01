@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -30,6 +31,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.canAccessClients(userRole)) {
+      return _buildAccessDenied();
+    }
+
     // Responsive breakpoints for mobile optimization
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
@@ -48,7 +57,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -134,7 +143,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                   : 24,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: CircularProgressIndicator(
@@ -200,7 +209,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                   : 28,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -364,7 +373,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: ChoiceLuxTheme.charcoalGray,
-            title: Text(
+            title: const Text(
               'Deactivate Client',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -373,12 +382,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             ),
             content: Text(
               'Are you sure you want to deactivate ${client.companyName}?',
-              style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+              style: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
+                child: const Text(
                   'Cancel',
                   style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 ),
@@ -401,7 +410,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           SnackBar(
             content: Row(
               children: [
-                Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
+                const Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Text('${client.companyName} has been deactivated'),
@@ -434,19 +443,19 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
       background: Container(
         margin: const EdgeInsets.symmetric(vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.orange.withOpacity(0.1),
+          color: Colors.orange.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withOpacity(0.3), width: 1),
+          border: Border.all(color: Colors.orange.withValues(alpha: 0.3), width: 1),
         ),
-        child: Align(
+        child: const Align(
           alignment: Alignment.centerRight,
           child: Padding(
-            padding: const EdgeInsets.only(right: 20),
+            padding: EdgeInsets.only(right: 20),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(Icons.archive, color: Colors.orange, size: 24),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Text(
                   'Deactivate',
                   style: TextStyle(
@@ -489,13 +498,13 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.2),
+                color: Colors.orange.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(Icons.archive, color: Colors.orange, size: 24),
+              child: const Icon(Icons.archive, color: Colors.orange, size: 24),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            const Expanded(
               child: Text(
                 'Deactivate Client',
                 style: TextStyle(
@@ -511,7 +520,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Are you sure you want to deactivate this client?',
               style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
             ),
@@ -519,18 +528,18 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.orange.withOpacity(0.1),
+                color: Colors.orange.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.business, color: Colors.orange, size: 20),
+                  const Icon(Icons.business, color: Colors.orange, size: 20),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       client.companyName,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.softWhite,
                         fontWeight: FontWeight.w600,
                       ),
@@ -540,7 +549,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'The client will be moved to inactive status. All data will be preserved and can be restored later.',
               style: TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
@@ -551,20 +560,20 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(6),
                 border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 ),
               ),
-              child: Row(
+              child: const Row(
                 children: [
                   Icon(
                     Icons.info_outline,
                     color: ChoiceLuxTheme.richGold,
                     size: 16,
                   ),
-                  const SizedBox(width: 8),
+                  SizedBox(width: 8),
                   Expanded(
                     child: Text(
                       'Related quotes, invoices, and agent data will remain intact.',
@@ -598,7 +607,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
+                      const Icon(Icons.archive, color: ChoiceLuxTheme.softWhite),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text(
@@ -678,11 +687,11 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -700,19 +709,19 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               ? 'Search clients...'
               : 'Search clients by name, company, or email...',
           hintStyle: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
             fontSize: isMobile ? 14 : 16,
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
             size: isMobile ? 20 : 24,
           ),
           suffixIcon: _searchQuery.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     size: isMobile ? 20 : 24,
                   ),
                   onPressed: () {
@@ -739,12 +748,12 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   }
 
   Widget _buildMobileFilterButton(bool isSmallMobile) {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
-        label: Text(
+        icon: const Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
+        label: const Text(
           'Filter clients',
           style: TextStyle(
             color: ChoiceLuxTheme.richGold,
@@ -752,7 +761,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+          backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
           foregroundColor: ChoiceLuxTheme.richGold,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -760,7 +769,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -775,11 +784,11 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -789,7 +798,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         onPressed: () => _showMobileFilterBottomSheet(),
         icon: Icon(
           Icons.filter_list,
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
           size: 24,
         ),
         tooltip: 'Filter by Status, Industry, or Date',
@@ -819,14 +828,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
             // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
                   Icon(
@@ -834,7 +843,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     color: ChoiceLuxTheme.richGold,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     'Filter Clients',
                     style: TextStyle(
@@ -912,7 +921,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -926,7 +935,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                     children: [
                       Text(
                         title,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.softWhite,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -934,7 +943,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                       ),
                       Text(
                         subtitle,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.platinumSilver,
                           fontSize: 12,
                         ),
@@ -944,7 +953,7 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
                 ),
                 Icon(
                   Icons.chevron_right,
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                   size: 20,
                 ),
               ],
@@ -955,7 +964,15 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     );
   }
 
-  Widget _buildMobileOptimizedFAB(bool isMobile) {
+  Widget? _buildMobileOptimizedFAB(bool isMobile) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.canAccessClients(userRole)) {
+      return null;
+    }
+
     if (isMobile) {
       // Mobile: Compact FAB with icon only
       return FloatingActionButton(
@@ -963,8 +980,8 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         backgroundColor: ChoiceLuxTheme.richGold,
         foregroundColor: Colors.black,
         elevation: 6,
-        child: const Icon(Icons.add, size: 24),
         tooltip: 'Add Client',
+        child: const Icon(Icons.add, size: 24),
       );
     } else {
       // Desktop: Extended FAB with label
@@ -977,5 +994,40 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
         label: const Text('Add Client'),
       );
     }
+  }
+
+  Widget _buildAccessDenied() {
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        const Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        SystemSafeScaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Clients',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+          ),
+          body: const Center(
+            child: Text(
+              'Access denied',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
