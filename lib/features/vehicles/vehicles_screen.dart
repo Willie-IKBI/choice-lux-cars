@@ -8,9 +8,10 @@ import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
-  const VehicleListScreen({Key? key}) : super(key: key);
+  const VehicleListScreen({super.key});
 
   @override
   ConsumerState<VehicleListScreen> createState() => _VehicleListScreenState();
@@ -28,6 +29,14 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.canAccessVehicles(userRole)) {
+      return _buildAccessDenied();
+    }
+
     final state = ref.watch(vehiclesProvider);
 
     return state.when(
@@ -59,7 +68,7 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -119,11 +128,11 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -136,19 +145,19 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
               ? 'Search vehicles...'
               : 'Search vehicles by make, model, or plate...',
           hintStyle: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
             fontSize: isMobile ? 14 : 16,
           ),
           prefixIcon: Icon(
             Icons.search,
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
             size: isMobile ? 20 : 24,
           ),
           suffixIcon: _search.isNotEmpty
               ? IconButton(
                   icon: Icon(
                     Icons.clear,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     size: isMobile ? 20 : 24,
                   ),
                   onPressed: () => setState(() => _search = ''),
@@ -228,74 +237,15 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     );
   }
 
-  Widget _buildMobileLoadingState(bool isMobile, bool isSmallMobile) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          // Loading animation
-          Container(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 16
-                  : isMobile
-                  ? 20
-                  : 24,
-            ),
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
-              shape: BoxShape.circle,
-            ),
-            child: CircularProgressIndicator(
-              color: ChoiceLuxTheme.richGold,
-              strokeWidth: isMobile ? 2.0 : 3.0,
-            ),
-          ),
-          SizedBox(
-            height: isSmallMobile
-                ? 16
-                : isMobile
-                ? 20
-                : 24,
-          ),
-          // Loading text
-          Text(
-            'Loading vehicles...',
-            style: TextStyle(
-              fontSize: isSmallMobile
-                  ? 14
-                  : isMobile
-                  ? 16
-                  : 18,
-              fontWeight: FontWeight.w500,
-              color: ChoiceLuxTheme.softWhite,
-            ),
-          ),
-          SizedBox(
-            height: isSmallMobile
-                ? 8
-                : isMobile
-                ? 10
-                : 12,
-          ),
-          Text(
-            'Please wait while we fetch your fleet',
-            style: TextStyle(
-              fontSize: isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 13
-                  : 14,
-              color: ChoiceLuxTheme.platinumSilver,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
+  Widget? _buildMobileOptimizedFAB() {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.canAccessVehicles(userRole)) {
+      return null;
+    }
 
-  Widget _buildMobileOptimizedFAB() {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = screenWidth < 600;
 
@@ -306,8 +256,8 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
         backgroundColor: ChoiceLuxTheme.richGold,
         foregroundColor: Colors.black,
         elevation: 6,
-        child: const Icon(Icons.add, size: 24),
         tooltip: 'Add Vehicle',
+        child: const Icon(Icons.add, size: 24),
       );
     } else {
       // Desktop: Extended FAB with label
@@ -328,5 +278,40 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
 
   Widget _buildErrorState(Object error) {
     return Scaffold(body: Center(child: Text('Error: $error')));
+  }
+
+  Widget _buildAccessDenied() {
+    return Stack(
+      children: [
+        Container(
+          decoration: const BoxDecoration(
+            gradient: ChoiceLuxTheme.backgroundGradient,
+          ),
+        ),
+        const Positioned.fill(
+          child: CustomPaint(painter: BackgroundPatterns.dashboard),
+        ),
+        SystemSafeScaffold(
+          backgroundColor: Colors.transparent,
+          appBar: LuxuryAppBar(
+            title: 'Vehicles',
+            showBackButton: true,
+            onBackPressed: () => context.go('/'),
+            onSignOut: () async {
+              await ref.read(authProvider.notifier).signOut();
+            },
+          ),
+          body: const Center(
+            child: Text(
+              'Access denied',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 18,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }

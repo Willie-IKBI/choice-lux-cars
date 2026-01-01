@@ -50,7 +50,11 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
     try {
       Log.d('Creating vehicle: ${vehicle.make} ${vehicle.model}');
 
-      final result = await _vehiclesRepository.createVehicle(vehicle);
+      final userProfile = ref.read(currentUserProfileProvider);
+      final result = await _vehiclesRepository.createVehicle(
+        vehicle,
+        userRole: userProfile?.role,
+      );
 
       if (result.isSuccess) {
         // Refresh vehicles list
@@ -72,7 +76,11 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
     try {
       Log.d('Updating vehicle: ${vehicle.id}');
 
-      final result = await _vehiclesRepository.updateVehicle(vehicle);
+      final userProfile = ref.read(currentUserProfileProvider);
+      final result = await _vehiclesRepository.updateVehicle(
+        vehicle,
+        userRole: userProfile?.role,
+      );
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -97,7 +105,11 @@ class VehiclesNotifier extends AsyncNotifier<List<Vehicle>> {
     try {
       Log.d('Deleting vehicle: $vehicleId');
 
-      final result = await _vehiclesRepository.deleteVehicle(vehicleId);
+      final userProfile = ref.read(currentUserProfileProvider);
+      final result = await _vehiclesRepository.deleteVehicle(
+        vehicleId,
+        userRole: userProfile?.role,
+      );
 
       if (result.isSuccess) {
         // Update local state optimistically

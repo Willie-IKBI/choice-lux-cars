@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 /// Repository for vehicle-related data operations
 ///
@@ -71,8 +72,17 @@ class VehiclesRepository {
   }
 
   /// Create a new vehicle
-  Future<Result<Map<String, dynamic>>> createVehicle(Vehicle vehicle) async {
+  Future<Result<Map<String, dynamic>>> createVehicle(
+    Vehicle vehicle, {
+    String? userRole,
+  }) async {
     try {
+      final permissionService = const PermissionService();
+      if (!permissionService.canAccessVehicles(userRole)) {
+        Log.e('Unauthorized vehicle creation attempt by role: $userRole');
+        return Result.failure(AuthException('Forbidden'));
+      }
+
       Log.d('Creating vehicle: ${vehicle.make} ${vehicle.model}');
 
       final vehicleData = vehicle.toJson();
@@ -98,8 +108,17 @@ class VehiclesRepository {
   }
 
   /// Update an existing vehicle
-  Future<Result<void>> updateVehicle(Vehicle vehicle) async {
+  Future<Result<void>> updateVehicle(
+    Vehicle vehicle, {
+    String? userRole,
+  }) async {
     try {
+      final permissionService = const PermissionService();
+      if (!permissionService.canAccessVehicles(userRole)) {
+        Log.e('Unauthorized vehicle update attempt by role: $userRole');
+        return Result.failure(AuthException('Forbidden'));
+      }
+
       Log.d('Updating vehicle: ${vehicle.id}');
 
       if (vehicle.id == null) {
@@ -122,8 +141,17 @@ class VehiclesRepository {
   }
 
   /// Delete a vehicle
-  Future<Result<void>> deleteVehicle(String vehicleId) async {
+  Future<Result<void>> deleteVehicle(
+    String vehicleId, {
+    String? userRole,
+  }) async {
     try {
+      final permissionService = const PermissionService();
+      if (!permissionService.canAccessVehicles(userRole)) {
+        Log.e('Unauthorized vehicle deletion attempt by role: $userRole');
+        return Result.failure(AuthException('Forbidden'));
+      }
+
       Log.d('Deleting vehicle: $vehicleId');
 
       await _supabase.from('vehicles').delete().eq('id', vehicleId);
@@ -228,9 +256,16 @@ class VehiclesRepository {
   /// Update vehicle status
   Future<Result<void>> updateVehicleStatus(
     String vehicleId,
-    String status,
-  ) async {
+    String status, {
+    String? userRole,
+  }) async {
     try {
+      final permissionService = const PermissionService();
+      if (!permissionService.canAccessVehicles(userRole)) {
+        Log.e('Unauthorized vehicle status update attempt by role: $userRole');
+        return Result.failure(AuthException('Forbidden'));
+      }
+
       Log.d('Updating vehicle status: $vehicleId to $status');
 
       await _supabase

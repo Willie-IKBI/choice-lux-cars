@@ -13,6 +13,7 @@ import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -51,9 +52,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final users = ref.watch(usersProvider);
     final jobs = ref.watch(jobsProvider);
     
-    print('Dashboard - Main build - User profile: ${userProfile?.displayName}');
-    print('Dashboard - Main build - User role: ${userProfile?.role}');
-    print('Dashboard - Main build - Current user: ${currentUser?.email}');
+    Log.d('Dashboard - Main build - User profile: ${userProfile?.displayName}');
+    Log.d('Dashboard - Main build - User role: ${userProfile?.role}');
+    Log.d('Dashboard - Main build - Current user: ${currentUser?.email}');
 
     // Initialize notification provider once when dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -120,7 +121,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -143,7 +144,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               await ref.read(authProvider.notifier).signOut();
             },
           ),
-          drawer: isMobile ? null : LuxuryDrawer(),
+          drawer: isMobile ? null : const LuxuryDrawer(),
           body: SingleChildScrollView(
             padding: EdgeInsets.symmetric(
               horizontal: horizontalPadding,
@@ -203,7 +204,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       context: context,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
-      builder: (context) => LuxuryDrawer(),
+      builder: (context) => const LuxuryDrawer(),
     );
   }
 
@@ -256,7 +257,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               gradient: LinearGradient(
                 colors: [
                   ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.5),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.5),
                 ],
               ),
               borderRadius: BorderRadius.circular(1),
@@ -272,16 +273,16 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int todayJobsCount,
     int unassignedUsersCount,
   ) {
-    print('Dashboard - _buildDashboardCards called');
+    Log.d('Dashboard - _buildDashboardCards called');
     final userProfile = ref.watch(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userProfile?.isAdmin ?? false;
     final isManager = userRole == 'manager';
     
-    print('Dashboard - User profile: ${userProfile?.displayName}');
-    print('Dashboard - User role: $userRole');
-    print('Dashboard - isAdmin: $isAdmin, isManager: $isManager, isDriver: $isDriver');
+    Log.d('Dashboard - User profile: ${userProfile?.displayName}');
+    Log.d('Dashboard - User role: $userRole');
+    Log.d('Dashboard - isAdmin: $isAdmin, isManager: $isManager, isDriver: $isDriver');
 
     // Build dashboard items based on role
     List<DashboardItem> dashboardItems = [];
@@ -323,13 +324,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           route: '/clients',
           color: ChoiceLuxTheme.richGold,
         ),
-        DashboardItem(
-          title: 'Vehicles',
-          subtitle: 'Manage fleet vehicles',
-          icon: Icons.directions_car_outlined,
-          route: '/vehicles',
-          color: ChoiceLuxTheme.richGold,
-        ),
+        if (PermissionService().canAccessVehicles(userRole))
+          DashboardItem(
+            title: 'Vehicles',
+            subtitle: 'Manage fleet vehicles',
+            icon: Icons.directions_car_outlined,
+            route: '/vehicles',
+            color: ChoiceLuxTheme.richGold,
+          ),
         DashboardItem(
           title: 'Quotes',
           subtitle: 'Create and manage quotes',
@@ -351,7 +353,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       
       // Add Insights card for admin and manager users
       if (isAdmin || isManager) {
-        print('Dashboard - Adding Insights card for ${isAdmin ? "admin" : "manager"} user');
+        Log.d('Dashboard - Adding Insights card for ${isAdmin ? "admin" : "manager"} user');
         dashboardItems.add(
           DashboardItem(
             title: 'Insights',
@@ -362,7 +364,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
       } else {
-        print('Dashboard - NOT adding Insights card - user is not admin or manager');
+        Log.d('Dashboard - NOT adding Insights card - user is not admin or manager');
       }
     }
 
@@ -371,7 +373,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final screenHeight = MediaQuery.of(context).size.height;
 
     // Debug logging for screen dimensions
-    Log.d('Screen dimensions: ${screenWidth}x${screenHeight}');
+    Log.d('Screen dimensions: ${screenWidth}x$screenHeight');
 
     // Responsive grid configuration with compact sizing for desktop
     int crossAxisCount;
