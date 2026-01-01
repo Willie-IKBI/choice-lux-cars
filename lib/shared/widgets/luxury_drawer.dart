@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 class LuxuryDrawer extends ConsumerStatefulWidget {
   const LuxuryDrawer({super.key});
@@ -44,7 +45,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     String displayName,
     userProfile,
   ) {
-    final isAdmin = userProfile?.isAdmin ?? false;
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    final isAdmin = permissionService.isAdmin(userRole);
+    final canAccessUsers = permissionService.isAdmin(userRole) || permissionService.isManager(userRole);
+    final canAccessInsights = permissionService.isAdmin(userRole) || permissionService.isManager(userRole);
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
@@ -169,18 +174,19 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                     ],
                   ),
 
-                  // Administration Section (Role-based) - Admin and Super Admin
+                  // Administration Section (Role-based) - Admin only
                   if (isAdmin) ...[
                     _buildMobileMenuSection(
                       title: 'Administration',
                       items: [
-                        _buildMobileMenuItem(
-                          icon: Icons.people_outline,
-                          title: 'User Management',
-                          onTap: () {
-                            context.go('/users');
-                          },
-                        ),
+                        if (canAccessUsers)
+                          _buildMobileMenuItem(
+                            icon: Icons.people_outline,
+                            title: 'User Management',
+                            onTap: () {
+                              context.go('/users');
+                            },
+                          ),
                         _buildMobileMenuItem(
                           icon: Icons.admin_panel_settings_outlined,
                           title: 'System Settings',
@@ -190,17 +196,44 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             context.push('/system-settings');
                           },
                         ),
-                        _buildMobileMenuItem(
-                          icon: Icons.analytics_outlined,
-                          title: 'Business Insights',
-                          onTap: () {
-                            Log.d('Navigate to Business Insights');
-                            Navigator.pop(context);
-                            context.go('/insights');
-                          },
-                        ),
+                        if (canAccessInsights)
+                          _buildMobileMenuItem(
+                            icon: Icons.analytics_outlined,
+                            title: 'Business Insights',
+                            onTap: () {
+                              Log.d('Navigate to Business Insights');
+                              Navigator.pop(context);
+                              context.go('/insights');
+                            },
+                          ),
                       ],
                     ),
+                  ] else ...[
+                    // Show User Management and Business Insights for Managers outside Administration section
+                    if (canAccessUsers || canAccessInsights)
+                      _buildMobileMenuSection(
+                        title: 'Management',
+                        items: [
+                          if (canAccessUsers)
+                            _buildMobileMenuItem(
+                              icon: Icons.people_outline,
+                              title: 'User Management',
+                              onTap: () {
+                                context.go('/users');
+                              },
+                            ),
+                          if (canAccessInsights)
+                            _buildMobileMenuItem(
+                              icon: Icons.analytics_outlined,
+                              title: 'Business Insights',
+                              onTap: () {
+                                Log.d('Navigate to Business Insights');
+                                Navigator.pop(context);
+                                context.go('/insights');
+                              },
+                            ),
+                        ],
+                      ),
                   ],
 
                   // App Section (Collapsible)
@@ -249,7 +282,11 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
     String displayName,
     userProfile,
   ) {
-    final isAdmin = userProfile?.isAdmin ?? false;
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    final isAdmin = permissionService.isAdmin(userRole);
+    final canAccessUsers = permissionService.isAdmin(userRole) || permissionService.isManager(userRole);
+    final canAccessInsights = permissionService.isAdmin(userRole) || permissionService.isManager(userRole);
     return Drawer(
       width: 280,
       child: Container(
@@ -361,19 +398,20 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       ],
                     ),
 
-                    // Administration Section (Role-based) - Admin and Super Admin
+                    // Administration Section (Role-based) - Admin only
                     if (isAdmin) ...[
                       _buildMenuSection(
                         title: 'Administration',
                         items: [
-                          _buildMenuItem(
-                            icon: Icons.people_outline,
-                            title: 'User Management',
-                            subtitle: 'Manage system users',
-                            onTap: () {
-                              context.go('/users');
-                            },
-                          ),
+                          if (canAccessUsers)
+                            _buildMenuItem(
+                              icon: Icons.people_outline,
+                              title: 'User Management',
+                              subtitle: 'Manage system users',
+                              onTap: () {
+                                context.go('/users');
+                              },
+                            ),
                           _buildMenuItem(
                             icon: Icons.admin_panel_settings_outlined,
                             title: 'System Settings',
@@ -384,18 +422,47 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                               context.push('/system-settings');
                             },
                           ),
-                          _buildMenuItem(
-                            icon: Icons.analytics_outlined,
-                            title: 'Business Insights',
-                            subtitle: 'View analytics and reports',
-                            onTap: () {
-                              Log.d('Navigate to Business Insights');
-                              Navigator.pop(context);
-                              context.go('/insights');
-                            },
-                          ),
+                          if (canAccessInsights)
+                            _buildMenuItem(
+                              icon: Icons.analytics_outlined,
+                              title: 'Business Insights',
+                              subtitle: 'View analytics and reports',
+                              onTap: () {
+                                Log.d('Navigate to Business Insights');
+                                Navigator.pop(context);
+                                context.go('/insights');
+                              },
+                            ),
                         ],
                       ),
+                    ] else ...[
+                      // Show User Management and Business Insights for Managers outside Administration section
+                      if (canAccessUsers || canAccessInsights)
+                        _buildMenuSection(
+                          title: 'Management',
+                          items: [
+                            if (canAccessUsers)
+                              _buildMenuItem(
+                                icon: Icons.people_outline,
+                                title: 'User Management',
+                                subtitle: 'Manage system users',
+                                onTap: () {
+                                  context.go('/users');
+                                },
+                              ),
+                            if (canAccessInsights)
+                              _buildMenuItem(
+                                icon: Icons.analytics_outlined,
+                                title: 'Business Insights',
+                                subtitle: 'View analytics and reports',
+                                onTap: () {
+                                  Log.d('Navigate to Business Insights');
+                                  Navigator.pop(context);
+                                  context.go('/insights');
+                                },
+                              ),
+                          ],
+                        ),
                     ],
 
                     // App Management Section
@@ -447,8 +514,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.richGold.withOpacity(0.15),
-            ChoiceLuxTheme.richGold.withOpacity(0.05),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.15),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -457,7 +524,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -473,16 +540,16 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               gradient: LinearGradient(
                 colors: [
                   ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.7),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                 ],
               ),
             ),
             child: CircleAvatar(
               radius: 28,
-              backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+              backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
               child: Text(
                 displayName.substring(0, 1).toUpperCase(),
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.richGold,
                   fontWeight: FontWeight.w700,
                   fontSize: 20,
@@ -518,14 +585,14 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           Container(
             padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.directions_car,
               color: ChoiceLuxTheme.richGold,
               size: 24,
@@ -548,8 +615,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.richGold.withOpacity(0.15),
-            ChoiceLuxTheme.richGold.withOpacity(0.05),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.15),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: const BorderRadius.only(
@@ -558,7 +625,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -572,14 +639,14 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               Container(
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.directions_car,
                   color: ChoiceLuxTheme.richGold,
                   size: 32,
@@ -622,16 +689,16 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   gradient: LinearGradient(
                     colors: [
                       ChoiceLuxTheme.richGold,
-                      ChoiceLuxTheme.richGold.withOpacity(0.7),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                     ],
                   ),
                 ),
                 child: CircleAvatar(
                   radius: 24,
-                  backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                   child: Text(
                     displayName.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.w700,
                       fontSize: 18,
@@ -681,7 +748,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           padding: const EdgeInsets.fromLTRB(8, 20, 8, 12),
           child: Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               color: ChoiceLuxTheme.richGold,
               fontWeight: FontWeight.w600,
               fontSize: 12,
@@ -713,7 +780,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               children: [
                 Text(
                   title,
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
@@ -746,8 +813,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-        highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.05),
+        splashColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+        highlightColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 16),
           child: Row(
@@ -755,7 +822,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
@@ -767,7 +834,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.softWhite,
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
@@ -778,7 +845,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       Text(
                         subtitle,
                         style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                       ),
@@ -788,7 +855,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
               Icon(
                 Icons.chevron_right,
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.5),
                 size: 20,
               ),
             ],
@@ -809,7 +876,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           padding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
           child: Text(
             title,
-            style: TextStyle(
+            style: const TextStyle(
               color: ChoiceLuxTheme.richGold,
               fontWeight: FontWeight.w600,
               fontSize: 12,
@@ -834,8 +901,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(12),
-        splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-        highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.05),
+        splashColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+        highlightColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
           child: Row(
@@ -843,7 +910,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
@@ -855,7 +922,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   children: [
                     Text(
                       title,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.softWhite,
                         fontWeight: FontWeight.w500,
                         fontSize: 14,
@@ -864,7 +931,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -884,7 +951,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -898,12 +965,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               onPressed: () async {
                 await _showSignOutDialog(context);
               },
-              icon: Icon(
+              icon: const Icon(
                 Icons.logout,
                 color: ChoiceLuxTheme.errorColor,
                 size: 20,
               ),
-              label: Text(
+              label: const Text(
                 'Sign Out',
                 style: TextStyle(
                   color: ChoiceLuxTheme.errorColor,
@@ -911,12 +978,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                backgroundColor: ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                    color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -935,7 +1002,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       decoration: BoxDecoration(
         border: Border(
           top: BorderSide(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -949,12 +1016,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               onPressed: () async {
                 await _showSignOutDialog(context);
               },
-              icon: Icon(
+              icon: const Icon(
                 Icons.logout,
                 color: ChoiceLuxTheme.errorColor,
                 size: 20,
               ),
-              label: Text(
+              label: const Text(
                 'Sign Out',
                 style: TextStyle(
                   color: ChoiceLuxTheme.errorColor,
@@ -962,12 +1029,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                 ),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                backgroundColor: ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                   side: BorderSide(
-                    color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                    color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -989,10 +1056,10 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Icon(Icons.logout, color: ChoiceLuxTheme.errorColor, size: 24),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 'Sign Out',
                 style: TextStyle(
@@ -1002,7 +1069,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
             ],
           ),
-          content: Text(
+          content: const Text(
             'Are you sure you want to sign out?',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -1012,7 +1079,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
+              child: const Text(
                 'Cancel',
                 style: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,
@@ -1053,14 +1120,14 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Icon(
                 Icons.info_outline,
                 color: ChoiceLuxTheme.richGold,
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 'App Version',
                 style: TextStyle(
@@ -1070,7 +1137,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
             ],
           ),
-          content: Text(
+          content: const Text(
             'Version 1.0.0',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -1080,7 +1147,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
+              child: const Text(
                 'OK',
                 style: TextStyle(
                   color: ChoiceLuxTheme.richGold,
@@ -1103,14 +1170,14 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          title: Row(
+          title: const Row(
             children: [
               Icon(
                 Icons.update_outlined,
                 color: ChoiceLuxTheme.richGold,
                 size: 24,
               ),
-              const SizedBox(width: 12),
+              SizedBox(width: 12),
               Text(
                 'Check for Updates',
                 style: TextStyle(
@@ -1120,7 +1187,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
               ),
             ],
           ),
-          content: Text(
+          content: const Text(
             'Checking for updates...',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -1130,7 +1197,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
-              child: Text(
+              child: const Text(
                 'OK',
                 style: TextStyle(
                   color: ChoiceLuxTheme.richGold,
