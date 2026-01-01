@@ -42,16 +42,35 @@ class JobsRepository {
       if (isAdmin) {
         // Administrators and super_admin see all jobs
         Log.d('Admin/Super Admin access - fetching all jobs');
-      } else if ((userRole == 'manager' || userRole == 'driver_manager') &&
-          userId != null) {
-        // Managers and driver_managers see jobs they manage or drive
-        Log.d(
-            'Manager access - fetching jobs where manager_id or driver_id equals $userId');
-        query = query.or('manager_id.eq.$userId,driver_id.eq.$userId');
+      } else if (userRole == 'manager' && userId != null) {
+        // Managers see jobs they manage
+        Log.d('Manager access - fetching jobs where manager_id equals $userId');
+        query = query.eq('manager_id', userId);
+      } else if (userRole == 'driver_manager' && userId != null) {
+        // Driver managers see jobs they created or manage (NOT driver_id to prevent duplicates)
+        Log.d('Driver Manager - fetching jobs where created_by or manager_id equals $userId');
+        query = query.or('created_by.eq.$userId,manager_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers only see jobs assigned to them
-        Log.d('Driver - fetching only assigned jobs for userId: $userId');
-        query = query.eq('driver_id', userId);
+        // Drivers see jobs based on confirmation and start date rules
+        Log.d('Driver - fetching jobs with visibility rules for userId: $userId');
+        
+        // Get today's date range (today to tomorrow inclusive)
+        final now = DateTime.now();
+        final todayStart = DateTime(now.year, now.month, now.day);
+        final tomorrowEnd = todayStart.add(const Duration(days: 1)).add(
+          const Duration(hours: 23, minutes: 59, seconds: 59, milliseconds: 999),
+        );
+        final todayISO = todayStart.toIso8601String();
+        final tomorrowISO = tomorrowEnd.toIso8601String();
+        
+        // Driver visibility: unconfirmed OR confirmed in window OR no start date
+        query = query.or(
+          'and(driver_id.eq.$userId,driver_confirm_ind.eq.false),'
+          'and(driver_id.eq.$userId,is_confirmed.eq.false),'
+          'and(driver_id.eq.$userId,job_start_date.is.null),'
+          'and(driver_id.eq.$userId,driver_confirm_ind.eq.true,job_start_date.gte.$todayISO,job_start_date.lte.$tomorrowISO),'
+          'and(driver_id.eq.$userId,is_confirmed.eq.true,job_start_date.gte.$todayISO,job_start_date.lte.$tomorrowISO)'
+        );
       } else {
         // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
@@ -101,12 +120,12 @@ class JobsRepository {
       Log.d('Job created successfully with ID: ${response['id']}');
 
       // Send notification to assigned driver if one is assigned
-      if (job.driverId != null && job.driverId!.isNotEmpty) {
+      if (job.driverId.isNotEmpty) {
         try {
           Log.d('Sending notification to assigned driver: ${job.driverId}');
           await JobAssignmentService.notifyDriverOfNewJob(
             jobId: response['id'].toString(),
-            driverId: job.driverId!,
+            driverId: job.driverId,
           );
           Log.d('Driver notification sent successfully');
         } catch (notificationError) {
@@ -146,7 +165,7 @@ class JobsRepository {
       Log.d('Job updated successfully');
 
       // Check if driver was reassigned
-      if (currentDriverId != newDriverId && newDriverId != null && newDriverId.isNotEmpty) {
+      if (currentDriverId != newDriverId && newDriverId.isNotEmpty) {
         try {
           Log.d('Driver reassigned from $currentDriverId to $newDriverId');
           await JobAssignmentService.notifyDriverOfReassignment(
@@ -316,9 +335,10 @@ class JobsRepository {
     String status, {
     String? userId,
     String? userRole,
+    int? branchId,
   }) async {
     try {
-      Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole');
+      Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole${branchId != null ? ' (branch: $branchId)' : ''}');
 
       // Check if userId is available for role-based filtering
       final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
@@ -333,22 +353,49 @@ class JobsRepository {
           .eq('status', status);
 
       // Apply role-based filtering based on confirmed requirements
-      if (isAdmin || userRole == 'manager') {
-        // Administrators and managers see ALL jobs
-        Log.d('User has full access - fetching all jobs with status: $status');
+      if (isAdmin) {
+        // Administrators see ALL jobs
+        Log.d('Admin/Super Admin - fetching all jobs with status: $status');
         // No additional filtering needed
+      } else if (userRole == 'manager' && userId != null) {
+        // Managers see jobs they manage
+        Log.d('Manager - fetching jobs where manager_id equals $userId with status: $status');
+        query = query.eq('manager_id', userId);
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them with status: $status');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        // Driver managers see jobs they created or manage (NOT driver_id to prevent duplicates)
+        Log.d('Driver Manager - fetching jobs where created_by or manager_id equals $userId with status: $status');
+        query = query.or('created_by.eq.$userId,manager_id.eq.$userId');
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers see jobs assigned to them (current + completed)
-        Log.d('Driver - fetching assigned jobs with status: $status for userId: $userId');
-        query = query.eq('driver_id', userId);
+        // Drivers see jobs based on confirmation and start date rules
+        Log.d('Driver - fetching jobs with visibility rules for userId: $userId with status: $status');
+        
+        // Get today's date range (today to tomorrow inclusive)
+        final now = DateTime.now();
+        final todayStart = DateTime(now.year, now.month, now.day);
+        final tomorrowEnd = todayStart.add(const Duration(days: 1)).add(
+          const Duration(hours: 23, minutes: 59, seconds: 59, milliseconds: 999),
+        );
+        final todayISO = todayStart.toIso8601String();
+        final tomorrowISO = tomorrowEnd.toIso8601String();
+        
+        // Driver visibility: unconfirmed OR confirmed in window OR no start date
+        query = query.or(
+          'and(driver_id.eq.$userId,driver_confirm_ind.eq.false),'
+          'and(driver_id.eq.$userId,is_confirmed.eq.false),'
+          'and(driver_id.eq.$userId,job_start_date.is.null),'
+          'and(driver_id.eq.$userId,driver_confirm_ind.eq.true,job_start_date.gte.$todayISO,job_start_date.lte.$tomorrowISO),'
+          'and(driver_id.eq.$userId,is_confirmed.eq.true,job_start_date.gte.$todayISO,job_start_date.lte.$tomorrowISO)'
+        );
       } else {
         // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
+      }
+
+      // Apply branch filtering (after role-based filtering, before ordering)
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+        Log.d('Filtering jobs by branch_id: $branchId');
       }
 
       final response = await query.order('created_at', ascending: false);
@@ -675,7 +722,7 @@ class JobsRepository {
 
       if (jobEarliestPickup.isEmpty) {
         Log.d('No jobs found with pickup_date in range');
-        return Result.success({
+        return const Result.success({
           'jobs': <Job>[],
           'total': 0,
         });

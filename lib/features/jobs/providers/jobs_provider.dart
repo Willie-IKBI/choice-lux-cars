@@ -200,7 +200,17 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         return state.value ?? [];
       }
 
-      final result = await _jobsRepository.getJobsByStatus(status);
+      final userProfile = ref.read(currentUserProfileProvider);
+      final userId = userProfile?.id;
+      final userRole = userProfile?.role?.toLowerCase();
+      final branchId = userProfile?.branchId;
+
+      final result = await _jobsRepository.getJobsByStatus(
+        status,
+        userId: userId,
+        userRole: userRole,
+        branchId: branchId,
+      );
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -277,13 +287,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   }
 
   /// Convenience alias for old call sites
-  Future<void> fetchJobs() async => refreshJobs?.call() ?? _refreshCompat();
-
-  Future<void> _refreshCompat() async {
-    // Fallback refresh if refreshJobs() does not exist yet
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async => await build());
-  }
+  Future<void> fetchJobs() async => refreshJobs.call();
 
   /// Check if current user can create jobs
   bool get canCreateJobs {
@@ -367,7 +371,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       }
     } catch (error) {
       Log.e('Error confirming job: $error');
-      return null;
+      return;
     }
   }
 

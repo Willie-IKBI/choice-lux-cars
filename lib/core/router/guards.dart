@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
 
 /// Router guards for authentication and authorization
 ///
@@ -155,6 +156,8 @@ class RouterGuards {
   }) {
     Log.d('Router Guard - Checking route: $currentRoute, user: ${user?.id}, isPasswordRecovery: $isPasswordRecovery, isLoading: $isLoading, hasError: $hasError');
     
+    final permissionService = const PermissionService();
+    
     // Don't redirect while loading
     if (isLoading) {
       Log.d('Router Guard - Loading, no redirect');
@@ -202,8 +205,19 @@ class RouterGuards {
       return '/login';
     }
 
+    // Status override checks - block access for deactivated or suspended users
+    final userStatus = user?.userMetadata?['status'] as String?;
+    if (permissionService.isDeactivated(userStatus)) {
+      Log.d('Router Guard - User is deactivated, blocking access');
+      return '/login';
+    }
+    if (permissionService.isSuspended(userRole)) {
+      Log.d('Router Guard - User is suspended, blocking access');
+      return '/login';
+    }
+
     // User is authenticated, check role assignment
-    if (userRole == null || userRole == 'unassigned') {
+    if (permissionService.isUnassigned(userRole)) {
       if (currentRoute == '/pending-approval') {
         Log.d('Router Guard - User not assigned, but on pending approval route');
         return null; // Allow access to pending approval route
@@ -221,6 +235,42 @@ class RouterGuards {
         'Router Guard - Authenticated user on auth route, redirecting to dashboard',
       );
       return '/';
+    }
+
+    // Route-level role protection
+    if (currentRoute == '/users' || currentRoute.startsWith('/users/')) {
+      if (!permissionService.canAccessUsers(userRole)) {
+        Log.d('Router Guard - Access denied to /users for role: $userRole');
+        return '/';
+      }
+    }
+
+    if (currentRoute == '/vehicles' || currentRoute.startsWith('/vehicles/')) {
+      if (!permissionService.canAccessVehicles(userRole)) {
+        Log.d('Router Guard - Access denied to /vehicles for role: $userRole');
+        return '/';
+      }
+    }
+
+    if (currentRoute == '/clients' || currentRoute.startsWith('/clients/')) {
+      if (!permissionService.canAccessClients(userRole)) {
+        Log.d('Router Guard - Access denied to /clients for role: $userRole');
+        return '/';
+      }
+    }
+
+    if (currentRoute == '/insights' || currentRoute.startsWith('/insights/')) {
+      if (!permissionService.canAccessInsights(userRole)) {
+        Log.d('Router Guard - Access denied to /insights for role: $userRole');
+        return '/';
+      }
+    }
+
+    if (currentRoute == '/notification-settings' || currentRoute == '/settings/notifications') {
+      if (!permissionService.canAccessNotificationSettings(userRole)) {
+        Log.d('Router Guard - Access denied to /notification-settings for role: $userRole');
+        return '/';
+      }
     }
 
     // Allow access to protected routes
