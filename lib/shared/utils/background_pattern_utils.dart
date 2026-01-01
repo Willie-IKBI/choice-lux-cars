@@ -16,7 +16,7 @@ class BackgroundPatternPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = ChoiceLuxTheme.richGold.withOpacity(opacity)
+      ..color = ChoiceLuxTheme.richGold.withValues(alpha: opacity)
       ..strokeWidth = strokeWidth;
 
     // Draw subtle grid pattern

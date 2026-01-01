@@ -81,7 +81,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -361,11 +361,11 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
               height: isMobile ? 120 : 150,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(16),
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                 border: Border.all(
                   color: _isLogoUploading
-                      ? ChoiceLuxTheme.richGold.withOpacity(0.6)
-                      : ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      ? ChoiceLuxTheme.richGold.withValues(alpha: 0.6)
+                      : ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                   width: _isLogoUploading ? 3 : 2,
                 ),
               ),
@@ -393,7 +393,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                   : _companyLogoUrl != null
                   ? ClipRRect(
                       borderRadius: BorderRadius.circular(14),
-                      child: Container(
+                      child: SizedBox(
                         width: double.infinity,
                         height: double.infinity,
                         child: Image.network(
@@ -432,11 +432,11 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   }
 
   Widget _buildLogoPlaceholder() {
-    return Column(
+    return const Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Icon(Icons.add_a_photo, color: ChoiceLuxTheme.richGold, size: 32),
-        const SizedBox(height: 4),
+        SizedBox(height: 4),
         Text(
           'Add Logo',
           style: TextStyle(
@@ -513,7 +513,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
           fontSize: isMobile ? 14 : 16,
         ),
         hintStyle: TextStyle(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
           fontSize: isMobile ? 14 : 16,
         ),
       ),
@@ -641,7 +641,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        title: Text(
+        title: const Text(
           'Select Image Source',
           style: TextStyle(
             color: ChoiceLuxTheme.softWhite,
@@ -656,7 +656,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                 Icons.photo_library,
                 color: ChoiceLuxTheme.richGold,
               ),
-              title: Text(
+              title: const Text(
                 'Gallery',
                 style: TextStyle(color: ChoiceLuxTheme.softWhite),
               ),
@@ -667,7 +667,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                 Icons.camera_alt,
                 color: ChoiceLuxTheme.richGold,
               ),
-              title: Text(
+              title: const Text(
                 'Camera',
                 style: TextStyle(color: ChoiceLuxTheme.softWhite),
               ),
@@ -678,7 +678,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
@@ -717,7 +717,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         ),
       ),
       style: OutlinedButton.styleFrom(
-        side: BorderSide(
+        side: const BorderSide(
           color: ChoiceLuxTheme.richGold,
           width: 1.5,
         ),

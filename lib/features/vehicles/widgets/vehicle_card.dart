@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
-import 'license_status_badge.dart';
+import 'package:choice_lux_cars/features/vehicles/widgets/license_status_badge.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
 class VehicleCard extends StatelessWidget {
   final Vehicle vehicle;
   final VoidCallback? onTap;
-  const VehicleCard({Key? key, required this.vehicle, this.onTap})
-    : super(key: key);
+  const VehicleCard({super.key, required this.vehicle, this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -198,11 +197,5 @@ class VehicleCard extends StatelessWidget {
     return lowerStatus == 'deactivated' ||
         lowerStatus == 'deactive' ||
         lowerStatus == 'inactive';
-  }
-
-  bool _isVehicleActive(String status) {
-    final lowerStatus = status.toLowerCase();
-    // Check for active status values
-    return lowerStatus == 'active';
   }
 }

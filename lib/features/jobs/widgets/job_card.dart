@@ -546,19 +546,19 @@ class JobCard extends ConsumerWidget {
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               vertical: JobCardConstants.metricPaddingVerticalMobile,
               horizontal: JobCardConstants.metricPaddingHorizontalMobile,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 
                 JobCardConstants.metricBackgroundAlpha,
               ),
               borderRadius: BorderRadius.circular(
                 JobCardConstants.metricBorderRadiusMobile,
               ),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 
                   JobCardConstants.metricBorderAlpha,
                 ),
                 width: JobCardConstants.borderWidth,
@@ -569,14 +569,14 @@ class JobCard extends ConsumerWidget {
                 SizedBox(
                   width: iconSize * JobCardConstants.metricIconSizeMultiplier,
                   height: iconSize * JobCardConstants.metricIconSizeMultiplier,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       ChoiceLuxTheme.richGold,
                     ),
                   ),
                 ),
-                SizedBox(width: JobCardConstants.metricTileInnerSpacingMobile),
+                const SizedBox(width: JobCardConstants.metricTileInnerSpacingMobile),
                 Text(
                   'Loading progress...',
                   style: TextStyle(
@@ -604,19 +604,19 @@ class JobCard extends ConsumerWidget {
         final stepIcon = DriverFlowUtils.getStepIcon(currentStep);
 
         return Container(
-          padding: EdgeInsets.symmetric(
+          padding: const EdgeInsets.symmetric(
             vertical: JobCardConstants.metricPaddingVerticalMobile,
             horizontal: JobCardConstants.metricPaddingHorizontalMobile,
           ),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withOpacity(
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 
               JobCardConstants.metricBackgroundAlpha,
             ),
             borderRadius: BorderRadius.circular(
               JobCardConstants.metricBorderRadiusMobile,
             ),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 
                 JobCardConstants.metricBorderAlpha,
               ),
               width: JobCardConstants.borderWidth,
@@ -632,7 +632,7 @@ class JobCard extends ConsumerWidget {
                     size: iconSize * JobCardConstants.metricIconSizeMultiplier,
                     color: ChoiceLuxTheme.richGold,
                   ),
-                  SizedBox(
+                  const SizedBox(
                     width: JobCardConstants.metricTileInnerSpacingMobile,
                   ),
                   Expanded(
@@ -657,11 +657,11 @@ class JobCard extends ConsumerWidget {
                   ),
                 ],
               ),
-              SizedBox(height: JobCardConstants.metricTileInnerSpacingMobile),
+              const SizedBox(height: JobCardConstants.metricTileInnerSpacingMobile),
               LinearProgressIndicator(
                 value: progressPercentage / 100.0,
-                backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(
+                backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+                valueColor: const AlwaysStoppedAnimation<Color>(
                   ChoiceLuxTheme.richGold,
                 ),
                 minHeight: 4,
@@ -694,7 +694,7 @@ class JobCard extends ConsumerWidget {
         // Confirmation Status - Show for assigned driver
         if (isAssignedDriver) ...[
           Container(
-            padding: EdgeInsets.symmetric(
+            padding: const EdgeInsets.symmetric(
               vertical: JobCardConstants.confirmationPaddingVertical,
               horizontal: JobCardConstants.confirmationPaddingHorizontal,
             ),
@@ -732,7 +732,7 @@ class JobCard extends ConsumerWidget {
                       ? ChoiceLuxTheme.successColor
                       : ChoiceLuxTheme.orange,
                 ),
-                SizedBox(width: JobCardConstants.confirmationSpacing),
+                const SizedBox(width: JobCardConstants.confirmationSpacing),
                 Text(
                   isConfirmed ? 'Job Confirmed' : 'Awaiting Confirmation',
                   style: TextStyle(
@@ -746,7 +746,7 @@ class JobCard extends ConsumerWidget {
               ],
             ),
           ),
-          SizedBox(height: JobCardConstants.confirmationButtonSpacing),
+          const SizedBox(height: JobCardConstants.confirmationButtonSpacing),
         ],
 
         // Confirm Button - Show only for assigned driver who hasn't confirmed
@@ -780,7 +780,7 @@ class JobCard extends ConsumerWidget {
               ),
             ),
           ),
-          SizedBox(height: JobCardConstants.confirmationButtonSpacing),
+          const SizedBox(height: JobCardConstants.confirmationButtonSpacing),
         ],
 
         // Action buttons row
@@ -837,7 +837,7 @@ class JobCard extends ConsumerWidget {
                   ),
                 ),
               ),
-              SizedBox(width: JobCardConstants.actionButtonSpacing),
+              const SizedBox(width: JobCardConstants.actionButtonSpacing),
             ],
 
             // View Button
@@ -1133,20 +1133,6 @@ class JobCard extends ConsumerWidget {
     Log.d('Is Confirmed: ${job.isConfirmed}');
     Log.d('Driver Confirmation: ${job.driverConfirmation}');
 
-    final jobId = job.id is int ? job.id : int.tryParse(job.id.toString());
-    if (jobId == null) {
-      Log.d('Invalid job ID: ${job.id}');
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid job ID'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
-
     try {
       // Show loading state
       if (!context.mounted) return;
@@ -1180,7 +1166,7 @@ class JobCard extends ConsumerWidget {
 
       // Show success message
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Row(
             children: [
               Icon(Icons.check_circle, color: Colors.white, size: 20),
@@ -1206,8 +1192,8 @@ class JobCard extends ConsumerWidget {
         SnackBar(
           content: Row(
             children: [
-              Icon(Icons.error, color: Colors.white, size: 20),
-              SizedBox(width: 8),
+              const Icon(Icons.error, color: Colors.white, size: 20),
+              const SizedBox(width: 8),
               Text('An error occurred: ${e.toString()}'),
             ],
           ),

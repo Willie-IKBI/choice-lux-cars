@@ -84,7 +84,7 @@ class FirebaseService {
     try {
       if (kIsWeb) {
         // On web, pass vapidKey for token
-        final vapidKey = AppConstants.firebaseVapidKey;
+        const vapidKey = AppConstants.firebaseVapidKey;
         if (vapidKey.isEmpty) {
           Log.e('Web FCM: VAPID key is empty! Token will not work. Build with --dart-define=FIREBASE_VAPID_KEY=...');
           return null;

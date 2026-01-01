@@ -23,7 +23,7 @@ class NotificationListScreen extends ConsumerStatefulWidget {
 class _NotificationListScreenState
     extends ConsumerState<NotificationListScreen> {
   String _selectedFilter = 'all';
-  bool _showUnreadOnly = false;
+  final bool _showUnreadOnly = false;
   final ScrollController _scrollController = ScrollController();
 
   @override
@@ -54,7 +54,7 @@ class _NotificationListScreenState
         actions: [
           // Combined Actions Menu
           PopupMenuButton<String>(
-            icon: Icon(
+            icon: const Icon(
               Icons.more_vert,
               color: ChoiceLuxTheme.richGold,
               size: 20,
@@ -88,42 +88,42 @@ class _NotificationListScreenState
               ),
             ),
             itemBuilder: (context) => [
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'refresh',
                 child: Row(
                   children: [
                     Icon(Icons.refresh, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('Refresh', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'filter_all',
                 child: Row(
                   children: [
                     Icon(Icons.all_inbox, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('All Notifications', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'filter_unread',
                 child: Row(
                   children: [
                     Icon(Icons.mark_email_unread, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('Unread Only', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
               ),
-              PopupMenuItem(
+              const PopupMenuItem(
                 value: 'mark_all_read',
                 child: Row(
                   children: [
                     Icon(Icons.done_all, color: ChoiceLuxTheme.successColor, size: 18),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text('Mark All Read', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
@@ -221,31 +221,6 @@ class _NotificationListScreenState
     );
   }
 
-
-  PopupMenuItem<String> _buildFilterMenuItem(
-    String value,
-    String label,
-    IconData icon,
-  ) {
-    return PopupMenuItem(
-      value: value,
-      child: Row(
-        children: [
-          Icon(icon, color: ChoiceLuxTheme.richGold, size: 18),
-          const SizedBox(width: 12),
-          Text(
-            label,
-            style: TextStyle(
-              color: ChoiceLuxTheme.softWhite,
-              fontSize: 14,
-              fontWeight: FontWeight.w500,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildFilterSection() {
     return Consumer(
       builder: (context, ref, child) {
@@ -311,86 +286,8 @@ class _NotificationListScreenState
     );
   }
 
-  Widget _buildFilterChip({
-    required String label,
-    required bool selected,
-    required Function(bool) onSelected,
-  }) {
-    return FilterChip(
-      label: Text(
-        label,
-        style: TextStyle(
-          color: selected ? Colors.black : ChoiceLuxTheme.softWhite,
-          fontWeight: FontWeight.w600,
-          fontSize: 13,
-        ),
-      ),
-      selected: selected,
-      onSelected: onSelected,
-      backgroundColor: ChoiceLuxTheme.charcoalGray,
-      selectedColor: ChoiceLuxTheme.richGold,
-      checkmarkColor: Colors.black,
-      side: BorderSide(
-        color: selected
-            ? ChoiceLuxTheme.richGold
-            : ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-        width: 1,
-      ),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-    );
-  }
-
-  Widget _buildStatItem(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Expanded(
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, size: 18, color: color),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: color,
-                    ),
-                  ),
-                  Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: 11,
-                      fontWeight: FontWeight.w500,
-                      color: color.withValues(alpha: 0.8),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   Widget _buildLoadingState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
@@ -398,7 +295,7 @@ class _NotificationListScreenState
             color: ChoiceLuxTheme.richGold,
             strokeWidth: 3,
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'Loading notifications...',
             style: TextStyle(
@@ -417,9 +314,9 @@ class _NotificationListScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
+          const Icon(Icons.error_outline, size: 64, color: ChoiceLuxTheme.errorColor),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Error loading notifications',
             style: TextStyle(
               color: ChoiceLuxTheme.softWhite,
@@ -430,7 +327,7 @@ class _NotificationListScreenState
           const SizedBox(height: 8),
           Text(
             error,
-            style: TextStyle(
+            style: const TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
               fontSize: 14,
             ),
@@ -463,14 +360,14 @@ class _NotificationListScreenState
                 width: 2,
               ),
             ),
-            child: Icon(
+            child: const Icon(
               Icons.notifications_none,
               size: 64,
               color: ChoiceLuxTheme.richGold,
             ),
           ),
           const SizedBox(height: 24),
-          Text(
+          const Text(
             'No notifications',
             style: TextStyle(
               color: ChoiceLuxTheme.softWhite,
@@ -479,7 +376,7 @@ class _NotificationListScreenState
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          const Text(
             'You\'re all caught up!',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -645,49 +542,6 @@ class _NotificationListScreenState
     }
   }
 
-
-  Widget _buildStatCard(
-    String label,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Container(
-      height: 100, // Fixed height for consistency
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withValues(alpha: 0.3), width: 1),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(icon, color: color, size: 24),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: 20,
-              fontWeight: FontWeight.bold,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver,
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-            ),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
-    );
-  }
-
   Widget _buildSummaryCard(
     int totalCount,
     int unreadCount,
@@ -721,14 +575,14 @@ class _NotificationListScreenState
                   color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.notifications_active,
                   color: ChoiceLuxTheme.richGold,
                   size: 20,
                 ),
               ),
               const SizedBox(width: 12),
-              Text(
+              const Text(
                 'Notification Summary',
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
@@ -847,21 +701,21 @@ class _NotificationListScreenState
             width: 1,
           ),
         ),
-        title: Text(
+        title: const Text(
           'Mark All as Read',
           style: TextStyle(
             color: ChoiceLuxTheme.softWhite,
             fontWeight: FontWeight.w600,
           ),
         ),
-        content: Text(
+        content: const Text(
           'Are you sure you want to mark all notifications as read?',
           style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),

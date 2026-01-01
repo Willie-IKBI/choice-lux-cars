@@ -5,7 +5,8 @@ import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/invoices/providers/invoice_controller.dart';
 import 'package:choice_lux_cars/features/invoices/services/invoice_sharing_service.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
-import 'package:choice_lux_cars/features/jobs/jobs.dart';
+import 'package:choice_lux_cars/core/providers/job_invoice_provider.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
 
 class InvoiceActionButtons extends ConsumerStatefulWidget {
   final String jobId;
@@ -34,30 +35,13 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
   Widget build(BuildContext context) {
     final invoiceState = ref.watch(invoiceControllerProvider);
     
-    // Watch jobs provider to get the most up-to-date job data
-    final jobsAsync = ref.watch(jobsProvider);
-    final currentJob = jobsAsync.when(
-      data: (jobs) {
-        try {
-          final job = jobs.firstWhere(
-            (job) => job.id.toString() == widget.jobId,
-          );
-          // Debug: Print job data to see if invoice PDF is updated
-          print('Job ${widget.jobId} invoice PDF: ${job.invoicePdf}');
-          return job;
-        } catch (e) {
-          // Job not found in current data, return null
-          print('Job ${widget.jobId} not found in jobs list');
-          return null;
-        }
-      },
-      loading: () => null,
-      error: (_, __) => null,
+    // Watch job invoice PDF provider to get the most up-to-date invoice PDF URL
+    final invoicePdfAsync = ref.watch(jobInvoicePdfProvider(widget.jobId));
+    final currentInvoicePdfUrl = invoicePdfAsync.when(
+      data: (invoicePdf) => invoicePdf ?? widget.invoicePdfUrl,
+      loading: () => widget.invoicePdfUrl,
+      error: (_, __) => widget.invoicePdfUrl,
     );
-
-    // Use the most up-to-date invoice PDF URL from the job data
-    final currentInvoicePdfUrl = currentJob?.invoicePdf ?? widget.invoicePdfUrl;
-    print('Current invoice PDF URL for job ${widget.jobId}: $currentInvoicePdfUrl');
 
     return InvoiceActionBar(
       jobId: widget.jobId,
@@ -83,26 +67,20 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
           .read(invoiceControllerProvider.notifier)
           .createInvoice(jobId: widget.jobId);
 
-      // Force refresh jobs data to show updated invoice status
-      print('Invoice created - refreshing jobs data...');
-      await ref.read(jobsProvider.notifier).refreshJobs();
-      
-      // Force widget rebuild by invalidating the jobs provider
-      ref.invalidate(jobsProvider);
+      // Refresh job invoice PDF URL to show updated invoice status
+      ref.invalidate(jobInvoicePdfProvider(widget.jobId));
       
       // Add a small delay to ensure the database update has propagated
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      print('Invoice refresh completed for job ${widget.jobId}');
 
       if (mounted) {
         setState(() {
           _isCreatingInvoice = false;
         });
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Invoice created successfully!'),
-            backgroundColor: Colors.green,
+          SnackBar(
+            content: const Text('Invoice created successfully!'),
+            backgroundColor: context.tokens.successColor,
           ),
         );
       }
@@ -114,7 +92,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to create invoice: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.warningColor,
           ),
         );
       }
@@ -148,17 +126,14 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
             .read(invoiceControllerProvider.notifier)
             .regenerateInvoice(jobId: widget.jobId);
 
-        // Force refresh jobs data to show updated invoice status
-        await ref.read(jobsProvider.notifier).refreshJobs();
-        
-        // Force widget rebuild by invalidating the jobs provider
-        ref.invalidate(jobsProvider);
+        // Refresh job invoice PDF URL to show updated invoice status
+        ref.invalidate(jobInvoicePdfProvider(widget.jobId));
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Invoice regenerated successfully!'),
-              backgroundColor: Colors.green,
+            SnackBar(
+              content: const Text('Invoice regenerated successfully!'),
+              backgroundColor: context.tokens.successColor,
             ),
           );
         }
@@ -167,7 +142,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text('Failed to regenerate invoice: ${e.toString()}'),
-              backgroundColor: Colors.red,
+              backgroundColor: context.tokens.warningColor,
             ),
           );
         }
@@ -196,7 +171,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to open invoice: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.warningColor,
           ),
         );
       }
@@ -204,23 +179,13 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
   }
 
   Future<void> _showShareOptions() async {
-    // Get the most current job data
-    final jobsAsync = ref.read(jobsProvider);
-    final currentJob = jobsAsync.when(
-      data: (jobs) {
-        try {
-          return jobs.firstWhere(
-            (job) => job.id.toString() == widget.jobId,
-          );
-        } catch (e) {
-          return null;
-        }
-      },
-      loading: () => null,
-      error: (_, __) => null,
+    // Get the most current invoice PDF URL
+    final invoicePdfAsync = ref.read(jobInvoicePdfProvider(widget.jobId));
+    final currentInvoicePdfUrl = invoicePdfAsync.when(
+      data: (invoicePdf) => invoicePdf ?? widget.invoicePdfUrl,
+      loading: () => widget.invoicePdfUrl,
+      error: (_, __) => widget.invoicePdfUrl,
     );
-    
-    final currentInvoicePdfUrl = currentJob?.invoicePdf ?? widget.invoicePdfUrl;
     
     if (currentInvoicePdfUrl == null || widget.invoiceData == null) return;
 
@@ -234,7 +199,7 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Failed to share invoice: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            backgroundColor: context.tokens.warningColor,
           ),
         );
       }
@@ -286,7 +251,7 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
       builder: (context, constraints) {
         final isTight = constraints.maxWidth < 200;
         final horizontalGap = isTight ? 4.0 : 8.0;
-        final verticalGap = 4.0;
+        const verticalGap = 4.0;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -436,18 +401,20 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: null, // Disabled during creation
-          icon: const SizedBox(
+          icon: SizedBox(
             width: 16,
             height: 16,
             child: CircularProgressIndicator(
               strokeWidth: 2,
-              valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              valueColor: AlwaysStoppedAnimation<Color>(
+                context.colorScheme.onPrimary,
+              ),
             ),
           ),
           label: const Text('Creating Invoice...', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.orange,
-            foregroundColor: Colors.white,
+            backgroundColor: context.colorScheme.primary,
+            foregroundColor: context.colorScheme.onPrimary,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             minimumSize: const Size(0, 36),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -484,8 +451,8 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
           icon: const Icon(Icons.check_circle, size: 16),
           label: const Text('Invoice Created', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
+            backgroundColor: context.tokens.successColor,
+            foregroundColor: context.tokens.onSuccess,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             minimumSize: const Size(0, 36),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -612,7 +579,7 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
             icon,
             size: 16,
             color: onTap == null
-                ? Colors.grey
+                ? context.tokens.textSubtle
                 : Theme.of(context).colorScheme.onSecondaryContainer,
           ),
         ),
@@ -684,19 +651,28 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
         decoration: BoxDecoration(
-          color: Colors.red.withValues(alpha: 0.1),
+          color: context.tokens.warningColor.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(4),
-          border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
+          border: Border.all(
+            color: context.tokens.warningColor.withValues(alpha: 0.3),
+          ),
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.error, size: 12, color: Colors.red[700]),
+            Icon(
+              Icons.error,
+              size: 12,
+              color: context.tokens.warningColor,
+            ),
             const SizedBox(width: 4),
             Expanded(
               child: Text(
                 widget.invoiceState.errorMessage ?? 'Failed to create invoice',
-                style: TextStyle(fontSize: 10, color: Colors.red[700]),
+                style: context.textTheme.bodySmall?.copyWith(
+                  color: context.tokens.warningColor,
+                  fontSize: 10,
+                ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
               ),

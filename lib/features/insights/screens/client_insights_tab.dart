@@ -55,11 +55,11 @@ class ClientInsightsTab extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+              border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.business_outlined,
                   color: ChoiceLuxTheme.richGold,
                   size: 32,
@@ -82,7 +82,7 @@ class ClientInsightsTab extends ConsumerWidget {
                         '${insights.totalClients} clients • ${insights.activeClients} active • ${insights.vipClients} VIP',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -279,9 +279,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: insights.clientsByStatus.entries.map((entry) {
@@ -319,7 +319,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     Text(
                       '$count clients',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -427,9 +427,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -448,9 +448,9 @@ class ClientInsightsTab extends ConsumerWidget {
   Widget _buildTopClientsList(List<TopClient> clients, String metricType) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: ListView.builder(
         shrinkWrap: true,
@@ -463,7 +463,7 @@ class ClientInsightsTab extends ConsumerWidget {
             decoration: BoxDecoration(
               border: index < clients.length - 1
                   ? Border(
-                      bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                      bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                     )
                   : null,
             ),
@@ -473,13 +473,13 @@ class ClientInsightsTab extends ConsumerWidget {
                   width: 40,
                   height: 40,
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Center(
                     child: Text(
                       '${index + 1}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.bold,
                         fontSize: 18,
@@ -543,7 +543,7 @@ class ClientInsightsTab extends ConsumerWidget {
                       const SizedBox(height: 4),
                       Text(
                         '${client.conversionRate!.toStringAsFixed(1)}% conv.',
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: Colors.green,
                           fontSize: 12,
                         ),
@@ -563,18 +563,18 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.warning, color: Colors.orange, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'At-Risk Clients (No activity in 30+ days)',
                 style: TextStyle(
                   color: Colors.white,
@@ -606,7 +606,7 @@ class ClientInsightsTab extends ConsumerWidget {
                           Text(
                             '${client.daysSinceLastActivity} days since last activity',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -633,18 +633,18 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue.withOpacity(0.1),
+        color: Colors.blue.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.blue.withOpacity(0.3)),
+        border: Border.all(color: Colors.blue.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.person_add, color: Colors.blue, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'New Clients (First activity in period)',
                 style: TextStyle(
                   color: Colors.white,
@@ -676,7 +676,7 @@ class ClientInsightsTab extends ConsumerWidget {
                           Text(
                             '${client.jobCount} jobs • ${client.quoteCount} quotes',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -702,9 +702,9 @@ class ClientInsightsTab extends ConsumerWidget {
   Widget _buildTopAgentsList(List<TopAgent> agents) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: ListView.builder(
         shrinkWrap: true,
@@ -717,13 +717,13 @@ class ClientInsightsTab extends ConsumerWidget {
             decoration: BoxDecoration(
               border: index < agents.length - 1
                   ? Border(
-                      bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                      bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
                     )
                   : null,
             ),
             child: Row(
               children: [
-                Icon(Icons.person, color: Colors.indigo, size: 24),
+                const Icon(Icons.person, color: Colors.indigo, size: 24),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -741,7 +741,7 @@ class ClientInsightsTab extends ConsumerWidget {
                       Text(
                         agent.clientName,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 14,
                         ),
                       ),
@@ -763,7 +763,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     Text(
                       '${agent.jobCount} jobs • ${agent.quoteCount} quotes',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                         fontSize: 12,
                       ),
                     ),
@@ -781,9 +781,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: [
@@ -793,7 +793,7 @@ class ClientInsightsTab extends ConsumerWidget {
               Expanded(
                 child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'VIP Clients',
                       style: TextStyle(
                         color: Colors.amber,
@@ -814,7 +814,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     Text(
                       'R${(insights.revenueByTier['VIP'] ?? 0.0).toStringAsFixed(0)}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -824,12 +824,12 @@ class ClientInsightsTab extends ConsumerWidget {
               Container(
                 width: 1,
                 height: 60,
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
               ),
               Expanded(
                 child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'Regular Clients',
                       style: TextStyle(
                         color: Colors.blue,
@@ -850,7 +850,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     Text(
                       'R${(insights.revenueByTier['Regular'] ?? 0.0).toStringAsFixed(0)}',
                       style: TextStyle(
-                        color: Colors.white.withOpacity(0.8),
+                        color: Colors.white.withValues(alpha: 0.8),
                         fontSize: 14,
                       ),
                     ),
@@ -868,9 +868,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: jobsByStatus.entries.map((entry) {
@@ -906,9 +906,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: quotesByStatus.entries.map((entry) {
@@ -944,9 +944,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.2),
+        color: color.withValues(alpha: 0.2),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Text(
         label,
@@ -992,7 +992,7 @@ class ClientInsightsTab extends ConsumerWidget {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
         color: Colors.white,
@@ -1017,9 +1017,9 @@ class ClientInsightsTab extends ConsumerWidget {
     return Container(
       padding: cardPadding,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -1027,10 +1027,10 @@ class ClientInsightsTab extends ConsumerWidget {
           Container(
             padding: EdgeInsets.all(iconContainerPadding),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(borderRadius * 0.8),
               border: Border.all(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -1051,7 +1051,7 @@ class ClientInsightsTab extends ConsumerWidget {
             title,
             style: TextStyle(
               fontSize: titleFontSize,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -1083,15 +1083,15 @@ class ClientInsightsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: Colors.red,
             size: 64,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load client insights',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -1101,7 +1101,7 @@ class ClientInsightsTab extends ConsumerWidget {
           Text(
             error,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),

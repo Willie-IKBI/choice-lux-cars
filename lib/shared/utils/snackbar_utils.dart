@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Centralized SnackBar utilities to eliminate duplicate functions
@@ -9,7 +9,7 @@ class SnackBarUtils {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: ChoiceLuxTheme.successColor,
+        backgroundColor: context.tokens.successColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: const Duration(seconds: 3),
@@ -22,7 +22,7 @@ class SnackBarUtils {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: ChoiceLuxTheme.errorColor,
+        backgroundColor: context.tokens.warningColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: const Duration(seconds: 4),
@@ -35,7 +35,7 @@ class SnackBarUtils {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: ChoiceLuxTheme.orange,
+        backgroundColor: context.colorScheme.primary,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: const Duration(seconds: 3),
@@ -48,7 +48,7 @@ class SnackBarUtils {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(message),
-        backgroundColor: ChoiceLuxTheme.infoColor,
+        backgroundColor: context.tokens.infoColor,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
         duration: const Duration(seconds: 3),
@@ -67,7 +67,7 @@ class SnackBarUtils {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: ChoiceLuxTheme.successColor,
+            backgroundColor: context.tokens.successColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),
@@ -93,7 +93,7 @@ class SnackBarUtils {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(message),
-            backgroundColor: ChoiceLuxTheme.errorColor,
+            backgroundColor: context.tokens.warningColor,
             behavior: SnackBarBehavior.floating,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(8),

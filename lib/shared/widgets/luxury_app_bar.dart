@@ -56,13 +56,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
-            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
+            ChoiceLuxTheme.jetBlack.withValues(alpha:  0.95),
+            ChoiceLuxTheme.jetBlack.withValues(alpha:  0.90),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.15),
+            color: Colors.black.withValues(alpha:  0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
             spreadRadius: 0,
@@ -146,15 +146,15 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _buildBackButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+        color: ChoiceLuxTheme.richGold.withValues(alpha:  0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha:  0.2),
           width: 1,
         ),
       ),
       child: IconButton(
-        icon: Icon(
+        icon: const Icon(
           Icons.arrow_back_ios_new_rounded,
           color: ChoiceLuxTheme.richGold,
           size: 20,
@@ -188,15 +188,15 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   Widget _buildMenuButton(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+        color: ChoiceLuxTheme.richGold.withValues(alpha:  0.1),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha:  0.2),
           width: 1,
         ),
       ),
       child: IconButton(
-        icon: Icon(
+        icon: const Icon(
           Icons.menu_rounded,
           color: ChoiceLuxTheme.richGold,
           size: 20,
@@ -222,18 +222,18 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         gradient: LinearGradient(
           colors: [
             ChoiceLuxTheme.richGold,
-            ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
+            ChoiceLuxTheme.richGold.withValues(alpha:  0.8),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.25),
+            color: ChoiceLuxTheme.richGold.withValues(alpha:  0.25),
             blurRadius: 12,
             spreadRadius: 2,
           ),
         ],
       ),
-      child: CircleAvatar(
+      child: const CircleAvatar(
         radius: 18,
         backgroundColor: ChoiceLuxTheme.jetBlack,
         child: Icon(
@@ -290,16 +290,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: Container(
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+          color: ChoiceLuxTheme.richGold.withValues(alpha:  0.1),
           borderRadius: BorderRadius.circular(10),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+            color: ChoiceLuxTheme.richGold.withValues(alpha:  0.2),
             width: 1,
           ),
         ),
         child: Stack(
           children: [
-            Icon(
+            const Icon(
               Icons.person_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 20,
@@ -322,7 +322,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 child: Center(
                   child: Text(
                     displayName.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.jetBlack,
                       fontSize: 7,
                       fontWeight: FontWeight.bold,
@@ -350,16 +350,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     gradient: LinearGradient(
                       colors: [
                         ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
+                        ChoiceLuxTheme.richGold.withValues(alpha:  0.7),
                       ],
                     ),
                   ),
                   child: CircleAvatar(
                     radius: 18,
-                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:  0.2),
                     child: Text(
                       displayName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.w700,
                         fontSize: 16,
@@ -374,7 +374,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     children: [
                       Text(
                         displayName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.softWhite,
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -384,7 +384,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         const SizedBox(height: 2),
                         Text(
                           userProfile!.role!.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
                             fontSize: 11,
@@ -463,10 +463,10 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+          color: ChoiceLuxTheme.richGold.withValues(alpha:  0.1),
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha:  0.3),
             width: 1,
           ),
         ),
@@ -481,16 +481,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 gradient: LinearGradient(
                   colors: [
                     ChoiceLuxTheme.richGold,
-                    ChoiceLuxTheme.richGold.withOpacity(0.7),
+                    ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                   ],
                 ),
               ),
               child: CircleAvatar(
                 radius: 16,
-                backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                 child: Text(
                   displayName.substring(0, 1).toUpperCase(),
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w700,
                     fontSize: 14,
@@ -501,14 +501,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             const SizedBox(width: 12),
             Text(
               displayName,
-              style: TextStyle(
+              style: const TextStyle(
                 color: ChoiceLuxTheme.softWhite,
                 fontWeight: FontWeight.w500,
                 fontSize: 15,
               ),
             ),
             const SizedBox(width: 8),
-            Icon(
+            const Icon(
               Icons.keyboard_arrow_down_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 18,
@@ -532,16 +532,16 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     gradient: LinearGradient(
                       colors: [
                         ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.7),
+                        ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                       ],
                     ),
                   ),
                   child: CircleAvatar(
                     radius: 22,
-                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                     child: Text(
                       displayName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.richGold,
                         fontWeight: FontWeight.w700,
                         fontSize: 18,
@@ -556,7 +556,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     children: [
                       Text(
                         displayName,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.softWhite,
                           fontWeight: FontWeight.w600,
                           fontSize: 18,
@@ -566,7 +566,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                         const SizedBox(height: 2),
                         Text(
                           userProfile!.role!.toUpperCase(),
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontWeight: FontWeight.w500,
                             fontSize: 13,
@@ -664,17 +664,17 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+                  color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.logout_rounded,
                   color: ChoiceLuxTheme.errorColor,
                   size: 24,
                 ),
               ),
               const SizedBox(width: 16),
-              Text(
+              const Text(
                 'Sign Out',
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
@@ -684,7 +684,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               ),
             ],
           ),
-          content: Text(
+          content: const Text(
             'Are you sure you want to sign out?',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -694,7 +694,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(false),
-              child: Text(
+              child: const Text(
                 'Cancel',
                 style: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,

@@ -203,14 +203,14 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               border: Border(
-                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.filter_list,
                   color: ChoiceLuxTheme.richGold,
                   size: 20,
@@ -227,7 +227,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                 Text(
                   '$_totalJobs jobs',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -248,15 +248,15 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.error_outline,
                               color: Colors.red,
                               size: 48,
                             ),
                             const SizedBox(height: 16),
-                            Text(
+                            const Text(
                               'Error loading jobs',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -266,7 +266,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                             Text(
                               _error!,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -288,14 +288,14 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                               children: [
                                 Icon(
                                   Icons.work_off,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Colors.white.withValues(alpha: 0.5),
                                   size: 64,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No jobs found',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 18,
                                   ),
                                 ),

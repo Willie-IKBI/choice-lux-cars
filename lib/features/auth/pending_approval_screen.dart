@@ -31,11 +31,11 @@ class PendingApprovalScreen extends ConsumerWidget {
               constraints: const BoxConstraints(maxWidth: 500),
               child: Card(
                 elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.3),
+                shadowColor: Colors.black.withValues(alpha: 0.3),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -48,10 +48,10 @@ class PendingApprovalScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.pending_actions,
                           size: 64,
                           color: ChoiceLuxTheme.richGold,
@@ -86,7 +86,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                       Text(
                         'Your account has been created successfully, but it requires administrator approval before you can access the system.',
                         style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
+                          color: ChoiceLuxTheme.softWhite.withValues(alpha: 0.8),
                           height: 1.5,
                         ),
                         textAlign: TextAlign.center,
@@ -97,10 +97,10 @@ class PendingApprovalScreen extends ConsumerWidget {
                       Container(
                         padding: const EdgeInsets.all(20),
                         decoration: BoxDecoration(
-                          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+                          color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(
-                            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                             width: 1,
                           ),
                         ),
@@ -108,7 +108,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                           children: [
                             Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.info_outline,
                                   color: ChoiceLuxTheme.richGold,
                                   size: 20,
@@ -132,7 +132,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                               '• You can then log in and start using the app',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
-                                    color: ChoiceLuxTheme.softWhite.withOpacity(
+                                    color: ChoiceLuxTheme.softWhite.withValues(alpha: 
                                       0.8,
                                     ),
                                     height: 1.4,
@@ -153,7 +153,7 @@ class PendingApprovalScreen extends ConsumerWidget {
                           icon: const Icon(Icons.logout),
                           label: const Text('Sign Out'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red.withOpacity(0.8),
+                            backgroundColor: Colors.red.withValues(alpha: 0.8),
                             foregroundColor: Colors.white,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(

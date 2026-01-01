@@ -387,7 +387,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
           ),
           body: Stack( // The body is now just the content stack
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               isDesktop
@@ -595,7 +595,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                 color: _getStatusColor(),
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.work, color: Colors.white, size: 24), // Reduced from 28
+              child: const Icon(Icons.work, color: Colors.white, size: 24), // Reduced from 28
             ),
             const SizedBox(width: 12), // Reduced from 16
             Expanded(
@@ -664,10 +664,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
-                const SizedBox(width: 12),
+                Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+                SizedBox(width: 12),
                 Text(
                   'Job Cancelled',
                   style: TextStyle(
@@ -682,7 +682,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             if (_job!.cancelReason?.isNotEmpty == true)
               Text(
                 'Reason: ${_job!.cancelReason}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.softWhite,
                   fontSize: 14,
                 ),
@@ -690,7 +690,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             const SizedBox(height: 6),
             Text(
               'Cancelled by $cancelledByName',
-              style: TextStyle(
+              style: const TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
                 fontSize: 13,
               ),
@@ -698,7 +698,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             if (_job!.cancelledAt != null)
               Text(
                 'Cancelled at $cancelledAtText',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,
                   fontSize: 13,
                 ),
@@ -841,10 +841,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                 color: ChoiceLuxTheme.errorColor.withValues(alpha:0.3),
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
                 Icon(Icons.warning, color: ChoiceLuxTheme.errorColor, size: 20),
-                const SizedBox(width: 8),
+                SizedBox(width: 8),
                 Expanded(
                   child: Text(
                     'Passenger details incomplete',
@@ -955,7 +955,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.attach_money,
                   color: ChoiceLuxTheme.richGold,
                   size: 20,
@@ -963,7 +963,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                 const SizedBox(width: 8),
                 Text(
                   'Amount to Collect: R${_job!.paymentAmount!.toStringAsFixed(2)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -1094,7 +1094,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                       // Trigger a rebuild of the timeline
                     });
                   },
-                  icon: Icon(
+                  icon: const Icon(
                     Icons.refresh,
                     color: ChoiceLuxTheme.richGold,
                   ),
@@ -1201,14 +1201,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Row(
+                            const Row(
                               children: [
                                 Icon(
                                   Icons.analytics,
                                   color: ChoiceLuxTheme.richGold,
                                   size: 24,
                                 ),
-                                const SizedBox(width: 12),
+                                SizedBox(width: 12),
                                 Text(
                                   'Overall Progress',
                                   style: TextStyle(
@@ -1229,7 +1229,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                                   Row(
                                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Text(
+                                      const Text(
                                         'Progress',
                                         style: TextStyle(
                                           fontSize: 12,
@@ -1239,7 +1239,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                                       ),
                                       Text(
                                         '${_driverFlowData!['progress_percentage']?.toString() ?? '0'}%',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 12,
                                           fontWeight: FontWeight.w600,
                                           color: ChoiceLuxTheme.richGold,
@@ -1251,7 +1251,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                                   LinearProgressIndicator(
                                     value: (_driverFlowData!['progress_percentage'] ?? 0) / 100.0,
                                     backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:0.2),
-                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                    valueColor: const AlwaysStoppedAnimation<Color>(
                                       ChoiceLuxTheme.richGold,
                                     ),
                                     minHeight: 6,
@@ -1320,7 +1320,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                                 ),
                                 child: Row(
                                   children: [
-                                    Icon(
+                                    const Icon(
                                       Icons.info_outline,
                                       color: ChoiceLuxTheme.infoColor,
                                       size: 20,
@@ -1329,7 +1329,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                                     Expanded(
                                       child: Text(
                                         'Current Step: ${_getCurrentStepDisplayName(_driverFlowData!['current_step'])}',
-                                        style: TextStyle(
+                                        style: const TextStyle(
                                           fontSize: 14,
                                           fontWeight: FontWeight.w600,
                                           color: ChoiceLuxTheme.infoColor,
@@ -1451,7 +1451,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                           step['status'] == 'not_started'
                               ? 'Not Started'
                               : 'In Progress',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 10,
                             fontWeight: FontWeight.w600,
@@ -1471,7 +1471,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                             color: ChoiceLuxTheme.richGold.withValues(alpha:0.5),
                           ),
                         ),
-                        child: Icon(
+                        child: const Icon(
                           Icons.play_arrow,
                           color: ChoiceLuxTheme.richGold,
                           size: 16,
@@ -1550,7 +1550,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.attach_money,
                           size: 12,
                           color: ChoiceLuxTheme.richGold,
@@ -1558,7 +1558,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                         const SizedBox(width: 4),
                         Text(
                           step['tripAmount']!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
                             color: ChoiceLuxTheme.richGold,
@@ -1583,7 +1583,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.schedule,
                           size: 12,
                           color: Colors.green,
@@ -1591,7 +1591,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                         const SizedBox(width: 4),
                         Text(
                           step['tripDate']!,
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w500,
                             color: Colors.green,
@@ -1616,7 +1616,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                     child: Text(
                       step['startOdometer']!,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: ChoiceLuxTheme.successColor,
@@ -1689,7 +1689,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                     child: Text(
                       step['totalDistance']!,
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: ChoiceLuxTheme.richGold,
@@ -1705,7 +1705,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Text(
+                            const Text(
                               'Progress',
                               style: TextStyle(
                                 fontSize: 12,
@@ -1715,7 +1715,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                             ),
                             Text(
                               '${step['progressPercentage'].toInt()}%',
-                              style: TextStyle(
+                              style: const TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.w600,
                                 color: ChoiceLuxTheme.richGold,
@@ -1729,7 +1729,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                           backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha:
                             0.2,
                           ),
-                          valueColor: AlwaysStoppedAnimation<Color>(
+                          valueColor: const AlwaysStoppedAnimation<Color>(
                             ChoiceLuxTheme.richGold,
                           ),
                           minHeight: 4,
@@ -1750,7 +1750,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                     child: Row(
                       children: [
-                        Icon(
+                        const Icon(
                           Icons.check_circle,
                           color: ChoiceLuxTheme.successColor,
                           size: 16,
@@ -1758,7 +1758,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                         const SizedBox(width: 8),
                         Text(
                           'Completed on: ${_formatDateTime(step['completedAt'])}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             fontSize: 12, 
                             color: ChoiceLuxTheme.successColor,
                             fontWeight: FontWeight.w500,
@@ -1924,7 +1924,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                   color: ChoiceLuxTheme.richGold.withValues(alpha:0.15),
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Text(
+                child: const Text(
                   'R',
                   style: TextStyle(
                     color: Colors.black,
@@ -1936,7 +1936,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
               const SizedBox(width: 12),
               Text(
                 'Total Amount: R${totalAmount.toStringAsFixed(2)}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.richGold,
                   fontWeight: FontWeight.bold,
                   fontSize: 18,
@@ -1974,7 +1974,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
               final index = entry.key;
               final trip = entry.value;
               return _buildTripCard(trip, index);
-            }).toList(),
+            }),
           ],
         ),
       ),
@@ -2028,8 +2028,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
                     ),
                   ),
                   child: Text(
-                    'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
-                    style: TextStyle(
+                    'R${trip.amount.toStringAsFixed(2)}',
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -2052,17 +2052,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             const SizedBox(height: 12),
             _buildDetailRow(
               'Date & Time',
-              trip.formattedDateTime ?? 'Not set',
+              trip.formattedDateTime,
               Icons.access_time,
             ),
             _buildDetailRow(
               'Pick-up',
-              trip.pickupLocation ?? 'Not set',
+              trip.pickupLocation,
               Icons.location_on,
             ),
             _buildDetailRow(
               'Drop-off',
-              trip.dropoffLocation ?? 'Not set',
+              trip.dropoffLocation,
               Icons.location_off,
             ),
             if (trip.notes != null && trip.notes!.isNotEmpty)
@@ -2464,7 +2464,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
           final isValid = reasonController.text.trim().isNotEmpty;
           return AlertDialog(
             backgroundColor: ChoiceLuxTheme.charcoalGray,
-            title: Text(
+            title: const Text(
               'Cancel Job',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -2474,7 +2474,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Text(
+                const Text(
                   'Provide a reason for cancelling this job.',
                   style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 ),
@@ -2544,7 +2544,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
         const SizedBox(width: 8),
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
             color: ChoiceLuxTheme.richGold,
@@ -2959,9 +2959,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
 
 
   void _showTripEditModal(Trip trip) {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => TripEditModal(
+      builder: (dialogContext) => TripEditModal(
         trip: trip,
         jobId: widget.jobId,
         onTripUpdated: (updatedTrip) async {
@@ -2978,8 +2979,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
           }
           
           // Show success message
+          if (!mounted || !parentContext.mounted) return;
           SnackBarUtils.showSuccess(
-            context,
+            parentContext,
             'Trip updated successfully!',
           );
         },
@@ -2988,9 +2990,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
   }
 
   void _showAddTripModal() {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => AddTripModal(
+      builder: (dialogContext) => AddTripModal(
         jobId: widget.jobId,
         onTripAdded: (trip) async {
           // Refresh the trips list after successful trip creation
@@ -3006,8 +3009,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
           }
           
           // Show success message
+          if (!mounted || !parentContext.mounted) return;
           SnackBarUtils.showSuccess(
-            context,
+            parentContext,
             'Trip added successfully!',
           );
         },
@@ -3039,7 +3043,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> with Widget
           ),
           Text(
             value,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 12,
               color: Colors.white,
               fontWeight: FontWeight.bold,

@@ -162,7 +162,7 @@ class QuotePdfService {
                   if ((quote.quoteDescription ?? '').trim().isNotEmpty)
                     pw.Text(
                       quote.quoteDescription!.trim(),
-                      style: pw.TextStyle(
+                      style: const pw.TextStyle(
                         fontSize: 11,
                         color: PdfTheme.grey700,
                         lineSpacing: 2,
@@ -294,8 +294,8 @@ class QuotePdfService {
         fontSize: 11,
         color: PdfColors.white,
       ),
-      headerDecoration: pw.BoxDecoration(color: PdfTheme.grey700),
-      cellStyle: pw.TextStyle(fontSize: 10, color: PdfTheme.grey800),
+      headerDecoration: const pw.BoxDecoration(color: PdfTheme.grey700),
+      cellStyle: const pw.TextStyle(fontSize: 10, color: PdfTheme.grey800),
       cellAlignment: pw.Alignment.centerLeft,
       cellPadding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       headers: [
@@ -378,7 +378,7 @@ class QuotePdfService {
                   margin: const pw.EdgeInsets.only(top: 4, right: 8),
                   width: 4,
                   height: 4,
-                  decoration: pw.BoxDecoration(
+                  decoration: const pw.BoxDecoration(
                     color: PdfTheme.gold400,
                     shape: pw.BoxShape.circle,
                   ),
@@ -386,7 +386,7 @@ class QuotePdfService {
                 pw.Expanded(
                   child: pw.Text(
                     'Leg ${i + 1}: $n',
-                    style: pw.TextStyle(
+                    style: const pw.TextStyle(
                       fontSize: 11,
                       color: PdfTheme.grey700,
                       lineSpacing: 2,
@@ -421,7 +421,7 @@ class QuotePdfService {
               margin: const pw.EdgeInsets.only(top: 4, right: 8),
               width: 4,
               height: 4,
-              decoration: pw.BoxDecoration(
+              decoration: const pw.BoxDecoration(
                 color: PdfTheme.grey600,
                 shape: pw.BoxShape.circle,
               ),
@@ -429,7 +429,7 @@ class QuotePdfService {
             pw.Expanded(
               child: pw.Text(
                 quote.notes!.trim(),
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 11,
                   color: PdfTheme.grey700,
                   lineSpacing: 2,

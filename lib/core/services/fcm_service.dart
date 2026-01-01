@@ -315,13 +315,12 @@ class FCMService {
     String actionText,
   ) {
     final context = ref.context;
-    if (context == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.work, color: Colors.white, size: 20),
+            const Icon(Icons.work, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -347,13 +346,12 @@ class FCMService {
     WidgetRef ref,
   ) {
     final context = ref.context;
-    if (context == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.payment, color: Colors.white, size: 20),
+            const Icon(Icons.payment, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -375,13 +373,12 @@ class FCMService {
   /// Show system alert
   static void _showSystemAlert(String message, WidgetRef ref) {
     final context = ref.context;
-    if (context == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.warning, color: Colors.white, size: 20),
+            const Icon(Icons.warning, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -397,13 +394,12 @@ class FCMService {
   /// Show generic notification
   static void _showGenericNotification(String message, WidgetRef ref) {
     final context = ref.context;
-    if (context == null) return;
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
           children: [
-            Icon(Icons.notifications, color: Colors.white, size: 20),
+            const Icon(Icons.notifications, color: Colors.white, size: 20),
             const SizedBox(width: 8),
             Expanded(child: Text(message)),
           ],
@@ -423,7 +419,6 @@ class FCMService {
   /// Navigate to specific route
   static void _navigateToRoute(String route, WidgetRef ref) {
     final context = ref.context;
-    if (context == null) return;
 
     try {
       context.go(route);
@@ -438,7 +433,6 @@ class FCMService {
   /// Navigate to job detail
   static void _navigateToJobDetail(String jobId, WidgetRef ref) {
     final context = ref.context;
-    if (context == null) return;
 
     try {
       context.go('/jobs/$jobId/summary');
@@ -452,7 +446,6 @@ class FCMService {
   /// Navigate to notifications screen
   static void _navigateToNotifications(WidgetRef ref) {
     final context = ref.context;
-    if (context == null) return;
 
     try {
       context.go('/notifications');

@@ -19,10 +19,10 @@ class VehicleCollectionModal extends StatefulWidget {
   final VoidCallback onCancel;
 
   const VehicleCollectionModal({
-    Key? key,
+    super.key,
     required this.onConfirm,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<VehicleCollectionModal> createState() => _VehicleCollectionModalState();
@@ -188,6 +188,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         gpsAccuracy: _currentPosition!.accuracy,
       );
 
+      if (!mounted) return;
       Navigator.of(context).pop();
     } catch (e) {
       _showErrorSnackBar('Failed to upload image: $e');
@@ -220,7 +221,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           gradient: ChoiceLuxTheme.cardGradient,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -232,8 +233,8 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: [
-                    ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    ChoiceLuxTheme.richGold.withOpacity(0.05),
+                    ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                    ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
                   ],
                 ),
                 borderRadius: const BorderRadius.only(
@@ -249,7 +250,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                       gradient: LinearGradient(
                         colors: [
                           ChoiceLuxTheme.richGold,
-                          ChoiceLuxTheme.richGold.withOpacity(0.8),
+                          ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                         ],
                       ),
                       borderRadius: BorderRadius.circular(8),
@@ -261,11 +262,11 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                     ),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Text(
+                        Text(
                           'Vehicle Collection',
                           style: TextStyle(
                             color: ChoiceLuxTheme.softWhite,
@@ -311,7 +312,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
                 borderRadius: const BorderRadius.only(
                   bottomLeft: Radius.circular(16),
                   bottomRight: Radius.circular(16),
@@ -368,12 +369,12 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
             gradient: ChoiceLuxTheme.cardGradient,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -388,8 +389,8 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ChoiceLuxTheme.richGold.withOpacity(0.1),
-                      ChoiceLuxTheme.richGold.withOpacity(0.05),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
@@ -405,7 +406,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                         gradient: LinearGradient(
                           colors: [
                             ChoiceLuxTheme.richGold,
-                            ChoiceLuxTheme.richGold.withOpacity(0.8),
+                            ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -417,11 +418,11 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Vehicle Collection',
                             style: TextStyle(
                               color: ChoiceLuxTheme.softWhite,
@@ -430,7 +431,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                               letterSpacing: 0.3,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Capture odometer reading and location',
                             style: TextStyle(
@@ -474,7 +475,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
               Container(
                 padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                  color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -520,15 +521,15 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.camera_alt_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'Odometer Image',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -542,10 +543,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         Container(
           height: imageHeight,
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+            color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -592,7 +593,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                     ),
                   ],
                 )
-              : Center(
+              : const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -601,7 +602,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                         size: 48,
                         color: ChoiceLuxTheme.platinumSilver,
                       ),
-                      const SizedBox(height: 12),
+                      SizedBox(height: 12),
                       Text(
                         'Tap to capture odometer',
                         style: TextStyle(
@@ -633,15 +634,15 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.speed_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'Odometer Reading',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -663,28 +664,28 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           decoration: InputDecoration(
             hintText: 'Enter odometer reading (e.g., 12345.6)',
             hintStyle: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
               fontSize: 14,
             ),
             filled: true,
-            fillColor: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+            fillColor: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
             border: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             enabledBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
               borderSide: BorderSide(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+              borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -700,15 +701,15 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.location_on_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'GPS Location',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -722,10 +723,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+            color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -779,7 +780,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                       const SizedBox(height: 4),
                       Text(
                         _locationError!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.errorColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
@@ -792,7 +793,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
               if (!_isCapturingLocation && _currentPosition == null)
                 TextButton(
                   onPressed: _captureLocation,
-                  child: Text(
+                  child: const Text(
                     'Retry',
                     style: TextStyle(
                       color: ChoiceLuxTheme.richGold,
@@ -820,13 +821,13 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           gradient: LinearGradient(
             colors: [
               ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
+              ChoiceLuxTheme.richGold.withValues(alpha: 0.9),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -861,7 +862,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           color: ChoiceLuxTheme.charcoalGray,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             width: 1,
           ),
         ),

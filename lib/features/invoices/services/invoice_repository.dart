@@ -1,7 +1,7 @@
 import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
-import 'invoice_config_service.dart';
+import 'package:choice_lux_cars/features/invoices/services/invoice_config_service.dart';
 
 class InvoiceRepository {
   final SupabaseClient _supabase = Supabase.instance.client;

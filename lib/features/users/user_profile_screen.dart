@@ -171,19 +171,19 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
       labelText: label,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+        borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
       ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+      fillColor: Colors.white.withValues(alpha: 0.05),
+      labelStyle: TextStyle(color: Colors.white.withValues(alpha: 0.7)),
     );
   }
 
@@ -201,7 +201,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               gradient: ChoiceLuxTheme.backgroundGradient,
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
           const Scaffold(
@@ -219,7 +219,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         Scaffold(
@@ -246,12 +246,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
                       elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.08),
+                      shadowColor: Colors.black.withValues(alpha: 0.08),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(
                           vertical: 24,
@@ -312,12 +312,12 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(16),
                         side: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                          color: Colors.white.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
                       elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.08),
+                      shadowColor: Colors.black.withValues(alpha: 0.08),
                       child: Padding(
                         padding: const EdgeInsets.all(24),
                         child: Column(

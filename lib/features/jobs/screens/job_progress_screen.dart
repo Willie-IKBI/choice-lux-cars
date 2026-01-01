@@ -21,8 +21,7 @@ class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
   final Job job;
 
-  const JobProgressScreen({Key? key, required this.jobId, required this.job})
-    : super(key: key);
+  const JobProgressScreen({super.key, required this.jobId, required this.job});
 
   @override
   ConsumerState<JobProgressScreen> createState() => _JobProgressScreenState();
@@ -30,16 +29,12 @@ class JobProgressScreen extends ConsumerStatefulWidget {
 
 class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with WidgetsBindingObserver {
   bool _isLoading = true;
-  bool _isUpdating = false;
   Map<String, dynamic>? _jobProgress;
   List<Map<String, dynamic>>? _tripProgress;
   String _currentStep = 'not_started';
   int _currentTripIndex = 1;
   int _progressPercentage = 0;
   Map<String, String?> _jobAddresses = {};
-
-  // Store references to avoid ancestor lookup issues
-  JobsNotifier? _jobsNotifier;
 
   /// Responsive design helpers
   bool get _isMobile => MediaQuery.of(context).size.width < 768;
@@ -53,9 +48,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
       } else {
+        if (!mounted) return;
         SnackBarUtils.showError(context, 'Could not open navigation app');
       }
     } catch (e) {
+      if (!mounted) return;
       SnackBarUtils.showError(context, 'Failed to open navigation: $e');
     }
   }
@@ -72,9 +69,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       if (await canLaunchUrl(Uri.parse(url))) {
         await launchUrl(Uri.parse(url));
       } else {
+        if (!mounted) return;
         SnackBarUtils.showError(context, 'Could not open phone app');
       }
     } catch (e) {
+      if (!mounted) return;
       SnackBarUtils.showError(context, 'Failed to make call: $e');
     }
   }
@@ -82,56 +81,56 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
 
 
   final List<JobStep> _jobSteps = [
-    JobStep(
+    const JobStep(
       id: 'not_started',
       title: 'Job Not Started',
       description: 'Job is assigned but not yet started by driver',
       icon: Icons.schedule,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'vehicle_collection',
       title: 'Vehicle Collection',
       description: 'Collect vehicle and record odometer',
       icon: Icons.directions_car,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'pickup_arrival',
       title: 'Arrive at Pickup',
       description: 'Arrive at passenger pickup location',
       icon: Icons.location_on,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'passenger_pickup', // ADDED: Database step ID
       title: 'Pickup Arrival',
       description: 'Arrived at passenger pickup location',
       icon: Icons.location_on,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'passenger_onboard',
       title: 'Passenger Onboard',
       description: 'Passenger has boarded the vehicle',
       icon: Icons.person_add,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'dropoff_arrival',
       title: 'Arrive at Dropoff',
       description: 'Arrive at passenger dropoff location',
       icon: Icons.location_on,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'trip_complete',
       title: 'Trip Complete',
       description: 'Trip has been completed',
       icon: Icons.check_circle,
       isCompleted: false,
     ),
-    JobStep(
+    const JobStep(
       id: 'vehicle_return',
       title: 'Vehicle Return',
       description: 'Return vehicle and record final odometer',
@@ -173,8 +172,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkAndUpdateJobStatus();
     });
-    // Store reference to avoid ancestor lookup issues
-    _jobsNotifier = ref.read(jobsProvider.notifier);
   }
 
   Future<void> _loadJobProgress() async {
@@ -297,9 +294,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
 
   /// Show the start job modal when no driver_flow record exists
   void _showStartJobModal() {
+    final parentContext = context;
     showDialog(
       context: context,
-      builder: (context) => VehicleCollectionModal(
+      builder: (dialogContext) => VehicleCollectionModal(
         onConfirm: ({
           required double odometerReading,
           required String odometerImageUrl,
@@ -321,13 +319,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
             // Refresh job progress in background (avoid blocking/flicker)
             _loadJobProgress();
             
-            if (mounted) {
-              SnackBarUtils.showSuccess(context, 'Job started successfully!');
-            }
+            if (!mounted || !parentContext.mounted) return;
+            SnackBarUtils.showSuccess(parentContext, 'Job started successfully!');
           } catch (e) {
-            if (mounted) {
-              SnackBarUtils.showError(context, 'Failed to start job: $e');
-            }
+            if (!mounted || !parentContext.mounted) return;
+            SnackBarUtils.showError(parentContext, 'Failed to start job: $e');
           }
         },
         onCancel: () {
@@ -502,8 +498,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
         gradient: isCurrent 
             ? LinearGradient(
                 colors: [
-                  ChoiceLuxTheme.richGold.withOpacity(0.1),
-                  ChoiceLuxTheme.richGold.withOpacity(0.05),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -512,13 +508,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
         borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
         border: Border.all(
           color: isCurrent 
-              ? ChoiceLuxTheme.richGold.withOpacity(0.5)
-              : ChoiceLuxTheme.richGold.withOpacity(0.2),
+              ? ChoiceLuxTheme.richGold.withValues(alpha: 0.5)
+              : ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: isCurrent ? 2 : 1,
         ),
         boxShadow: isCurrent ? [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
             blurRadius: _isMobile ? 6 : 8,
             offset: Offset(0, _isMobile ? 2 : 4),
           ),
@@ -540,7 +536,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                         ? ChoiceLuxTheme.successColor
                         : isCurrent 
                             ? ChoiceLuxTheme.richGold
-                            : ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                            : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
@@ -607,10 +603,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
               Container(
                 padding: EdgeInsets.all(_isMobile ? 12 : 16),
                 decoration: BoxDecoration(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   borderRadius: BorderRadius.circular(_isMobile ? 8 : 12),
                   border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                     width: 1,
                   ),
                 ),
@@ -652,7 +648,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                               SizedBox(
                                 width: double.infinity,
                                 child: ElevatedButton.icon(
-                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
+                                  onPressed: () => _openNavigation(stepAddress!),
                                   icon: const Icon(Icons.navigation, size: 16),
                                   label: const Text('Navigate'),
                                   style: ElevatedButton.styleFrom(
@@ -691,7 +687,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                             children: [
                               Expanded(
                                 child: ElevatedButton.icon(
-                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
+                                  onPressed: () => _openNavigation(stepAddress!),
                                   icon: const Icon(Icons.navigation, size: 18),
                                   label: const Text('Navigate'),
                                   style: ElevatedButton.styleFrom(
@@ -994,11 +990,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                 required double gpsLng,
                 required double gpsAccuracy,
               }) async {
-                // Store the modal context before any async operations
+                // Store the modal context and parent context before any async operations
                 final modalContext = context;
+                final parentContext = this.context;
 
                 try {
-                  setState(() => _isUpdating = true);
 
                   Log.d('=== STARTING JOB ===');
                   Log.d('Job ID: ${widget.jobId}');
@@ -1030,8 +1026,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                     Log.d('Current step after reload: $_currentStep');
 
                     // Show success message
+                    if (!mounted || !parentContext.mounted) return;
                     SnackBarUtils.showSuccess(
-                      context,
+                      parentContext,
                       'Job started successfully!',
                     );
                   }
@@ -1045,12 +1042,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                   }
 
                   // Show error message after modal is closed and widget is still mounted
-                  if (mounted) {
-                    SnackBarUtils.showError(context, 'Failed to start job: $e');
-                  }
+                  if (!mounted || !parentContext.mounted) return;
+                  SnackBarUtils.showError(parentContext, 'Failed to start job: $e');
                 } finally {
                   if (mounted) {
-                    setState(() => _isUpdating = false);
                   }
                 }
               }),
@@ -1068,7 +1063,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     if (!mounted) return;
 
     try {
-      setState(() => _isUpdating = true);
 
       final position = await _getCurrentLocation();
 
@@ -1089,7 +1083,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
       }
     }
   }
@@ -1098,7 +1091,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     if (!mounted) return;
 
     try {
-      setState(() => _isUpdating = true);
 
       // Get current location
       final position = await _getCurrentLocation();
@@ -1136,7 +1128,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
       }
     }
   }
@@ -1145,7 +1136,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     if (!mounted) return;
 
     try {
-      setState(() => _isUpdating = true);
 
       final position = await _getCurrentLocation();
       final lat = position.latitude;
@@ -1174,7 +1164,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
       }
     }
   }
@@ -1183,7 +1172,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     if (!mounted) return;
 
     try {
-      setState(() => _isUpdating = true);
 
       final position = await _getCurrentLocation();
 
@@ -1211,7 +1199,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
       }
     }
   }
@@ -1220,7 +1207,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     if (!mounted) return;
 
     try {
-      setState(() => _isUpdating = true);
 
       final position = await _getCurrentLocation();
       final lat = position.latitude;
@@ -1246,7 +1232,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
       }
     } finally {
       if (mounted) {
-        setState(() => _isUpdating = false);
       }
     }
   }
@@ -1254,14 +1239,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
   Future<void> _returnVehicle() async {
     if (!mounted) return;
 
-    // Store the modal context before any async operations
+    // Store the modal context and parent context before any async operations
     final modalContext = context;
+    final parentContext = context;
 
     // Show the vehicle return modal
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext dialogContext) {
         return VehicleReturnModal(
           onConfirm:
               (({
@@ -1271,7 +1257,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                 required double gpsAccuracy,
               }) async {
                 try {
-                  setState(() => _isUpdating = true);
 
                   Log.d('=== RETURNING VEHICLE ===');
                   Log.d('Job ID: ${widget.jobId}');
@@ -1297,17 +1282,16 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                     }
 
                     // Show success message after modal is closed and widget is still mounted
-                    if (mounted) {
-                      // Refresh jobs list to update job card status
-                      ref.invalidate(jobsProvider);
+                    if (!mounted || !parentContext.mounted) return;
+                    // Refresh jobs list to update job card status
+                    ref.invalidate(jobsProvider);
 
-                      // Show job completion dialog
-                      showJobCompletionDialog(
-                        context,
-                        jobNumber: widget.job.jobNumber ?? 'Unknown',
-                        passengerName: widget.job.passengerName,
-                      );
-                    }
+                    // Show job completion dialog
+                    showJobCompletionDialog(
+                      parentContext,
+                      jobNumber: widget.job.jobNumber ?? 'Unknown',
+                      passengerName: widget.job.passengerName,
+                    );
                   }
                 } catch (e) {
                   Log.e('=== ERROR IN VEHICLE RETURN ===');
@@ -1319,15 +1303,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                   }
 
                   // Show error message after modal is closed and widget is still mounted
-                  if (mounted) {
-                    SnackBarUtils.showError(
-                      context,
-                      'Failed to return vehicle: $e',
-                    );
-                  }
+                  if (!mounted || !parentContext.mounted) return;
+                  SnackBarUtils.showError(
+                    parentContext,
+                    'Failed to return vehicle: $e',
+                  );
                 } finally {
                   if (mounted) {
-                    setState(() => _isUpdating = false);
                   }
                 }
               }),
@@ -1339,30 +1321,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
         );
       },
     );
-  }
-
-  Future<void> _closeJob() async {
-    try {
-      setState(() => _isUpdating = true);
-
-      await DriverFlowApiService.closeJob(int.parse(widget.jobId));
-
-      _loadJobProgress();
-
-      // Refresh jobs list to update job card status
-      ref.invalidate(jobsProvider);
-
-      // Show job completion dialog
-      showJobCompletionDialog(
-        context,
-        jobNumber: widget.job.jobNumber ?? 'Unknown',
-        passengerName: widget.job.passengerName,
-      );
-    } catch (e) {
-      SnackBarUtils.showError(context, 'Failed to close job: $e');
-    } finally {
-      setState(() => _isUpdating = false);
-    }
   }
 
   Future<Position> _getCurrentLocation() async {
@@ -1427,552 +1385,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     }
   }
 
-  Future<void> _forceUpdateJobStatus() async {
-    try {
-      Log.d('=== FORCE UPDATING JOB STATUS TO COMPLETED ===');
-
-      await DriverFlowApiService.updateJobStatusToCompleted(
-        int.parse(widget.jobId),
-      );
-
-      // Refresh job progress to get updated status
-      _loadJobProgress();
-
-      // Refresh jobs list to update job card
-      ref.invalidate(jobsProvider);
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Job status updated to completed!'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      Log.d('=== FORCE JOB STATUS UPDATE COMPLETED ===');
-    } catch (e) {
-      Log.e('=== ERROR FORCE UPDATING JOB STATUS ===');
-      Log.e('Error: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Error updating job status: $e'),
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
-
-  Widget _buildActionButton(JobStep step) {
-    if (_isUpdating) {
-      return const SizedBox(
-        width: 20,
-        height: 20,
-        child: CircularProgressIndicator(
-          strokeWidth: 2,
-          valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-        ),
-      );
-    }
-
-    // Check if all steps are completed
-    final allStepsCompleted = _jobSteps.every((s) => s.isCompleted);
-
-    if (allStepsCompleted) {
-      // Show completion message when all steps are done
-      return Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              ChoiceLuxTheme.successColor.withOpacity(0.1),
-              ChoiceLuxTheme.successColor.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: ChoiceLuxTheme.successColor.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: Row(
-          children: [
-            Icon(
-              Icons.check_circle_rounded,
-              color: ChoiceLuxTheme.successColor,
-              size: 24,
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Job Completed!',
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.successColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'All steps have been completed successfully',
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.platinumSilver,
-                      fontSize: 14,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            ElevatedButton.icon(
-              onPressed: () async {
-                await _forceUpdateJobStatus();
-              },
-              icon: const Icon(Icons.update, size: 18),
-              label: const Text('Update Status'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 8,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(8),
-                ),
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    switch (step.id) {
-      case 'not_started':
-        // Check if job is confirmed before allowing start
-        if (widget.job.isConfirmed == true) {
-          return _buildLuxuryButton(
-            onPressed: _startJob,
-            icon: Icons.play_arrow_rounded,
-            label: 'Start Job',
-            isPrimary: true,
-          );
-        } else {
-          // Job not confirmed - show message to confirm first
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  ChoiceLuxTheme.richGold.withOpacity(0.1),
-                  ChoiceLuxTheme.richGold.withOpacity(0.05),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                width: 1,
-              ),
-            ),
-            child: Row(
-              children: [
-                Icon(
-                  Icons.info_outline_rounded,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Job Not Confirmed',
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.richGold,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Please confirm the job before starting',
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontSize: 14,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
-
-      case 'vehicle_collection':
-        if (!step.isCompleted) {
-          // Check if job is confirmed before allowing start
-          if (widget.job.isConfirmed == true) {
-            return _buildLuxuryButton(
-              onPressed: _startJob,
-              icon: Icons.play_arrow_rounded,
-              label: 'Start Job',
-              isPrimary: true,
-            );
-          } else {
-            // Job not confirmed - show message to confirm first
-            return Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    ChoiceLuxTheme.richGold.withOpacity(0.05),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                  width: 1,
-                ),
-              ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline_rounded,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Job Not Confirmed',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.richGold,
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Please confirm the job before starting',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontSize: 14,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            );
-          }
-        }
-        break;
-
-      case 'pickup_arrival':
-        // Only show button if previous step (vehicle_collection) is completed
-        if (!step.isCompleted &&
-            _isPreviousStepCompleted('vehicle_collection')) {
-          return _buildLuxuryButton(
-            onPressed: _arriveAtPickup,
-            icon: Icons.location_on_rounded,
-            label: 'Arrive at Pickup',
-            isPrimary: false,
-          );
-        } else if (!_isPreviousStepCompleted('vehicle_collection')) {
-          return _buildStepLockedMessage('Complete vehicle collection first');
-        }
-        break;
-
-      case 'passenger_pickup':
-        // This step represents the actual arrival at pickup - no action button needed
-        // It's automatically completed when pickup_arrival is done
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                ChoiceLuxTheme.successColor.withOpacity(0.1),
-                ChoiceLuxTheme.successColor.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: ChoiceLuxTheme.successColor.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: ChoiceLuxTheme.successColor,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pickup Arrival Completed',
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.successColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                                          Text(
-                        'Successfully arrived at pickup location',
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontSize: 14,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-
-      case 'passenger_onboard':
-        // Only show button if previous step (pickup_arrival) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival')) {
-          return _buildLuxuryButton(
-            onPressed: _passengerOnboard,
-            icon: Icons.person_add_rounded,
-            label: 'Passenger Onboard',
-            isPrimary: false,
-          );
-        } else if (!_isPreviousStepCompleted('pickup_arrival')) {
-          return _buildStepLockedMessage('Arrive at pickup location first');
-        }
-        break;
-
-      case 'dropoff_arrival':
-        // Only show button if previous step (passenger_onboard) is completed
-        if (!step.isCompleted &&
-            _isPreviousStepCompleted('passenger_onboard')) {
-          return _buildLuxuryButton(
-            onPressed: _arriveAtDropoff,
-            icon: Icons.location_on_rounded,
-            label: 'Arrive at Dropoff',
-            isPrimary: false,
-          );
-        } else if (!_isPreviousStepCompleted('passenger_onboard')) {
-          return _buildStepLockedMessage('Complete passenger onboarding first');
-        }
-        break;
-
-      case 'trip_complete':
-        // Only show button if previous step (dropoff_arrival) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('dropoff_arrival')) {
-          return _buildLuxuryButton(
-            onPressed: _completeTrip,
-            icon: Icons.check_circle_rounded,
-            label: 'Complete Trip',
-            isPrimary: false,
-          );
-        } else if (!_isPreviousStepCompleted('dropoff_arrival')) {
-          return _buildStepLockedMessage('Arrive at dropoff location first');
-        }
-        break;
-
-      case 'vehicle_return':
-        // Only show button if previous step (trip_complete) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('trip_complete')) {
-          return _buildLuxuryButton(
-            onPressed: _returnVehicle,
-            icon: Icons.home_rounded,
-            label: 'Return Vehicle',
-            isPrimary: false,
-          );
-        } else if (!_isPreviousStepCompleted('trip_complete')) {
-          return _buildStepLockedMessage('Complete trip first');
-        } else {
-          return _buildLuxuryButton(
-            onPressed: _closeJob,
-            icon: Icons.done_all_rounded,
-            label: 'Close Job',
-            isPrimary: true,
-          );
-        }
-
-      case 'completed':
-        // Job is completed, show completion message
-        return _buildStepCompletedMessage('Job completed successfully!');
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  /// Check if a previous step is completed
-  bool _isPreviousStepCompleted(String stepId) {
-    final stepIndex = _jobSteps.indexWhere((step) => step.id == stepId);
-    if (stepIndex == -1) return false;
-
-    // Check if the step is completed
-    return _jobSteps[stepIndex].isCompleted;
-  }
-
-  /// Build a message indicating the step is locked
-  Widget _buildStepLockedMessage(String message) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.lock_rounded,
-            color: ChoiceLuxTheme.platinumSilver,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: ChoiceLuxTheme.platinumSilver,
-                fontSize: 12,
-                fontStyle: FontStyle.italic,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// Build a message indicating the step is completed
-  Widget _buildStepCompletedMessage(String message) {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.successColor.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(
-          color: ChoiceLuxTheme.successColor.withOpacity(0.5),
-          width: 1,
-        ),
-      ),
-      child: Row(
-        children: [
-          Icon(
-            Icons.check_circle_rounded,
-            color: ChoiceLuxTheme.successColor,
-            size: 16,
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Text(
-              message,
-              style: TextStyle(
-                color: ChoiceLuxTheme.successColor,
-                fontSize: 12,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildLuxuryButton({
-    required VoidCallback onPressed,
-    required IconData icon,
-    required String label,
-    required bool isPrimary,
-  }) {
-    if (isPrimary) {
-      return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: ElevatedButton.icon(
-          onPressed: onPressed,
-          icon: Icon(icon, color: Colors.black, size: 20),
-          label: Text(
-            label,
-            style: const TextStyle(
-              color: Colors.black,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      );
-    } else {
-      return Container(
-        decoration: BoxDecoration(
-          color: ChoiceLuxTheme.charcoalGray,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-            width: 1,
-          ),
-        ),
-        child: ElevatedButton.icon(
-          onPressed: onPressed,
-          icon: Icon(icon, color: ChoiceLuxTheme.richGold, size: 20),
-          label: Text(
-            label,
-            style: TextStyle(
-              color: ChoiceLuxTheme.richGold,
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.transparent,
-            shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12),
-            ),
-          ),
-        ),
-      );
-    }
-  }
-
   Widget _buildLuxuryAppBar() {
     return Container(
       height: 72,
@@ -1981,13 +1393,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.jetBlack.withOpacity(0.95),
-            ChoiceLuxTheme.jetBlack.withOpacity(0.90),
+            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
+            ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.15),
+            color: Colors.black.withValues(alpha: 0.15),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -2027,12 +1439,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                   gradient: LinearGradient(
                     colors: [
                       ChoiceLuxTheme.richGold,
-                      ChoiceLuxTheme.richGold.withOpacity(0.8),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                     ],
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.25),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.25),
                       blurRadius: 12,
                       spreadRadius: 2,
                     ),
@@ -2051,10 +1463,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
               const SizedBox(width: 16),
 
               // Title with Gold Accent
-              Expanded(
+              const Expanded(
                 child: Text(
                   'Progress',
-                  style: const TextStyle(
+                  style: TextStyle(
                     color: ChoiceLuxTheme.softWhite,
                     fontSize: 20,
                     fontWeight: FontWeight.w600,
@@ -2066,10 +1478,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
               // Premium Refresh Button
               Container(
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                   border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -2117,10 +1529,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                     child: Container(
                       padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(10),
                         border: Border.all(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                           width: 1,
                         ),
                       ),
@@ -2177,14 +1589,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                   gradient: LinearGradient(
                                     colors: [
                                       ChoiceLuxTheme.richGold,
-                                      ChoiceLuxTheme.richGold.withOpacity(0.7),
+                                      ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                                     ],
                                   ),
                                 ),
                                 child: CircleAvatar(
                                   radius: 18,
                                   backgroundColor: ChoiceLuxTheme.richGold
-                                      .withOpacity(0.2),
+                                      .withValues(alpha: 0.2),
                                   child: Text(
                                     displayName.substring(0, 1).toUpperCase(),
                                     style: const TextStyle(
@@ -2322,630 +1734,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
     );
   }
 
-  Widget _buildLuxuryJobInfoCard() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: ChoiceLuxTheme.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.work_rounded,
-                    color: ChoiceLuxTheme.richGold,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Job ${widget.job.jobNumber}',
-                        style: const TextStyle(
-                          color: ChoiceLuxTheme.softWhite,
-                          fontSize: 20,
-                          fontWeight: FontWeight.w700,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Status: ${widget.job.status ?? 'Unknown'}',
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Container(
-              width: double.infinity,
-              height: 8,
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: _progressPercentage / 100,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(4),
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              'Progress: $_progressPercentage%',
-              style: TextStyle(
-                color: ChoiceLuxTheme.platinumSilver,
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLuxuryTimeline() {
-    return Container(
-      decoration: BoxDecoration(
-        gradient: ChoiceLuxTheme.cardGradient,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.timeline_rounded,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Job Progress',
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.softWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            ..._jobSteps.asMap().entries.map((entry) {
-              final index = entry.key;
-              final step = entry.value;
-              final isCurrentStep = step.id == _currentStep;
-              final isCompleted = step.isCompleted;
-
-              return Column(
-                children: [
-                  Row(
-                    children: [
-                      // Step Icon
-                      Container(
-                        width: 40,
-                        height: 40,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: isCurrentStep
-                              ? (step.id == 'not_started'
-                                    ? LinearGradient(
-                                        colors: [
-                                          ChoiceLuxTheme.infoColor,
-                                          ChoiceLuxTheme.infoColor.withOpacity(
-                                            0.8,
-                                          ),
-                                        ],
-                                      )
-                                    : LinearGradient(
-                                        colors: [
-                                          ChoiceLuxTheme.richGold,
-                                          ChoiceLuxTheme.richGold.withOpacity(
-                                            0.8,
-                                          ),
-                                        ],
-                                      ))
-                              : isCompleted
-                              ? LinearGradient(
-                                  colors: [
-                                    ChoiceLuxTheme.successColor,
-                                    ChoiceLuxTheme.successColor.withOpacity(
-                                      0.8,
-                                    ),
-                                  ],
-                                )
-                              : null,
-                          color: isCurrentStep || isCompleted
-                              ? null
-                              : ChoiceLuxTheme.charcoalGray,
-                          border: Border.all(
-                            color: isCurrentStep
-                                ? (step.id == 'not_started'
-                                      ? ChoiceLuxTheme.infoColor
-                                      : ChoiceLuxTheme.richGold)
-                                : isCompleted
-                                ? ChoiceLuxTheme.successColor
-                                : ChoiceLuxTheme.platinumSilver.withOpacity(
-                                    0.3,
-                                  ),
-                            width: 2,
-                          ),
-                        ),
-                        child: Icon(
-                          isCompleted ? Icons.check_rounded : step.icon,
-                          color: isCompleted
-                              ? Colors.black
-                              : isCurrentStep
-                              ? (step.id == 'not_started'
-                                    ? Colors.white
-                                    : Colors.black)
-                              : ChoiceLuxTheme.platinumSilver,
-                          size: 20,
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-
-                      // Step Content
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              children: [
-                                Text(
-                                  step.title,
-                                  style: TextStyle(
-                                    color: isCurrentStep
-                                        ? (step.id == 'not_started'
-                                              ? ChoiceLuxTheme.infoColor
-                                              : ChoiceLuxTheme.richGold)
-                                        : isCompleted
-                                        ? ChoiceLuxTheme.successColor
-                                        : ChoiceLuxTheme.softWhite,
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                  ),
-                                ),
-                                if (isCurrentStep) ...[
-                                  const SizedBox(width: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 4,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: step.id == 'not_started'
-                                          ? ChoiceLuxTheme.infoColor
-                                          : ChoiceLuxTheme.richGold,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      step.id == 'not_started'
-                                          ? 'Not Started'
-                                          : 'Current',
-                                      style: const TextStyle(
-                                        color: Colors.black,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              step.description,
-                              style: TextStyle(
-                                color: ChoiceLuxTheme.platinumSilver,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w400,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (index < _jobSteps.length - 1) ...[
-                    const SizedBox(height: 16),
-                    Container(
-                      width: 2,
-                      height: 20,
-                      margin: const EdgeInsets.only(left: 19),
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
-                        borderRadius: BorderRadius.circular(1),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
-                ],
-              );
-            }).toList(),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildLuxuryCurrentStepCard() {
-    // Check if all steps are completed
-    final allStepsCompleted = _jobSteps.every((s) => s.isCompleted);
-
-    if (allStepsCompleted) {
-      // Show completion card when all steps are done
-      return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              ChoiceLuxTheme.successColor.withOpacity(0.1),
-              ChoiceLuxTheme.successColor.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: ChoiceLuxTheme.successColor.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: ChoiceLuxTheme.successColor.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.check_circle_rounded,
-                    color: ChoiceLuxTheme.successColor,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Job Completed',
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.softWhite,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          ChoiceLuxTheme.successColor,
-                          ChoiceLuxTheme.successColor.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.done_all_rounded,
-                      color: Colors.white,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'All Steps Completed',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.successColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'The job has been completed successfully. All required steps have been finished.',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    // Debug logging for step resolution
-    Log.d('=== BUILDING CURRENT STEP CARD ===');
-    Log.d('Current step ID: $_currentStep');
-    Log.d('Available step IDs: ${_jobSteps.map((s) => s.id).toList()}');
-    
-    final currentStep = _jobSteps.firstWhere(
-      (step) => step.id == _currentStep,
-      orElse: () {
-        Log.e('Step $_currentStep not found in _jobSteps, falling back to first step');
-        return _jobSteps.first;
-      },
-    );
-    
-    Log.d('Resolved step: ${currentStep.id} - ${currentStep.title}');
-
-    // Special handling for not started jobs
-    if (_currentStep == 'not_started') {
-      return Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              ChoiceLuxTheme.infoColor.withOpacity(0.1),
-              ChoiceLuxTheme.infoColor.withOpacity(0.05),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: ChoiceLuxTheme.infoColor.withOpacity(0.3),
-            width: 1,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: ChoiceLuxTheme.infoColor.withOpacity(0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  const Icon(
-                    Icons.schedule_rounded,
-                    color: ChoiceLuxTheme.infoColor,
-                    size: 24,
-                  ),
-                  const SizedBox(width: 12),
-                  const Text(
-                    'Job Status',
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.softWhite,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.3,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [
-                          ChoiceLuxTheme.infoColor,
-                          ChoiceLuxTheme.infoColor.withOpacity(0.8),
-                        ],
-                      ),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: const Icon(
-                      Icons.schedule,
-                      color: Colors.black,
-                      size: 24,
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          widget.job.isConfirmed == true
-                              ? 'Job Ready to Start'
-                              : 'Job Not Confirmed',
-                          style: const TextStyle(
-                            color: ChoiceLuxTheme.infoColor,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          widget.job.isConfirmed == true
-                              ? 'Driver has confirmed the job and can now start'
-                              : 'Driver must confirm the job before starting',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  _buildActionButton(currentStep),
-                ],
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            ChoiceLuxTheme.richGold.withOpacity(0.1),
-            ChoiceLuxTheme.richGold.withOpacity(0.05),
-          ],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(
-                  Icons.play_circle_rounded,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 24,
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  'Current Step',
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.softWhite,
-                    fontSize: 18,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.8),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: Icon(currentStep.icon, color: Colors.black, size: 24),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        currentStep.title,
-                        style: const TextStyle(
-                          color: ChoiceLuxTheme.richGold,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        currentStep.description,
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16),
-                _buildActionButton(currentStep),
-              ],
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
     @override
   Widget build(BuildContext context) {
     // Debug logging
@@ -2973,7 +1761,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
           ),
           body: Stack(
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               _isLoading == true
@@ -2992,10 +1780,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                               Icon(
                                 Icons.play_circle_outline,
                                 size: 64,
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                               ),
                               const SizedBox(height: 16),
-                              Text(
+                              const Text(
                                 'Ready to Start Job',
                                 style: TextStyle(
                                   color: ChoiceLuxTheme.softWhite,
@@ -3007,7 +1795,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                               Text(
                                 'Job ID: ${widget.jobId}',
                                 style: TextStyle(
-                                  color: ChoiceLuxTheme.softWhite.withOpacity(0.7),
+                                  color: ChoiceLuxTheme.softWhite.withValues(alpha: 0.7),
                                   fontSize: 14,
                                 ),
                               ),
@@ -3045,7 +1833,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                     gradient: ChoiceLuxTheme.cardGradient,
                                     borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
                                     border: Border.all(
-                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                                       width: 1,
                                     ),
                                   ),
@@ -3090,7 +1878,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                               vertical: _isMobile ? 6 : 8,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                                               borderRadius: BorderRadius.circular(20),
                                             ),
                                             child: Text(
@@ -3116,7 +1904,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                     gradient: ChoiceLuxTheme.cardGradient,
                                     borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
                                     border: Border.all(
-                                      color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                                       width: 1,
                                     ),
                                   ),
@@ -3151,7 +1939,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> with Widg
                                       ),
                                       SizedBox(height: _isMobile ? 16 : 20),
                                       // Enhanced step cards with responsive design
-                                      ..._jobSteps.map((step) => _buildEnhancedStepCard(step)).toList(),
+                                      ..._jobSteps.map((step) => _buildEnhancedStepCard(step)),
                                     ],
                                   ),
                                 ),

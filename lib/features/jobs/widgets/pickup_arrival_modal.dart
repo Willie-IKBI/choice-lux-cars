@@ -12,10 +12,10 @@ class PickupArrivalModal extends StatefulWidget {
   final VoidCallback onCancel;
 
   const PickupArrivalModal({
-    Key? key,
+    super.key,
     required this.onConfirm,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<PickupArrivalModal> createState() => _PickupArrivalModalState();
@@ -119,19 +119,19 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
     return Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 500),
+        constraints: const BoxConstraints(maxWidth: 500),
         child: Container(
           width: MediaQuery.of(context).size.width * 0.9,
           decoration: BoxDecoration(
             gradient: ChoiceLuxTheme.cardGradient,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -146,8 +146,8 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      ChoiceLuxTheme.richGold.withOpacity(0.1),
-                      ChoiceLuxTheme.richGold.withOpacity(0.05),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
@@ -163,7 +163,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                         gradient: LinearGradient(
                           colors: [
                             ChoiceLuxTheme.richGold,
-                            ChoiceLuxTheme.richGold.withOpacity(0.8),
+                            ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                           ],
                         ),
                         borderRadius: BorderRadius.circular(12),
@@ -175,11 +175,11 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                       ),
                     ),
                     const SizedBox(width: 16),
-                    Expanded(
+                    const Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
+                          Text(
                             'Arrive at Pickup',
                             style: TextStyle(
                               color: ChoiceLuxTheme.softWhite,
@@ -188,7 +188,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                               letterSpacing: 0.3,
                             ),
                           ),
-                          const SizedBox(height: 4),
+                          SizedBox(height: 4),
                           Text(
                             'Confirm arrival at pickup location',
                             style: TextStyle(
@@ -217,21 +217,21 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
-                      child: Row(
+                      child: const Row(
                         children: [
                           Icon(
                             Icons.info_outline_rounded,
                             color: ChoiceLuxTheme.richGold,
                             size: 20,
                           ),
-                          const SizedBox(width: 12),
+                          SizedBox(width: 12),
                           Expanded(
                             child: Text(
                               'Confirm that you have arrived at the pickup location. Your GPS coordinates and arrival time will be recorded.',
@@ -253,7 +253,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
               Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+                  color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -290,15 +290,15 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.location_on_rounded,
               color: ChoiceLuxTheme.richGold,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'GPS Location',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -312,10 +312,10 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+            color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
@@ -369,7 +369,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                       const SizedBox(height: 4),
                       Text(
                         _locationError!,
-                        style: TextStyle(
+                        style: const TextStyle(
                           color: ChoiceLuxTheme.errorColor,
                           fontSize: 12,
                           fontWeight: FontWeight.w400,
@@ -382,7 +382,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
               if (!_isCapturingLocation && _currentPosition == null)
                 TextButton(
                   onPressed: _captureLocation,
-                  child: Text(
+                  child: const Text(
                     'Retry',
                     style: TextStyle(
                       color: ChoiceLuxTheme.richGold,
@@ -409,13 +409,13 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           gradient: LinearGradient(
             colors: [
               ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
+              ChoiceLuxTheme.richGold.withValues(alpha: 0.9),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -447,7 +447,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           color: ChoiceLuxTheme.charcoalGray,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -463,7 +463,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           ),
           child: Text(
             label,
-            style: TextStyle(
+            style: const TextStyle(
               color: ChoiceLuxTheme.richGold,
               fontSize: 16,
               fontWeight: FontWeight.w600,

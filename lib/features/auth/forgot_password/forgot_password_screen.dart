@@ -74,8 +74,8 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         // Error handling is done in the provider
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
+            const SnackBar(
+              content: Text(
                 'Failed to send reset email. Please try again.',
               ),
               backgroundColor: ChoiceLuxTheme.errorColor,
@@ -90,11 +90,11 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
+        decoration: const BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
         child: Stack(
           children: [
                           // Subtle background pattern
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.signin),
               ),
             SafeArea(
@@ -146,15 +146,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -172,12 +172,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                   alignment: Alignment.centerLeft,
                   child: IconButton(
                     onPressed: () => context.pop(),
-                    icon: Icon(
+                    icon: const Icon(
                       Icons.arrow_back,
                       color: ChoiceLuxTheme.platinumSilver,
                     ),
                     style: IconButton.styleFrom(
-                      backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                      backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(8),
                       ),
@@ -187,7 +187,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                 const SizedBox(height: 16),
 
                 // Title
-                Text(
+                const Text(
                   'Reset Password',
                   style: TextStyle(
                     fontSize: 28,
@@ -203,7 +203,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                   'Enter your email address and we\'ll send you a link to reset your password.',
                   style: TextStyle(
                     fontSize: 16,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                   ),
                   textAlign: TextAlign.center,
                 ),
@@ -214,40 +214,40 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                   controller: _emailController,
                   keyboardType: TextInputType.emailAddress,
                   textInputAction: TextInputAction.done,
-                  style: TextStyle(color: ChoiceLuxTheme.softWhite),
+                  style: const TextStyle(color: ChoiceLuxTheme.softWhite),
                   decoration: InputDecoration(
                     labelText: 'Email Address',
-                    labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver),
-                    prefixIcon: Icon(
+                    labelStyle: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                    prefixIcon: const Icon(
                       Icons.email_outlined,
                       color: ChoiceLuxTheme.richGold,
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
                       borderSide: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: ChoiceLuxTheme.richGold,
                         width: 2,
                       ),
                     ),
                     errorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: ChoiceLuxTheme.errorColor),
+                      borderSide: const BorderSide(color: ChoiceLuxTheme.errorColor),
                     ),
                     focusedErrorBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(
+                      borderSide: const BorderSide(
                         color: ChoiceLuxTheme.errorColor,
                         width: 2,
                       ),
                     ),
                     filled: true,
-                    fillColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                    fillColor: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.3),
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -271,14 +271,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                     backgroundColor: ChoiceLuxTheme.richGold,
                     foregroundColor: Colors.black,
                     elevation: 4,
-                    shadowColor: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    shadowColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: _isLoading
-                      ? SizedBox(
+                      ? const SizedBox(
                           height: 20,
                           width: 20,
                           child: CircularProgressIndicator(
@@ -288,7 +288,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                             ),
                           ),
                         )
-                      : Text(
+                      : const Text(
                           'Send Reset Email',
                           style: TextStyle(
                             fontSize: 16,
@@ -302,7 +302,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                 Center(
                   child: TextButton(
                     onPressed: () => context.pop(),
-                    child: Text(
+                    child: const Text(
                       'Back to Login',
                       style: TextStyle(
                         color: ChoiceLuxTheme.platinumSilver,
@@ -326,15 +326,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
         child: Container(
           decoration: BoxDecoration(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: Colors.white.withOpacity(0.2),
+              color: Colors.white.withValues(alpha: 0.2),
               width: 1.5,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -348,14 +348,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                  color: ChoiceLuxTheme.successColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                    color: ChoiceLuxTheme.successColor.withValues(alpha: 0.3),
                     width: 2,
                   ),
                 ),
-                child: Icon(
+                child: const Icon(
                   Icons.check_circle_outline,
                   size: 48,
                   color: ChoiceLuxTheme.successColor,
@@ -364,7 +364,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               const SizedBox(height: 24),
 
               // Success title
-              Text(
+              const Text(
                 'Email Sent!',
                 style: TextStyle(
                   fontSize: 28,
@@ -380,7 +380,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                 'We\'ve sent a password reset link to:',
                 style: TextStyle(
                   fontSize: 16,
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -389,7 +389,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               // Email address
               Text(
                 _emailController.text.trim(),
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
                   color: ChoiceLuxTheme.richGold,
@@ -402,15 +402,15 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
               Container(
                 padding: const EdgeInsets.all(16),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                   ),
                 ),
                 child: Column(
                   children: [
-                    Text(
+                    const Text(
                       'What\'s next?',
                       style: TextStyle(
                         fontSize: 16,
@@ -423,7 +423,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                       '1. Check your email (including spam folder)\n2. Click the reset link in the email\n3. Create a new password',
                       style: TextStyle(
                         fontSize: 14,
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                       ),
                       textAlign: TextAlign.center,
                     ),
@@ -446,14 +446,14 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                       style: OutlinedButton.styleFrom(
                         foregroundColor: ChoiceLuxTheme.platinumSilver,
                         side: BorderSide(
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                         ),
                         padding: const EdgeInsets.symmetric(vertical: 12),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text('Send Again'),
+                      child: const Text('Send Again'),
                     ),
                   ),
                   const SizedBox(width: 16),
@@ -468,7 +468,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen>
                           borderRadius: BorderRadius.circular(8),
                         ),
                       ),
-                      child: Text('Back to Login'),
+                      child: const Text('Back to Login'),
                     ),
                   ),
                 ],

@@ -41,7 +41,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The Scaffold with a transparent background
@@ -267,17 +267,17 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.successColor.withOpacity(0.2),
+                color: ChoiceLuxTheme.successColor.withValues(alpha: 0.2),
                 borderRadius: BorderRadius.circular(8),
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.restore,
                 color: ChoiceLuxTheme.successColor,
                 size: 24,
               ),
             ),
             const SizedBox(width: 12),
-            Expanded(
+            const Expanded(
               child: Text(
                 'Restore Client',
                 style: TextStyle(
@@ -293,7 +293,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
+            const Text(
               'Are you sure you want to restore this client?',
               style: TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
             ),
@@ -301,15 +301,15 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.successColor.withOpacity(0.1),
+                color: ChoiceLuxTheme.successColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(
-                  color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                  color: ChoiceLuxTheme.successColor.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
                 children: [
-                  Icon(
+                  const Icon(
                     Icons.business,
                     color: ChoiceLuxTheme.successColor,
                     size: 20,
@@ -318,7 +318,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                   Expanded(
                     child: Text(
                       client.companyName,
-                      style: TextStyle(
+                      style: const TextStyle(
                         color: ChoiceLuxTheme.softWhite,
                         fontWeight: FontWeight.w600,
                       ),
@@ -328,7 +328,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            Text(
+            const Text(
               'The client will be restored to active status and will appear in the main clients list.',
               style: TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
@@ -355,7 +355,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      Icon(Icons.check_circle, color: ChoiceLuxTheme.softWhite),
+                      const Icon(Icons.check_circle, color: ChoiceLuxTheme.softWhite),
                       const SizedBox(width: 8),
                       Expanded(
                         child: Text('${client.companyName} has been restored'),

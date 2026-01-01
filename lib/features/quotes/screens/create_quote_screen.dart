@@ -63,7 +63,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   bool _isLoadingBranches = false;
 
   // Loading states
-  bool _isLoading = false;
   bool _isSubmitting = false;
 
   // Search states
@@ -313,7 +312,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           ),
           body: Stack( // The body is now just the content stack
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               Consumer(
@@ -520,17 +519,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     }
   }
 
-  // Helper method to calculate optimal form field widths
-  double _getFormFieldWidth(double screenWidth) {
-    if (screenWidth < 600) {
-      return double.infinity; // Full width on mobile
-    } else if (screenWidth < 900) {
-      return 280; // Fixed width for tablet
-    } else {
-      return 320; // Fixed width for desktop
-    }
-  }
-
   // Mobile-optimized progress indicator with enhanced features
   Widget _buildMobileProgressIndicator(bool isMobile, bool isSmallMobile) {
     final completionPercent = (_completionPercentage * 100).toInt();
@@ -548,11 +536,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               ? 8
               : 10,
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+            color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 2,
                 offset: const Offset(0, 1),
               ),
@@ -570,11 +558,11 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       colors: isComplete
                           ? [
                               ChoiceLuxTheme.successColor,
-                              ChoiceLuxTheme.successColor.withOpacity(0.8),
+                              ChoiceLuxTheme.successColor.withValues(alpha: 0.8),
                             ]
                           : [
                               ChoiceLuxTheme.richGold,
-                              ChoiceLuxTheme.richGold.withOpacity(0.8),
+                              ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                             ],
                     ),
                     borderRadius: BorderRadius.circular(isSmallMobile ? 3 : 4),
@@ -584,7 +572,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                             (isComplete
                                     ? ChoiceLuxTheme.successColor
                                     : ChoiceLuxTheme.richGold)
-                                .withOpacity(0.3),
+                                .withValues(alpha: 0.3),
                         blurRadius: 4,
                         offset: const Offset(0, 1),
                       ),
@@ -602,7 +590,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       gradient: LinearGradient(
                         colors: [
                           Colors.transparent,
-                          Colors.white.withOpacity(0.3),
+                          Colors.white.withValues(alpha: 0.3),
                           Colors.transparent,
                         ],
                         stops: const [0.0, 0.5, 1.0],
@@ -664,7 +652,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   : isMobile
                   ? 11
                   : 12,
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
               fontStyle: FontStyle.italic,
             ),
           ),
@@ -688,7 +676,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   : 24,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: CircularProgressIndicator(
@@ -754,7 +742,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   : 28,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -897,7 +885,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -920,7 +908,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 decoration: InputDecoration(
                   hintText: 'Search for a client...',
                   hintStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
                     fontSize: isSmallMobile
                         ? 13
                         : isMobile
@@ -978,10 +966,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 Container(
                   padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                     border: Border(
                       top: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -1030,7 +1018,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                     color: ChoiceLuxTheme.charcoalGray,
                     border: Border(
                       top: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                        color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                         width: 1,
                       ),
                     ),
@@ -1097,10 +1085,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       return Container(
         padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
           border: Border.all(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -1141,10 +1129,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           return Container(
             padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -1236,10 +1224,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           loading: () => Container(
             padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -1256,7 +1244,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                       : isMobile
                       ? 20
                       : 24,
-                  child: CircularProgressIndicator(
+                  child: const CircularProgressIndicator(
                     strokeWidth: 2,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       ChoiceLuxTheme.richGold,
@@ -1281,10 +1269,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
           error: (error, stack) => Container(
             padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.errorColor.withOpacity(0.1),
+              color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
               border: Border.all(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.3),
+                color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -1327,10 +1315,10 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
       return Container(
         padding: EdgeInsets.all(isSmallMobile ? 12 : 16),
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
           borderRadius: BorderRadius.circular(isSmallMobile ? 8 : 12),
           border: Border.all(
-            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+            color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
             width: 1,
           ),
         ),
@@ -1347,7 +1335,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   : isMobile
                   ? 20
                   : 24,
-              child: CircularProgressIndicator(
+              child: const CircularProgressIndicator(
                 strokeWidth: 2,
                 valueColor: AlwaysStoppedAnimation<Color>(
                   ChoiceLuxTheme.richGold,
@@ -1604,21 +1592,21 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 border: Border.all(
                   color: hasError
                       ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                   width: hasError ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: hasError
-                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.1),
+                        ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.1),
                     blurRadius: hasError ? 8 : 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: DropdownButtonFormField<String>(
-                value: value,
+                initialValue: value,
                 isExpanded: true,
                 menuMaxHeight: 300,
                 selectedItemBuilder: (BuildContext context) {
@@ -1645,7 +1633,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     fontSize: isSmallMobile
                         ? 13
                         : isMobile
@@ -1682,7 +1670,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   Icons.arrow_drop_down,
                   color: hasError
                       ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                   size: isSmallMobile
                       ? 20
                       : isMobile
@@ -1730,7 +1718,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                                   Text(
                                     '(${driver.role})',
                                     style: TextStyle(
-                                      color: ChoiceLuxTheme.platinumSilver.withOpacity(
+                                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 
                                         0.7,
                                       ),
                                       fontSize: isSmallMobile
@@ -2297,7 +2285,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         : isMobile
                         ? 20
                         : 22,
-                    child: CircularProgressIndicator(
+                    child: const CircularProgressIndicator(
                       strokeWidth: 2,
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
                     ),
@@ -2331,56 +2319,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     );
   }
 
-  // Mobile-specific validation helpers
-  String? _validateRequiredField(
-    String? value,
-    String fieldName,
-    bool isMobile,
-  ) {
-    if (value == null || value.trim().isEmpty) {
-      return isMobile ? '$fieldName is required' : 'Please enter $fieldName';
-    }
-    return null;
-  }
-
-  String? _validateNumberField(String? value, String fieldName, bool isMobile) {
-    final requiredError = _validateRequiredField(value, fieldName, isMobile);
-    if (requiredError != null) return requiredError;
-
-    if (double.tryParse(value!) == null) {
-      return isMobile
-          ? '$fieldName must be a valid number'
-          : 'Please enter a valid number for $fieldName';
-    }
-    return null;
-  }
-
-  String? _validatePhoneField(String? value, String fieldName, bool isMobile) {
-    if (value == null || value.trim().isEmpty) return null; // Optional field
-
-    // Basic phone validation for South African numbers
-    final phoneRegex = RegExp(r'^(\+27|0)[6-8][0-9]{8}$');
-    if (!phoneRegex.hasMatch(value.replaceAll(RegExp(r'[\s\-\(\)]'), ''))) {
-      return isMobile
-          ? 'Please enter a valid SA phone number'
-          : 'Please enter a valid South African phone number';
-    }
-    return null;
-  }
-
-  String? _validateDateField(DateTime? value, String fieldName, bool isMobile) {
-    if (value == null) {
-      return isMobile ? '$fieldName is required' : 'Please select $fieldName';
-    }
-
-    if (value.isBefore(DateTime.now().subtract(const Duration(days: 1)))) {
-      return isMobile
-          ? '$fieldName cannot be in the past'
-          : 'Please select a future date for $fieldName';
-    }
-    return null;
-  }
-
   // Responsive dropdown helper with mobile validation feedback
   Widget _buildResponsiveDropdown({
     required String? value,
@@ -2407,28 +2345,28 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 border: Border.all(
                   color: hasError
                       ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                   width: hasError ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: hasError
-                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.1),
+                        ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.1),
                     blurRadius: hasError ? 8 : 4,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
               child: DropdownButtonFormField<String>(
-                value: value,
+                initialValue: value,
                 isExpanded: true,
                 menuMaxHeight:
                     300, // Increased height to accommodate complex items
                 decoration: InputDecoration(
                   hintText: hintText,
                   hintStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     fontSize: isSmallMobile
                         ? 13
                         : isMobile
@@ -2465,7 +2403,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   Icons.arrow_drop_down,
                   color: hasError
                       ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                   size: isSmallMobile
                       ? 20
                       : isMobile
@@ -2552,14 +2490,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 border: Border.all(
                   color: hasError
                       ? ChoiceLuxTheme.errorColor
-                      : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                      : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                   width: hasError ? 2 : 1,
                 ),
                 boxShadow: [
                   BoxShadow(
                     color: hasError
-                        ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
-                        : Colors.black.withOpacity(0.1),
+                        ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.3)
+                        : Colors.black.withValues(alpha: 0.1),
                     blurRadius: hasError ? 8 : 4,
                     offset: const Offset(0, 2),
                   ),
@@ -2583,7 +2521,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   labelStyle: TextStyle(
                     color: hasError
                         ? ChoiceLuxTheme.errorColor
-                        : ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                        : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                     fontSize: isSmallMobile
                         ? 13
                         : isMobile
@@ -2591,7 +2529,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         : 16,
                   ),
                   hintStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     fontSize: isSmallMobile
                         ? 13
                         : isMobile
@@ -2599,7 +2537,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                         : 16,
                   ),
                   counterStyle: TextStyle(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                     fontSize: isSmallMobile
                         ? 11
                         : isMobile
@@ -2707,14 +2645,14 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
             border: Border.all(
               color: hasError
                   ? ChoiceLuxTheme.errorColor
-                  : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                  : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               width: hasError ? 2 : 1,
             ),
             boxShadow: [
               BoxShadow(
                 color: hasError
-                    ? ChoiceLuxTheme.errorColor.withOpacity(0.3)
-                    : Colors.black.withOpacity(0.1),
+                    ? ChoiceLuxTheme.errorColor.withValues(alpha: 0.3)
+                    : Colors.black.withValues(alpha: 0.1),
                 blurRadius: hasError ? 8 : 4,
                 offset: const Offset(0, 2),
               ),

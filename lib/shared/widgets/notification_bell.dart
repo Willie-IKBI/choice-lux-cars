@@ -289,7 +289,7 @@ class _NotificationBellState extends State<NotificationBell>
                                 color: _getBadgeColor(
                                   hasUrgent,
                                   hasHighPriority,
-                                ).withOpacity(0.3),
+                                ).withValues(alpha: 0.3),
                                 blurRadius: 3,
                                 offset: const Offset(0, 1),
                               ),

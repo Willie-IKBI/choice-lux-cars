@@ -29,7 +29,6 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   bool _isLoading = false;
   bool _isGeneratingPdf = false;
   Quote? _quote;
-  Quote? _originalQuote;
 
   // Form controllers for edit mode
   final _formKey = GlobalKey<FormState>();
@@ -42,8 +41,6 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   final _quoteDescriptionController = TextEditingController();
 
   // Form values for edit mode
-  String? _selectedClientId;
-  String? _selectedAgentId;
   String? _selectedVehicleId;
   String? _selectedDriverId;
   String? _selectedLocation;
@@ -78,7 +75,6 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
       if (quote != null) {
         setState(() {
           _quote = quote;
-          _originalQuote = quote;
           _initializeFormData();
         });
       }
@@ -120,8 +116,6 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     _quoteTitleController.text = _quote!.quoteTitle ?? '';
     _quoteDescriptionController.text = _quote!.quoteDescription ?? '';
 
-    _selectedClientId = _quote!.clientId;
-    _selectedAgentId = _quote!.agentId;
     _selectedVehicleId = _quote!.vehicleId;
     _selectedDriverId = _quote!.driverId;
     _selectedLocation = _quote!.location;
@@ -274,7 +268,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _getStatusColor().withOpacity(0.2)),
+        border: Border.all(color: _getStatusColor().withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -326,9 +320,9 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                       : 8,
                 ),
                 decoration: BoxDecoration(
-                  color: _getStatusColor().withOpacity(0.15),
+                  color: _getStatusColor().withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _getStatusColor().withOpacity(0.3)),
+                  border: Border.all(color: _getStatusColor().withValues(alpha: 0.3)),
                 ),
                 child: Text(
                   _quote!.statusDisplayName,
@@ -569,7 +563,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -607,7 +601,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.1),
         ),
       ),
       child: Column(
@@ -814,10 +808,10 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             width: double.infinity,
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               ),
             ),
             child: Column(
@@ -833,31 +827,31 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
                 ),
                 const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
-                  value: _getValidDropdownValue(_quote!.quoteStatus),
+                  initialValue: _getValidDropdownValue(_quote!.quoteStatus),
                   decoration: const InputDecoration(
                     labelText: 'Quote Status',
                     border: OutlineInputBorder(),
                   ),
-                  items: [
-                    const DropdownMenuItem(
+                  items: const [
+                    DropdownMenuItem(
                       value: 'draft',
                       child: Text('Draft'),
                     ),
-                    const DropdownMenuItem(value: 'open', child: Text('Open')),
-                    const DropdownMenuItem(value: 'sent', child: Text('Sent')),
-                    const DropdownMenuItem(
+                    DropdownMenuItem(value: 'open', child: Text('Open')),
+                    DropdownMenuItem(value: 'sent', child: Text('Sent')),
+                    DropdownMenuItem(
                       value: 'accepted',
                       child: Text('Accepted'),
                     ),
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: 'rejected',
                       child: Text('Rejected'),
                     ),
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: 'expired',
                       child: Text('Expired'),
                     ),
-                    const DropdownMenuItem(
+                    DropdownMenuItem(
                       value: 'closed',
                       child: Text('Closed'),
                     ),
@@ -1030,7 +1024,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             ),
           );
 
-      if (uploadedPath == null || uploadedPath.isEmpty) {
+      if (uploadedPath.isEmpty) {
         throw Exception('Failed to upload PDF');
       }
 
@@ -1132,7 +1126,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
             ),
           );
 
-      if (uploadedPath == null || uploadedPath.isEmpty) {
+      if (uploadedPath.isEmpty) {
         throw Exception('Failed to upload PDF');
       }
 

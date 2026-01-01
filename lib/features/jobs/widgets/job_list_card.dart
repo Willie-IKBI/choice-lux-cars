@@ -789,7 +789,7 @@ class JobListCard extends ConsumerWidget {
           SnackBar(
             content: Text('Failed to confirm job: ${e.toString()}'),
             backgroundColor: Colors.red,
-            duration: Duration(seconds: 3),
+            duration: const Duration(seconds: 3),
           ),
         );
       }

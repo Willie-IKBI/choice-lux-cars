@@ -120,7 +120,7 @@ class InvoiceData {
           ? BankingDetails.fromJson(
               json['banking_details'] as Map<String, dynamic>,
             )
-          : BankingDetails(
+          : const BankingDetails(
               bankName: 'Standard Bank',
               accountName: 'Choice Lux Cars (Pty) Ltd',
               accountNumber: '1234567890',

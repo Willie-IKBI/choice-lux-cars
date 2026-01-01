@@ -8,13 +8,13 @@ class ProgressBar extends StatelessWidget {
   final BorderRadius? borderRadius;
 
   const ProgressBar({
-    Key? key,
+    super.key,
     required this.progress,
     this.height = 8.0,
     this.backgroundColor,
     this.progressColor,
     this.borderRadius,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -58,14 +58,14 @@ class AnimatedProgressBar extends StatefulWidget {
   final Duration duration;
 
   const AnimatedProgressBar({
-    Key? key,
+    super.key,
     required this.progress,
     this.height = 8.0,
     this.backgroundColor,
     this.progressColor,
     this.borderRadius,
     this.duration = const Duration(milliseconds: 500),
-  }) : super(key: key);
+  });
 
   @override
   State<AnimatedProgressBar> createState() => _AnimatedProgressBarState();

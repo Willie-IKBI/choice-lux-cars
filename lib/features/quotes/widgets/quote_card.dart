@@ -181,8 +181,8 @@ class QuoteCard extends ConsumerWidget {
               ),
               decoration: BoxDecoration(
                 color: quote.hasCompletePassengerDetails
-                    ? ChoiceLuxTheme.successColor.withOpacity(0.1)
-                    : ChoiceLuxTheme.warningColor.withOpacity(0.1),
+                    ? ChoiceLuxTheme.successColor.withValues(alpha: 0.1)
+                    : ChoiceLuxTheme.warningColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Icon(
@@ -265,10 +265,10 @@ class QuoteCard extends ConsumerWidget {
             : 6,
       ),
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+        color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
         ),
       ),
       child: Row(
@@ -427,10 +427,10 @@ class QuoteCard extends ConsumerWidget {
                   : 12,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               ),
             ),
             child: Column(
@@ -482,13 +482,13 @@ class QuoteCard extends ConsumerWidget {
               gradient: LinearGradient(
                 colors: [
                   ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.8),
+                  ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -547,7 +547,7 @@ class QuoteCard extends ConsumerWidget {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: ChoiceLuxTheme.successColor.withOpacity(0.3),
+                  color: ChoiceLuxTheme.successColor.withValues(alpha: 0.3),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),

@@ -52,7 +52,7 @@ class InsightsCard extends ConsumerWidget {
             Color(0xFF2d2d2d),
           ],
         ),
-        border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+        border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3)),
       ),
       child: Padding(
         padding: const EdgeInsets.all(20),
@@ -63,14 +63,14 @@ class InsightsCard extends ConsumerWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.analytics_outlined,
                       color: ChoiceLuxTheme.richGold,
                       size: 28,
                     ),
-                    const SizedBox(width: 12),
+                    SizedBox(width: 12),
                     Text(
                       'Insights',
                       style: TextStyle(
@@ -84,9 +84,9 @@ class InsightsCard extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
+                    color: Colors.white.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.white.withOpacity(0.2)),
+                    border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                   ),
                   child: Text(
                     '${selectedPeriod.displayName} • ${selectedLocation.displayName}',
@@ -248,9 +248,9 @@ class InsightsCard extends ConsumerWidget {
       height: 140, // Fixed height for consistency - increased to prevent overflow
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -271,7 +271,7 @@ class InsightsCard extends ConsumerWidget {
             title,
             style: TextStyle(
               fontSize: 12,
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontWeight: FontWeight.w500,
             ),
             textAlign: TextAlign.center,
@@ -288,18 +288,18 @@ class InsightsCard extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.work_outline, color: ChoiceLuxTheme.richGold, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Job Status Breakdown',
                 style: TextStyle(
                   fontSize: 16,
@@ -344,9 +344,9 @@ class InsightsCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -363,7 +363,7 @@ class InsightsCard extends ConsumerWidget {
             status,
             style: TextStyle(
               fontSize: 12,
-              color: color.withOpacity(0.8),
+              color: color.withValues(alpha: 0.8),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -403,18 +403,18 @@ class InsightsCard extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(Icons.attach_money, color: ChoiceLuxTheme.richGold, size: 20),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Financial Performance',
                 style: TextStyle(
                   fontSize: 16,
@@ -440,9 +440,9 @@ class InsightsCard extends ConsumerWidget {
       height: 200, // Fixed height for consistency
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -469,7 +469,7 @@ class InsightsCard extends ConsumerWidget {
                     'No data available',
                     style: TextStyle(
                       fontSize: 14,
-                      color: Colors.white.withOpacity(0.6),
+                      color: Colors.white.withValues(alpha: 0.6),
                     ),
                   ),
                 )
@@ -482,7 +482,7 @@ class InsightsCard extends ConsumerWidget {
                         performers[index],
                         style: TextStyle(
                           fontSize: 14,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     );
@@ -504,7 +504,7 @@ class InsightsCard extends ConsumerWidget {
             label,
             style: TextStyle(
               fontSize: 14,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
           Text(
@@ -549,14 +549,14 @@ class InsightsCard extends ConsumerWidget {
           children: [
             Icon(
               Icons.error_outline,
-              color: Colors.red.withOpacity(0.7),
+              color: Colors.red.withValues(alpha: 0.7),
               size: 48,
             ),
             const SizedBox(height: 16),
             Text(
               'Failed to load insights',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.8),
+                color: Colors.white.withValues(alpha: 0.8),
                 fontSize: 16,
               ),
             ),
@@ -564,7 +564,7 @@ class InsightsCard extends ConsumerWidget {
             Text(
               'Error: $error',
               style: TextStyle(
-                color: Colors.white.withOpacity(0.6),
+                color: Colors.white.withValues(alpha: 0.6),
                 fontSize: 12,
               ),
               textAlign: TextAlign.center,
@@ -589,22 +589,22 @@ class InsightsCard extends ConsumerWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
               Icon(
                 Icons.business,
                 color: ChoiceLuxTheme.richGold,
                 size: 20,
               ),
-              const SizedBox(width: 8),
-              const Text(
+              SizedBox(width: 8),
+              Text(
                 'Top Clients by Revenue',
                 style: TextStyle(
                   fontSize: 16,
@@ -620,7 +620,7 @@ class InsightsCard extends ConsumerWidget {
               child: Text(
                 'No client revenue data available',
                 style: TextStyle(
-                  color: Colors.white.withOpacity(0.6),
+                  color: Colors.white.withValues(alpha: 0.6),
                   fontSize: 14,
                 ),
               ),
@@ -657,9 +657,9 @@ class InsightsCard extends ConsumerWidget {
                     margin: const EdgeInsets.only(bottom: 8),
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.05),
+                      color: Colors.white.withValues(alpha: 0.05),
                       borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                     ),
                     child: Row(
                       children: [
@@ -678,7 +678,7 @@ class InsightsCard extends ConsumerWidget {
                               Text(
                                 '${client.jobCount} jobs • R${client.averageJobValue.toStringAsFixed(0)} avg',
                                 style: TextStyle(
-                                  color: Colors.white.withOpacity(0.7),
+                                  color: Colors.white.withValues(alpha: 0.7),
                                   fontSize: 12,
                                 ),
                               ),
@@ -687,7 +687,7 @@ class InsightsCard extends ConsumerWidget {
                         ),
                         Text(
                           'R${client.totalRevenue.toStringAsFixed(0)}',
-                          style: TextStyle(
+                          style: const TextStyle(
                             color: ChoiceLuxTheme.richGold,
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
@@ -708,9 +708,9 @@ class InsightsCard extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -728,7 +728,7 @@ class InsightsCard extends ConsumerWidget {
           Text(
             title,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.7),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 12,
             ),
             textAlign: TextAlign.center,

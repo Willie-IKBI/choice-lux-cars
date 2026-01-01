@@ -99,7 +99,7 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
       );
 
       Log.d(
-        'Loaded ${notifications.length} notifications, ${unreadCount} unread',
+        'Loaded ${notifications.length} notifications, $unreadCount unread',
       );
       Log.d(
         'Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',

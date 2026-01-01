@@ -9,12 +9,12 @@ class OdometerCaptureWidget extends StatefulWidget {
   final double? initialReading;
 
   const OdometerCaptureWidget({
-    Key? key,
+    super.key,
     required this.onOdometerCaptured,
     this.title,
     this.description,
     this.initialReading,
-  }) : super(key: key);
+  });
 
   @override
   State<OdometerCaptureWidget> createState() => _OdometerCaptureWidgetState();
@@ -78,11 +78,11 @@ class _OdometerCaptureWidgetState extends State<OdometerCaptureWidget> {
             TextField(
               controller: _readingController,
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 labelText: 'Odometer Reading (km)',
                 hintText: 'Enter current odometer reading',
-                prefixIcon: const Icon(Icons.speed),
-                border: const OutlineInputBorder(),
+                prefixIcon: Icon(Icons.speed),
+                border: OutlineInputBorder(),
                 suffixText: 'km',
               ),
             ),
@@ -265,11 +265,11 @@ class OdometerDisplayWidget extends StatelessWidget {
   final String? title;
 
   const OdometerDisplayWidget({
-    Key? key,
+    super.key,
     required this.reading,
     this.imagePath,
     this.title,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

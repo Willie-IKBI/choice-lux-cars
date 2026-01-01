@@ -40,7 +40,7 @@ class AddressDisplayWidget extends StatelessWidget {
               ],
               Text(
                 label!,
-                style: TextStyle(
+                style: const TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
                   color: ChoiceLuxTheme.platinumSilver,
@@ -56,12 +56,12 @@ class AddressDisplayWidget extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
             decoration: BoxDecoration(
               color: clickable && isAddressValid
-                  ? ChoiceLuxTheme.richGold.withOpacity(0.1)
+                  ? ChoiceLuxTheme.richGold.withValues(alpha: 0.1)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(4),
               border: clickable && isAddressValid
                   ? Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                       width: 1,
                     )
                   : null,
@@ -97,7 +97,7 @@ class AddressDisplayWidget extends StatelessWidget {
                 ),
                 if (clickable && isAddressValid) ...[
                   const SizedBox(width: 4),
-                  Icon(
+                  const Icon(
                     Icons.open_in_new,
                     size: 12,
                     color: ChoiceLuxTheme.richGold,

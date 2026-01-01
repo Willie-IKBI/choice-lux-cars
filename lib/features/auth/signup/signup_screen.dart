@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
+import 'package:vector_math/vector_math_64.dart' as vm;
 import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/constants.dart';
-import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/app/theme_helpers.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -86,11 +87,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
 
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              context.colorScheme.background,
+              context.colorScheme.surface,
+            ],
+          ),
+        ),
         child: Stack(
           children: [
                          // Subtle background pattern
-             Positioned.fill(
+             const Positioned.fill(
                child: CustomPaint(painter: BackgroundPatterns.signin),
              ),
             SafeArea(
@@ -105,15 +115,15 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                         filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                         child: Container(
                           decoration: BoxDecoration(
-                            color: Colors.black.withOpacity(0.4),
+                            color: context.colorScheme.background.withValues(alpha: 0.4),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(
-                              color: Colors.white.withOpacity(0.2),
+                              color: context.tokens.textHeading.withValues(alpha: 0.2),
                               width: 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: Colors.black.withOpacity(0.3),
+                                color: context.colorScheme.background.withValues(alpha: 0.3),
                                 blurRadius: 20,
                                 offset: const Offset(0, 10),
                               ),
@@ -149,22 +159,20 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                           width: 72,
                                           height: 72,
                                           transform: Matrix4.identity()
-                                            ..scale(
-                                              _isHoveringLogo ? 1.05 : 1.0,
+                                            ..scaleByVector3(
+                                              vm.Vector3.all(_isHoveringLogo ? 1.05 : 1.0),
                                             ),
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
-                                            color: Colors.black.withOpacity(
-                                              0.7,
-                                            ),
+                                            color: context.colorScheme.background.withValues(alpha: 0.7),
                                             border: Border.all(
-                                              color: ChoiceLuxTheme.richGold,
+                                              color: context.colorScheme.primary,
                                               width: 2,
                                             ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: ChoiceLuxTheme.richGold
-                                                    .withOpacity(0.3),
+                                                color: context.colorScheme.primary
+                                                    .withValues(alpha: 0.3),
                                                 blurRadius: _isHoveringLogo
                                                     ? 15
                                                     : 10,
@@ -181,7 +189,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                               'assets/images/clc_logo.png',
                                               fit: BoxFit.contain,
                                               // Optional: Apply color filter if logo needs to match theme
-                                              // color: ChoiceLuxTheme.richGold,
+                                              // color: context.colorScheme.primary,
                                               // colorBlendMode: BlendMode.srcIn,
                                             ),
                                           ),
@@ -206,8 +214,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                 style: GoogleFonts.outfit(
                                                   fontSize: titleSize,
                                                   fontWeight: FontWeight.w700,
-                                                  color:
-                                                      ChoiceLuxTheme.richGold,
+                                                  color: context.colorScheme.primary,
                                                   letterSpacing: 0.5,
                                                 ),
                                               ),
@@ -218,9 +225,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                   letterSpacing: 1.2,
                                                   fontSize: subtitleSize,
                                                   fontWeight: FontWeight.w500,
-                                                  color: ChoiceLuxTheme
-                                                      .platinumSilver
-                                                      .withOpacity(0.8),
+                                                  color: context.tokens.textBody.withValues(alpha: 0.8),
                                                 ),
                                               ),
                                             ],
@@ -295,8 +300,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                             _obscurePassword
                                                 ? Icons.visibility_outlined
                                                 : Icons.visibility_off_outlined,
-                                            color:
-                                                ChoiceLuxTheme.platinumSilver,
+                                            color: context.tokens.textBody,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -337,8 +341,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                             _obscureConfirmPassword
                                                 ? Icons.visibility_outlined
                                                 : Icons.visibility_off_outlined,
-                                            color:
-                                                ChoiceLuxTheme.platinumSilver,
+                                            color: context.tokens.textBody,
                                           ),
                                           onPressed: () {
                                             setState(() {
@@ -376,14 +379,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                             bottom: 20,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: ChoiceLuxTheme.errorColor
-                                                .withOpacity(0.1),
+                                            color: context.tokens.warningColor
+                                                .withValues(alpha: 0.1),
                                             borderRadius: BorderRadius.circular(
                                               12,
                                             ),
                                             border: Border.all(
-                                              color: ChoiceLuxTheme.errorColor
-                                                  .withOpacity(0.3),
+                                              color: context.tokens.warningColor
+                                                  .withValues(alpha: 0.3),
                                               width: 1,
                                             ),
                                           ),
@@ -394,16 +397,14 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                   8,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: ChoiceLuxTheme
-                                                      .errorColor
-                                                      .withOpacity(0.2),
+                                                  color: context.tokens.warningColor
+                                                      .withValues(alpha: 0.2),
                                                   borderRadius:
                                                       BorderRadius.circular(8),
                                                 ),
                                                 child: Icon(
                                                   Icons.error_outline_rounded,
-                                                  color:
-                                                      ChoiceLuxTheme.errorColor,
+                                                  color: context.tokens.warningColor,
                                                   size: 20,
                                                 ),
                                               ),
@@ -415,12 +416,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                   children: [
                                                     Text(
                                                       'Signup Error',
-                                                      style: TextStyle(
-                                                        color: ChoiceLuxTheme
-                                                            .errorColor,
-                                                        fontSize: 14,
-                                                        fontWeight:
-                                                            FontWeight.w600,
+                                                      style: context.textTheme.labelLarge?.copyWith(
+                                                        color: context.tokens.warningColor,
+                                                        fontWeight: FontWeight.w600,
                                                       ),
                                                     ),
                                                     const SizedBox(height: 4),
@@ -428,10 +426,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                       AuthErrorUtils.getErrorMessage(
                                                         authState.error,
                                                       ),
-                                                      style: TextStyle(
-                                                        color: ChoiceLuxTheme
-                                                            .platinumSilver,
-                                                        fontSize: 13,
+                                                      style: context.textTheme.bodySmall?.copyWith(
+                                                        color: context.tokens.textBody,
                                                         height: 1.3,
                                                       ),
                                                     ),
@@ -448,8 +444,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                 },
                                                 icon: Icon(
                                                   Icons.close_rounded,
-                                                  color: ChoiceLuxTheme
-                                                      .platinumSilver,
+                                                  color: context.tokens.textBody,
                                                   size: 20,
                                                 ),
                                                 padding: EdgeInsets.zero,
@@ -487,12 +482,11 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                     : _signUp,
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor:
-                                                      ChoiceLuxTheme.richGold,
-                                                  foregroundColor: Colors.black,
+                                                      context.colorScheme.primary,
+                                                  foregroundColor: context.colorScheme.onPrimary,
                                                   elevation: 8,
-                                                  shadowColor: ChoiceLuxTheme
-                                                      .richGold
-                                                      .withOpacity(0.4),
+                                                  shadowColor: context.colorScheme.primary
+                                                      .withValues(alpha: 0.4),
                                                   shape: RoundedRectangleBorder(
                                                     borderRadius:
                                                         BorderRadius.circular(
@@ -511,38 +505,28 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                                             width: 20,
                                                             child: CircularProgressIndicator(
                                                               strokeWidth: 2,
-                                                              valueColor:
-                                                                  AlwaysStoppedAnimation<
-                                                                    Color
-                                                                  >(
-                                                                    Colors
-                                                                        .black,
-                                                                  ),
+                                                              valueColor: AlwaysStoppedAnimation<Color>(
+                                                                context.colorScheme.onPrimary,
+                                                              ),
                                                             ),
                                                           ),
-                                                          const SizedBox(
+                                                          SizedBox(
                                                             width: 12,
                                                           ),
                                                           Text(
                                                             'Creating Account...',
-                                                            style: TextStyle(
-                                                              fontSize: 16,
-                                                              fontWeight:
-                                                                  FontWeight
-                                                                      .w600,
-                                                              color:
-                                                                  Colors.black,
+                                                            style: context.textTheme.labelLarge?.copyWith(
+                                                              fontWeight: FontWeight.w600,
+                                                              color: context.colorScheme.onPrimary,
                                                             ),
                                                           ),
                                                         ],
                                                       )
                                                     : Text(
                                                         'Create Account',
-                                                        style: TextStyle(
-                                                          fontSize: 16,
-                                                          fontWeight:
-                                                              FontWeight.w600,
-                                                          color: Colors.black,
+                                                        style: context.textTheme.labelLarge?.copyWith(
+                                                          fontWeight: FontWeight.w600,
+                                                          color: context.colorScheme.onPrimary,
                                                         ),
                                                       ),
                                               ),
@@ -576,11 +560,8 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                         children: [
                                           Text(
                                             "Already have an account? ",
-                                            style: TextStyle(
-                                              color: ChoiceLuxTheme
-                                                  .platinumSilver
-                                                  .withOpacity(0.8),
-                                              fontSize: 14,
+                                            style: context.textTheme.bodyMedium?.copyWith(
+                                              color: context.tokens.textBody.withValues(alpha: 0.8),
                                             ),
                                           ),
                                           MouseRegion(
@@ -596,9 +577,9 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
                                               style: TextButton.styleFrom(
                                                 foregroundColor:
                                                     _isHoveringSignIn
-                                                    ? ChoiceLuxTheme.richGold
-                                                    : ChoiceLuxTheme.richGold
-                                                          .withOpacity(0.8),
+                                                    ? context.colorScheme.primary
+                                                    : context.colorScheme.primary
+                                                          .withValues(alpha: 0.8),
                                               ),
                                               child: Text(
                                                 'Sign In',
@@ -646,35 +627,45 @@ class _SignupScreenState extends ConsumerState<SignupScreen>
       obscureText: obscureText,
       keyboardType: keyboardType,
       validator: validator,
-      style: const TextStyle(color: ChoiceLuxTheme.softWhite, fontSize: 16),
+      style: context.textTheme.bodyLarge?.copyWith(
+        color: context.tokens.textHeading,
+      ),
       decoration: InputDecoration(
         labelText: label,
-        prefixIcon: Icon(icon, color: ChoiceLuxTheme.platinumSilver),
+        prefixIcon: Icon(icon, color: context.tokens.textBody),
         suffixIcon: suffixIcon,
         filled: true,
-        fillColor: Colors.white.withOpacity(0.05),
+        fillColor: context.colorScheme.surfaceVariant,
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+          borderSide: BorderSide(color: context.colorScheme.outline),
         ),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+          borderSide: BorderSide(color: context.colorScheme.outline),
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+          borderSide: BorderSide(
+            color: context.tokens.focusBorder,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+          borderSide: BorderSide(
+            color: context.tokens.warningColor.withValues(alpha: 0.5),
+          ),
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.red.withOpacity(0.8)),
+          borderSide: BorderSide(
+            color: context.tokens.warningColor.withValues(alpha: 0.8),
+            width: 2,
+          ),
         ),
-        labelStyle: TextStyle(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+        labelStyle: context.textTheme.bodyMedium?.copyWith(
+          color: context.tokens.textBody,
         ),
         contentPadding: const EdgeInsets.symmetric(
           horizontal: 16,

@@ -114,7 +114,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           if ((isManager || isDriverManager) && currentUser.branchId != null) {
             setState(() {
               _selectedBranchId = currentUser.branchId;
-              Log.d('Auto-set branch_id to ${currentUser.branchId} for ${userRole}');
+              Log.d('Auto-set branch_id to ${currentUser.branchId} for $userRole');
             });
           }
         }
@@ -291,13 +291,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       _cancelledAt = job.cancelledAt;
 
       // Load branches for the client
-      if (job.clientId != null) {
-        final clientIdInt = int.tryParse(job.clientId);
-        if (clientIdInt != null) {
-          _loadClientBranches(clientIdInt);
-        }
+      final clientIdInt = int.tryParse(job.clientId);
+      if (clientIdInt != null) {
+        _loadClientBranches(clientIdInt);
       }
-
+    
       _passengerNameController.text = job.passengerName ?? '';
       _passengerContactController.text = job.passengerContact ?? '';
       _pasCountController.text = job.pasCount.toString();
@@ -308,19 +306,17 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       }
 
       // Populate client search controller with client name
-      if (job?.clientId != null) {
-        try {
-          final clientsState = ref.read(clientsProvider);
-          if (clientsState.hasValue) {
-            final client = clientsState.value!.firstWhere((c) => c.id.toString() == job!.clientId);
-            _clientSearchController.text = client.companyName;
-            Log.d('Client search controller populated with: ${client.companyName}');
-          }
-        } catch (e) {
-          Log.d('Could not populate client search controller: $e');
+      try {
+        final clientsState = ref.read(clientsProvider);
+        if (clientsState.hasValue) {
+          final client = clientsState.value!.firstWhere((c) => c.id.toString() == job!.clientId);
+          _clientSearchController.text = client.companyName;
+          Log.d('Client search controller populated with: ${client.companyName}');
         }
+      } catch (e) {
+        Log.d('Could not populate client search controller: $e');
       }
-
+    
       Log.d('Form fields populated successfully');
     } catch (e) {
       Log.e('Error loading job for editing: $e');
@@ -595,7 +591,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             final isValid = reasonController.text.trim().isNotEmpty;
             return AlertDialog(
               backgroundColor: ChoiceLuxTheme.charcoalGray,
-              title: Text(
+              title: const Text(
                 'Cancel Job',
                 style: TextStyle(
                   color: ChoiceLuxTheme.softWhite,
@@ -605,7 +601,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               content: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
+                  const Text(
                     'Please provide a reason for cancelling this job.',
                     style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                   ),
@@ -711,8 +707,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
     // Calculate responsive max width based on screen size
     double getMaxWidth() {
-      if (screenWidth < 768)
+      if (screenWidth < 768) {
         return screenWidth - 32; // Mobile: full width minus padding
+      }
       if (screenWidth < 1024) return 800; // Tablet: 800px max
       if (screenWidth < 1440) return 1000; // Medium desktop: 1000px max
       if (screenWidth < 1920) return 1200; // Large desktop: 1200px max
@@ -740,7 +737,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           ),
           body: Stack( // The body is now just the content stack
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               Consumer(
@@ -766,7 +763,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                             ),
                           ),
                           const SizedBox(height: 16),
-                          Text(
+                          const Text(
                             'Loading form data...',
                             style: TextStyle(
                               color: ChoiceLuxTheme.softWhite,
@@ -776,14 +773,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                           const SizedBox(height: 8),
                           Text(
                             'Vehicles: ${vehiclesState.isLoading ? "Loading..." : "Ready"}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: ChoiceLuxTheme.platinumSilver,
                               fontSize: 14,
                             ),
                           ),
                           Text(
                             'Users: ${users.hasValue ? "Ready" : "Loading..."}',
-                            style: TextStyle(
+                            style: const TextStyle(
                               color: ChoiceLuxTheme.platinumSilver,
                               fontSize: 14,
                             ),
@@ -1123,10 +1120,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          const Row(
             children: [
-              const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
-              const SizedBox(width: 8),
+              Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+              SizedBox(width: 8),
               Text(
                 'This job was cancelled',
                 style: TextStyle(
@@ -1140,8 +1137,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             Padding(
               padding: const EdgeInsets.only(top: 8),
               child: Text(
-                'Reason: ${_cancelledReason}',
-                style: TextStyle(
+                'Reason: $_cancelledReason',
+                style: const TextStyle(
                   color: ChoiceLuxTheme.softWhite,
                   fontSize: 14,
                 ),
@@ -1152,7 +1149,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
               padding: const EdgeInsets.only(top: 4),
               child: Text(
                 'Cancelled by ${cancelledByName ?? 'Administrator'} on ${_formatDateTime(_cancelledAt)}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,
                   fontSize: 12,
                 ),
@@ -1192,11 +1189,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 ),
               ),
               const SizedBox(width: 12),
-              Expanded(
+              const Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
+                    Text(
                       'Step 1 of 1: Job Details',
                       style: TextStyle(
                         fontSize: 16,
@@ -1204,7 +1201,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                         color: ChoiceLuxTheme.softWhite,
                       ),
                     ),
-                    const SizedBox(height: 4),
+                    SizedBox(height: 4),
                     Text(
                       'Fill in the job information below',
                       style: TextStyle(
@@ -1230,7 +1227,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 ),
               child: Text(
                 '${completion.toInt()}%',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w600,
                     fontSize: 12,
@@ -1346,7 +1343,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Client *',
           style: TextStyle(
             fontSize: 14,
@@ -1508,14 +1505,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             width: 1,
           ),
         ),
-        child: Row(
+        child: const Row(
           children: [
             Icon(
               Icons.info_outline,
               color: ChoiceLuxTheme.platinumSilver,
               size: 20,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 'Please select a client first to choose an agent',
@@ -1544,14 +1541,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 width: 1,
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
                 Icon(
                   Icons.info_outline,
                   color: ChoiceLuxTheme.platinumSilver,
                   size: 20,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Expanded(
                   child: Text(
                     'Please select a client first to choose an agent',
@@ -1624,14 +1621,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 width: 1,
               ),
             ),
-            child: Row(
+            child: const Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.error_outline,
                   color: ChoiceLuxTheme.errorColor,
                   size: 20,
                 ),
-                const SizedBox(width: 12),
+                SizedBox(width: 12),
                 Text(
                   'Error loading agents',
                   style: TextStyle(
@@ -1685,7 +1682,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
             Text(
               'Branch',
@@ -1735,7 +1732,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             final validValue = valueExists ? selectedValue : '';
 
             return DropdownButtonFormField<String>(
-              value: validValue,
+              initialValue: validValue,
               isExpanded: true,
               decoration: InputDecoration(
                 hintText: 'Select a branch (optional)',
@@ -1967,7 +1964,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             Expanded(
               child: Text(
                 'Assigned Manager: $displayName',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.softWhite,
                   fontWeight: FontWeight.w600,
                 ),
@@ -1992,11 +1989,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
           ),
         ),
-        child: Row(
+        child: const Row(
           children: [
-            const Icon(Icons.info_outline,
+            Icon(Icons.info_outline,
                 color: ChoiceLuxTheme.platinumSilver),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Expanded(
               child: Text(
                 'No managers available. Please create a manager profile first.',
@@ -2157,7 +2154,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
+        const Text(
           'Job Start Date *',
           style: TextStyle(
             fontSize: 14,
@@ -2209,8 +2206,8 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           ),
         ),
         if (_selectedJobStartDate == null)
-          Padding(
-            padding: const EdgeInsets.only(top: 8, left: 12),
+          const Padding(
+            padding: EdgeInsets.only(top: 8, left: 12),
             child: Text(
               'Please select a job start date',
               style: TextStyle(color: ChoiceLuxTheme.errorColor, fontSize: 12),
@@ -2238,7 +2235,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: ChoiceLuxTheme.softWhite,
@@ -2246,7 +2243,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             if (isRequired) ...[
               const SizedBox(width: 4),
-              Text(
+              const Text(
                 '*',
                 style: TextStyle(
                   color: ChoiceLuxTheme.errorColor,
@@ -2291,11 +2288,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+              borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(
+              borderSide: const BorderSide(
                 color: ChoiceLuxTheme.errorColor,
                 width: 1,
               ),
@@ -2329,7 +2326,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
           children: [
             Text(
               label,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.w500,
                 color: ChoiceLuxTheme.softWhite,
@@ -2337,7 +2334,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             if (isRequired) ...[
               const SizedBox(width: 4),
-              Text(
+              const Text(
                 '*',
                 style: TextStyle(
                   color: ChoiceLuxTheme.errorColor,
@@ -2349,7 +2346,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         ),
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
-          value: value,
+          initialValue: value,
           isExpanded: true,
           onChanged: isEnabled ? onChanged : null,
           decoration: InputDecoration(
@@ -2380,7 +2377,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             ),
             focusedBorder: OutlineInputBorder(
               borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+              borderSide: const BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
             ),
             contentPadding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -2398,14 +2395,14 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
-            const Icon(
+            Icon(
               Icons.payment,
               color: ChoiceLuxTheme.platinumSilver,
               size: 20,
             ),
-            const SizedBox(width: 12),
+            SizedBox(width: 12),
             Text(
               'Payment Collection',
               style: TextStyle(
@@ -2435,11 +2432,11 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                     value: _collectPayment,
                     onChanged: (value) =>
                         setState(() => _collectPayment = value),
-                    activeColor: ChoiceLuxTheme.richGold,
+                    activeThumbColor: ChoiceLuxTheme.richGold,
                     activeTrackColor: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
                   ),
                   const SizedBox(width: 12),
-                  Expanded(
+                  const Expanded(
                     child: Text(
                       'Driver needs to collect payment',
                       style: TextStyle(
@@ -2474,10 +2471,10 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
+            const Row(
               children: [
-                const Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
-                const SizedBox(width: 12),
+                Icon(Icons.cancel, color: ChoiceLuxTheme.errorColor),
+                SizedBox(width: 12),
                 Text(
                   'Job Cancelled',
                   style: TextStyle(
@@ -2492,7 +2489,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
             if (_cancelledReason?.isNotEmpty == true)
               Text(
                 'Reason: ${_cancelledReason!}',
-                style: TextStyle(
+                style: const TextStyle(
                   color: ChoiceLuxTheme.softWhite,
                   fontSize: 14,
                 ),
@@ -2502,7 +2499,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 padding: const EdgeInsets.only(top: 6),
                 child: Text(
                   'Cancelled at: ${_formatDateTime(_cancelledAt)}',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.platinumSilver,
                     fontSize: 13,
                   ),

@@ -78,7 +78,7 @@ class EditClientScreen extends ConsumerWidget {
                     color: ChoiceLuxTheme.errorColor,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Error loading client',
                     style: TextStyle(
                       color: ChoiceLuxTheme.softWhite,
@@ -89,7 +89,7 @@ class EditClientScreen extends ConsumerWidget {
                   const SizedBox(height: 8),
                   Text(
                     error.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.platinumSilver,
                       fontSize: 14,
                     ),

@@ -63,8 +63,13 @@ class JobsRepository {
         final todayISO = todayStart.toIso8601String();
         final tomorrowISO = tomorrowEnd.toIso8601String();
         
-        // Driver visibility: unconfirmed OR confirmed in window OR no start date
+        // Driver visibility: 
+        // 1. Started/in-progress jobs (ALWAYS visible once started) - for driver OR manager
+        // 2. Unconfirmed jobs
+        // 3. Confirmed jobs in window
+        // 4. Jobs without start date
         query = query.or(
+          'and(or(driver_id.eq.$userId,manager_id.eq.$userId),job_status.in.(started,in_progress,ready_to_close)),'  // Always show started jobs (driver OR manager)
           'and(driver_id.eq.$userId,driver_confirm_ind.eq.false),'
           'and(driver_id.eq.$userId,is_confirmed.eq.false),'
           'and(driver_id.eq.$userId,job_start_date.is.null),'
@@ -350,7 +355,7 @@ class JobsRepository {
       PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select()
-          .eq('status', status);
+          .eq('job_status', status);  // Use job_status (database column), not status
 
       // Apply role-based filtering based on confirmed requirements
       if (isAdmin) {
@@ -378,8 +383,13 @@ class JobsRepository {
         final todayISO = todayStart.toIso8601String();
         final tomorrowISO = tomorrowEnd.toIso8601String();
         
-        // Driver visibility: unconfirmed OR confirmed in window OR no start date
+        // Driver visibility: 
+        // 1. Started/in-progress jobs (ALWAYS visible once started) - for driver OR manager
+        // 2. Unconfirmed jobs
+        // 3. Confirmed jobs in window
+        // 4. Jobs without start date
         query = query.or(
+          'and(or(driver_id.eq.$userId,manager_id.eq.$userId),job_status.in.(started,in_progress,ready_to_close)),'  // Always show started jobs (driver OR manager)
           'and(driver_id.eq.$userId,driver_confirm_ind.eq.false),'
           'and(driver_id.eq.$userId,is_confirmed.eq.false),'
           'and(driver_id.eq.$userId,job_start_date.is.null),'

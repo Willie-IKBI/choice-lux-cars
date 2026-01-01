@@ -62,11 +62,11 @@ class JobsInsightsTab extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+              border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.work_outline,
                   color: ChoiceLuxTheme.richGold,
                   size: 32,
@@ -89,7 +89,7 @@ class JobsInsightsTab extends ConsumerWidget {
                         '${insights.totalJobs} total jobs • ${insights.completedJobs} completed',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -277,7 +277,7 @@ class JobsInsightsTab extends ConsumerWidget {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
         color: Colors.white,
@@ -329,9 +329,9 @@ class JobsInsightsTab extends ConsumerWidget {
         child: Container(
           padding: cardPadding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -339,10 +339,10 @@ class JobsInsightsTab extends ConsumerWidget {
               Container(
                 padding: EdgeInsets.all(iconContainerPadding),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
+                  color: color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(borderRadius * 0.8),
                   border: Border.all(
-                    color: color.withOpacity(0.2),
+                    color: color.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
@@ -362,7 +362,7 @@ class JobsInsightsTab extends ConsumerWidget {
                 title,
                 style: TextStyle(
                   fontSize: titleFontSize,
-                  color: Colors.white.withOpacity(0.8),
+                  color: Colors.white.withValues(alpha: 0.8),
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -391,9 +391,9 @@ class JobsInsightsTab extends ConsumerWidget {
         return Container(
           padding: cardPadding,
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
+            color: Colors.white.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
           ),
           child: Column(
             children: [
@@ -461,9 +461,9 @@ class JobsInsightsTab extends ConsumerWidget {
     return Container(
       padding: itemPadding,
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+        color: color.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
+        border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
         children: [
@@ -488,7 +488,7 @@ class JobsInsightsTab extends ConsumerWidget {
             '${percentage.toStringAsFixed(1)}%',
             style: TextStyle(
               fontSize: percentageFontSize,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -537,15 +537,15 @@ class JobsInsightsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: Colors.red,
             size: 64,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load jobs insights',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -555,7 +555,7 @@ class JobsInsightsTab extends ConsumerWidget {
           Text(
             error,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),

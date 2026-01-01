@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 class UserCard extends StatefulWidget {
   final User user;
   final VoidCallback? onTap;
-  const UserCard({Key? key, required this.user, this.onTap}) : super(key: key);
+  const UserCard({super.key, required this.user, this.onTap});
 
   @override
   State<UserCard> createState() => _UserCardState();
@@ -70,7 +70,7 @@ class _UserCardState extends State<UserCard>
     final status = _statusInfo(user);
     final avatar = CircleAvatar(
       radius: avatarRadius,
-      backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+      backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
       backgroundImage:
           user.profileImage != null && user.profileImage!.isNotEmpty
           ? NetworkImage(user.profileImage!)
@@ -94,7 +94,7 @@ class _UserCardState extends State<UserCard>
             borderRadius: BorderRadius.circular(12),
             side: _isHovered
                 ? BorderSide(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                     width: 1,
                   )
                 : BorderSide.none,
@@ -105,8 +105,8 @@ class _UserCardState extends State<UserCard>
             color: Colors.transparent,
             child: InkWell(
               onTap: widget.onTap,
-              splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-              highlightColor: ChoiceLuxTheme.richGold.withOpacity(0.05),
+              splashColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+              highlightColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
               child: Padding(
                 padding: EdgeInsets.symmetric(
@@ -147,7 +147,7 @@ class _UserCardState extends State<UserCard>
                           ),
                           _statusChip(status, isSmallMobile),
                           const SizedBox(width: 8),
-                          Icon(
+                          const Icon(
                             Icons.chevron_right,
                             color: ChoiceLuxTheme.platinumSilver,
                           ),
@@ -202,7 +202,7 @@ class _UserCardState extends State<UserCard>
             child: Text(
               user.userEmail.isNotEmpty ? user.userEmail : (user.number ?? ''),
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
                 fontSize: detailSize,
               ),
             ),

@@ -25,7 +25,6 @@ class ClientDetailScreen extends ConsumerStatefulWidget {
 class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = false;
 
   @override
   void initState() {
@@ -72,7 +71,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -135,14 +134,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             height: isMobile ? 70 : 90,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(8),
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 2,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -335,7 +334,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
   }
 
   Widget _buildLogoPlaceholder() {
-    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 32);
+    return const Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 32);
   }
 
   // Helper method to format currency with comma separators
@@ -383,7 +382,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               color: ChoiceLuxTheme.errorColor,
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Error loading client',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -395,7 +394,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             const SizedBox(height: 8),
             Text(
               message,
-              style: TextStyle(
+              style: const TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -414,20 +413,20 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       decoration: BoxDecoration(
         gradient: LinearGradient(
           colors: [
-            ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
-            ChoiceLuxTheme.charcoalGray.withOpacity(0.6),
+            ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.8),
+            ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.6),
           ],
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
           width: 1.5,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.4),
+            color: Colors.black.withValues(alpha: 0.4),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -441,7 +440,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             gradient: LinearGradient(
               colors: [
                 ChoiceLuxTheme.richGold,
-                ChoiceLuxTheme.richGold.withOpacity(0.8),
+                ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
               ],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
@@ -449,13 +448,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.4),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.4),
                 blurRadius: 12,
                 offset: const Offset(0, 3),
               ),
             ],
           ),
-          indicatorPadding: EdgeInsets.all(3),
+          indicatorPadding: const EdgeInsets.all(3),
           dividerColor: Colors.transparent,
           labelColor: Colors.black,
           unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
@@ -612,12 +611,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         gradient: ChoiceLuxTheme.cardGradient,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -630,7 +629,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             Container(
               padding: EdgeInsets.all(isMobile ? 10 : 14),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.15),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Icon(
@@ -693,12 +692,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             gradient: ChoiceLuxTheme.cardGradient,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.2),
+                color: Colors.black.withValues(alpha: 0.2),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -752,14 +751,14 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             padding: EdgeInsets.all(isMobile ? 8 : 10),
             decoration: BoxDecoration(
               color: isPlaceholder
-                  ? ChoiceLuxTheme.platinumSilver.withOpacity(0.1)
-                  : ChoiceLuxTheme.richGold.withOpacity(0.15),
+                  ? ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.1)
+                  : ChoiceLuxTheme.richGold.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
               icon,
               color: isPlaceholder
-                  ? ChoiceLuxTheme.platinumSilver.withOpacity(0.5)
+                  ? ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.5)
                   : ChoiceLuxTheme.richGold,
               size: isMobile ? 18 : 20,
             ),
@@ -775,7 +774,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                     fontSize: isMobile ? 15 : 17,
                     fontWeight: FontWeight.w600,
                     color: isPlaceholder
-                        ? ChoiceLuxTheme.platinumSilver.withOpacity(0.5)
+                        ? ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.5)
                         : ChoiceLuxTheme.softWhite,
                     letterSpacing: 0.2,
                   ),
@@ -785,7 +784,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   time,
                   style: TextStyle(
                     fontSize: isMobile ? 12 : 14,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -862,7 +861,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                     color: ChoiceLuxTheme.errorColor,
                   ),
                   const SizedBox(height: 16),
-                  Text(
+                  const Text(
                     'Error loading agents',
                     style: TextStyle(
                       color: ChoiceLuxTheme.softWhite,
@@ -874,7 +873,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   const SizedBox(height: 8),
                   Text(
                     error.toString(),
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.platinumSilver,
                       fontSize: 14,
                       fontWeight: FontWeight.w400,
@@ -1012,12 +1011,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               gradient: ChoiceLuxTheme.cardGradient,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                 width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
+                  color: Colors.black.withValues(alpha: 0.2),
                   blurRadius: 8,
                   offset: const Offset(0, 2),
                 ),
@@ -1062,7 +1061,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        title: Text(
+        title: const Text(
           'Delete Agent',
           style: TextStyle(
             color: ChoiceLuxTheme.softWhite,
@@ -1072,7 +1071,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         ),
         content: Text(
           'Are you sure you want to delete "${agent.agentName}"? This action cannot be undone.',
-          style: TextStyle(
+          style: const TextStyle(
             color: ChoiceLuxTheme.softWhite,
             fontWeight: FontWeight.w400,
           ),
@@ -1080,7 +1079,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,

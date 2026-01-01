@@ -1,4 +1,4 @@
-library shared;
+library;
 
 // Widgets
 export 'widgets/dashboard_card.dart';

@@ -67,7 +67,7 @@ class NotificationPreferencesService {
       }
 
       // Validate that all keys are valid notification types
-      final validTypes = NotificationConstants.allNotificationTypes;
+      const validTypes = NotificationConstants.allNotificationTypes;
       for (final key in preferences.keys) {
         if (!validTypes.contains(key)) {
           Log.d('Invalid notification type in preferences: $key');
@@ -86,7 +86,7 @@ class NotificationPreferencesService {
       Log.d('Notification preferences saved successfully');
     } catch (e) {
       Log.e('Error saving notification preferences: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -102,7 +102,7 @@ class NotificationPreferencesService {
       await savePreferences(currentPrefs, userId: userId);
     } catch (e) {
       Log.e('Error updating notification preference: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -112,7 +112,7 @@ class NotificationPreferencesService {
       await savePreferences(_getDefaultPreferences(), userId: userId);
     } catch (e) {
       Log.e('Error resetting notification preferences: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -160,7 +160,7 @@ class NotificationPreferencesService {
       Log.d('Test notification sent successfully');
     } catch (e) {
       Log.e('Error sending test notification: $e');
-      throw e;
+      rethrow;
     }
   }
 
@@ -180,7 +180,7 @@ class NotificationPreferencesService {
       Log.d('All notifications cleared successfully');
     } catch (e) {
       Log.e('Error clearing notifications: $e');
-      throw e;
+      rethrow;
     }
   }
 

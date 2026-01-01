@@ -4,7 +4,7 @@ import 'package:choice_lux_cars/features/jobs/widgets/job_monitoring_card.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/driver_activity_card.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/active_jobs_summary.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
-import 'job_progress_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/job_progress_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
@@ -13,7 +13,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class AdminMonitoringScreen extends ConsumerStatefulWidget {
-  const AdminMonitoringScreen({Key? key}) : super(key: key);
+  const AdminMonitoringScreen({super.key});
 
   @override
   ConsumerState<AdminMonitoringScreen> createState() =>
@@ -23,7 +23,6 @@ class AdminMonitoringScreen extends ConsumerStatefulWidget {
 class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
     with TickerProviderStateMixin {
   bool _isLoading = true;
-  bool _isRefreshing = false;
   List<Map<String, dynamic>> _activeJobs = [];
   List<Map<String, dynamic>> _driverActivity = [];
   Map<String, dynamic> _summary = {};
@@ -72,13 +71,11 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
   Future<void> _refreshData() async {
     try {
-      setState(() => _isRefreshing = true);
       await _loadData();
       _showSuccessSnackBar('Data refreshed successfully!');
     } catch (e) {
       _showErrorSnackBar('Failed to refresh data: $e');
     } finally {
-      setState(() => _isRefreshing = false);
     }
   }
 
@@ -157,13 +154,13 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  ChoiceLuxTheme.jetBlack.withOpacity(0.95),
-                  ChoiceLuxTheme.jetBlack.withOpacity(0.90),
+                  ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
+                  ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -281,7 +278,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
                   ..._activeJobs
                       .take(5)
                       .map((job) => _buildActivityItem(job))
-                      .toList(),
+                      ,
                 ],
               ),
             ),

@@ -39,7 +39,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
     // Check if user has a valid session for password reset
     try {
       final session =
-          await SupabaseService.instance.supabase.auth.currentSession;
+          SupabaseService.instance.supabase.auth.currentSession;
       Log.d(
         'Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}',
       );
@@ -50,8 +50,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         );
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
+            const SnackBar(
+              content: Text(
                 'Invalid or expired reset link. Please request a new password reset.',
               ),
               backgroundColor: ChoiceLuxTheme.errorColor,
@@ -69,8 +69,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
       Log.e('Reset Password Screen - Error checking session: $error');
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text(
+          const SnackBar(
+            content: Text(
               'Error validating reset session. Please try again.',
             ),
             backgroundColor: ChoiceLuxTheme.errorColor,
@@ -118,8 +118,8 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           ref.read(authProvider.notifier).setPasswordRecovery(false);
 
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text(
+            const SnackBar(
+              content: Text(
                 'Password updated successfully! Please sign in with your new password.',
               ),
               backgroundColor: ChoiceLuxTheme.successColor,
@@ -127,6 +127,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
           );
           // Sign out the user and redirect to login
           await Supabase.instance.client.auth.signOut();
+          if (!mounted) return;
           context.go('/login');
         }
       } catch (error) {
@@ -150,11 +151,11 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
+        decoration: const BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
         child: Stack(
           children: [
                          // Subtle background pattern
-             Positioned.fill(
+             const Positioned.fill(
                child: CustomPaint(painter: BackgroundPatterns.signin),
              ),
             SafeArea(
@@ -184,15 +185,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                             filter: ImageFilter.blur(sigmaX: 10, sigmaY: 10),
                             child: Container(
                               decoration: BoxDecoration(
-                                color: Colors.black.withOpacity(0.4),
+                                color: Colors.black.withValues(alpha: 0.4),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: Colors.white.withOpacity(0.2),
+                                  color: Colors.white.withValues(alpha: 0.2),
                                   width: 1.5,
                                 ),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: Colors.black.withOpacity(0.3),
+                                    color: Colors.black.withValues(alpha: 0.3),
                                     blurRadius: 20,
                                     offset: const Offset(0, 10),
                                   ),
@@ -206,7 +207,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.stretch,
                                   children: [
                                     // Title
-                                    Text(
+                                    const Text(
                                       'Create New Password',
                                       style: TextStyle(
                                         fontSize: 28,
@@ -223,7 +224,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                       style: TextStyle(
                                         fontSize: 16,
                                         color: ChoiceLuxTheme.platinumSilver
-                                            .withOpacity(0.8),
+                                            .withValues(alpha: 0.8),
                                       ),
                                       textAlign: TextAlign.center,
                                     ),
@@ -234,15 +235,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                       controller: _passwordController,
                                       obscureText: _obscurePassword,
                                       textInputAction: TextInputAction.next,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: ChoiceLuxTheme.softWhite,
                                       ),
                                       decoration: InputDecoration(
                                         labelText: 'New Password',
-                                        labelStyle: TextStyle(
+                                        labelStyle: const TextStyle(
                                           color: ChoiceLuxTheme.platinumSilver,
                                         ),
-                                        prefixIcon: Icon(
+                                        prefixIcon: const Icon(
                                           Icons.lock_outline,
                                           color: ChoiceLuxTheme.richGold,
                                         ),
@@ -263,32 +264,32 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: ChoiceLuxTheme.platinumSilver
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.richGold,
                                             width: 2,
                                           ),
                                         ),
                                         errorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.errorColor,
                                           ),
                                         ),
                                         focusedErrorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.errorColor,
                                             width: 2,
                                           ),
                                         ),
                                         filled: true,
                                         fillColor: ChoiceLuxTheme.charcoalGray
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -307,15 +308,15 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                       controller: _confirmPasswordController,
                                       obscureText: _obscureConfirmPassword,
                                       textInputAction: TextInputAction.done,
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         color: ChoiceLuxTheme.softWhite,
                                       ),
                                       decoration: InputDecoration(
                                         labelText: 'Confirm New Password',
-                                        labelStyle: TextStyle(
+                                        labelStyle: const TextStyle(
                                           color: ChoiceLuxTheme.platinumSilver,
                                         ),
-                                        prefixIcon: Icon(
+                                        prefixIcon: const Icon(
                                           Icons.lock_outline,
                                           color: ChoiceLuxTheme.richGold,
                                         ),
@@ -337,32 +338,32 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
                                             color: ChoiceLuxTheme.platinumSilver
-                                                .withOpacity(0.3),
+                                                .withValues(alpha: 0.3),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.richGold,
                                             width: 2,
                                           ),
                                         ),
                                         errorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.errorColor,
                                           ),
                                         ),
                                         focusedErrorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
-                                          borderSide: BorderSide(
+                                          borderSide: const BorderSide(
                                             color: ChoiceLuxTheme.errorColor,
                                             width: 2,
                                           ),
                                         ),
                                         filled: true,
                                         fillColor: ChoiceLuxTheme.charcoalGray
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -385,7 +386,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         foregroundColor: Colors.black,
                                         elevation: 4,
                                         shadowColor: ChoiceLuxTheme.richGold
-                                            .withOpacity(0.3),
+                                            .withValues(alpha: 0.3),
                                         padding: const EdgeInsets.symmetric(
                                           vertical: 16,
                                         ),
@@ -394,7 +395,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         ),
                                       ),
                                       child: _isLoading
-                                          ? SizedBox(
+                                          ? const SizedBox(
                                               height: 20,
                                               width: 20,
                                               child: CircularProgressIndicator(
@@ -405,7 +406,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                                 ),
                                               ),
                                             )
-                                          : Text(
+                                          : const Text(
                                               'Update Password',
                                               style: TextStyle(
                                                 fontSize: 16,
@@ -419,7 +420,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     Center(
                                       child: TextButton(
                                         onPressed: () => context.go('/login'),
-                                        child: Text(
+                                        child: const Text(
                                           'Back to Login',
                                           style: TextStyle(
                                             color: ChoiceLuxTheme.platinumSilver,

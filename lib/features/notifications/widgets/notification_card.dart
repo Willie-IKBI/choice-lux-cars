@@ -51,7 +51,7 @@ class NotificationCard extends ConsumerWidget {
           ),
           borderRadius: BorderRadius.circular(16),
         ),
-        child: Icon(Icons.delete, color: ChoiceLuxTheme.softWhite, size: 24),
+        child: const Icon(Icons.delete, color: ChoiceLuxTheme.softWhite, size: 24),
       ),
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
@@ -180,7 +180,7 @@ class NotificationCard extends ConsumerWidget {
                                     IconButton(
                                       onPressed: () =>
                                           _handleMarkAsRead(context, ref),
-                                      icon: Icon(
+                                      icon: const Icon(
                                         Icons.check_circle_outline,
                                         color: ChoiceLuxTheme.successColor,
                                         size: 20,
@@ -194,7 +194,7 @@ class NotificationCard extends ConsumerWidget {
                                   IconButton(
                                     onPressed: () =>
                                         _handleDismiss(context, ref),
-                                    icon: Icon(
+                                    icon: const Icon(
                                       Icons.close,
                                       color: ChoiceLuxTheme.platinumSilver,
                                       size: 20,
@@ -215,7 +215,7 @@ class NotificationCard extends ConsumerWidget {
                           // Message
                           Text(
                             notification.message,
-                            style: TextStyle(
+                            style: const TextStyle(
                               fontSize: 14,
                               color: ChoiceLuxTheme.platinumSilver,
                               height: 1.4,
@@ -272,7 +272,7 @@ class NotificationCard extends ConsumerWidget {
                                     ),
                                     child: Text(
                                       _getActionButtonText(),
-                                      style: TextStyle(
+                                      style: const TextStyle(
                                         fontSize: 12,
                                         fontWeight: FontWeight.w600,
                                         color: ChoiceLuxTheme.richGold,

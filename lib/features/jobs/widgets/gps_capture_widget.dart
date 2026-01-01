@@ -7,11 +7,11 @@ class GpsCaptureWidget extends StatefulWidget {
   final String? description;
 
   const GpsCaptureWidget({
-    Key? key,
+    super.key,
     required this.onLocationCaptured,
     this.title,
     this.description,
-  }) : super(key: key);
+  });
 
   @override
   State<GpsCaptureWidget> createState() => _GpsCaptureWidgetState();
@@ -239,8 +239,7 @@ class LocationDisplayWidget extends StatelessWidget {
   final Position position;
   final String? title;
 
-  const LocationDisplayWidget({Key? key, required this.position, this.title})
-    : super(key: key);
+  const LocationDisplayWidget({super.key, required this.position, this.title});
 
   @override
   Widget build(BuildContext context) {

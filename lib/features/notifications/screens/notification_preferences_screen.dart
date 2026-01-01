@@ -37,7 +37,7 @@ class _NotificationPreferencesScreenState
     
     if (!isSuperAdmin) {
       return SystemSafeScaffold(
-        appBar: LuxuryAppBar(
+        appBar: const LuxuryAppBar(
           title: 'Notification Settings',
           showBackButton: true,
           showLogo: false,
@@ -48,7 +48,7 @@ class _NotificationPreferencesScreenState
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.lock_outline,
                   size: 64,
                   color: ChoiceLuxTheme.richGold,
@@ -80,7 +80,7 @@ class _NotificationPreferencesScreenState
     final preferencesAsync = ref.watch(notificationPreferencesProvider);
 
     return SystemSafeScaffold(
-      appBar: LuxuryAppBar(
+      appBar: const LuxuryAppBar(
         title: 'Notification Settings',
         showBackButton: true,
         showLogo: false,
@@ -108,16 +108,16 @@ class _NotificationPreferencesScreenState
                   padding: const EdgeInsets.all(16),
                   margin: const EdgeInsets.only(bottom: 24),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
                   child: Row(
                     children: [
-                      Icon(
+                      const Icon(
                         Icons.info_outline,
                         color: ChoiceLuxTheme.richGold,
                         size: 24,
@@ -264,7 +264,7 @@ class _NotificationPreferencesScreenState
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(
+                const Icon(
                   Icons.error_outline,
                   size: 64,
                   color: ChoiceLuxTheme.errorColor,
@@ -334,7 +334,7 @@ class _NotificationPreferencesScreenState
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -361,24 +361,24 @@ class _NotificationPreferencesScreenState
             _preferences[notificationType] = value;
           });
 
+          final messenger = ScaffoldMessenger.of(context);
           try {
             await ref
                 .read(notificationPreferencesProvider.notifier)
                 .updatePreference(notificationType, value);
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    value
-                        ? '$displayName notifications enabled'
-                        : '$displayName notifications disabled',
-                  ),
-                  backgroundColor: ChoiceLuxTheme.charcoalGray,
-                  duration: const Duration(seconds: 2),
+            if (!mounted) return;
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text(
+                  value
+                      ? '$displayName notifications enabled'
+                      : '$displayName notifications disabled',
                 ),
-              );
-            }
+                backgroundColor: ChoiceLuxTheme.charcoalGray,
+                duration: const Duration(seconds: 2),
+              ),
+            );
           } catch (e) {
             Log.e('Error updating notification preference: $e');
             // Revert on error
@@ -386,17 +386,16 @@ class _NotificationPreferencesScreenState
               _preferences[notificationType] = !value;
             });
 
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Error updating preference: $e'),
-                  backgroundColor: ChoiceLuxTheme.errorColor,
-                ),
-              );
-            }
+            if (!mounted) return;
+            messenger.showSnackBar(
+              SnackBar(
+                content: Text('Error updating preference: $e'),
+                backgroundColor: ChoiceLuxTheme.errorColor,
+              ),
+            );
           }
         },
-        activeColor: ChoiceLuxTheme.richGold,
+        activeThumbColor: ChoiceLuxTheme.richGold,
         inactiveThumbColor: ChoiceLuxTheme.platinumSilver,
         inactiveTrackColor: ChoiceLuxTheme.charcoalGray,
       ),
@@ -415,7 +414,7 @@ class _NotificationPreferencesScreenState
         color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
           width: 1,
         ),
       ),
@@ -441,7 +440,7 @@ class _NotificationPreferencesScreenState
           ),
         ),
         onTap: onTap,
-        trailing: Icon(
+        trailing: const Icon(
           Icons.arrow_forward_ios,
           size: 16,
           color: ChoiceLuxTheme.platinumSilver,
@@ -457,8 +456,8 @@ class _NotificationPreferencesScreenState
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: const Text('Test notification sent successfully'),
+          const SnackBar(
+            content: Text('Test notification sent successfully'),
             backgroundColor: ChoiceLuxTheme.charcoalGray,
           ),
         );
@@ -486,7 +485,7 @@ class _NotificationPreferencesScreenState
         ),
         title: Row(
           children: [
-            Icon(
+            const Icon(
               Icons.restore_outlined,
               color: ChoiceLuxTheme.richGold,
             ),
@@ -509,7 +508,7 @@ class _NotificationPreferencesScreenState
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
@@ -532,8 +531,8 @@ class _NotificationPreferencesScreenState
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Text('Preferences reset to defaults'),
+            const SnackBar(
+              content: Text('Preferences reset to defaults'),
               backgroundColor: ChoiceLuxTheme.charcoalGray,
             ),
           );

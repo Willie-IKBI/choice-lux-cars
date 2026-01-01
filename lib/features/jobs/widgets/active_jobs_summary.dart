@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 class ActiveJobsSummary extends StatelessWidget {
   final Map<String, dynamic> summary;
 
-  const ActiveJobsSummary({Key? key, required this.summary}) : super(key: key);
+  const ActiveJobsSummary({super.key, required this.summary});
 
   @override
   Widget build(BuildContext context) {
@@ -99,9 +99,9 @@ class ActiveJobsSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.05),
+        color: color.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha: 0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -209,9 +209,9 @@ class ActiveJobsSummary extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: healthColor.withOpacity(0.05),
+        color: healthColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: healthColor.withOpacity(0.2)),
+        border: Border.all(color: healthColor.withValues(alpha: 0.2)),
       ),
       child: Row(
         children: [

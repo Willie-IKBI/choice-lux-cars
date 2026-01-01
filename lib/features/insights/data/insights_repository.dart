@@ -36,13 +36,13 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching insights data for period: ${period.displayName}');
+      Log.d('Fetching insights data for period: ${period.displayName}');
 
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       // Fetch all insights in parallel (skip quotes due to persistent issues)
-      print('Starting parallel fetch of all insights...');
+      Log.d('Starting parallel fetch of all insights...');
       final results = await Future.wait([
         _fetchJobInsights(dateRange),
         _fetchDriverInsights(dateRange),
@@ -56,7 +56,7 @@ class InsightsRepository {
       for (int i = 0; i < results.length; i++) {
         if (results[i].isFailure) {
           final insightType = ['Quote', 'Job', 'Driver', 'Vehicle', 'Client', 'Financial', 'ClientRevenue'][i];
-          print('Failed to fetch $insightType insights: ${results[i].error}');
+          Log.d('Failed to fetch $insightType insights: ${results[i].error}');
           return Result.failure(results[i].error!);
         }
       }
@@ -97,13 +97,13 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching insights data for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching insights data for period: ${period.displayName}, location: ${location.displayName}');
 
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       // Fetch all insights in parallel with location filtering
-      print('Starting parallel fetch of all insights with location filter...');
+      Log.d('Starting parallel fetch of all insights with location filter...');
       final results = await Future.wait([
         _fetchQuoteInsightsWithLocation(dateRange, location),
         _fetchJobInsightsWithLocation(dateRange, location),
@@ -118,7 +118,7 @@ class InsightsRepository {
       for (int i = 0; i < results.length; i++) {
         if (results[i].isFailure) {
           final insightType = ['Quote', 'Job', 'Driver', 'Vehicle', 'Client', 'Financial', 'ClientRevenue'][i];
-          print('Failed to fetch $insightType insights: ${results[i].error}');
+          Log.d('Failed to fetch $insightType insights: ${results[i].error}');
           return Result.failure(results[i].error!);
         }
       }
@@ -2474,22 +2474,22 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching jobs insights for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching jobs insights for period: ${period.displayName}, location: ${location.displayName}');
       
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       final result = await _fetchJobInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
-        print('Jobs insights fetched successfully');
+        Log.d('Jobs insights fetched successfully');
         return result;
       } else {
-        print('Failed to fetch jobs insights: ${result.error}');
+        Log.d('Failed to fetch jobs insights: ${result.error}');
         return result;
       }
     } catch (error) {
-      print('Error fetching jobs insights: $error');
+      Log.d('Error fetching jobs insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2502,22 +2502,22 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching financial insights for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching financial insights for period: ${period.displayName}, location: ${location.displayName}');
       
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       final result = await _fetchFinancialInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
-        print('Financial insights fetched successfully');
+        Log.d('Financial insights fetched successfully');
         return result;
       } else {
-        print('Failed to fetch financial insights: ${result.error}');
+        Log.d('Failed to fetch financial insights: ${result.error}');
         return result;
       }
     } catch (error) {
-      print('Error fetching financial insights: $error');
+      Log.d('Error fetching financial insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2530,22 +2530,22 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching driver insights for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching driver insights for period: ${period.displayName}, location: ${location.displayName}');
       
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       final result = await _fetchDriverInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
-        print('Driver insights fetched successfully');
+        Log.d('Driver insights fetched successfully');
         return result;
       } else {
-        print('Failed to fetch driver insights: ${result.error}');
+        Log.d('Failed to fetch driver insights: ${result.error}');
         return result;
       }
     } catch (error) {
-      print('Error fetching driver insights: $error');
+      Log.d('Error fetching driver insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2558,22 +2558,22 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching vehicle insights for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching vehicle insights for period: ${period.displayName}, location: ${location.displayName}');
       
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       final result = await _fetchVehicleInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
-        print('Vehicle insights fetched successfully');
+        Log.d('Vehicle insights fetched successfully');
         return result;
       } else {
-        print('Failed to fetch vehicle insights: ${result.error}');
+        Log.d('Failed to fetch vehicle insights: ${result.error}');
         return result;
       }
     } catch (error) {
-      print('Error fetching vehicle insights: $error');
+      Log.d('Error fetching vehicle insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2586,22 +2586,22 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching client insights for period: ${period.displayName}, location: ${location.displayName}');
+      Log.d('Fetching client insights for period: ${period.displayName}, location: ${location.displayName}');
       
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
+      Log.d('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
       final result = await _fetchClientInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
-        print('Client insights fetched successfully');
+        Log.d('Client insights fetched successfully');
         return result;
       } else {
-        print('Failed to fetch client insights: ${result.error}');
+        Log.d('Failed to fetch client insights: ${result.error}');
         return result;
       }
     } catch (error) {
-      print('Error fetching client insights: $error');
+      Log.d('Error fetching client insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2761,7 +2761,7 @@ class InsightsRepository {
       }
 
       if (jobEarliestPickup.isEmpty) {
-        return Result.success([]);
+        return const Result.success([]);
       }
 
       // Step 2: Get completed jobs with branch filter
@@ -2781,7 +2781,7 @@ class InsightsRepository {
       final jobsResponse = await jobsQuery;
 
       if (jobsResponse.isEmpty) {
-        return Result.success([]);
+        return const Result.success([]);
       }
 
       // Step 3: Get driver_flow data for completed jobs
@@ -2816,7 +2816,7 @@ class InsightsRepository {
       final Map<String, String> managerNames = {};
       
       // Fetch all user IDs (drivers + managers) in one query
-      final allUserIds = [...driverIds, ...managerIds].toSet().toList();
+      final allUserIds = <dynamic>{...driverIds, ...managerIds}.toList();
       if (allUserIds.isNotEmpty) {
         final profilesQuery = _supabase
             .from('profiles')

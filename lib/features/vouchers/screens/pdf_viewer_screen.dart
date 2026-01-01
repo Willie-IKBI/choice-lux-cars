@@ -105,7 +105,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             ),
           ),
           // Background pattern
-          CustomPaint(
+          const CustomPaint(
             painter: BackgroundPatterns.dashboard,
             size: Size.infinite,
           ),
@@ -135,14 +135,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildLoadingState() {
-    return Center(
+    return const Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const CircularProgressIndicator(
+          CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: 16),
           Text(
             'Loading PDF...',
             style: TextStyle(
@@ -163,13 +163,13 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               size: 64,
               color: ChoiceLuxTheme.errorColor,
             ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Failed to load PDF',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -180,7 +180,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
             const SizedBox(height: 8),
             Text(
               message ?? _errorMessage ?? 'Unknown error occurred',
-              style: TextStyle(
+              style: const TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
                 fontSize: 14,
               ),
@@ -210,17 +210,17 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.8),
               border: Border(
                 bottom: BorderSide(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                   width: 1,
                 ),
               ),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.picture_as_pdf,
                   color: ChoiceLuxTheme.richGold,
                   size: 20,
@@ -228,7 +228,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                 const SizedBox(width: 8),
                 Text(
                   'Page $_currentPage of $_totalPages',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.platinumSilver,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -261,7 +261,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
               borderRadius: BorderRadius.circular(12),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.3),
+                  color: Colors.black.withValues(alpha: 0.3),
                   blurRadius: 10,
                   offset: const Offset(0, 4),
                 ),

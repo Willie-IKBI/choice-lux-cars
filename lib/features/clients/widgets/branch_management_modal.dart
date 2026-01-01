@@ -85,7 +85,7 @@ class _BranchManagementModalState
           final isValid = branchNameController.text.trim().isNotEmpty;
           return AlertDialog(
             backgroundColor: ChoiceLuxTheme.charcoalGray,
-            title: Text(
+            title: const Text(
               'Add Branch',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -96,27 +96,27 @@ class _BranchManagementModalState
               controller: branchNameController,
               autofocus: true,
               onChanged: (_) => setState(() {}),
-              style: TextStyle(color: ChoiceLuxTheme.softWhite),
+              style: const TextStyle(color: ChoiceLuxTheme.softWhite),
               decoration: InputDecoration(
                 labelText: 'Branch Name',
-                labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                labelStyle: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 hintText: 'Enter branch name',
                 hintStyle: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                 ),
                 filled: true,
-                fillColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.4),
+                fillColor: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver),
+                  borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver),
+                  borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
+                  borderSide: const BorderSide(
                     color: ChoiceLuxTheme.richGold,
                     width: 2,
                   ),
@@ -126,7 +126,7 @@ class _BranchManagementModalState
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
+                child: const Text(
                   'Cancel',
                   style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 ),
@@ -163,7 +163,7 @@ class _BranchManagementModalState
           final isValid = branchNameController.text.trim().isNotEmpty;
           return AlertDialog(
             backgroundColor: ChoiceLuxTheme.charcoalGray,
-            title: Text(
+            title: const Text(
               'Edit Branch',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -174,27 +174,27 @@ class _BranchManagementModalState
               controller: branchNameController,
               autofocus: true,
               onChanged: (_) => setState(() {}),
-              style: TextStyle(color: ChoiceLuxTheme.softWhite),
+              style: const TextStyle(color: ChoiceLuxTheme.softWhite),
               decoration: InputDecoration(
                 labelText: 'Branch Name',
-                labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                labelStyle: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 hintText: 'Enter branch name',
                 hintStyle: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                 ),
                 filled: true,
-                fillColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.4),
+                fillColor: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.4),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver),
+                  borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver),
+                  borderSide: const BorderSide(color: ChoiceLuxTheme.platinumSilver),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(
+                  borderSide: const BorderSide(
                     color: ChoiceLuxTheme.richGold,
                     width: 2,
                   ),
@@ -204,7 +204,7 @@ class _BranchManagementModalState
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
+                child: const Text(
                   'Cancel',
                   style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 ),
@@ -235,7 +235,7 @@ class _BranchManagementModalState
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        title: Text(
+        title: const Text(
           'Delete Branch',
           style: TextStyle(
             color: ChoiceLuxTheme.softWhite,
@@ -244,12 +244,12 @@ class _BranchManagementModalState
         ),
         content: Text(
           'Are you sure you want to delete "${branch.branchName}"?',
-          style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+          style: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
-            child: Text(
+            child: const Text(
               'Cancel',
               style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
@@ -439,12 +439,12 @@ class _BranchManagementModalState
             gradient: ChoiceLuxTheme.cardGradient,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               width: 1,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.3),
+                color: Colors.black.withValues(alpha: 0.3),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -460,7 +460,7 @@ class _BranchManagementModalState
                   gradient: LinearGradient(
                     colors: [
                       ChoiceLuxTheme.richGold,
-                      ChoiceLuxTheme.richGold.withOpacity(0.8),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
                     ],
                   ),
                   borderRadius: const BorderRadius.only(
@@ -493,7 +493,7 @@ class _BranchManagementModalState
                             Text(
                               widget.clientName,
                               style: TextStyle(
-                                color: Colors.black.withOpacity(0.7),
+                                color: Colors.black.withValues(alpha: 0.7),
                                 fontSize: 14,
                               ),
                             ),
@@ -516,9 +516,9 @@ class _BranchManagementModalState
               // Content
               Flexible(
                 child: _isLoading
-                    ? Center(
+                    ? const Center(
                         child: Padding(
-                          padding: const EdgeInsets.all(32.0),
+                          padding: EdgeInsets.all(32.0),
                           child: CircularProgressIndicator(
                             color: ChoiceLuxTheme.richGold,
                           ),
@@ -535,10 +535,10 @@ class _BranchManagementModalState
                                     Icons.business_outlined,
                                     size: 64,
                                     color: ChoiceLuxTheme.platinumSilver
-                                        .withOpacity(0.5),
+                                        .withValues(alpha: 0.5),
                                   ),
                                   const SizedBox(height: 16),
-                                  Text(
+                                  const Text(
                                     'No branches yet',
                                     style: TextStyle(
                                       color: ChoiceLuxTheme.platinumSilver,
@@ -550,7 +550,7 @@ class _BranchManagementModalState
                                     'Add a branch to get started',
                                     style: TextStyle(
                                       color: ChoiceLuxTheme.platinumSilver
-                                          .withOpacity(0.7),
+                                          .withValues(alpha: 0.7),
                                       fontSize: 14,
                                     ),
                                   ),
@@ -568,12 +568,12 @@ class _BranchManagementModalState
                                   bottom: isMobile ? 8 : 12,
                                 ),
                                 color: ChoiceLuxTheme.charcoalGray
-                                    .withOpacity(0.5),
+                                    .withValues(alpha: 0.5),
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(12),
                                   side: BorderSide(
                                     color: ChoiceLuxTheme.richGold
-                                        .withOpacity(0.2),
+                                        .withValues(alpha: 0.2),
                                   ),
                                 ),
                                 child: ListTile(
@@ -631,7 +631,7 @@ class _BranchManagementModalState
               Container(
                 padding: EdgeInsets.all(isMobile ? 12 : 16),
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.charcoalGray.withOpacity(0.3),
+                  color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.3),
                   borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(20),
                     bottomRight: Radius.circular(20),
@@ -642,7 +642,7 @@ class _BranchManagementModalState
                   child: ElevatedButton.icon(
                     onPressed: _isSaving ? null : _addBranch,
                     icon: _isSaving
-                        ? SizedBox(
+                        ? const SizedBox(
                             width: 16,
                             height: 16,
                             child: CircularProgressIndicator(

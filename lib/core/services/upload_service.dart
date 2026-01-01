@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -167,7 +166,7 @@ class UploadService {
     final timestamp = DateTime.now().millisecondsSinceEpoch;
     final random = (timestamp % 10000).toString().padLeft(4, '0');
     final prefixPart = prefix != null ? '${prefix}_' : '';
-    return '${prefixPart}${timestamp}_$random$extension';
+    return '$prefixPart${timestamp}_$random$extension';
   }
 
   /// Extract filename from a public URL
@@ -267,7 +266,7 @@ class UploadService {
     int? vehicleId,
   ) async {
     try {
-      final fileName = 'vehicle.jpg';
+      const fileName = 'vehicle.jpg';
       final path = vehicleId != null
           ? '$vehicleId/$fileName'
           : 'temp/${DateTime.now().millisecondsSinceEpoch}_$fileName';

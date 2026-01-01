@@ -92,14 +92,14 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      ChoiceLuxTheme.richGold.withOpacity(0.95),
-                      ChoiceLuxTheme.richGold.withOpacity(0.9),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.95),
+                      ChoiceLuxTheme.richGold.withValues(alpha: 0.9),
                     ],
                   ),
                   borderRadius: BorderRadius.circular(20),
                   boxShadow: [
                     BoxShadow(
-                      color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                      color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                       blurRadius: 20,
                       offset: const Offset(0, 10),
                     ),
@@ -117,13 +117,13 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.1),
+                            color: Colors.black.withValues(alpha: 0.1),
                             blurRadius: 10,
                             offset: const Offset(0, 5),
                           ),
                         ],
                       ),
-                      child: Icon(
+                      child: const Icon(
                         Icons.check_circle,
                         size: 50,
                         color: ChoiceLuxTheme.successColor,
@@ -133,7 +133,7 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                     const SizedBox(height: 24),
 
                     // Title
-                    Text(
+                    const Text(
                       'Job Completed!',
                       style: TextStyle(
                         fontSize: 28,
@@ -150,10 +150,10 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.2),
+                        color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
-                          color: Colors.white.withOpacity(0.3),
+                          color: Colors.white.withValues(alpha: 0.3),
                           width: 1,
                         ),
                       ),
@@ -173,7 +173,7 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                               widget.passengerName!,
                               style: TextStyle(
                                 fontSize: 16,
-                                color: Colors.white.withOpacity(0.9),
+                                color: Colors.white.withValues(alpha: 0.9),
                               ),
                             ),
                           ],
@@ -188,7 +188,7 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                       'Your job has been successfully completed. You will be redirected to jobs management.',
                       style: TextStyle(
                         fontSize: 16,
-                        color: Colors.white.withOpacity(0.9),
+                        color: Colors.white.withValues(alpha: 0.9),
                         height: 1.4,
                       ),
                       textAlign: TextAlign.center,
@@ -202,8 +202,8 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
                       height: 40,
                       child: CircularProgressIndicator(
                         strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                        backgroundColor: Colors.white.withOpacity(0.3),
+                        valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                        backgroundColor: Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
                   ],

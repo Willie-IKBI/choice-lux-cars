@@ -150,7 +150,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           drawer: const LuxuryDrawer(),
           body: Stack( // The body is now just the content stack
             children: [
-              Positioned.fill(
+              const Positioned.fill(
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               SafeArea(

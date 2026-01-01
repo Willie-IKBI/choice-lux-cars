@@ -2,8 +2,7 @@ import 'package:flutter/material.dart';
 
 class LicenseStatusBadge extends StatelessWidget {
   final DateTime expiryDate;
-  const LicenseStatusBadge({Key? key, required this.expiryDate})
-    : super(key: key);
+  const LicenseStatusBadge({super.key, required this.expiryDate});
 
   @override
   Widget build(BuildContext context) {
@@ -30,11 +29,11 @@ class LicenseStatusBadge extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.9),
+        color: color.withValues(alpha: 0.9),
         borderRadius: BorderRadius.circular(8),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.2),
+            color: Colors.black.withValues(alpha: 0.2),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),

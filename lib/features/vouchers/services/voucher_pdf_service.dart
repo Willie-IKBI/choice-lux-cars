@@ -195,7 +195,7 @@ class VoucherPdfService {
       headerDecoration: const pw.BoxDecoration(color: PdfColors.grey700),
       cellStyle: PdfTheme.bodyText.copyWith(fontSize: 10),
       cellAlignment: pw.Alignment.centerLeft,
-      cellPadding: pw.EdgeInsets.symmetric(
+      cellPadding: const pw.EdgeInsets.symmetric(
         horizontal: PdfTheme.spacing12,
         vertical: PdfTheme.spacing8,
       ),
@@ -234,7 +234,7 @@ class VoucherPdfService {
               margin: const pw.EdgeInsets.only(top: 4, right: 8),
               width: 4,
               height: 4,
-              decoration: pw.BoxDecoration(
+              decoration: const pw.BoxDecoration(
                 color: PdfTheme.grey600,
                 shape: pw.BoxShape.circle,
               ),

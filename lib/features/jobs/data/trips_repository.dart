@@ -47,7 +47,7 @@ class TripsRepository {
       
       if (intJobId == null) {
         Log.e('Invalid job ID format: $jobId');
-        return Result.success([]);
+        return const Result.success([]);
       }
 
       Log.d('Executing database query: SELECT * FROM transport WHERE job_id = $intJobId');

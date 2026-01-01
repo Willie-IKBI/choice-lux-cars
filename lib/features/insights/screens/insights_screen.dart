@@ -93,9 +93,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
             margin: const EdgeInsets.all(16),
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: _buildFilterBar(),
           ),
@@ -104,16 +104,16 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
           Container(
             margin: const EdgeInsets.symmetric(horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
+              border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
             ),
             child: TabBar(
               controller: _tabController!,
               isScrollable: true,
               indicatorColor: ChoiceLuxTheme.richGold,
               labelColor: ChoiceLuxTheme.richGold,
-              unselectedLabelColor: Colors.white.withOpacity(0.7),
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
               labelStyle: const TextStyle(fontWeight: FontWeight.bold),
               tabs: isAdmin
                   ? const [
@@ -203,15 +203,15 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
+        const Row(
           children: [
             Icon(
               Icons.filter_list,
               color: ChoiceLuxTheme.richGold,
               size: 20,
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: 8),
+            Text(
               'Filters',
               style: TextStyle(
                 fontSize: 16,
@@ -241,9 +241,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         children: [
@@ -260,7 +260,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                           ),
                           Icon(
                             Icons.arrow_drop_down,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ],
                       ),
@@ -287,9 +287,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                     child: Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
+                        border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
                       ),
                       child: Row(
                         children: [
@@ -304,7 +304,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                           ),
                           Icon(
                             Icons.arrow_drop_down,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ],
                       ),
@@ -358,7 +358,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-              Text(
+              const Text(
                 'Select Time Period',
                 style: TextStyle(
                   fontSize: 18,
@@ -377,7 +377,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -403,7 +403,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                         Icon(
                           Icons.calendar_today,
                           size: 16,
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
                         ),
                     ],
                   ),
@@ -412,13 +412,13 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                           '${_formatDate(_customStartDate!)} - ${_formatDate(_customEndDate!)}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.6),
+                            color: Colors.white.withValues(alpha: 0.6),
                           ),
                         )
                       : null,
                   trailing: isCustom
                       ? IconButton(
-                          icon: Icon(
+                          icon: const Icon(
                             Icons.date_range,
                             color: ChoiceLuxTheme.richGold,
                             size: 20,
@@ -447,7 +447,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
               }),
               // Divider
               Divider(
-                color: Colors.white.withOpacity(0.2),
+                color: Colors.white.withValues(alpha: 0.2),
                 thickness: 1,
                 height: 32,
               ),
@@ -461,7 +461,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                       style: TextStyle(
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -552,7 +552,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-            Text(
+            const Text(
               'Select Location',
               style: TextStyle(
                 fontSize: 18,

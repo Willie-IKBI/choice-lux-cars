@@ -56,11 +56,11 @@ class VehicleInsightsTab extends ConsumerWidget {
                 ],
               ),
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+              border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3)),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.directions_car_outlined,
                   color: ChoiceLuxTheme.richGold,
                   size: 32,
@@ -83,7 +83,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                         '${insights.totalVehicles} vehicles • ${insights.activeVehicles} active${insights.inactiveVehicles > 0 ? ' • ${insights.inactiveVehicles} inactive' : ''}${insights.underMaintenanceVehicles > 0 ? ' • ${insights.underMaintenanceVehicles} under maintenance' : ''}',
                         style: TextStyle(
                           fontSize: 16,
-                          color: Colors.white.withOpacity(0.8),
+                          color: Colors.white.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
@@ -253,9 +253,9 @@ class VehicleInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceAround,
@@ -276,9 +276,9 @@ class VehicleInsightsTab extends ConsumerWidget {
         Container(
           padding: const EdgeInsets.all(12),
           decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
+            color: color.withValues(alpha: 0.1),
             borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: color.withOpacity(0.3)),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
           ),
           child: Text(
             count.toString(),
@@ -294,7 +294,7 @@ class VehicleInsightsTab extends ConsumerWidget {
           label,
           style: TextStyle(
             fontSize: 14,
-            color: Colors.white.withOpacity(0.8),
+            color: Colors.white.withValues(alpha: 0.8),
           ),
         ),
       ],
@@ -305,16 +305,16 @@ class VehicleInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.red.withOpacity(0.1),
+        color: Colors.red.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.red.withOpacity(0.3)),
+        border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
+              const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 24),
               const SizedBox(width: 8),
               Text(
                 '${alerts.length} vehicle${alerts.length == 1 ? '' : 's'} with license expiring soon',
@@ -344,7 +344,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                         ? Colors.red 
                         : alert.daysUntilExpiry <= 7 
                             ? Colors.orange 
-                            : Colors.yellow.withOpacity(0.3),
+                            : Colors.yellow.withValues(alpha: 0.3),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -371,9 +371,9 @@ class VehicleInsightsTab extends ConsumerWidget {
   Widget _buildTopVehiclesList(List<TopVehicle> vehicles, String sortBy) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: vehicles.map((vehicle) => Container(
@@ -381,7 +381,7 @@ class VehicleInsightsTab extends ConsumerWidget {
           decoration: BoxDecoration(
             border: Border(
               bottom: BorderSide(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 width: vehicles.indexOf(vehicle) < vehicles.length - 1 ? 1 : 0,
               ),
             ),
@@ -392,13 +392,13 @@ class VehicleInsightsTab extends ConsumerWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Center(
                   child: Text(
                     '${vehicles.indexOf(vehicle) + 1}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
                     ),
@@ -423,7 +423,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                       vehicle.registration,
                       style: TextStyle(
                         fontSize: 14,
-                        color: Colors.white.withOpacity(0.7),
+                        color: Colors.white.withValues(alpha: 0.7),
                       ),
                     ),
                   ],
@@ -448,7 +448,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                       '${vehicle.utilizationRate!.toStringAsFixed(1)}% util.',
                       style: TextStyle(
                         fontSize: 12,
-                        color: Colors.white.withOpacity(0.6),
+                        color: Colors.white.withValues(alpha: 0.6),
                       ),
                     ),
                   ],
@@ -456,7 +456,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     const SizedBox(height: 4),
                     Text(
                       '${vehicle.totalMileage!.toStringAsFixed(0)} km${vehicle.averageMileagePerJob != null ? ' • ${vehicle.averageMileagePerJob!.toStringAsFixed(0)} km/job' : ''}',
-                      style: TextStyle(
+                      style: const TextStyle(
                         fontSize: 12,
                         color: Colors.teal,
                       ),
@@ -475,16 +475,16 @@ class VehicleInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.orange.withOpacity(0.1),
+        color: Colors.orange.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.orange.withOpacity(0.3)),
+        border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              Icon(Icons.info_outline, color: Colors.orange, size: 24),
+              const Icon(Icons.info_outline, color: Colors.orange, size: 24),
               const SizedBox(width: 8),
               Text(
                 '${vehicles.length} underutilized vehicle${vehicles.length == 1 ? '' : 's'}',
@@ -502,7 +502,7 @@ class VehicleInsightsTab extends ConsumerWidget {
             child: Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.05),
+                color: Colors.white.withValues(alpha: 0.05),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
@@ -524,7 +524,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                           '${vehicle.registration}${vehicle.branchName != null ? ' • ${vehicle.branchName}' : ''}',
                           style: TextStyle(
                             fontSize: 12,
-                            color: Colors.white.withOpacity(0.7),
+                            color: Colors.white.withValues(alpha: 0.7),
                           ),
                         ),
                       ],
@@ -542,7 +542,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                       ),
                       Text(
                         '${vehicle.utilizationRate.toStringAsFixed(1)}% util.',
-                        style: TextStyle(
+                        style: const TextStyle(
                           fontSize: 12,
                           color: Colors.orange,
                         ),
@@ -562,9 +562,9 @@ class VehicleInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         children: insights.vehiclesByBranch.entries.map((entry) {
@@ -589,12 +589,12 @@ class VehicleInsightsTab extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
                     '$vehicleCount vehicles',
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
                     ),
@@ -604,7 +604,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
-                    color: Colors.blue.withOpacity(0.1),
+                    color: Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(6),
                   ),
                   child: Text(
@@ -626,7 +626,7 @@ class VehicleInsightsTab extends ConsumerWidget {
   Widget _buildSectionHeader(String title) {
     return Text(
       title,
-      style: TextStyle(
+      style: const TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
         color: Colors.white,
@@ -651,9 +651,9 @@ class VehicleInsightsTab extends ConsumerWidget {
     return Container(
       padding: cardPadding,
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -661,10 +661,10 @@ class VehicleInsightsTab extends ConsumerWidget {
           Container(
             padding: EdgeInsets.all(iconContainerPadding),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
+              color: color.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(borderRadius * 0.8),
               border: Border.all(
-                color: color.withOpacity(0.2),
+                color: color.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -685,7 +685,7 @@ class VehicleInsightsTab extends ConsumerWidget {
             title,
             style: TextStyle(
               fontSize: titleFontSize,
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -717,15 +717,15 @@ class VehicleInsightsTab extends ConsumerWidget {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.error_outline,
             color: Colors.red,
             size: 64,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'Failed to load vehicle insights',
-            style: const TextStyle(
+            style: TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.bold,
               color: Colors.white,
@@ -735,7 +735,7 @@ class VehicleInsightsTab extends ConsumerWidget {
           Text(
             error,
             style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
+              color: Colors.white.withValues(alpha: 0.8),
             ),
             textAlign: TextAlign.center,
           ),
@@ -762,15 +762,15 @@ class VehicleInsightsTab extends ConsumerWidget {
       height: 300,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
           maxY: insights.vehiclesByBranch.values.reduce((a, b) => a > b ? a : b).toDouble() * 1.2,
-          barTouchData: BarTouchData(enabled: true),
+          barTouchData: const BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(
@@ -783,7 +783,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                       child: Text(
                         branches[value.toInt()],
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 12,
                         ),
                         textAlign: TextAlign.center,
@@ -801,7 +801,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                   return Text(
                     value.toInt().toString(),
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   );
@@ -816,7 +816,7 @@ class VehicleInsightsTab extends ConsumerWidget {
             drawVerticalLine: false,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 strokeWidth: 1,
               );
             },
@@ -855,15 +855,15 @@ class VehicleInsightsTab extends ConsumerWidget {
       height: 300,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: Colors.white.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
       ),
       child: BarChart(
         BarChartData(
           alignment: BarChartAlignment.spaceAround,
           maxY: 100,
-          barTouchData: BarTouchData(enabled: true),
+          barTouchData: const BarTouchData(enabled: true),
           titlesData: FlTitlesData(
             show: true,
             bottomTitles: AxisTitles(
@@ -879,7 +879,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                             ? '${vehicle.registration.substring(0, 8)}...'
                             : vehicle.registration,
                         style: TextStyle(
-                          color: Colors.white.withOpacity(0.7),
+                          color: Colors.white.withValues(alpha: 0.7),
                           fontSize: 10,
                         ),
                         textAlign: TextAlign.center,
@@ -899,7 +899,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                   return Text(
                     '${value.toInt()}%',
                     style: TextStyle(
-                      color: Colors.white.withOpacity(0.7),
+                      color: Colors.white.withValues(alpha: 0.7),
                       fontSize: 12,
                     ),
                   );
@@ -914,7 +914,7 @@ class VehicleInsightsTab extends ConsumerWidget {
             drawVerticalLine: false,
             getDrawingHorizontalLine: (value) {
               return FlLine(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 strokeWidth: 1,
               );
             },

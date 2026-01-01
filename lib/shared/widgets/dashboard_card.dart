@@ -226,7 +226,7 @@ class _DashboardCardState extends State<DashboardCard>
 
                         // Subtitle - only show on larger screens for cleaner mobile experience
                         if (widget.subtitle != null && !isMobile) ...[
-                          SizedBox(height: 3),
+                          const SizedBox(height: 3),
                           Text(
                             widget.subtitle!,
                             style: Theme.of(context).textTheme.bodySmall

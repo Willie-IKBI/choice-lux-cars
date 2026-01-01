@@ -191,14 +191,14 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: Colors.white.withValues(alpha: 0.05),
               border: Border(
-                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                bottom: BorderSide(color: Colors.white.withValues(alpha: 0.1)),
               ),
             ),
             child: Row(
               children: [
-                Icon(
+                const Icon(
                   Icons.filter_list,
                   color: ChoiceLuxTheme.richGold,
                   size: 20,
@@ -215,7 +215,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                 Text(
                   '${_jobs.length} jobs',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: Colors.white.withValues(alpha: 0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -236,15 +236,15 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.error_outline,
                               color: Colors.red,
                               size: 48,
                             ),
                             const SizedBox(height: 16),
-                            Text(
+                            const Text(
                               'Error loading jobs',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 color: Colors.white,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
@@ -254,7 +254,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                             Text(
                               _error!,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: Colors.white.withValues(alpha: 0.8),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -276,14 +276,14 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                               children: [
                                 Icon(
                                   Icons.work_off,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: Colors.white.withValues(alpha: 0.5),
                                   size: 64,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No completed jobs found',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: Colors.white.withValues(alpha: 0.8),
                                     fontSize: 18,
                                   ),
                                 ),
@@ -299,9 +299,9 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                 margin: const EdgeInsets.only(bottom: 12),
                                 padding: const EdgeInsets.all(16),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                                  border: Border.all(color: Colors.white.withValues(alpha: 0.1)),
                                 ),
                                 child: Row(
                                   children: [
@@ -310,10 +310,10 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                       width: 48,
                                       height: 48,
                                       decoration: BoxDecoration(
-                                        color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
                                         borderRadius: BorderRadius.circular(8),
                                       ),
-                                      child: Icon(
+                                      child: const Icon(
                                         Icons.person,
                                         color: ChoiceLuxTheme.richGold,
                                         size: 24,
@@ -337,7 +337,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                           Text(
                                             'Job #${job.jobNumber}',
                                             style: TextStyle(
-                                              color: Colors.white.withOpacity(0.7),
+                                              color: Colors.white.withValues(alpha: 0.7),
                                               fontSize: 14,
                                             ),
                                           ),
@@ -346,7 +346,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                             Text(
                                               'Manager: ${job.managerName}',
                                               style: TextStyle(
-                                                color: Colors.white.withOpacity(0.6),
+                                                color: Colors.white.withValues(alpha: 0.6),
                                                 fontSize: 12,
                                               ),
                                             ),
@@ -361,7 +361,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                         if (widget.metricType == 'km')
                                           Text(
                                             '${job.kmTraveled.toStringAsFixed(1)} km',
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               color: Colors.teal,
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -370,7 +370,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                         else
                                           Text(
                                             _formatDuration(job.timeHours),
-                                            style: TextStyle(
+                                            style: const TextStyle(
                                               color: Colors.purple,
                                               fontSize: 18,
                                               fontWeight: FontWeight.bold,
@@ -380,7 +380,7 @@ class _CompletedJobsDetailsScreenState extends ConsumerState<CompletedJobsDetail
                                         Text(
                                           widget.metricType == 'km' ? 'Distance' : 'Duration',
                                           style: TextStyle(
-                                            color: Colors.white.withOpacity(0.6),
+                                            color: Colors.white.withValues(alpha: 0.6),
                                             fontSize: 12,
                                           ),
                                         ),

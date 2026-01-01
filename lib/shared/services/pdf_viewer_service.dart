@@ -6,7 +6,6 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:http/http.dart' as http;
-import 'package:cross_file/cross_file.dart';
 import 'package:choice_lux_cars/shared/screens/pdf_viewer_screen.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
@@ -231,9 +230,10 @@ class PdfViewerService {
     String? recipientEmail,
     String? phoneNumber,
   }) async {
+    final messenger = ScaffoldMessenger.of(context);
     await showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: const Color(0xFF1A1A1A),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
@@ -253,17 +253,19 @@ class PdfViewerService {
                 style: TextStyle(color: Color(0xFFE5E5E5)),
               ),
               onTap: () async {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 try {
                   await copyPdfUrlToClipboard(pdfUrl);
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) return;
+                  messenger.showSnackBar(
                     const SnackBar(
                       content: Text('Link copied to clipboard'),
                       backgroundColor: Color(0xFF4CAF50),
                     ),
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) return;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to copy link: $e'),
                       backgroundColor: Colors.red,
@@ -279,7 +281,7 @@ class PdfViewerService {
                 style: TextStyle(color: Color(0xFFE5E5E5)),
               ),
               onTap: () async {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 try {
                   await sharePdfViaEmail(
                     pdfUrl: pdfUrl,
@@ -289,7 +291,8 @@ class PdfViewerService {
                     recipientEmail: recipientEmail,
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) return;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to open email: $e'),
                       backgroundColor: Colors.red,
@@ -305,7 +308,7 @@ class PdfViewerService {
                 style: TextStyle(color: Color(0xFFE5E5E5)),
               ),
               onTap: () async {
-                Navigator.pop(context);
+                Navigator.pop(dialogContext);
                 try {
                   await sharePdf(
                     pdfUrl: pdfUrl,
@@ -314,7 +317,8 @@ class PdfViewerService {
                     text: body,
                   );
                 } catch (e) {
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  if (!context.mounted) return;
+                  messenger.showSnackBar(
                     SnackBar(
                       content: Text('Failed to share: $e'),
                       backgroundColor: Colors.red,
@@ -331,7 +335,7 @@ class PdfViewerService {
                   style: TextStyle(color: Color(0xFFE5E5E5)),
                 ),
                 onTap: () async {
-                  Navigator.pop(context);
+                  Navigator.pop(dialogContext);
                   try {
                     await sharePdfViaWhatsApp(
                       pdfUrl: pdfUrl,
@@ -339,7 +343,8 @@ class PdfViewerService {
                       phoneNumber: phoneNumber,
                     );
                   } catch (e) {
-                    ScaffoldMessenger.of(context).showSnackBar(
+                    if (!context.mounted) return;
+                    messenger.showSnackBar(
                       SnackBar(
                         content: Text('Failed to share via WhatsApp: $e'),
                         backgroundColor: Colors.red,
@@ -352,7 +357,7 @@ class PdfViewerService {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text(
               'Cancel',
               style: TextStyle(color: Color(0xFFB0B0B0)),

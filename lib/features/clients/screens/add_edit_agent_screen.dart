@@ -58,7 +58,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with a transparent background
@@ -215,9 +215,9 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
             height: isMobile ? 100 : 120,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(60),
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 2,
               ),
             ),
@@ -302,7 +302,7 @@ class _AddEditAgentScreenState extends ConsumerState<AddEditAgentScreen> {
           fontSize: isMobile ? 14 : 16,
         ),
         hintStyle: TextStyle(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
           fontSize: isMobile ? 14 : 16,
         ),
       ),

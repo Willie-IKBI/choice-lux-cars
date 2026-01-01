@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'providers/users_provider.dart' as usersp;
-import 'widgets/user_card.dart';
-import 'models/user.dart';
+import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as usersp;
+import 'package:choice_lux_cars/features/users/widgets/user_card.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
@@ -11,7 +11,7 @@ import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
-  const UsersScreen({Key? key}) : super(key: key);
+  const UsersScreen({super.key});
 
   @override
   ConsumerState<UsersScreen> createState() => _UsersScreenState();
@@ -106,7 +106,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -223,7 +223,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               value: _roleFilter,
               hintText: 'Role',
               items: [
-                DropdownMenuItem<String>(value: null, child: Text('All Roles')),
+                const DropdownMenuItem<String>(value: null, child: Text('All Roles')),
                 ...roles.map(
                   (r) => DropdownMenuItem<String>(
                     value: r.value,
@@ -252,7 +252,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               value: _statusFilter,
               hintText: 'Status',
               items: [
-                DropdownMenuItem<String>(
+                const DropdownMenuItem<String>(
                   value: null,
                   child: Text('All Statuses'),
                 ),
@@ -360,7 +360,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
         ],
       ),
       child: DropdownButtonFormField<String>(
-        value: value,
+        initialValue: value,
         isExpanded: true,
         decoration: InputDecoration(
           hintText: hintText,
@@ -395,14 +395,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     final filterCount =
         (_roleFilter != null ? 1 : 0) + (_statusFilter != null ? 1 : 0);
 
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
+        icon: const Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
         label: Text(
           hasActiveFilters ? 'Filters: $filterCount active' : 'Filter users',
-          style: TextStyle(
+          style: const TextStyle(
             color: ChoiceLuxTheme.richGold,
             fontWeight: FontWeight.w600,
           ),
@@ -453,8 +453,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ),
 
             // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
                   Icon(
@@ -462,7 +462,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     color: ChoiceLuxTheme.richGold,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     'Filter Users',
                     style: TextStyle(
@@ -577,7 +577,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       children: [
         Text(
           title,
-          style: TextStyle(
+          style: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w600,
             color: ChoiceLuxTheme.softWhite,
@@ -652,7 +652,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   ),
                 ),
                 if (isSelected)
-                  Icon(
+                  const Icon(
                     Icons.check_circle,
                     color: ChoiceLuxTheme.richGold,
                     size: 20,
@@ -687,7 +687,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           context: context,
           builder: (context) => AlertDialog(
             backgroundColor: ChoiceLuxTheme.charcoalGray,
-            title: Text(
+            title: const Text(
               'Toggle User Status',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
@@ -696,12 +696,12 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ),
             content: Text(
               'Are you sure you want to ${user.status?.toLowerCase() == 'active' ? 'deactivate' : 'activate'} ${user.displayName}?',
-              style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
+              style: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
             ),
             actions: [
               TextButton(
                 onPressed: () => Navigator.of(context).pop(false),
-                child: Text(
+                child: const Text(
                   'Cancel',
                   style: TextStyle(color: ChoiceLuxTheme.platinumSilver),
                 ),
@@ -750,7 +750,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   user.status?.toLowerCase() == 'active'
                       ? 'Deactivate'
                       : 'Activate',
-                  style: TextStyle(
+                  style: const TextStyle(
                     color: ChoiceLuxTheme.richGold,
                     fontWeight: FontWeight.w600,
                     fontSize: 16,

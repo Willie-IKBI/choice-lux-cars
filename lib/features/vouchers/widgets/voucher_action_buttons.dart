@@ -536,95 +536,6 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
     );
   }
 
-  Widget _buildVoucherActions(
-    BuildContext context,
-    bool isTight,
-    double horizontalGap,
-    double verticalGap,
-    double maxWidth,
-  ) {
-    return Wrap(
-      spacing: horizontalGap,
-      runSpacing: verticalGap,
-      crossAxisAlignment: WrapCrossAlignment.center,
-      children: [
-        // Status chip
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-          decoration: BoxDecoration(
-            color: Colors.green.withValues(alpha: 0.1),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.green.withValues(alpha: 0.3)),
-          ),
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.check_circle, size: 14, color: Colors.green[700]),
-              const SizedBox(width: 3),
-              Text(
-                'Voucher Created',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w500,
-                  color: Colors.green[700],
-                ),
-              ),
-            ],
-          ),
-        ),
-
-        // Primary action button
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: isTight ? 100 : 120, // Reduced minimum width
-            maxWidth: maxWidth,
-          ),
-          child: SizedBox(
-            width: double.infinity, // Always use full available width
-            child: ElevatedButton.icon(
-              onPressed: widget.voucherState.isLoading ? null : widget.onOpenVoucher,
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text('Open Voucher', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-                foregroundColor: Theme.of(
-                  context,
-                ).colorScheme.onPrimaryContainer,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
-                ),
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
-              ),
-            ),
-          ),
-        ),
-
-        // Secondary icon actions
-        _iconAction(
-          context,
-          Icons.share,
-          'Share Voucher',
-          onTap: widget.voucherState.isLoading ? null : widget.onShowShareOptions,
-        ),
-
-        // Reload button (if user has permission)
-        if (widget.canCreateVoucher)
-          _iconAction(
-            context,
-            Icons.refresh,
-            'Reload Voucher',
-            onTap: widget.voucherState.isLoading ? null : widget.onRegenerateVoucher,
-          ),
-      ],
-    );
-  }
-
   Widget _iconAction(
     BuildContext context,
     IconData icon,
@@ -753,11 +664,11 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
           ),
           TextButton(
             onPressed: widget.onCreateVoucher,
-            child: const Text('Retry', style: TextStyle(fontSize: 11)),
             style: TextButton.styleFrom(
               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
               minimumSize: const Size(0, 24),
             ),
+            child: const Text('Retry', style: TextStyle(fontSize: 11)),
           ),
         ],
       ),

@@ -177,7 +177,7 @@ class QuotesRepository {
       // Ensure required fields are present
       if (transportDetail['quote_id'] == null) {
         Log.e('Missing quote_id in transport detail');
-        return Result.failure(UnknownException('Missing quote_id'));
+        return const Result.failure(UnknownException('Missing quote_id'));
       }
 
       final response = await _supabase

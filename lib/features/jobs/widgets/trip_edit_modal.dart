@@ -84,7 +84,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
         setState(() => _isLoading = true);
         await ref
             .read(tripsByJobProvider(widget.jobId).notifier)
-            .deleteTrip(widget.trip.id!);
+            .deleteTrip(widget.trip.id);
 
         if (mounted) {
           Navigator.of(context).pop();
@@ -202,9 +202,9 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
             children: [
               Row(
                 children: [
-                  Icon(Icons.edit, color: ChoiceLuxTheme.richGold, size: 24),
+                  const Icon(Icons.edit, color: ChoiceLuxTheme.richGold, size: 24),
                   const SizedBox(width: 12),
-                  Text(
+                  const Text(
                     'Edit Trip',
                     style: TextStyle(
                       fontSize: 20,
@@ -243,7 +243,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.calendar_today,
                                   color: ChoiceLuxTheme.richGold,
                                 ),
@@ -281,7 +281,7 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
                             ),
                             child: Row(
                               children: [
-                                Icon(
+                                const Icon(
                                   Icons.access_time,
                                   color: ChoiceLuxTheme.richGold,
                                 ),

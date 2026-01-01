@@ -5,9 +5,9 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
-import 'providers/quotes_provider.dart';
-import 'widgets/quote_card.dart';
-import 'models/quote.dart';
+import 'package:choice_lux_cars/features/quotes/providers/quotes_provider.dart';
+import 'package:choice_lux_cars/features/quotes/widgets/quote_card.dart';
+import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 
 class QuotesScreen extends ConsumerStatefulWidget {
   const QuotesScreen({super.key});
@@ -66,7 +66,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
     if (_searchQuery.isNotEmpty) {
       filteredQuotes = filteredQuotes.where((quote) {
         final passengerName = quote.passengerName?.toLowerCase() ?? '';
-        final quoteId = quote.id?.toString().toLowerCase() ?? '';
+        final quoteId = quote.id.toString().toLowerCase();
         final query = _searchQuery.toLowerCase();
         return passengerName.contains(query) || quoteId.contains(query);
       }).toList();
@@ -95,7 +95,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             ),
           ),
           // Background pattern overlay
-          Positioned.fill(
+          const Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
           // Content
@@ -249,19 +249,19 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     ? 'Search quotes...'
                     : 'Search quotes by passenger name or quote ID...',
                 hintStyle: TextStyle(
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                   fontSize: isMobile ? 14 : 16,
                 ),
                 prefixIcon: Icon(
                   Icons.search,
-                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                   size: isMobile ? 20 : 24,
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: Icon(
                           Icons.clear,
-                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
+                          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
                           size: isMobile ? 20 : 24,
                         ),
                         onPressed: () => setState(() => _searchQuery = ''),
@@ -331,13 +331,13 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           color: isSelected ? color : Colors.transparent,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.5),
+            color: isSelected ? color : color.withValues(alpha: 0.5),
             width: 1.5,
           ),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: color.withOpacity(0.3),
+                    color: color.withValues(alpha: 0.3),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -387,7 +387,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
             final quote = quotes[index];
             return QuoteCard(
               quote: quote,
-              onTap: () => context.go('/quotes/${quote.id ?? ''}'),
+              onTap: () => context.go('/quotes/${quote.id}'),
             );
           },
         ),
@@ -420,7 +420,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           Container(
             padding: const EdgeInsets.all(24),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
               shape: BoxShape.circle,
             ),
             child: Icon(icon, size: 48, color: iconColor),
@@ -428,7 +428,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           const SizedBox(height: 24),
           Text(
             message,
-            style: TextStyle(
+            style: const TextStyle(
               fontSize: 18,
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
@@ -437,7 +437,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           ),
           const SizedBox(height: 8),
           if (_searchQuery.isEmpty && _selectedStatus == 'all')
-            Text(
+            const Text(
               'Create your first quote to get started',
               style: TextStyle(
                 fontSize: 14,
@@ -451,20 +451,20 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
   }
 
   Widget _buildMobileFilterButton() {
-    return Container(
+    return SizedBox(
       width: double.infinity,
       child: ElevatedButton.icon(
         onPressed: () => _showMobileFilterBottomSheet(),
-        icon: Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
+        icon: const Icon(Icons.filter_list, color: ChoiceLuxTheme.richGold, size: 20),
         label: Text(
           'Filter: ${_getStatusLabel(_selectedStatus)}',
-          style: TextStyle(
+          style: const TextStyle(
             color: ChoiceLuxTheme.richGold,
             fontWeight: FontWeight.w600,
           ),
         ),
         style: ElevatedButton.styleFrom(
-          backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+          backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
           foregroundColor: ChoiceLuxTheme.richGold,
           elevation: 0,
           padding: const EdgeInsets.symmetric(vertical: 16),
@@ -472,7 +472,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
             side: BorderSide(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -503,14 +503,14 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               width: 40,
               height: 4,
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3),
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
 
             // Title
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            const Padding(
+              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               child: Row(
                 children: [
                   Icon(
@@ -518,7 +518,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     color: ChoiceLuxTheme.richGold,
                     size: 24,
                   ),
-                  const SizedBox(width: 12),
+                  SizedBox(width: 12),
                   Text(
                     'Filter Quotes',
                     style: TextStyle(
@@ -593,12 +593,12 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               minHeight: 48,
             ), // Ensure minimum 44px touch target
             decoration: BoxDecoration(
-              color: isSelected ? color.withOpacity(0.1) : Colors.transparent,
+              color: isSelected ? color.withValues(alpha: 0.1) : Colors.transparent,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSelected
                     ? color
-                    : ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
                 width: 1,
               ),
             ),
@@ -667,8 +667,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         backgroundColor: ChoiceLuxTheme.richGold,
         foregroundColor: Colors.black,
         elevation: 6,
-        child: const Icon(Icons.add, size: 24),
         tooltip: 'Create Quote',
+        child: const Icon(Icons.add, size: 24),
       );
     } else {
       // Desktop: Extended FAB with label

@@ -142,7 +142,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   data.clientContactPerson!,
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -152,7 +152,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   data.clientContactNumber!,
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -162,7 +162,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   data.clientContactEmail!,
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -172,7 +172,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   data.clientBillingAddress!,
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -182,7 +182,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   'Reg: ${data.clientCompanyRegistration!}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -192,7 +192,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   'VAT: ${data.clientVatNumber!}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -202,7 +202,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   'Website: ${data.clientWebsite!}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -232,7 +232,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 data.agentContact,
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -241,7 +241,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   data.agentEmail!,
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -282,7 +282,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 6),
               pw.Text(
                 'Passenger: ${data.passengerName}',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -290,7 +290,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Job Number: ${data.jobId}',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -298,7 +298,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Vehicle: ${data.vehicleType}',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -306,7 +306,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Driver: ${data.driverName}',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -314,7 +314,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Passengers: ${data.numberPassengers} | Luggage: ${data.luggage}',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -444,7 +444,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 6),
               pw.Text(
                 'Bank: ABSA Bank',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -452,7 +452,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Account Name: CHOICELUX CARS (PTY) LTD',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -460,7 +460,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Account Number: 411 511 5471',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -468,7 +468,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Branch Code: 632005',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -476,7 +476,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 2),
               pw.Text(
                 'Account Type: Current Account',
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),
@@ -485,7 +485,7 @@ class InvoicePdfService {
                 pw.SizedBox(height: 2),
                 pw.Text(
                   'Reference: ${data.bankingDetails.reference!}',
-                  style: pw.TextStyle(
+                  style: const pw.TextStyle(
                     fontSize: 10,
                     color: PdfColors.grey700,
                   ),
@@ -506,7 +506,7 @@ class InvoicePdfService {
               pw.SizedBox(height: 6),
               pw.Text(
                 data.paymentTerms,
-                style: pw.TextStyle(
+                style: const pw.TextStyle(
                   fontSize: 10,
                   color: PdfColors.grey700,
                 ),

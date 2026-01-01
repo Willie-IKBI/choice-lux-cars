@@ -26,6 +26,7 @@ class PaginationWidget extends StatelessWidget {
 
     final isMobile = MediaQuery.of(context).size.width < 768;
     final tokens = Theme.of(context).extension<AppTokens>()!;
+    final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -36,7 +37,7 @@ class PaginationWidget extends StatelessWidget {
           Expanded(
             child: Text(
               'Showing ${((currentPage - 1) * itemsPerPage) + 1} to ${(currentPage * itemsPerPage).clamp(0, totalItems)} of $totalItems items',
-              style: TextStyle(
+              style: const TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
                 fontSize: 12,
                 fontWeight: FontWeight.w500,
@@ -71,17 +72,17 @@ class PaginationWidget extends StatelessWidget {
                     vertical: 6,
                   ),
                   decoration: BoxDecoration(
-                    color: tokens.brandGold.withValues(alpha: 0.1),
+                    color: colorScheme.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
                     border: Border.all(
-                      color: tokens.brandGold.withValues(alpha: 0.3),
+                      color: colorScheme.primary.withValues(alpha: 0.3),
                       width: 1,
                     ),
                   ),
                   child: Text(
                     '$currentPage / $totalPages',
                     style: TextStyle(
-                      color: tokens.brandGold,
+                      color: colorScheme.primary,
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                     ),
@@ -258,7 +259,7 @@ class PaginationWidget extends StatelessWidget {
   Widget _buildEllipsis() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-      child: Text(
+      child: const Text(
         '...',
         style: TextStyle(
           fontSize: 12,

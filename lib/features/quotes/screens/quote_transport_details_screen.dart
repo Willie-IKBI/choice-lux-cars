@@ -204,7 +204,7 @@ class _QuoteTransportDetailsScreenState
             ),
           ),
           // Background pattern
-          CustomPaint(
+          const CustomPaint(
             painter: BackgroundPatterns.dashboard,
             size: Size.infinite,
           ),
@@ -264,18 +264,18 @@ class _QuoteTransportDetailsScreenState
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            ChoiceLuxTheme.richGold.withOpacity(0.1),
-            ChoiceLuxTheme.richGold.withOpacity(0.05),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
           ],
         ),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
             blurRadius: 8,
             offset: const Offset(0, 4),
           ),
@@ -300,7 +300,7 @@ class _QuoteTransportDetailsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
+                const Text(
                   'Total Quote Amount',
                   style: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver,
@@ -323,7 +323,7 @@ class _QuoteTransportDetailsScreenState
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
               borderRadius: BorderRadius.circular(20),
             ),
             child: Text(
@@ -345,13 +345,13 @@ class _QuoteTransportDetailsScreenState
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
+          const Icon(
             Icons.local_shipping_outlined,
             size: 64,
             color: ChoiceLuxTheme.platinumSilver,
           ),
           const SizedBox(height: 16),
-          Text(
+          const Text(
             'No transport details yet',
             style: TextStyle(
               fontSize: 18,
@@ -364,7 +364,7 @@ class _QuoteTransportDetailsScreenState
             'Add transport legs for this quote',
             style: TextStyle(
               fontSize: 14,
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
             ),
           ),
         ],
@@ -393,8 +393,8 @@ class _QuoteTransportDetailsScreenState
         return Card(
           margin: EdgeInsets.only(bottom: spacing),
           elevation: 4,
-          shadowColor: Colors.black.withOpacity(0.1),
-          color: ChoiceLuxTheme.charcoalGray.withOpacity(0.9),
+          shadowColor: Colors.black.withValues(alpha: 0.1),
+          color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.9),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(cornerRadius),
           ),
@@ -402,7 +402,7 @@ class _QuoteTransportDetailsScreenState
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(cornerRadius),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                 width: 1,
               ),
             ),
@@ -457,7 +457,7 @@ class _QuoteTransportDetailsScreenState
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 blurRadius: 4,
                 offset: const Offset(0, 2),
               ),
@@ -520,10 +520,10 @@ class _QuoteTransportDetailsScreenState
     return Container(
       padding: EdgeInsets.all(spacing * 0.75),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -534,14 +534,14 @@ class _QuoteTransportDetailsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.radio_button_checked,
                       size: 12,
                       color: ChoiceLuxTheme.successColor,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       'From',
                       style: TextStyle(
@@ -569,7 +569,7 @@ class _QuoteTransportDetailsScreenState
           // Arrow
           Padding(
             padding: EdgeInsets.symmetric(horizontal: spacing * 0.5),
-            child: Icon(
+            child: const Icon(
               Icons.arrow_forward,
               color: ChoiceLuxTheme.richGold,
               size: 20,
@@ -581,14 +581,14 @@ class _QuoteTransportDetailsScreenState
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
+                const Row(
                   children: [
                     Icon(
                       Icons.location_on,
                       size: 12,
                       color: ChoiceLuxTheme.errorColor,
                     ),
-                    const SizedBox(width: 6),
+                    SizedBox(width: 6),
                     Text(
                       'To',
                       style: TextStyle(
@@ -628,10 +628,10 @@ class _QuoteTransportDetailsScreenState
               vertical: spacing * 0.5,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -647,7 +647,7 @@ class _QuoteTransportDetailsScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Date',
                         style: TextStyle(
                           color: ChoiceLuxTheme.platinumSilver,
@@ -681,10 +681,10 @@ class _QuoteTransportDetailsScreenState
               vertical: spacing * 0.5,
             ),
             decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(8),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
@@ -700,7 +700,7 @@ class _QuoteTransportDetailsScreenState
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
+                      const Text(
                         'Time',
                         style: TextStyle(
                           color: ChoiceLuxTheme.platinumSilver,
@@ -734,22 +734,22 @@ class _QuoteTransportDetailsScreenState
         vertical: spacing * 0.5,
       ),
       decoration: BoxDecoration(
-        color: ChoiceLuxTheme.richGold.withOpacity(0.15),
+        color: ChoiceLuxTheme.richGold.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.4),
+          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.4),
           width: 1,
         ),
       ),
       child: Row(
         children: [
-          Icon(
+          const Icon(
             Icons.attach_money,
             size: 18,
             color: ChoiceLuxTheme.richGold,
           ),
           SizedBox(width: spacing * 0.5),
-          Text(
+          const Text(
             'Amount',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
@@ -775,10 +775,10 @@ class _QuoteTransportDetailsScreenState
     return Container(
       padding: EdgeInsets.all(spacing * 0.75),
       decoration: BoxDecoration(
-        color: Colors.grey.withOpacity(0.05),
+        color: Colors.grey.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
-          color: Colors.grey.withOpacity(0.1),
+          color: Colors.grey.withValues(alpha: 0.1),
           width: 1,
         ),
       ),
@@ -787,13 +787,13 @@ class _QuoteTransportDetailsScreenState
         children: [
           Row(
             children: [
-              Icon(
+              const Icon(
                 Icons.note,
                 size: 14,
                 color: ChoiceLuxTheme.platinumSilver,
               ),
               SizedBox(width: spacing * 0.5),
-              Text(
+              const Text(
                 'Notes',
                 style: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver,

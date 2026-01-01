@@ -118,7 +118,7 @@ class PdfTheme {
         // Contact strip
         pw.Container(
           padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-          decoration: pw.BoxDecoration(
+          decoration: const pw.BoxDecoration(
             color: grey100,
             borderRadius: pw.BorderRadius.only(
               bottomLeft: pw.Radius.circular(radius),
@@ -340,7 +340,7 @@ class PdfTheme {
         if (website != null || phone != null || email != null)
           pw.Container(
             padding: const pw.EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            decoration: pw.BoxDecoration(
+            decoration: const pw.BoxDecoration(
               color: grey100,
               borderRadius: pw.BorderRadius.only(
                 bottomLeft: pw.Radius.circular(radius),

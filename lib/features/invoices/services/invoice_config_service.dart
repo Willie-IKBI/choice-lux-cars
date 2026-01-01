@@ -47,7 +47,7 @@ class InvoiceConfigService {
 
   /// Get due date based on invoice date
   static DateTime calculateDueDate(DateTime invoiceDate) {
-    return invoiceDate.add(Duration(days: defaultPaymentDays));
+    return invoiceDate.add(const Duration(days: defaultPaymentDays));
   }
 
   /// Get storage path for invoice
