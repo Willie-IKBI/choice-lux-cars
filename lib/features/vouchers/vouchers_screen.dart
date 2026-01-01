@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
-class VouchersScreen extends StatelessWidget {
+class VouchersScreen extends ConsumerWidget {
   const VouchersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         // Layer 1: The background that fills the entire screen
@@ -19,7 +22,7 @@ class VouchersScreen extends StatelessWidget {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -45,15 +48,29 @@ class VouchersScreen extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              // Navigate to create voucher screen
-              context.push('/vouchers/create');
-            },
-            child: const Icon(Icons.add),
-          ),
+          floatingActionButton: _buildFAB(ref, context),
         ),
       ],
+    );
+  }
+
+  Widget? _buildFAB(WidgetRef ref, BuildContext context) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.isAdmin(userRole) &&
+        !permissionService.isManager(userRole) &&
+        !permissionService.isDriverManager(userRole)) {
+      return null;
+    }
+
+    return FloatingActionButton(
+      onPressed: () {
+        // Navigate to create voucher screen
+        context.push('/vouchers/create');
+      },
+      child: const Icon(Icons.add),
     );
   }
 }

@@ -1,15 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
-class InvoicesScreen extends StatelessWidget {
+class InvoicesScreen extends ConsumerWidget {
   const InvoicesScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     return Stack(
       children: [
         // Layer 1: The background that fills the entire screen
@@ -19,7 +22,7 @@ class InvoicesScreen extends StatelessWidget {
           ),
         ),
         // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         // Layer 3: The SystemSafeScaffold with proper system UI handling
@@ -45,14 +48,28 @@ class InvoicesScreen extends StatelessWidget {
               ],
             ),
           ),
-          floatingActionButton: FloatingActionButton(
-            onPressed: () {
-              // TODO: Implement add invoice
-            },
-            child: const Icon(Icons.add),
-          ),
+          floatingActionButton: _buildFAB(ref),
         ),
       ],
+    );
+  }
+
+  Widget? _buildFAB(WidgetRef ref) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.isAdmin(userRole) &&
+        !permissionService.isManager(userRole) &&
+        !permissionService.isDriverManager(userRole)) {
+      return null;
+    }
+
+    return FloatingActionButton(
+      onPressed: () {
+        // TODO: Implement add invoice
+      },
+      child: const Icon(Icons.add),
     );
   }
 }

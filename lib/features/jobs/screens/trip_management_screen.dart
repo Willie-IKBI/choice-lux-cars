@@ -7,6 +7,8 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:choice_lux_cars/core/services/permission_service.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class TripManagementScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -38,7 +40,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
 
   Future<void> _saveTrip(Trip trip) async {
     try {
-      if (trip.id == null || trip.id == '') {
+      if (trip.id == '') {
         // Create new trip
         await ref.read(tripsByJobProvider(widget.jobId).notifier).createTrip(trip);
       } else {
@@ -58,7 +60,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
 
   Future<void> _deleteTrip(Trip trip) async {
     try {
-      await ref.read(tripsByJobProvider(widget.jobId).notifier).deleteTrip(trip.id!);
+      await ref.read(tripsByJobProvider(widget.jobId).notifier).deleteTrip(trip.id);
       ref.invalidate(tripsByJobProvider(widget.jobId));
       if (mounted) {
         showSuccessSnackBar(context, 'Trip deleted successfully');
@@ -111,14 +113,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
           ),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTripModal,
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        child: const Icon(Icons.add),
-        tooltip: 'Add Trip',
-        elevation: 6,
-      ),
+      floatingActionButton: _buildFAB(),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
@@ -138,18 +133,18 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
               gradient: LinearGradient(
                 colors: [
                   ChoiceLuxTheme.charcoalGray,
-                  ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
+                  ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.8),
                 ],
               ),
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 width: 1,
               ),
             ),
             child: Row(
               children: [
-                Icon(Icons.route, color: ChoiceLuxTheme.richGold, size: 28),
+                const Icon(Icons.route, color: ChoiceLuxTheme.richGold, size: 28),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Column(
@@ -181,17 +176,17 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
 
           // Trips list
           if (trips.isNotEmpty) ...[
-            ...trips.map((trip) => _buildTripCard(trip)).toList(),
+            ...trips.map((trip) => _buildTripCard(trip)),
             const SizedBox(height: 24),
 
             // Total amount
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
                 ),
               ),
               child: Row(
@@ -207,7 +202,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
                   ),
                   Text(
                     'R${totalAmount.toStringAsFixed(2)}',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 24,
                       fontWeight: FontWeight.bold,
                       color: ChoiceLuxTheme.richGold,
@@ -274,7 +269,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
               children: [
                 Expanded(
                   child: Text(
-                    'Trip ${trip.id ?? 'New'}',
+                    'Trip ${trip.id}',
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -295,13 +290,32 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
             ),
             const SizedBox(height: 8),
             Text('Amount: R${trip.amount.toStringAsFixed(2)}'),
-            if (trip.pickupLocation != null)
-              Text('Pickup: ${trip.pickupLocation}'),
-            if (trip.dropoffLocation != null)
-              Text('Dropoff: ${trip.dropoffLocation}'),
+            Text('Pickup: ${trip.pickupLocation}'),
+            Text('Dropoff: ${trip.dropoffLocation}'),
           ],
         ),
       ),
+    );
+  }
+
+  Widget? _buildFAB() {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role;
+    final permissionService = const PermissionService();
+    
+    if (!permissionService.isAdmin(userRole) &&
+        !permissionService.isManager(userRole) &&
+        !permissionService.isDriverManager(userRole)) {
+      return null;
+    }
+
+    return FloatingActionButton(
+      onPressed: _showAddTripModal,
+      backgroundColor: ChoiceLuxTheme.richGold,
+      foregroundColor: Colors.black,
+      tooltip: 'Add Trip',
+      elevation: 6,
+      child: const Icon(Icons.add),
     );
   }
 }
