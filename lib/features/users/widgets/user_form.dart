@@ -14,12 +14,12 @@ class UserForm extends StatefulWidget {
   final bool canDeactivate;
 
   const UserForm({
-    Key? key,
+    super.key,
     this.user,
     required this.onSave,
     this.onDeactivate,
     this.canDeactivate = false,
-  }) : super(key: key);
+  });
 
   @override
   State<UserForm> createState() => _UserFormState();
@@ -122,8 +122,6 @@ class _UserFormState extends State<UserForm> {
         // Expose isAdmin for use in widget build (status and branch dropdowns)
         // Only role assignment requires super_admin
         final isWide = MediaQuery.of(context).size.width > 900;
-        // Error summary state
-        String? errorSummary;
         return Form(
           key: _formKey,
           autovalidateMode: AutovalidateMode.onUserInteraction,
@@ -131,43 +129,17 @@ class _UserFormState extends State<UserForm> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              if (errorSummary != null)
-                Container(
-                  width: double.infinity,
-                  margin: const EdgeInsets.only(bottom: 16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.error.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.error_outline, color: Colors.red),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          errorSummary!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              // Avatar + Header Section
               Card(
                 margin: const EdgeInsets.only(bottom: 24),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                   side: BorderSide(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     width: 1,
                   ),
                 ),
                 elevation: 4,
-                shadowColor: Colors.black.withOpacity(0.08),
+                shadowColor: Colors.black.withValues(alpha: 0.08),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     vertical: 24,
@@ -306,10 +278,7 @@ class _UserFormState extends State<UserForm> {
                                 ),
                               );
                             } else {
-                              setState(() {
-                                errorSummary =
-                                    'Please correct the errors highlighted below.';
-                              });
+                              // Form has validation errors
                             }
                           },
                           child: const Text('Save Changes'),
@@ -371,10 +340,7 @@ class _UserFormState extends State<UserForm> {
                                 ),
                               );
                             } else {
-                              setState(() {
-                                errorSummary =
-                                    'Please correct the errors highlighted below.';
-                              });
+                              // Form has validation errors
                             }
                           },
                           child: const Text('Save Changes'),
@@ -396,10 +362,10 @@ class _UserFormState extends State<UserForm> {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
       ),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
@@ -438,7 +404,7 @@ class _UserFormState extends State<UserForm> {
             const SizedBox(height: 12),
             isSuperAdmin
                 ? DropdownButtonFormField<String>(
-                    value: role,
+                    initialValue: role,
                     decoration: _modernInputDecoration('Role'),
                     items: roles
                         .map(
@@ -455,7 +421,15 @@ class _UserFormState extends State<UserForm> {
                           ),
                         )
                         .toList(),
-                    onChanged: (val) => setState(() => role = val),
+                    onChanged: (val) {
+                      setState(() {
+                        role = val;
+                        // Auto-reset branch for admin roles
+                        if (val == 'administrator' || val == 'super_admin') {
+                          branchId = null;
+                        }
+                      });
+                    },
                     onSaved: (val) => role = val,
                   )
                 : TextFormField(
@@ -472,7 +446,7 @@ class _UserFormState extends State<UserForm> {
             const SizedBox(height: 12),
             isAdmin
                 ? DropdownButtonFormField<String>(
-                    value: status,
+                    initialValue: status,
                     decoration: _modernInputDecoration('Status'),
                     items: statuses
                         .map(
@@ -505,53 +479,78 @@ class _UserFormState extends State<UserForm> {
                 builder: (context, ref, _) {
                   final branchesAsync = ref.watch(branchesProvider);
                   return branchesAsync.when(
-                    data: (branches) => DropdownButtonFormField<int?>(
-                      value: branchId,
-                      isExpanded: true,
-                      decoration: _modernInputDecoration('Branch'),
-                      items: [
-                        // National option (null)
-                        DropdownMenuItem<int?>(
-                          value: null,
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(Icons.public, size: 18),
-                              const SizedBox(width: 8),
-                              Flexible(
-                                child: Text(
-                                  'National (All Branches)',
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        // Branch options
-                        ...branches.map(
-                          (branch) => DropdownMenuItem<int?>(
-                            value: branch.id,
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(Icons.location_on, size: 18),
-                                const SizedBox(width: 8),
-                                Flexible(
-                                  child: Text(
-                                    branch.name,
-                                    overflow: TextOverflow.ellipsis,
+                    data: (branches) {
+                      // Check if branch is required for current role
+                      final isNonAdminRole = role != null &&
+                          role != 'administrator' &&
+                          role != 'super_admin' &&
+                          role != 'unassigned';
+                      final branchLabel = isNonAdminRole
+                          ? 'Branch (Required)'
+                          : 'Branch';
+
+                      return DropdownButtonFormField<int?>(
+                        initialValue: branchId,
+                        isExpanded: true,
+                        decoration: _modernInputDecoration(branchLabel),
+                        items: [
+                          // National option (null) - only for admin roles
+                          if (!isNonAdminRole)
+                            const DropdownMenuItem<int?>(
+                              value: null,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.public, size: 18),
+                                  SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      'National (All Branches)',
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                            ),
+                          // Branch options
+                          ...branches.map(
+                            (branch) => DropdownMenuItem<int?>(
+                              value: branch.id,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(Icons.location_on, size: 18),
+                                  const SizedBox(width: 8),
+                                  Flexible(
+                                    child: Text(
+                                      branch.name,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      ],
-                      onChanged: (val) => setState(() => branchId = val),
-                      onSaved: (val) => branchId = val,
-                    ),
+                        ],
+                        validator: (val) {
+                          // If role is non-admin, branch is required
+                          if (isNonAdminRole && val == null) {
+                            final roleLabel = roles
+                                .firstWhere(
+                                  (r) => r.value == role,
+                                  orElse: () => roles.last,
+                                )
+                                .label;
+                            return 'Branch is required for $roleLabel role';
+                          }
+                          return null;
+                        },
+                        onChanged: (val) => setState(() => branchId = val),
+                        onSaved: (val) => branchId = val,
+                      );
+                    },
                     loading: () => DropdownButtonFormField<int?>(
-                      value: branchId,
+                      initialValue: branchId,
                       decoration: _modernInputDecoration('Branch'),
                       items: const [],
                       onChanged: null,
@@ -579,10 +578,10 @@ class _UserFormState extends State<UserForm> {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
       ),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
@@ -641,10 +640,10 @@ class _UserFormState extends State<UserForm> {
       margin: EdgeInsets.zero,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+        side: BorderSide(color: Colors.white.withValues(alpha: 0.2), width: 1),
       ),
       elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
+      shadowColor: Colors.black.withValues(alpha: 0.08),
       child: Padding(
         padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
         child: Column(
@@ -736,10 +735,10 @@ class _UserFormState extends State<UserForm> {
     final now = DateTime.now();
     final soon = now.add(const Duration(days: 90));
     if (date.isBefore(now)) {
-      return Row(
+      return const Row(
         children: [
-          const Icon(Icons.error, color: Colors.red, size: 16),
-          const SizedBox(width: 4),
+          Icon(Icons.error, color: Colors.red, size: 16),
+          SizedBox(width: 4),
           Text(
             'Expired',
             style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600),
@@ -747,10 +746,10 @@ class _UserFormState extends State<UserForm> {
         ],
       );
     } else if (date.isBefore(soon)) {
-      return Row(
+      return const Row(
         children: [
-          const Icon(Icons.warning, color: Colors.amber, size: 16),
-          const SizedBox(width: 4),
+          Icon(Icons.warning, color: Colors.amber, size: 16),
+          SizedBox(width: 4),
           Text(
             'Expiring Soon',
             style: TextStyle(color: Colors.amber, fontWeight: FontWeight.w600),
@@ -758,10 +757,10 @@ class _UserFormState extends State<UserForm> {
         ],
       );
     }
-    return Row(
+    return const Row(
       children: [
-        const Icon(Icons.check_circle, color: Colors.green, size: 16),
-        const SizedBox(width: 4),
+        Icon(Icons.check_circle, color: Colors.green, size: 16),
+        SizedBox(width: 4),
         Text(
           'Valid',
           style: TextStyle(color: Colors.green, fontWeight: FontWeight.w600),
@@ -774,14 +773,14 @@ class _UserFormState extends State<UserForm> {
     return InputDecoration(
       labelText: label,
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: Colors.white.withValues(alpha: 0.05),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.2)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -803,9 +802,6 @@ class _UserFormState extends State<UserForm> {
       ),
     );
   }
-
-  String _titleCase(String s) =>
-      s.isEmpty ? s : s[0].toUpperCase() + s.substring(1).toLowerCase();
 
   /// Build horizontal document card for desktop layout
   Widget _buildHorizontalDocumentCard(
@@ -968,6 +964,7 @@ class _UserFormState extends State<UserForm> {
     if (picked != null) {
       setState(() => _uploading = true);
       try {
+        if (!context.mounted) return;
         final ref = ProviderScope.containerOf(context).read(usersp.usersProvider.notifier);
         final url = await ref.uploadDriverLicenseImage(
           picked,
@@ -996,6 +993,7 @@ class _UserFormState extends State<UserForm> {
     if (picked != null) {
       setState(() => _uploading = true);
       try {
+        if (!context.mounted) return;
         final ref = ProviderScope.containerOf(context).read(usersp.usersProvider.notifier);
         final url = await ref.uploadPdpImage(
           picked,
@@ -1044,11 +1042,10 @@ class _DatePickerFormField extends FormField<DateTime> {
   _DatePickerFormField({
     required String label,
     DateTime? initialDate,
-    FormFieldSetter<DateTime>? onSaved,
+    super.onSaved,
     Widget? helper,
   }) : super(
          initialValue: initialDate,
-         onSaved: onSaved,
          builder: (FormFieldState<DateTime> state) {
            return Column(
              crossAxisAlignment: CrossAxisAlignment.start,

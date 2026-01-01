@@ -12,7 +12,7 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UserDetailScreen extends ConsumerWidget {
   final String userId;
-  const UserDetailScreen({Key? key, required this.userId}) : super(key: key);
+  const UserDetailScreen({super.key, required this.userId});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -33,7 +33,7 @@ class UserDetailScreen extends ConsumerWidget {
               gradient: ChoiceLuxTheme.backgroundGradient,
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
           const SystemSafeScaffold(
@@ -51,7 +51,7 @@ class UserDetailScreen extends ConsumerWidget {
               gradient: ChoiceLuxTheme.backgroundGradient,
             ),
           ),
-          Positioned.fill(
+          const Positioned.fill(
             child: CustomPaint(painter: BackgroundPatterns.dashboard),
           ),
           SystemSafeScaffold(
@@ -74,7 +74,7 @@ class UserDetailScreen extends ConsumerWidget {
             gradient: ChoiceLuxTheme.backgroundGradient,
           ),
         ),
-        Positioned.fill(
+        const Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
         SystemSafeScaffold(
@@ -102,7 +102,7 @@ class UserDetailScreen extends ConsumerWidget {
                             try {
                               await ref
                                   .read(usersp.usersProvider.notifier)
-                                  .deactivateUser(user!.id);
+                                  .deactivateUser(user.id);
                               Log.d('User deactivated successfully');
                               if (context.mounted) {
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -127,10 +127,25 @@ class UserDetailScreen extends ConsumerWidget {
                           }
                         : null,
                     onSave: (updatedUser) async {
-                      await usersNotifier.updateUser(updatedUser);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('User updated successfully')),
-                      );
+                      try {
+                        await usersNotifier.updateUser(updatedUser);
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('User updated successfully')),
+                        );
+                      } catch (error) {
+                        Log.e('Error updating user: $error');
+                        if (!context.mounted) return;
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              error.toString().replaceAll('Exception: ', ''),
+                            ),
+                            backgroundColor: Colors.red,
+                            duration: const Duration(seconds: 4),
+                          ),
+                        );
+                      }
                     },
                   ),
                 ),

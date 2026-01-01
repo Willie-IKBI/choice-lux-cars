@@ -225,6 +225,18 @@ class UsersRepository {
       return const Result.success(null);
     } catch (error) {
       Log.e('Error updating user: $error');
+      
+      // Check if it's a constraint violation for branch_id
+      final errorString = error.toString().toLowerCase();
+      if (errorString.contains('profiles_branch_id_by_role_chk') ||
+          errorString.contains('branch_id_by_role')) {
+        return Result.failure(
+          UnknownException(
+            'Branch is required for this role. Please select a branch before saving.',
+          ),
+        );
+      }
+      
       return _mapSupabaseError(error);
     }
   }

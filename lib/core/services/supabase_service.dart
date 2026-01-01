@@ -66,24 +66,26 @@ class SupabaseService {
     }
   }
 
-  /// Update user profile
+  /// Update or create user profile (upsert)
   Future<void> updateProfile({
     required String userId,
     required Map<String, dynamic> data,
   }) async {
     try {
-      Log.d('Updating profile for user: $userId');
+      Log.d('Upserting profile for user: $userId');
 
-      // Remove 'id' from update data as it's the primary key and cannot be updated
-      final updateData = Map<String, dynamic>.from(data);
-      updateData.remove('id');
+      // Ensure 'id' is included for upsert
+      final upsertData = Map<String, dynamic>.from(data);
+      if (!upsertData.containsKey('id')) {
+        upsertData['id'] = userId;
+      }
 
-      Log.d('Updating with data: $updateData');
-      await supabase.from('profiles').update(updateData).eq('id', userId);
+      Log.d('Upserting with data: $upsertData');
+      await supabase.from('profiles').upsert(upsertData, onConflict: 'id');
 
-      Log.d('Profile updated successfully for user: $userId');
+      Log.d('Profile upserted successfully for user: $userId');
     } catch (error) {
-      Log.e('Error updating profile: $error');
+      Log.e('Error upserting profile: $error');
       rethrow;
     }
   }

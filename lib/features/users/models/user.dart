@@ -76,7 +76,7 @@ class User {
       'kin': kin,
       'kin_number': kinNumber,
       'status': status,
-      if (branchId != null) 'branch_id': branchId,
+      'branch_id': branchId, // Always include, even if null
     };
   }
 
