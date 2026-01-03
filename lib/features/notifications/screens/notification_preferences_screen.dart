@@ -35,7 +35,6 @@ class _NotificationPreferencesScreenState
   bool _stepCompletion = true;
   bool _jobStartDeadlineWarning90min = true;
   bool _jobStartDeadlineWarning60min = true;
-  bool _paymentReminder = true;
   bool _systemAlert = true;
 
   // Note: Delivery methods, sound, vibration, priority, and quiet hours settings
@@ -250,17 +249,6 @@ class _NotificationPreferencesScreenState
               ),
 
             _buildSwitchTile(
-              'Payment Reminders',
-              'Get notified about payment reminders',
-              Icons.payment,
-              _paymentReminder,
-              (value) {
-                setState(() => _paymentReminder = value);
-                _savePreferences();
-              },
-            ),
-
-            _buildSwitchTile(
               'System Alerts',
               'Get notified about system maintenance and updates',
               Icons.warning,
@@ -405,7 +393,6 @@ class _NotificationPreferencesScreenState
         _stepCompletion = prefs['step_completion'] ?? true;
         _jobStartDeadlineWarning90min = prefs['job_start_deadline_warning_90min'] ?? true;
         _jobStartDeadlineWarning60min = prefs['job_start_deadline_warning_60min'] ?? true;
-        _paymentReminder = prefs['payment_reminder'] ?? prefs['payment_reminders'] ?? true;
         _systemAlert = prefs['system_alert'] ?? prefs['system_alerts'] ?? true;
 
         _isLoading = false;
@@ -434,7 +421,6 @@ class _NotificationPreferencesScreenState
         'step_completion': _stepCompletion,
         'job_start_deadline_warning_90min': _jobStartDeadlineWarning90min,
         'job_start_deadline_warning_60min': _jobStartDeadlineWarning60min,
-        'payment_reminder': _paymentReminder,
         'system_alert': _systemAlert,
       };
 
@@ -543,7 +529,6 @@ class _NotificationPreferencesScreenState
                 _stepCompletion = true;
                 _jobStartDeadlineWarning90min = true;
                 _jobStartDeadlineWarning60min = true;
-                _paymentReminder = true;
                 _systemAlert = true;
               });
               Navigator.of(context).pop();

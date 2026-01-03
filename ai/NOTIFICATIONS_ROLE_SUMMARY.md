@@ -59,8 +59,7 @@
 6. ✅ **`job_start`** - When they start a job (self-triggered)
 7. ✅ **`job_completion`** - When job is completed
 8. ✅ **`step_completion`** - When they complete a job step (self-triggered)
-9. ✅ **`payment_reminder`** - Payment reminders (if applicable)
-10. ✅ **`system_alert`** - System-wide alerts
+9. ✅ **`system_alert`** - System-wide alerts
 
 **Does NOT Receive:**
 - ❌ `job_start_deadline_warning_90min` (manager only)
@@ -76,7 +75,7 @@
 
 **Receives (10 notification types):**
 
-**All Driver Types (9):**
+**All Driver Types (8):**
 1. ✅ `job_assignment`
 2. ✅ `job_reassignment`
 3. ✅ `job_confirmation`
@@ -85,11 +84,10 @@
 6. ✅ `job_start`
 7. ✅ `job_completion`
 8. ✅ `step_completion`
-9. ✅ `payment_reminder`
-10. ✅ `system_alert`
+9. ✅ `system_alert`
 
 **PLUS Manager-Specific (1):**
-11. ✅ **`job_start_deadline_warning_90min`** - When jobs are not started 90 minutes before pickup
+10. ✅ **`job_start_deadline_warning_90min`** - When jobs are not started 90 minutes before pickup
 
 **Does NOT Receive:**
 - ❌ `job_start_deadline_warning_60min` (admin/super_admin only)
@@ -106,9 +104,9 @@
 
 ### 2.3 Administrator Role
 
-**Receives (11 notification types):**
+**Receives (10 notification types):**
 
-**All Driver Types (9):**
+**All Driver Types (8):**
 1. ✅ `job_assignment`
 2. ✅ `job_reassignment`
 3. ✅ `job_confirmation`
@@ -117,19 +115,17 @@
 6. ✅ `job_start`
 7. ✅ `job_completion`
 8. ✅ `step_completion`
-9. ✅ `payment_reminder`
-10. ✅ `system_alert`
+9. ✅ `system_alert`
 
 **PLUS Admin-Specific (1):**
-11. ✅ **`job_start_deadline_warning_60min`** - When jobs are not started 60 minutes before pickup (GLOBAL - all jobs)
+10. ✅ **`job_start_deadline_warning_60min`** - When jobs are not started 60 minutes before pickup (GLOBAL - all jobs)
 
 **Does NOT Receive:**
 - ❌ `job_start_deadline_warning_90min` (manager only)
 
 **UI Visibility:**
-- Sees 11 notification type toggles in preferences screen
-- Sees 60min deadline warning toggle
-- Does NOT see 90min deadline warning toggle
+- ❌ Cannot access notification preferences screen (super_admin only)
+- Receives notifications based on super_admin configuration
 
 **Notification Scope:**
 - Receives deadline warnings for ALL jobs globally (no branch restriction)
@@ -139,7 +135,7 @@
 
 ### 2.4 Super Admin Role
 
-**Receives (11 notification types):**
+**Receives (10 notification types):**
 
 **Same as Administrator:**
 1. ✅ `job_assignment`
@@ -150,16 +146,15 @@
 6. ✅ `job_start`
 7. ✅ `job_completion`
 8. ✅ `step_completion`
-9. ✅ `payment_reminder`
-10. ✅ `system_alert`
-11. ✅ **`job_start_deadline_warning_60min`** - When jobs are not started 60 minutes before pickup (GLOBAL - all jobs)
+9. ✅ `system_alert`
+10. ✅ **`job_start_deadline_warning_60min`** - When jobs are not started 60 minutes before pickup (GLOBAL - all jobs)
 
 **Does NOT Receive:**
 - ❌ `job_start_deadline_warning_90min` (manager only)
 
 **UI Visibility:**
 - ✅ Can access notification preferences screen (super_admin only)
-- Can configure all 12 notification types globally
+- Can configure all 11 notification types globally
 - Sees 60min deadline warning toggle
 
 **Notification Scope:**
@@ -211,10 +206,9 @@
 
 | Notification Type | Driver | Manager | Admin | Super Admin |
 |------------------|--------|---------|-------|-------------|
-| `payment_reminder` | ✅ | ✅ | ✅ | ✅ |
 | `system_alert` | ✅ | ✅ | ✅ | ✅ |
 
-**Total:** 2 types - All roles receive these
+**Total:** 1 type - All roles receive this
 
 ---
 
@@ -272,13 +266,13 @@
 
 **Notification Types:**
 - Enable/disable each notification type globally
-- Configure all 12 notification types:
+- Configure all 11 notification types:
   - `job_assignment`, `job_reassignment`, `job_confirmation`
   - `job_start`, `job_completion`, `job_status_change`
   - `job_cancelled`, `step_completion`
   - `job_start_deadline_warning_90min` (manager-specific)
   - `job_start_deadline_warning_60min` (admin/super_admin-specific)
-  - `payment_reminder`, `system_alert`
+  - `system_alert`
 
 **Actions:**
 - Send test notification
@@ -306,12 +300,13 @@
   "step_completion": true,
   "job_start_deadline_warning_90min": true,  // Manager only
   "job_start_deadline_warning_60min": true,  // Admin/Super_Admin only
-  "payment_reminder": true,
   "system_alert": true
 }
 ```
 
-**Note:** Delivery methods, sound, vibration, priority, and quiet hours preferences have been removed as they were not enforced by the notification system.
+**Note:** 
+- Delivery methods, sound, vibration, priority, and quiet hours preferences have been removed as they were not enforced by the notification system.
+- Payment reminders have been removed as they are not needed.
 
 **Default:** All notification types enabled (`true`)
 
@@ -331,11 +326,10 @@
 | Job Start | ✅ | ✅ | ✅ | ✅ | ✅ Super Admin only |
 | Job Completion | ✅ | ✅ | ✅ | ✅ | ✅ Super Admin only |
 | Step Completion | ✅ | ✅ | ✅ | ✅ | ✅ Super Admin only |
-| Payment Reminder | ✅ | ✅ | ✅ | ✅ | ✅ Super Admin only |
 | System Alert | ✅ | ✅ | ✅ | ✅ | ✅ Super Admin only |
 | Deadline Warning (90min) | ❌ | ✅ | ❌ | ❌ | ✅ Super Admin only |
 | Deadline Warning (60min) | ❌ | ❌ | ✅ | ✅ | ✅ Super Admin only |
-| **Total Types** | **10** | **11** | **11** | **11** | **Super Admin only** |
+| **Total Types** | **9** | **10** | **10** | **10** | **Super Admin only** |
 
 ---
 
@@ -452,10 +446,10 @@ const pushEnabled = prefs?.[notificationType] !== false // Default to true
 
 | Role | Notification Types Received | Deadline Warnings | Total |
 |------|----------------------------|-------------------|-------|
-| Driver | 10 | 0 | **10** |
-| Manager | 10 | 1 (90min) | **11** |
-| Administrator | 10 | 1 (60min) | **11** |
-| Super Admin | 10 | 1 (60min) | **11** |
+| Driver | 9 | 0 | **9** |
+| Manager | 9 | 1 (90min) | **10** |
+| Administrator | 9 | 1 (60min) | **10** |
+| Super Admin | 9 | 1 (60min) | **10** |
 
 ---
 
@@ -478,9 +472,9 @@ const pushEnabled = prefs?.[notificationType] !== false // Default to true
 1. **✅ Super Admin Only Can Set Preferences:** Only `super_admin` role can access/modify notification preferences. All other roles are blocked at UI, screen, and route guard levels.
 
 2. **📊 Role-Specific Notifications:**
-   - Drivers: 10 types (no deadline warnings)
-   - Managers: 11 types (includes 90min warning)
-   - Admins/Super_Admins: 11 types (includes 60min warning)
+   - Drivers: 9 types (no deadline warnings)
+   - Managers: 10 types (includes 90min warning)
+   - Admins/Super_Admins: 10 types (includes 60min warning)
 
 3. **🎯 Deadline Warning Rules:**
    - 90min: Manager only, scoped to their jobs
@@ -504,23 +498,23 @@ const pushEnabled = prefs?.[notificationType] !== false // Default to true
 ### Who Gets What?
 
 **Driver:**
-- Gets: 10 notification types
+- Gets: 9 notification types
 - Can set: ❌ Cannot access preferences (super_admin only)
 - Scope: Own jobs only
 
 **Manager:**
-- Gets: 11 notification types (10 + 90min warning)
+- Gets: 10 notification types (9 + 90min warning)
 - Can set: ❌ Cannot access preferences (super_admin only)
 - Scope: Managed jobs + deadline warnings for their jobs
 
 **Administrator:**
-- Gets: 11 notification types (10 + 60min warning)
+- Gets: 10 notification types (9 + 60min warning)
 - Can set: ❌ Cannot access preferences (super_admin only)
 - Scope: ALL jobs globally
 
 **Super Admin:**
-- Gets: 11 notification types (10 + 60min warning)
-- Can set: ✅ Can configure all 12 notification types globally
+- Gets: 10 notification types (9 + 60min warning)
+- Can set: ✅ Can configure all 11 notification types globally
 - Scope: ALL jobs globally (same as admin)
 - Special: Only role with access to notification preferences screen
 

@@ -143,7 +143,6 @@ class NotificationPreferencesService {
       'step_completion': true,
       'job_start_deadline_warning_90min': true,
       'job_start_deadline_warning_60min': true,
-      'payment_reminder': true,
       'system_alert': true,
       // Note: Delivery methods, sound, vibration, priority, and quiet hours
       // preferences have been removed from defaults as they are not currently
