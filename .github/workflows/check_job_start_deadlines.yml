@@ -1,0 +1,74 @@
+name: Check Job Start Deadlines
+
+on:
+  schedule:
+    # Run every 5 minutes
+    - cron: '*/5 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+concurrency:
+  group: check-job-start-deadlines
+  cancel-in-progress: true
+
+jobs:
+  check-deadlines:
+    name: Check Job Start Deadlines
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+      - name: Invoke check-job-start-deadlines Edge Function
+        id: invoke-checker
+        run: |
+          echo "=== CHECK JOB START DEADLINES WORKFLOW STARTED ==="
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          
+          # Function endpoint
+          FUNCTION_URL="https://hgqrbekphumdlsifuamq.supabase.co/functions/v1/check-job-start-deadlines"
+          
+          # Invoke function with service role key
+          echo "Invoking Edge Function: $FUNCTION_URL"
+          
+          # Capture both status code and response body in one call
+          TEMP_FILE=$(mktemp)
+          HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$TEMP_FILE" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -d '{}' \
+            "$FUNCTION_URL")
+          
+          HTTP_BODY=$(cat "$TEMP_FILE")
+          rm -f "$TEMP_FILE"
+          
+          echo "HTTP Status Code: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
+          
+          # Fail if status code is not 2xx
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "❌ ERROR: Function returned non-2xx status code: $HTTP_STATUS"
+            echo "Response: $HTTP_BODY"
+            exit 1
+          fi
+          
+          echo "✅ SUCCESS: Function executed successfully (HTTP $HTTP_STATUS)"
+          
+          # Extract and display key metrics from response (if available)
+          if command -v jq &> /dev/null; then
+            CHECKED=$(echo "$HTTP_BODY" | jq -r '.checked // "N/A"')
+            NOTIFIED=$(echo "$HTTP_BODY" | jq -r '.notified // "N/A"')
+            
+            echo "Metrics:"
+            echo "  - Jobs Checked: $CHECKED"
+            echo "  - Notifications Sent: $NOTIFIED"
+          fi
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "=== WORKFLOW COMPLETED ==="
+          echo "Status: ${{ job.status }}"
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+
