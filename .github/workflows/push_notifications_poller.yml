@@ -1,0 +1,72 @@
+name: Push Notifications Poller
+
+on:
+  schedule:
+    # Run every 2 minutes
+    - cron: '*/2 * * * *'
+  workflow_dispatch:
+    # Allow manual trigger
+
+jobs:
+  poll-notifications:
+    name: Poll and Send Push Notifications
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - name: Invoke push-notifications-poller Edge Function
+        id: invoke-poller
+        run: |
+          echo "=== PUSH NOTIFICATIONS POLLER WORKFLOW STARTED ==="
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+          
+          # Function endpoint
+          FUNCTION_URL="https://hgqrbekphumdlsifuamq.supabase.co/functions/v1/push-notifications-poller"
+          
+          # Invoke function with service role key
+          echo "Invoking Edge Function: $FUNCTION_URL"
+          
+          # Capture both status code and response body in one call
+          TEMP_FILE=$(mktemp)
+          HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$TEMP_FILE" \
+            -X POST \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -d '{}' \
+            "$FUNCTION_URL")
+          
+          HTTP_BODY=$(cat "$TEMP_FILE")
+          rm -f "$TEMP_FILE"
+          
+          echo "HTTP Status Code: $HTTP_STATUS"
+          echo "Response Body:"
+          echo "$HTTP_BODY" | jq '.' 2>/dev/null || echo "$HTTP_BODY"
+          
+          # Fail if status code is not 2xx
+          if [ "$HTTP_STATUS" -lt 200 ] || [ "$HTTP_STATUS" -ge 300 ]; then
+            echo "❌ ERROR: Function returned non-2xx status code: $HTTP_STATUS"
+            echo "Response: $HTTP_BODY"
+            exit 1
+          fi
+          
+          echo "✅ SUCCESS: Function executed successfully (HTTP $HTTP_STATUS)"
+          
+          # Extract and display key metrics from response (if available)
+          if command -v jq &> /dev/null; then
+            PROCESSED=$(echo "$HTTP_BODY" | jq -r '.processed // "N/A"')
+            SUCCESS_COUNT=$(echo "$HTTP_BODY" | jq -r '.success_count // "N/A"')
+            FAILURE_COUNT=$(echo "$HTTP_BODY" | jq -r '.failure_count // "N/A"')
+            
+            echo "Metrics:"
+            echo "  - Processed: $PROCESSED"
+            echo "  - Success: $SUCCESS_COUNT"
+            echo "  - Failed: $FAILURE_COUNT"
+          fi
+
+      - name: Workflow Summary
+        if: always()
+        run: |
+          echo "=== WORKFLOW COMPLETED ==="
+          echo "Status: ${{ job.status }}"
+          echo "Timestamp: $(date -u +'%Y-%m-%d %H:%M:%S UTC')"
+
