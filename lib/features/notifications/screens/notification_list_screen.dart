@@ -520,8 +520,14 @@ class _NotificationListScreenState
     switch (notification.notificationType) {
       case NotificationConstants.jobAssignment:
       case NotificationConstants.jobReassignment:
+      case NotificationConstants.jobConfirmation:
       case NotificationConstants.jobStatusChange:
-      case NotificationConstants.jobCancellation:
+      case NotificationConstants.jobCancelled:
+      case NotificationConstants.jobStart:
+      case NotificationConstants.jobCompletion:
+      case NotificationConstants.stepCompletion:
+      case NotificationConstants.jobStartDeadlineWarning90min:
+      case NotificationConstants.jobStartDeadlineWarning60min:
         if (notification.jobId != null &&
             notification.jobId.toString().isNotEmpty) {
           // Handle both integer and string job IDs

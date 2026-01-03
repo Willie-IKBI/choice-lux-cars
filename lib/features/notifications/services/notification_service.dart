@@ -738,7 +738,7 @@ class NotificationService {
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =
@@ -801,7 +801,7 @@ class NotificationService {
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final stepDisplayName = _getStepDisplayName(stepName);
@@ -868,7 +868,7 @@ class NotificationService {
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =
@@ -953,7 +953,7 @@ class NotificationService {
       final usersResponse = await supabase
           .from('profiles')
           .select('id, role')
-          .inFilter('role', ['administrator', 'manager', 'driver_manager'])
+          .inFilter('role', ['administrator', 'super_admin', 'manager', 'driver_manager'])
           .eq('status', 'active');
 
       final message =

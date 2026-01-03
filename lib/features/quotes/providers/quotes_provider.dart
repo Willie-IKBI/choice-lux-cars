@@ -32,7 +32,7 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
       final userRole = currentUser.role?.toLowerCase();
       final userId = currentUser.id;
 
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Admins and managers see all quotes
         final result = await _quotesRepository.fetchQuotes();
         if (result.isSuccess) {
@@ -159,6 +159,7 @@ class QuotesNotifier extends AsyncNotifier<List<Quote>> {
     final userRole = currentUser.role?.toLowerCase();
 
     return userRole == 'administrator' ||
+        userRole == 'super_admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager';
   }

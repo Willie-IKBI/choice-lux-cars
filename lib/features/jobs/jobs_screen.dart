@@ -91,6 +91,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     final userRole = userProfile?.role?.toLowerCase();
     final canCreateVoucher =
             userRole == 'administrator' ||
+            userRole == 'super_admin' ||
     userRole == 'manager' ||
     userRole == 'driver_manager' ||
     userRole == 'drivermanager';

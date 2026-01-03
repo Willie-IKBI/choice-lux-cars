@@ -25,6 +25,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 
     final canCreate =
         userRole == 'administrator' ||
+        userRole == 'super_admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';
@@ -280,6 +281,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     final userRole = userProfile?.role?.toLowerCase();
 
     return userRole == 'administrator' ||
+        userRole == 'super_admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';

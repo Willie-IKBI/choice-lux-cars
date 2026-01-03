@@ -223,6 +223,14 @@ class RouterGuards {
       return '/';
     }
 
+    // Check for super_admin-only routes
+    if (currentRoute == '/settings') {
+      if (userRole != 'super_admin') {
+        Log.d('Router Guard - Settings route requires super_admin, redirecting to dashboard');
+        return '/';
+      }
+    }
+
     // Allow access to protected routes
     Log.d('Router Guard - Allowing access to protected route: $currentRoute');
     return null;

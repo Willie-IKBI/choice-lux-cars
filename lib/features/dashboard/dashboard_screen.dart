@@ -77,7 +77,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Check user role
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
-    final isAdmin = userRole == 'administrator';
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
     
@@ -292,7 +292,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final users = ref.watch(usersProvider);
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
-    final isAdmin = userRole == 'administrator';
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
     

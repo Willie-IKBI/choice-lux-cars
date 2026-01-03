@@ -14,12 +14,22 @@ class NotificationPreferencesService {
       }
 
       final response = await _supabase
-          .from('user_notification_preferences')
-          .select()
-          .eq('user_id', currentUser.id)
+          .from('profiles')
+          .select('notification_prefs')
+          .eq('id', currentUser.id)
           .single();
 
-      return response ?? _getDefaultPreferences();
+      // Extract notification_prefs JSONB column
+      final prefs = response['notification_prefs'] as Map<String, dynamic>?;
+      
+      // Merge with defaults to ensure all keys exist
+      final defaults = _getDefaultPreferences();
+      if (prefs == null || prefs.isEmpty) {
+        return defaults;
+      }
+      
+      // Merge user preferences with defaults (user prefs take precedence)
+      return {...defaults, ...prefs};
     } catch (e) {
       Log.e('Error fetching notification preferences: $e');
       return _getDefaultPreferences();
@@ -34,11 +44,14 @@ class NotificationPreferencesService {
         throw Exception('User not authenticated');
       }
 
-      await _supabase.from('user_notification_preferences').upsert({
-        'user_id': currentUser.id,
-        ...preferences,
-        'updated_at': SATimeUtils.getCurrentSATimeISO(),
-      });
+      // Update profiles.notification_prefs JSONB column
+      await _supabase
+          .from('profiles')
+          .update({
+            'notification_prefs': preferences,
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('id', currentUser.id);
 
       Log.d('Notification preferences saved successfully');
     } catch (e) {
@@ -116,23 +129,25 @@ class NotificationPreferencesService {
   }
 
   /// Get default notification preferences
+  /// Uses singular keys to match Edge Functions and database notification_type values
   Map<String, dynamic> _getDefaultPreferences() {
     return {
-      'job_assignments': true,
-      'job_reassignments': true,
-      'job_status_changes': true,
-      'job_cancellations': true,
-      'payment_reminders': true,
-      'system_alerts': true,
-      'push_notifications': true,
-      'in_app_notifications': true,
-      'email_notifications': false,
-      'sound_enabled': true,
-      'vibration_enabled': true,
-      'high_priority_only': false,
-      'quiet_hours_enabled': false,
-      'quiet_hours_start': '22:00',
-      'quiet_hours_end': '07:00',
+      // Notification types (singular keys matching notification_type values)
+      'job_assignment': true,
+      'job_reassignment': true,
+      'job_status_change': true,
+      'job_cancelled': true, // Fixed: was 'job_cancellation'
+      'job_confirmation': true,
+      'job_start': true,
+      'job_completion': true,
+      'step_completion': true,
+      'job_start_deadline_warning_90min': true,
+      'job_start_deadline_warning_60min': true,
+      'payment_reminder': true,
+      'system_alert': true,
+      // Note: Delivery methods, sound, vibration, priority, and quiet hours
+      // preferences have been removed from defaults as they are not currently
+      // enforced by the notification system.
     };
   }
 }

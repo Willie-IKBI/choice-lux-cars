@@ -26,7 +26,7 @@ class JobsRepository {
       Log.d('Fetching jobs for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -34,7 +34,7 @@ class JobsRepository {
       PostgrestFilterBuilder query = _supabase.from('jobs').select();
 
       // Apply role-based filtering
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see all jobs
         Log.d('User has full access - fetching all jobs');
       } else if (userRole == 'driver_manager' && userId != null) {
@@ -272,7 +272,7 @@ class JobsRepository {
       Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -283,7 +283,7 @@ class JobsRepository {
           .eq('status', status);
 
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all jobs with status: $status');
         // No additional filtering needed
@@ -344,7 +344,7 @@ class JobsRepository {
       Log.d('Fetching jobs for client: $clientId for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -355,7 +355,7 @@ class JobsRepository {
           .eq('client_id', clientId);
 
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all jobs for client: $clientId');
         // No additional filtering needed
@@ -395,7 +395,7 @@ class JobsRepository {
       Log.d('Fetching completed jobs for client: $clientId for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success([]);
       }
@@ -407,7 +407,7 @@ class JobsRepository {
           .eq('job_status', 'completed');
 
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all completed jobs for client: $clientId');
         // No additional filtering needed
@@ -447,7 +447,7 @@ class JobsRepository {
       Log.d('Fetching completed jobs revenue for client: $clientId for user: $userId with role: $userRole');
 
       // Check if userId is available for role-based filtering
-      if (userId == null && userRole != 'administrator' && userRole != 'manager') {
+      if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
         Log.e('UserId is required for role-based filtering');
         return const Result.success(0.0);
       }
@@ -460,7 +460,7 @@ class JobsRepository {
           .not('amount', 'is', null);
 
       // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'manager') {
+      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see ALL jobs
         Log.d('User has full access - fetching all completed jobs revenue for client: $clientId');
         // No additional filtering needed

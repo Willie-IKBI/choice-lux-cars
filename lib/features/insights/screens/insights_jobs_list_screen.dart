@@ -168,6 +168,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
     final userRole = userProfile?.role?.toLowerCase();
     final canCreateVoucher =
         userRole == 'administrator' ||
+        userRole == 'super_admin' ||
         userRole == 'manager' ||
         userRole == 'driver_manager' ||
         userRole == 'drivermanager';

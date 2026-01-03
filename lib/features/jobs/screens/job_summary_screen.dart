@@ -1912,6 +1912,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final needsConfirmation = isAssignedDriver && !isConfirmed;
     final canEdit =
         currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'super_admin' ||
         currentUser?.role?.toLowerCase() == 'manager';
 
     return Column(
@@ -2049,6 +2050,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final needsConfirmation = isAssignedDriver && !isConfirmed;
     final canEdit =
         currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'super_admin' ||
         currentUser?.role?.toLowerCase() == 'manager';
 
     return Column(

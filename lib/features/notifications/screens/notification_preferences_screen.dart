@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
+import 'package:choice_lux_cars/features/notifications/services/notification_preferences_service.dart';
+import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
   const NotificationPreferencesScreen({super.key});
@@ -14,30 +17,81 @@ class NotificationPreferencesScreen extends ConsumerStatefulWidget {
 
 class _NotificationPreferencesScreenState
     extends ConsumerState<NotificationPreferencesScreen> {
-  // Notification type preferences
-  bool _jobAssignments = true;
-  bool _jobReassignments = true;
-  bool _jobStatusChanges = true;
-  bool _jobCancellations = true;
-  bool _paymentReminders = true;
-  bool _systemAlerts = true;
+  final NotificationPreferencesService _preferencesService =
+      NotificationPreferencesService();
 
-  // Notification delivery preferences
-  bool _pushNotifications = true;
-  bool _inAppNotifications = true;
-  bool _emailNotifications = false;
-  bool _soundEnabled = true;
-  bool _vibrationEnabled = true;
+  // Loading and error states
+  bool _isLoading = true;
+  String? _errorMessage;
 
-  // Priority preferences
-  bool _highPriorityOnly = false;
-  bool _quietHoursEnabled = false;
-  TimeOfDay _quietHoursStart = const TimeOfDay(hour: 22, minute: 0);
-  TimeOfDay _quietHoursEnd = const TimeOfDay(hour: 7, minute: 0);
+  // Notification type preferences (using singular names matching database keys)
+  bool _jobAssignment = true;
+  bool _jobReassignment = true;
+  bool _jobStatusChange = true;
+  bool _jobCancelled = true; // Fixed: was _jobCancellations
+  bool _jobConfirmation = true;
+  bool _jobStart = true;
+  bool _jobCompletion = true;
+  bool _stepCompletion = true;
+  bool _jobStartDeadlineWarning90min = true;
+  bool _jobStartDeadlineWarning60min = true;
+  bool _paymentReminder = true;
+  bool _systemAlert = true;
+
+  // Note: Delivery methods, sound, vibration, priority, and quiet hours settings
+  // have been removed as they are not currently enforced by the notification system.
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPreferences();
+  }
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isSuperAdmin = userRole == 'super_admin';
+    final isManager = userRole == 'manager';
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+
+    // Restrict access to super_admin only
+    if (!isSuperAdmin) {
+      return SystemSafeScaffold(
+        appBar: LuxuryAppBar(
+          title: 'Notification Settings',
+          showBackButton: true,
+          showLogo: false,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.lock_outline, size: 64, color: Colors.orange[300]),
+                const SizedBox(height: 16),
+                Text(
+                  'Access Restricted',
+                  style: TextStyle(fontSize: 18, color: Colors.orange[300], fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Only Super Administrators can configure notification settings.',
+                  style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 24),
+                ElevatedButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('Go Back'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
 
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
@@ -45,7 +99,35 @@ class _NotificationPreferencesScreenState
         showBackButton: true,
         showLogo: false,
       ),
-      body: SingleChildScrollView(
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _errorMessage != null
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error_outline,
+                          size: 64, color: Colors.red[300]),
+                      const SizedBox(height: 16),
+                      Text(
+                        'Error loading preferences',
+                        style: TextStyle(fontSize: 18, color: Colors.red[300]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        _errorMessage!,
+                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton(
+                        onPressed: _loadPreferences,
+                        child: const Text('Retry'),
+                      ),
+                    ],
+                  ),
+                )
+              : SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -58,153 +140,136 @@ class _NotificationPreferencesScreenState
               'Job Assignments',
               'Get notified when new jobs are assigned to you',
               Icons.work,
-              _jobAssignments,
-              (value) => setState(() => _jobAssignments = value),
+              _jobAssignment,
+              (value) {
+                setState(() => _jobAssignment = value);
+                _savePreferences();
+              },
             ),
 
             _buildSwitchTile(
               'Job Reassignments',
               'Get notified when jobs are reassigned to you',
               Icons.swap_horiz,
-              _jobReassignments,
-              (value) => setState(() => _jobReassignments = value),
+              _jobReassignment,
+              (value) {
+                setState(() => _jobReassignment = value);
+                _savePreferences();
+              },
+            ),
+
+            _buildSwitchTile(
+              'Job Confirmation',
+              'Get notified when drivers confirm job assignments',
+              Icons.check_circle,
+              _jobConfirmation,
+              (value) {
+                setState(() => _jobConfirmation = value);
+                _savePreferences();
+              },
             ),
 
             _buildSwitchTile(
               'Job Status Changes',
               'Get notified when job status is updated',
               Icons.update,
-              _jobStatusChanges,
-              (value) => setState(() => _jobStatusChanges = value),
+              _jobStatusChange,
+              (value) {
+                setState(() => _jobStatusChange = value);
+                _savePreferences();
+              },
             ),
 
             _buildSwitchTile(
               'Job Cancellations',
               'Get notified when jobs are cancelled',
               Icons.cancel,
-              _jobCancellations,
-              (value) => setState(() => _jobCancellations = value),
+              _jobCancelled,
+              (value) {
+                setState(() => _jobCancelled = value);
+                _savePreferences();
+              },
             ),
+
+            _buildSwitchTile(
+              'Job Start',
+              'Get notified when drivers start jobs',
+              Icons.play_arrow,
+              _jobStart,
+              (value) {
+                setState(() => _jobStart = value);
+                _savePreferences();
+              },
+            ),
+
+            _buildSwitchTile(
+              'Job Completion',
+              'Get notified when jobs are completed',
+              Icons.check_circle_outline,
+              _jobCompletion,
+              (value) {
+                setState(() => _jobCompletion = value);
+                _savePreferences();
+              },
+            ),
+
+            _buildSwitchTile(
+              'Step Completion',
+              'Get notified when drivers complete job steps',
+              Icons.done_all,
+              _stepCompletion,
+              (value) {
+                setState(() => _stepCompletion = value);
+                _savePreferences();
+              },
+            ),
+
+            // Role-based deadline warnings
+            if (isManager)
+              _buildSwitchTile(
+                'Job Start Deadline Warning (90 min)',
+                'Get notified when jobs are not started 90 minutes before pickup',
+                Icons.warning_amber,
+                _jobStartDeadlineWarning90min,
+                (value) {
+                  setState(() => _jobStartDeadlineWarning90min = value);
+                  _savePreferences();
+                },
+              ),
+
+            if (isAdmin)
+              _buildSwitchTile(
+                'Job Start Deadline Warning (60 min)',
+                'Get notified when jobs are not started 60 minutes before pickup',
+                Icons.warning_amber,
+                _jobStartDeadlineWarning60min,
+                (value) {
+                  setState(() => _jobStartDeadlineWarning60min = value);
+                  _savePreferences();
+                },
+              ),
 
             _buildSwitchTile(
               'Payment Reminders',
               'Get notified about payment reminders',
               Icons.payment,
-              _paymentReminders,
-              (value) => setState(() => _paymentReminders = value),
+              _paymentReminder,
+              (value) {
+                setState(() => _paymentReminder = value);
+                _savePreferences();
+              },
             ),
 
             _buildSwitchTile(
               'System Alerts',
               'Get notified about system maintenance and updates',
               Icons.warning,
-              _systemAlerts,
-              (value) => setState(() => _systemAlerts = value),
+              _systemAlert,
+              (value) {
+                setState(() => _systemAlert = value);
+                _savePreferences();
+              },
             ),
-
-            const SizedBox(height: 32),
-
-            // Delivery Methods Section
-            _buildSectionHeader('Delivery Methods', Icons.notifications),
-            const SizedBox(height: 16),
-
-            _buildSwitchTile(
-              'Push Notifications',
-              'Receive notifications on your device',
-              Icons.phone_android,
-              _pushNotifications,
-              (value) => setState(() => _pushNotifications = value),
-            ),
-
-            _buildSwitchTile(
-              'In-App Notifications',
-              'Show notifications within the app',
-              Icons.notifications_active,
-              _inAppNotifications,
-              (value) => setState(() => _inAppNotifications = value),
-            ),
-
-            _buildSwitchTile(
-              'Email Notifications',
-              'Receive notifications via email',
-              Icons.email,
-              _emailNotifications,
-              (value) => setState(() => _emailNotifications = value),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Sound & Vibration Section
-            _buildSectionHeader('Sound & Vibration', Icons.volume_up),
-            const SizedBox(height: 16),
-
-            _buildSwitchTile(
-              'Sound',
-              'Play sound for notifications',
-              Icons.volume_up,
-              _soundEnabled,
-              (value) => setState(() => _soundEnabled = value),
-            ),
-
-            _buildSwitchTile(
-              'Vibration',
-              'Vibrate for notifications',
-              Icons.vibration,
-              _vibrationEnabled,
-              (value) => setState(() => _vibrationEnabled = value),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Priority Settings Section
-            _buildSectionHeader('Priority Settings', Icons.priority_high),
-            const SizedBox(height: 16),
-
-            _buildSwitchTile(
-              'High Priority Only',
-              'Only show high priority notifications',
-              Icons.priority_high,
-              _highPriorityOnly,
-              (value) => setState(() => _highPriorityOnly = value),
-            ),
-
-            const SizedBox(height: 32),
-
-            // Quiet Hours Section
-            _buildSectionHeader('Quiet Hours', Icons.bedtime),
-            const SizedBox(height: 16),
-
-            _buildSwitchTile(
-              'Enable Quiet Hours',
-              'Mute notifications during specified hours',
-              Icons.bedtime,
-              _quietHoursEnabled,
-              (value) => setState(() => _quietHoursEnabled = value),
-            ),
-
-            if (_quietHoursEnabled) ...[
-              const SizedBox(height: 16),
-
-              Row(
-                children: [
-                  Expanded(
-                    child: _buildTimeTile(
-                      'Start Time',
-                      _quietHoursStart,
-                      (time) => setState(() => _quietHoursStart = time),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: _buildTimeTile(
-                      'End Time',
-                      _quietHoursEnd,
-                      (time) => setState(() => _quietHoursEnd = time),
-                    ),
-                  ),
-                ],
-              ),
-            ],
 
             const SizedBox(height: 32),
 
@@ -288,42 +353,7 @@ class _NotificationPreferencesScreenState
         value: value,
         onChanged: onChanged,
         activeColor: Colors.blue,
-      ),
-    );
-  }
-
-  Widget _buildTimeTile(
-    String title,
-    TimeOfDay time,
-    ValueChanged<TimeOfDay> onChanged,
-  ) {
-    return Card(
-      child: ListTile(
-        leading: Icon(Icons.access_time, color: Colors.grey[600]),
-        title: Text(
-          title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-        ),
-        subtitle: Text(
-          time.format(context),
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
-        ),
-        onTap: () async {
-          final newTime = await showTimePicker(
-            context: context,
-            initialTime: time,
-            builder: (BuildContext context, Widget? child) {
-              return MediaQuery(
-                data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
-                child: child ?? Container(),
-              );
-            },
-          );
-          if (newTime != null) {
-            onChanged(newTime);
-          }
-        },
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        activeTrackColor: Colors.blue.withOpacity(0.5),
       ),
     );
   }
@@ -352,18 +382,97 @@ class _NotificationPreferencesScreenState
     );
   }
 
-  void _savePreferences() {
-    // TODO: Implement saving preferences to backend
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Notification preferences saved')),
-    );
+  /// Load preferences from database
+  Future<void> _loadPreferences() async {
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final prefs = await _preferencesService.getPreferences();
+
+      setState(() {
+        // Map preferences to state variables
+        // Support both singular (new) and plural (old) keys for backward compatibility
+        _jobAssignment = prefs['job_assignment'] ?? prefs['job_assignments'] ?? true;
+        _jobReassignment = prefs['job_reassignment'] ?? prefs['job_reassignments'] ?? true;
+        _jobConfirmation = prefs['job_confirmation'] ?? true;
+        _jobStatusChange = prefs['job_status_change'] ?? prefs['job_status_changes'] ?? true;
+        _jobCancelled = prefs['job_cancelled'] ?? prefs['job_cancellations'] ?? prefs['job_cancellation'] ?? true;
+        _jobStart = prefs['job_start'] ?? true;
+        _jobCompletion = prefs['job_completion'] ?? true;
+        _stepCompletion = prefs['step_completion'] ?? true;
+        _jobStartDeadlineWarning90min = prefs['job_start_deadline_warning_90min'] ?? true;
+        _jobStartDeadlineWarning60min = prefs['job_start_deadline_warning_60min'] ?? true;
+        _paymentReminder = prefs['payment_reminder'] ?? prefs['payment_reminders'] ?? true;
+        _systemAlert = prefs['system_alert'] ?? prefs['system_alerts'] ?? true;
+
+        _isLoading = false;
+      });
+    } catch (e) {
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'Failed to load preferences: ${e.toString()}';
+      });
+    }
   }
 
-  void _sendTestNotification() {
-    // TODO: Implement test notification
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Test notification sent')));
+  /// Save preferences to database
+  Future<void> _savePreferences() async {
+    try {
+      // Build preferences map using singular keys (matching notification_type values)
+      final prefs = {
+        // Notification types (singular keys matching Edge Functions)
+        'job_assignment': _jobAssignment,
+        'job_reassignment': _jobReassignment,
+        'job_confirmation': _jobConfirmation,
+        'job_status_change': _jobStatusChange,
+        'job_cancelled': _jobCancelled,
+        'job_start': _jobStart,
+        'job_completion': _jobCompletion,
+        'step_completion': _stepCompletion,
+        'job_start_deadline_warning_90min': _jobStartDeadlineWarning90min,
+        'job_start_deadline_warning_60min': _jobStartDeadlineWarning60min,
+        'payment_reminder': _paymentReminder,
+        'system_alert': _systemAlert,
+      };
+
+      await _preferencesService.savePreferences(prefs);
+
+      if (mounted) {
+        SnackBarUtils.showSuccess(
+          context,
+          'Notification preferences saved',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarUtils.showError(
+          context,
+          'Failed to save preferences: ${e.toString()}',
+        );
+      }
+    }
+  }
+
+  Future<void> _sendTestNotification() async {
+    try {
+      await _preferencesService.sendTestNotification();
+      if (mounted) {
+        SnackBarUtils.showSuccess(
+          context,
+          'Test notification sent',
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        SnackBarUtils.showError(
+          context,
+          'Failed to send test notification: ${e.toString()}',
+        );
+      }
+    }
   }
 
   void _clearAllNotifications() {
@@ -422,28 +531,23 @@ class _NotificationPreferencesScreenState
             child: const Text('Cancel'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               setState(() {
-                _jobAssignments = true;
-                _jobReassignments = true;
-                _jobStatusChanges = true;
-                _jobCancellations = true;
-                _paymentReminders = true;
-                _systemAlerts = true;
-                _pushNotifications = true;
-                _inAppNotifications = true;
-                _emailNotifications = false;
-                _soundEnabled = true;
-                _vibrationEnabled = true;
-                _highPriorityOnly = false;
-                _quietHoursEnabled = false;
-                _quietHoursStart = const TimeOfDay(hour: 22, minute: 0);
-                _quietHoursEnd = const TimeOfDay(hour: 7, minute: 0);
+                _jobAssignment = true;
+                _jobReassignment = true;
+                _jobConfirmation = true;
+                _jobStatusChange = true;
+                _jobCancelled = true;
+                _jobStart = true;
+                _jobCompletion = true;
+                _stepCompletion = true;
+                _jobStartDeadlineWarning90min = true;
+                _jobStartDeadlineWarning60min = true;
+                _paymentReminder = true;
+                _systemAlert = true;
               });
               Navigator.of(context).pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text('Settings reset to defaults')),
-              );
+              await _savePreferences();
             },
             child: const Text('Reset'),
           ),

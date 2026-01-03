@@ -170,7 +170,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                   ),
 
                   // Administration Section (Role-based)
-                  if (userProfile?.role == 'administrator') ...[
+                  if (userProfile?.role == 'administrator' || userProfile?.role == 'super_admin') ...[
                     _buildMobileMenuSection(
                       title: 'Administration',
                       items: [
@@ -361,7 +361,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                     ),
 
                     // Administration Section (Role-based)
-                    if (userProfile?.role == 'administrator') ...[
+                    if (userProfile?.role == 'administrator' || userProfile?.role == 'super_admin') ...[
                       _buildMenuSection(
                         title: 'Administration',
                         items: [

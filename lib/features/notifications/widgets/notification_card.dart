@@ -352,14 +352,21 @@ class NotificationCard extends ConsumerWidget {
     switch (notification.notificationType) {
       case 'job_assignment':
       case 'job_reassignment':
+      case 'job_confirmation':
         return Icons.work;
       case 'job_status_change':
         return Icons.update;
-      case 'job_cancellation':
+      case 'job_cancelled':
         return Icons.cancel;
+      case 'job_start':
+      case 'job_completion':
+      case 'step_completion':
+        return Icons.check_circle;
       case 'payment_reminder':
         return Icons.payment;
       case 'system_alert':
+      case 'job_start_deadline_warning_90min':
+      case 'job_start_deadline_warning_60min':
         return Icons.warning;
       default:
         return Icons.notifications;
@@ -372,14 +379,26 @@ class NotificationCard extends ConsumerWidget {
         return 'New Job Assignment';
       case 'job_reassignment':
         return 'Job Reassigned';
+      case 'job_confirmation':
+        return 'Job Confirmed';
       case 'job_status_change':
         return 'Job Status Updated';
-      case 'job_cancellation':
+      case 'job_cancelled':
         return 'Job Cancelled';
+      case 'job_start':
+        return 'Job Started';
+      case 'job_completion':
+        return 'Job Completed';
+      case 'step_completion':
+        return 'Step Completed';
       case 'payment_reminder':
         return 'Payment Reminder';
       case 'system_alert':
         return 'System Alert';
+      case 'job_start_deadline_warning_90min':
+        return 'Job Start Deadline Warning (90 min)';
+      case 'job_start_deadline_warning_60min':
+        return 'Job Start Deadline Warning (60 min)';
       default:
         return 'Notification';
     }

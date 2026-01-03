@@ -65,6 +65,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     final userProfile = ref.watch(auth.currentUserProfileProvider);
     if (userProfile == null ||
         (userProfile.role?.toLowerCase() != 'administrator' &&
+            userProfile.role?.toLowerCase() != 'super_admin' &&
             userProfile.role?.toLowerCase() != 'manager')) {
       return const Scaffold(
         body: Center(
@@ -614,9 +615,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     required VoidCallback onEdit,
     required VoidCallback onToggleStatus,
   }) {
-    // Check if current user is administrator
+    // Check if current user is administrator or super_admin
     final userProfile = ref.read(auth.currentUserProfileProvider);
-    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+    final isAdmin = userProfile?.role?.toLowerCase() == 'administrator' || userProfile?.role?.toLowerCase() == 'super_admin';
     
     return Dismissible(
       key: Key(user.id),
@@ -843,9 +844,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   void _toggleUserStatus(User user) {
-    // Check if current user is administrator
+    // Check if current user is administrator or super_admin
     final userProfile = ref.read(auth.currentUserProfileProvider);
-    if (userProfile?.role?.toLowerCase() != 'administrator') {
+    if (userProfile?.role?.toLowerCase() != 'administrator' && userProfile?.role?.toLowerCase() != 'super_admin') {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Access Denied: Only administrators can change user status'),

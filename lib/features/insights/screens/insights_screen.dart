@@ -43,9 +43,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     final currentUser = ref.watch(currentUserProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     
-    // Check if user is administrator
+    // Check if user is administrator or super_admin
     final userRole = userProfile?.role?.toLowerCase();
-    final isAdmin = userRole == 'administrator';
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
     
     print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin');
     

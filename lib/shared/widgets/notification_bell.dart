@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class NotificationBell extends StatefulWidget {
   final Color? iconColor;
@@ -140,16 +141,18 @@ class _NotificationBellState extends State<NotificationBell>
             ],
           ),
         ),
-        const PopupMenuItem(
-          value: 'settings',
-          child: Row(
-            children: [
-              Icon(Icons.settings, size: 20),
-              SizedBox(width: 8),
-              Text('Notification Settings'),
-            ],
+        // Only show settings option for super_admin
+        if (userRole == 'super_admin')
+          const PopupMenuItem(
+            value: 'settings',
+            child: Row(
+              children: [
+                Icon(Icons.settings, size: 20),
+                SizedBox(width: 8),
+                Text('Notification Settings'),
+              ],
+            ),
           ),
-        ),
       ],
     ).then((value) {
       switch (value) {

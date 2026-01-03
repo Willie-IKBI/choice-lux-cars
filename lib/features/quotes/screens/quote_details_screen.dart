@@ -133,7 +133,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     if (currentUser == null) return false;
 
     final role = currentUser.role?.toLowerCase();
-    return role == 'administrator' || role == 'manager';
+    return role == 'administrator' || role == 'super_admin' || role == 'manager';
   }
 
   @override

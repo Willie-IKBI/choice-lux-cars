@@ -31,7 +31,7 @@ serve(async (req) => {
     // Query: Get jobs with earliest pickup_date from transport table
     // Check if job_started_at is NULL in driver_flow
     // Filter by job_status (exclude cancelled/completed)
-    // Check if we're 90 minutes before or 30 minutes before pickup
+    // Check if we're 90 minutes before (manager) or 60 minutes before (administrator) pickup
     
     const { data: jobsNeedingNotifications, error: queryError } = await supabase
       .rpc('get_jobs_needing_start_deadline_notifications', {
@@ -63,35 +63,72 @@ serve(async (req) => {
 
     for (const job of jobsNeedingNotifications) {
       try {
-        const { notification_type, recipient_role, job_id, job_number, driver_name, minutes_before } = job
+        const { notification_type, recipient_role, job_id, job_number, driver_name, manager_id, minutes_before } = job
         
-        console.log(`Processing job ${job_id}: ${notification_type} for ${recipient_role} (${minutes_before} min before pickup)`)
+        console.log(`Processing job ${job_id}: notification_type=${notification_type}, recipient_role=${recipient_role}, minutes_before=${minutes_before}`)
+        
+        // Note: RPC already filters by job_started_at IS NULL, so jobs returned here are guaranteed to be not started
+        // If a job has started, it won't be in jobsNeedingNotifications
 
-        // Check if notification already sent (deduplication)
-        const { data: existingNotification, error: checkError } = await supabase
-          .from('app_notifications')
-          .select('id')
-          .eq('job_id', job_id.toString())
-          .eq('notification_type', notification_type)
-          .maybeSingle()
+        // Get recipients based on role
+        let recipients: any[] = []
+        let recipientsError: any = null
 
-        if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
-          console.error(`Error checking existing notification for job ${job_id}:`, checkError)
-          errors.push(`Job ${job_id}: ${checkError.message}`)
+        if (recipient_role === 'manager') {
+          // Manager notification: ONLY the assigned manager for this job
+          if (!manager_id) {
+            console.log(`Job ${job_id}: manager_id is null, skipping manager notification`)
+            continue
+          }
+          
+          console.log(`Job ${job_id}: manager scoped recipient: ${manager_id}`)
+          
+          const { data: managerProfile, error: managerError } = await supabase
+            .from('profiles')
+            .select('id, role, notification_prefs')
+            .eq('id', manager_id)
+            .eq('role', 'manager')  // Defense-in-depth: verify role
+            .eq('status', 'active')
+            .maybeSingle()
+
+          if (managerError) {
+            console.error(`Error fetching manager ${manager_id} for job ${job_id}:`, managerError)
+            errors.push(`Job ${job_id}: ${managerError.message}`)
+            continue
+          }
+
+          if (!managerProfile) {
+            console.log(`Manager ${manager_id} not found or not active for job ${job_id}`)
+            continue
+          }
+
+          recipients = [managerProfile]
+        } else if (recipient_role === 'administrator') {
+          // Administrator escalation: ALL active administrators + super_admins globally
+          // No branch_id filtering - global scope for admins
+          const { data: adminRecipients, error: adminError } = await supabase
+            .from('profiles')
+            .select('id, role, notification_prefs')
+            .in('role', ['administrator', 'super_admin'])
+            .eq('status', 'active')
+
+          recipientsError = adminError
+          recipients = adminRecipients || []
+          
+          // Log recipient counts by role for observability
+          if (recipients && recipients.length > 0) {
+            const adminCount = recipients.filter(r => r.role === 'administrator').length
+            const superAdminCount = recipients.filter(r => r.role === 'super_admin').length
+            const totalCount = recipients.length
+            console.log(`Job ${job_id}: admin escalation recipients: admins=${adminCount}, super_admins=${superAdminCount}, total=${totalCount}`)
+          } else {
+            console.log(`Job ${job_id}: No active administrators or super_admins found`)
+          }
+        } else {
+          console.error(`Unknown recipient_role: ${recipient_role} for job ${job_id}`)
+          errors.push(`Job ${job_id}: Unknown recipient_role ${recipient_role}`)
           continue
         }
-
-        if (existingNotification) {
-          console.log(`Notification already sent for job ${job_id} (${notification_type}), skipping`)
-          continue
-        }
-
-        // Get all users with the target role
-        const { data: recipients, error: recipientsError } = await supabase
-          .from('profiles')
-          .select('id, role')
-          .eq('role', recipient_role)
-          .eq('status', 'active')
 
         if (recipientsError) {
           console.error(`Error fetching recipients for job ${job_id}:`, recipientsError)
@@ -105,20 +142,43 @@ serve(async (req) => {
         }
 
         const message = `Warning job# ${job_number} has not started with the driver ${driver_name || 'assigned'}`
+        const jobIdString = job_id.toString().trim() // Consistent casting: job_id is bigint, stored as text, normalized
 
-        // Create notifications for all recipients
+        // Create notifications for all recipients (with per-recipient deduplication)
         for (const recipient of recipients) {
+          // Check if notification already sent for this specific recipient (deduplication)
+          const { data: existingNotification, error: checkError } = await supabase
+            .from('app_notifications')
+            .select('id')
+            .eq('job_id', jobIdString)
+            .eq('notification_type', notification_type)
+            .eq('user_id', recipient.id)
+            .eq('is_hidden', false)
+            .maybeSingle()
+
+          if (checkError && checkError.code !== 'PGRST116') { // PGRST116 = no rows found
+            console.error(`Error checking existing notification for job ${job_id}, user ${recipient.id}:`, checkError)
+            errors.push(`Job ${job_id}, User ${recipient.id}: ${checkError.message}`)
+            continue
+          }
+
+          if (existingNotification) {
+            console.log(`dedupe hit: job=${job_id} user=${recipient.id} type=${notification_type}`)
+            continue
+          }
+
+          // Insert notification (unique constraint will catch race conditions)
           const { data: notification, error: insertError } = await supabase
             .from('app_notifications')
             .insert({
               user_id: recipient.id,
               message: message,
               notification_type: notification_type,
-              job_id: job_id.toString(),
+              job_id: jobIdString,
               priority: 'high',
               action_data: {
                 route: `/jobs/${job_id}/summary`,
-                job_id: job_id.toString(),
+                job_id: jobIdString,
                 job_number: job_number,
                 driver_name: driver_name,
                 minutes_before_pickup: minutes_before,
@@ -126,16 +186,28 @@ serve(async (req) => {
               created_at: now.toISOString(),
               updated_at: now.toISOString(),
             })
-            .select()
+            .select('id,user_id,job_id,notification_type,message,priority,action_data,created_at')
             .single()
 
           if (insertError) {
+            // Handle unique constraint violation as "already exists" (race condition)
+            if (insertError.code === '23505') { // unique_violation
+              console.log(`dedupe hit (unique index): job=${job_id} user=${recipient.id} type=${notification_type}`)
+              continue
+            }
+            
             console.error(`Error creating notification for user ${recipient.id}:`, insertError)
             errors.push(`Job ${job_id}, User ${recipient.id}: ${insertError.message}`)
             continue
           }
 
-          // Trigger push notification via webhook (existing push-notifications Edge Function)
+          if (!notification) {
+            console.error(`Notification insert succeeded but no data returned for job ${job_id}, user ${recipient.id}`)
+            errors.push(`Job ${job_id}, User ${recipient.id}: Insert succeeded but no notification data returned`)
+            continue
+          }
+
+          // Only invoke push notification after successful insert
           try {
             await supabase.functions.invoke('push-notifications', {
               body: {

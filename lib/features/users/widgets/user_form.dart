@@ -108,7 +108,7 @@ class _UserFormState extends State<UserForm> {
     return Consumer(
       builder: (context, ref, _) {
         final userProfile = ref.watch(auth.currentUserProfileProvider);
-        final isAdmin = userProfile?.role?.toLowerCase() == 'administrator';
+        final isAdmin = userProfile?.role?.toLowerCase() == 'administrator' || userProfile?.role?.toLowerCase() == 'super_admin';
         final isWide = MediaQuery.of(context).size.width > 900;
         // Error summary state
         String? errorSummary;

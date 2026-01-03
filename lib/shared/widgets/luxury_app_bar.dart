@@ -405,11 +405,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Profile',
           value: 'profile',
         ),
-        _buildPopupMenuItem(
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          value: 'settings',
-        ),
+        // Only show settings for super_admin
+        if (userProfile?.role?.toLowerCase() == 'super_admin')
+          _buildPopupMenuItem(
+            icon: Icons.settings_outlined,
+            title: 'Settings',
+            value: 'settings',
+          ),
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,
@@ -574,11 +576,13 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           title: 'Profile',
           value: 'profile',
         ),
-        _buildPopupMenuItem(
-          icon: Icons.settings_outlined,
-          title: 'Settings',
-          value: 'settings',
-        ),
+        // Only show settings for super_admin
+        if (userProfile?.role?.toLowerCase() == 'super_admin')
+          _buildPopupMenuItem(
+            icon: Icons.settings_outlined,
+            title: 'Settings',
+            value: 'settings',
+          ),
         const PopupMenuDivider(height: 1),
         _buildPopupMenuItem(
           icon: Icons.logout_rounded,

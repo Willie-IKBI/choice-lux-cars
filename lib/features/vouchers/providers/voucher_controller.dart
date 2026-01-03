@@ -234,6 +234,7 @@ final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
     const allowedRoles = [
       'admin',
       'administrator',
+      'super_admin',
       'manager',
       'driver_manager',
       'drivermanager',

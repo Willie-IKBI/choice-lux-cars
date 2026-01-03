@@ -4,10 +4,13 @@ class NotificationConstants {
   static const String jobAssignment = 'job_assignment';
   static const String jobReassignment = 'job_reassignment';
   static const String jobStatusChange = 'job_status_change';
-  static const String jobCancellation = 'job_cancellation';
+  static const String jobCancelled = 'job_cancelled';
   static const String jobConfirmation = 'job_confirmation';
+  static const String jobStart = 'job_start';
+  static const String jobCompletion = 'job_completion';
+  static const String stepCompletion = 'step_completion';
   static const String jobStartDeadlineWarning90min = 'job_start_deadline_warning_90min';
-  static const String jobStartDeadlineWarning30min = 'job_start_deadline_warning_30min';
+  static const String jobStartDeadlineWarning60min = 'job_start_deadline_warning_60min';
   static const String paymentReminder = 'payment_reminder';
   static const String systemAlert = 'system_alert';
 
