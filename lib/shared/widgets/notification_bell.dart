@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/features/notifications/providers/notification_pr
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class NotificationBell extends StatefulWidget {
   final Color? iconColor;
@@ -98,62 +99,65 @@ class _NotificationBellState extends State<NotificationBell>
       Offset.zero & overlay.size,
     );
 
-    showMenu(
-      context: context,
-      position: position,
-      items: [
-        PopupMenuItem(
-          value: 'notifications',
+    // Use Consumer to get user role and unread count
+    final ref = ProviderScope.containerOf(context);
+    final userProfile = ref.read(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final unreadCount = ref.read(notificationProvider).unreadCount;
+    
+    final items = <PopupMenuItem<String>>[
+      PopupMenuItem(
+        value: 'notifications',
+        child: Row(
+          children: [
+            const Icon(Icons.notifications, size: 20),
+            const SizedBox(width: 8),
+            const Text('Notifications'),
+            if (unreadCount > 0)
+              Container(
+                margin: const EdgeInsets.only(left: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 6,
+                  vertical: 2,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.red,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  unreadCount > 99 ? '99+' : unreadCount.toString(),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ),
+    ];
+    
+    // Only show settings option for super_admin
+    if (userRole == 'super_admin') {
+      items.add(
+        const PopupMenuItem(
+          value: 'settings',
           child: Row(
             children: [
-              const Icon(Icons.notifications, size: 20),
-              const SizedBox(width: 8),
-              const Text('Notifications'),
-              Consumer(
-                builder: (context, ref, child) {
-                  final unreadCount = ref
-                      .watch(notificationProvider)
-                      .unreadCount;
-                  if (unreadCount > 0) {
-                    return Container(
-                      margin: const EdgeInsets.only(left: 8),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 6,
-                        vertical: 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        unreadCount > 99 ? '99+' : unreadCount.toString(),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    );
-                  }
-                  return const SizedBox.shrink();
-                },
-              ),
+              Icon(Icons.settings, size: 20),
+              SizedBox(width: 8),
+              Text('Notification Settings'),
             ],
           ),
         ),
-        // Only show settings option for super_admin
-        if (userRole == 'super_admin')
-          const PopupMenuItem(
-            value: 'settings',
-            child: Row(
-              children: [
-                Icon(Icons.settings, size: 20),
-                SizedBox(width: 8),
-                Text('Notification Settings'),
-              ],
-            ),
-          ),
-      ],
+      );
+    }
+    
+    showMenu(
+      context: context,
+      position: position,
+      items: items,
     ).then((value) {
       switch (value) {
         case 'notifications':
