@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/financial_insights_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class FinancialInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
@@ -21,8 +23,10 @@ class FinancialInsightsTab extends ConsumerWidget {
       selectedLocation,
     )));
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: financialInsightsAsync.when(
         data: (insights) => _buildFinancialContent(insights),
         loading: () => _buildLoadingState(),
@@ -93,13 +97,13 @@ class FinancialInsightsTab extends ConsumerWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final screenWidth = MediaQuery.of(context).size.width;
-              final isLargeDesktop = screenWidth >= 1200;
-              final isDesktop = screenWidth >= 600;
+              final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+              final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
               
               // 4 columns on large desktop (all cards in one row), 2 columns on medium desktop/tablet
               final crossAxisCount = isLargeDesktop ? 4 : 2;
-              final childAspectRatio = isDesktop ? 1.0 : 1.5; // Square cards on desktop, taller on mobile
-              final spacing = isDesktop ? 12.0 : 16.0; // Match dashboard spacing on desktop
+              final childAspectRatio = isDesktop ? 2.2 : 2.8; // Increased to prevent overflow
               
               final gridView = GridView.count(
                 shrinkWrap: true,
@@ -109,33 +113,29 @@ class FinancialInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildMetricCard(
-                    'Total Revenue',
-                    'R${insights.totalRevenue.toStringAsFixed(0)}',
-                    Icons.attach_money,
-                    Colors.green,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Total Revenue',
+                    value: 'R${insights.totalRevenue.toStringAsFixed(0)}',
+                    icon: Icons.attach_money,
+                    iconColor: Colors.green,
                   ),
-                  _buildMetricCard(
-                    'Avg Job Value',
-                    'R${insights.averageJobValue.toStringAsFixed(0)}',
-                    Icons.trending_up,
-                    Colors.blue,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Avg Job Value',
+                    value: 'R${insights.averageJobValue.toStringAsFixed(0)}',
+                    icon: Icons.trending_up,
+                    iconColor: Colors.blue,
                   ),
-                  _buildMetricCard(
-                    'This Week',
-                    'R${insights.revenueThisWeek.toStringAsFixed(0)}',
-                    Icons.calendar_today,
-                    Colors.blue,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'This Week',
+                    value: 'R${insights.revenueThisWeek.toStringAsFixed(0)}',
+                    icon: Icons.calendar_today,
+                    iconColor: Colors.blue,
                   ),
-                  _buildMetricCard(
-                    'This Month',
-                    'R${insights.revenueThisMonth.toStringAsFixed(0)}',
-                    Icons.calendar_month,
-                    Colors.purple,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'This Month',
+                    value: 'R${insights.revenueThisMonth.toStringAsFixed(0)}',
+                    icon: Icons.calendar_month,
+                    iconColor: Colors.purple,
                   ),
                 ],
               );
@@ -173,7 +173,7 @@ class FinancialInsightsTab extends ConsumerWidget {
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color, {required BuildContext context}) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 600;
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
     
     // Smaller, more compact cards for desktop
     final iconSize = isDesktop ? 20.0 : 32.0;

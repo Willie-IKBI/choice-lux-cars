@@ -243,7 +243,9 @@ class JobsInsightsTab extends ConsumerWidget {
                     child: _buildAdditionalMetricCard(
                       context: context,
                       label: 'AVG. COMPLETION TIME',
-                      value: '4.2 days', // TODO: Calculate from actual data
+                      value: insights.completedJobs > 0
+                          ? '${insights.averageCompletionDays.toStringAsFixed(1)} days'
+                          : 'N/A',
                     ),
                   ),
                   SizedBox(width: spacing),
@@ -251,7 +253,9 @@ class JobsInsightsTab extends ConsumerWidget {
                     child: _buildAdditionalMetricCard(
                       context: context,
                       label: 'ON-TIME RATE',
-                      value: '92.4%', // TODO: Calculate from actual data
+                      value: insights.completedJobs > 0
+                          ? '${insights.onTimeRate.toStringAsFixed(1)}%'
+                          : 'N/A',
                     ),
                   ),
                 ],

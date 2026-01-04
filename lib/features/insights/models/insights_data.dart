@@ -47,6 +47,8 @@ class JobInsights {
   final int cancelledJobs;
   final double averageJobsPerWeek;
   final double completionRate;
+  final double averageCompletionDays; // Average days to complete jobs
+  final double onTimeRate; // Percentage of jobs completed on time (0-100)
 
   JobInsights({
     required this.totalJobs,
@@ -58,6 +60,8 @@ class JobInsights {
     required this.cancelledJobs,
     required this.averageJobsPerWeek,
     required this.completionRate,
+    required this.averageCompletionDays,
+    required this.onTimeRate,
   });
 }
 

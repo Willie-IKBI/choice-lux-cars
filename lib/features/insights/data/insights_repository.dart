@@ -333,6 +333,66 @@ class InsightsRepository {
       // Completion rate
       final completionRate = totalJobs > 0 ? (completedJobs / totalJobs) * 100 : 0.0;
 
+      // Calculate average completion days and on-time rate
+      final completedJobsData = await _supabase
+          .from('jobs')
+          .select('id, created_at, updated_at, job_start_date')
+          .eq('job_status', 'completed')
+          .gte('created_at', dateRange.start.toIso8601String())
+          .lte('created_at', dateRange.end.toIso8601String())
+          .not('updated_at', 'is', null);
+
+      double averageCompletionDays = 0.0;
+      double onTimeRate = 0.0;
+
+      if (completedJobsData.isNotEmpty) {
+        // Calculate average completion days
+        final completionDurations = <double>[];
+        for (final job in completedJobsData) {
+          final createdAtStr = job['created_at'] as String?;
+          final updatedAtStr = job['updated_at'] as String?;
+          if (createdAtStr != null && updatedAtStr != null) {
+            try {
+              final createdAt = DateTime.parse(createdAtStr);
+              final updatedAt = DateTime.parse(updatedAtStr);
+              final days = updatedAt.difference(createdAt).inDays.toDouble();
+              if (days >= 0) {
+                completionDurations.add(days);
+              }
+            } catch (e) {
+              Log.e('Error parsing dates for job ${job['id']}: $e');
+            }
+          }
+        }
+        averageCompletionDays = completionDurations.isNotEmpty
+            ? completionDurations.reduce((a, b) => a + b) / completionDurations.length
+            : 0.0;
+
+        // Calculate on-time rate (completed on or before job_start_date)
+        int onTimeCount = 0;
+        for (final job in completedJobsData) {
+          final jobStartDateStr = job['job_start_date'] as String?;
+          final updatedAtStr = job['updated_at'] as String?;
+          if (jobStartDateStr != null && updatedAtStr != null) {
+            try {
+              final jobStartDate = DateTime.parse(jobStartDateStr);
+              final completedDate = DateTime.parse(updatedAtStr);
+              // Consider job on-time if completed on or before the start date
+              // (jobs can be completed early or on the scheduled day)
+              if (completedDate.isBefore(jobStartDate.add(Duration(days: 1))) ||
+                  completedDate.difference(jobStartDate).inDays <= 1) {
+                onTimeCount++;
+              }
+            } catch (e) {
+              Log.e('Error parsing dates for on-time calculation ${job['id']}: $e');
+            }
+          }
+        }
+        onTimeRate = completedJobsData.isNotEmpty
+            ? (onTimeCount / completedJobsData.length) * 100
+            : 0.0;
+      }
+
       final insights = JobInsights(
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
@@ -343,6 +403,8 @@ class InsightsRepository {
         cancelledJobs: cancelledJobs,
         averageJobsPerWeek: averageJobsPerWeek,
         completionRate: completionRate,
+        averageCompletionDays: averageCompletionDays,
+        onTimeRate: onTimeRate,
       );
 
       return Result.success(insights);
@@ -410,6 +472,8 @@ class InsightsRepository {
           cancelledJobs: 0,
           averageJobsPerWeek: 0,
           completionRate: 0,
+          averageCompletionDays: 0.0,
+          onTimeRate: 0.0,
         );
         return Result.success(emptyInsights);
       }
@@ -482,6 +546,79 @@ class InsightsRepository {
       
       final jobsThisMonthResponse = await monthQuery;
 
+      // Calculate average completion days and on-time rate for filtered jobs
+      final completedJobIds = jobsResponse
+          .where((j) => j['job_status'] == 'completed')
+          .map((j) => j['id'] as int)
+          .toList();
+
+      double averageCompletionDays = 0.0;
+      double onTimeRate = 0.0;
+
+      if (completedJobIds.isNotEmpty) {
+        // Fetch completed jobs with date fields
+        // Build query for completed jobs using filter with multiple IDs
+        var completedJobsQuery = _supabase
+            .from('jobs')
+            .select('id, created_at, updated_at, job_start_date')
+            .eq('job_status', 'completed');
+        
+        // Filter by job IDs - use filter with comma-separated IDs
+        if (completedJobIds.isNotEmpty) {
+          final idsString = completedJobIds.join(',');
+          completedJobsQuery = completedJobsQuery.filter('id', 'in', '($idsString)');
+        }
+
+        final completedJobsData = await completedJobsQuery;
+
+        if (completedJobsData.isNotEmpty) {
+          // Calculate average completion days
+          final completionDurations = <double>[];
+          for (final job in completedJobsData) {
+            final createdAtStr = job['created_at'] as String?;
+            final updatedAtStr = job['updated_at'] as String?;
+            if (createdAtStr != null && updatedAtStr != null) {
+              try {
+                final createdAt = DateTime.parse(createdAtStr);
+                final updatedAt = DateTime.parse(updatedAtStr);
+                final days = updatedAt.difference(createdAt).inDays.toDouble();
+                if (days >= 0) {
+                  completionDurations.add(days);
+                }
+              } catch (e) {
+                Log.e('Error parsing dates for job ${job['id']}: $e');
+              }
+            }
+          }
+          averageCompletionDays = completionDurations.isNotEmpty
+              ? completionDurations.reduce((a, b) => a + b) / completionDurations.length
+              : 0.0;
+
+          // Calculate on-time rate (completed on or before job_start_date + 1 day buffer)
+          int onTimeCount = 0;
+          for (final job in completedJobsData) {
+            final jobStartDateStr = job['job_start_date'] as String?;
+            final updatedAtStr = job['updated_at'] as String?;
+            if (jobStartDateStr != null && updatedAtStr != null) {
+              try {
+                final jobStartDate = DateTime.parse(jobStartDateStr);
+                final completedDate = DateTime.parse(updatedAtStr);
+                // Consider job on-time if completed on or within 1 day of the start date
+                if (completedDate.isBefore(jobStartDate.add(Duration(days: 1))) ||
+                    completedDate.difference(jobStartDate).inDays <= 1) {
+                  onTimeCount++;
+                }
+              } catch (e) {
+                Log.e('Error parsing dates for on-time calculation ${job['id']}: $e');
+              }
+            }
+          }
+          onTimeRate = completedJobsData.isNotEmpty
+              ? (onTimeCount / completedJobsData.length) * 100
+              : 0.0;
+        }
+      }
+
       final jobInsights = JobInsights(
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
@@ -492,6 +629,8 @@ class InsightsRepository {
         cancelledJobs: cancelledJobs,
         averageJobsPerWeek: totalJobs > 0 ? (totalJobs / 4.0) : 0.0, // Approximate weeks in month
         completionRate: totalJobs > 0 ? completedJobs / totalJobs : 0.0,
+        averageCompletionDays: averageCompletionDays,
+        onTimeRate: onTimeRate,
       );
 
       Log.d('Job insights with location filter: ${jobInsights.totalJobs} total, ${jobInsights.completedJobs} completed');

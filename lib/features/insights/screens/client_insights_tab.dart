@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/client_insights_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class ClientInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
@@ -21,8 +23,10 @@ class ClientInsightsTab extends ConsumerWidget {
       selectedLocation,
     )));
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.all(padding),
       child: clientInsightsAsync.when(
         data: (insights) => _buildClientContent(insights),
         loading: () => _buildLoadingState(),
@@ -93,13 +97,13 @@ class ClientInsightsTab extends ConsumerWidget {
           LayoutBuilder(
             builder: (context, constraints) {
               final screenWidth = MediaQuery.of(context).size.width;
-              final isLargeDesktop = screenWidth >= 1200;
-              final isDesktop = screenWidth >= 600;
+              final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+              final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
               
               // 4 columns on large desktop (all cards in one row), 2 columns on medium desktop/tablet
               final crossAxisCount = isLargeDesktop ? 4 : 2;
-              final childAspectRatio = isDesktop ? 1.0 : 1.5; // Square cards on desktop, taller on mobile
-              final spacing = isDesktop ? 12.0 : 16.0; // Match dashboard spacing on desktop
+              final childAspectRatio = isDesktop ? 2.2 : 2.8; // Increased to prevent overflow
               
               final gridView = GridView.count(
                 shrinkWrap: true,
@@ -109,33 +113,29 @@ class ClientInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildMetricCard(
-                    'Total Clients',
-                    insights.totalClients.toString(),
-                    Icons.business_outlined,
-                    ChoiceLuxTheme.richGold,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Total Clients',
+                    value: insights.totalClients.toString(),
+                    icon: Icons.business_outlined,
+                    iconColor: ChoiceLuxTheme.richGold,
                   ),
-                  _buildMetricCard(
-                    'Active Clients',
-                    insights.activeClients.toString(),
-                    Icons.business,
-                    Colors.green,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Active Clients',
+                    value: insights.activeClients.toString(),
+                    icon: Icons.business,
+                    iconColor: Colors.green,
                   ),
-                  _buildMetricCard(
-                    'Avg Jobs/Client',
-                    insights.averageJobsPerClient.toStringAsFixed(1),
-                    Icons.work_outline,
-                    Colors.blue,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Avg Jobs/Client',
+                    value: insights.averageJobsPerClient.toStringAsFixed(1),
+                    icon: Icons.work_outline,
+                    iconColor: Colors.blue,
                   ),
-                  _buildMetricCard(
-                    'Avg Revenue/Client',
-                    'R${insights.averageRevenuePerClient.toStringAsFixed(0)}',
-                    Icons.attach_money,
-                    Colors.orange,
-                    context: context,
+                  CompactMetricTile(
+                    label: 'Avg Revenue/Client',
+                    value: 'R${insights.averageRevenuePerClient.toStringAsFixed(0)}',
+                    icon: Icons.attach_money,
+                    iconColor: Colors.orange,
                   ),
                 ],
               );
@@ -173,7 +173,7 @@ class ClientInsightsTab extends ConsumerWidget {
 
   Widget _buildMetricCard(String title, String value, IconData icon, Color color, {required BuildContext context}) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 600;
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
     
     // Smaller, more compact cards for desktop
     final iconSize = isDesktop ? 20.0 : 32.0;

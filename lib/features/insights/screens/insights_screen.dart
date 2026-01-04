@@ -112,10 +112,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                   ),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 6 : 8),
+                  padding: EdgeInsets.all(isMobile ? 4 : 8),
                   child: TabBar(
                     controller: _tabController,
-                    isScrollable: isMobile,
+                    isScrollable: true, // Always scrollable for better spacing
                     indicator: BoxDecoration(
                       color: ChoiceLuxTheme.richGold,
                       borderRadius: BorderRadius.circular(10),
@@ -125,19 +125,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
                     labelColor: Colors.black,
                     unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
                     labelStyle: TextStyle(
-                      fontSize: isMobile ? 13 : 15,
+                      fontSize: isMobile ? 14 : 15,
                       fontWeight: FontWeight.w700,
                       letterSpacing: 0.5,
                     ),
                     unselectedLabelStyle: TextStyle(
-                      fontSize: isMobile ? 13 : 15,
+                      fontSize: isMobile ? 14 : 15,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.3,
                     ),
                     labelPadding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 12 : 20,
-                      vertical: isMobile ? 10 : 12,
+                      horizontal: isMobile ? 16 : 24,
+                      vertical: isMobile ? 12 : 14,
                     ),
+                    tabAlignment: TabAlignment.start, // Align tabs to start for better scrolling
                     tabs: [
                       _buildTab(Icons.work, 'Jobs', isMobile),
                       _buildTab(Icons.attach_money, 'Financial', isMobile),
@@ -186,22 +187,23 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
 
   Widget _buildTab(IconData icon, String text, bool isMobile) {
     return Tab(
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            icon,
-            size: isMobile ? 16 : 18,
-          ),
-          SizedBox(width: isMobile ? 6 : 8),
-          Flexible(
-            child: Text(
+      child: Padding(
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 8), // Add padding between tabs
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              size: isMobile ? 17 : 19,
+            ),
+            SizedBox(width: isMobile ? 8 : 10), // Increased spacing between icon and text
+            Text(
               text,
               overflow: TextOverflow.ellipsis,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
