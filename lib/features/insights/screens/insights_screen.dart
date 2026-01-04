@@ -9,6 +9,7 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
@@ -50,7 +51,8 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin');
     
     if (!isAdmin) {
-      return Scaffold(
+      return SystemSafeScaffold(
+        backgroundColor: Colors.transparent,
         appBar: LuxuryAppBar(
           title: 'Insights',
           onSignOut: () async {
@@ -66,7 +68,10 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
       );
     }
 
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
@@ -78,86 +83,122 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
         },
       ),
       drawer: isMobile ? null : const LuxuryDrawer(),
-      body: Column(
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1400),
+          child: Column(
+            children: [
+              // Filter bar
+              Container(
+                margin: EdgeInsets.all(padding),
+                padding: EdgeInsets.all(padding),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.05),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                ),
+                child: _buildFilterBar(),
+              ),
+              
+              // Tab bar
+              Container(
+                margin: EdgeInsets.symmetric(horizontal: padding),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.charcoalGray,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(isMobile ? 6 : 8),
+                  child: TabBar(
+                    controller: _tabController,
+                    isScrollable: isMobile,
+                    indicator: BoxDecoration(
+                      color: ChoiceLuxTheme.richGold,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    indicatorPadding: EdgeInsets.all(4),
+                    dividerColor: Colors.transparent,
+                    labelColor: Colors.black,
+                    unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
+                    labelStyle: TextStyle(
+                      fontSize: isMobile ? 13 : 15,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.5,
+                    ),
+                    unselectedLabelStyle: TextStyle(
+                      fontSize: isMobile ? 13 : 15,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                    ),
+                    labelPadding: EdgeInsets.symmetric(
+                      horizontal: isMobile ? 12 : 20,
+                      vertical: isMobile ? 10 : 12,
+                    ),
+                    tabs: [
+                      _buildTab(Icons.work, 'Jobs', isMobile),
+                      _buildTab(Icons.attach_money, 'Financial', isMobile),
+                      _buildTab(Icons.person, 'Drivers', isMobile),
+                      _buildTab(Icons.directions_car, 'Vehicles', isMobile),
+                      _buildTab(Icons.business, 'Clients', isMobile),
+                    ],
+                  ),
+                ),
+              ),
+          
+              // Tab content
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    JobsInsightsTab(
+                      selectedPeriod: _selectedPeriod,
+                      selectedLocation: _selectedLocation,
+                    ),
+                    FinancialInsightsTab(
+                      selectedPeriod: _selectedPeriod,
+                      selectedLocation: _selectedLocation,
+                    ),
+                    DriverInsightsTab(
+                      selectedPeriod: _selectedPeriod,
+                      selectedLocation: _selectedLocation,
+                    ),
+                    VehicleInsightsTab(
+                      selectedPeriod: _selectedPeriod,
+                      selectedLocation: _selectedLocation,
+                    ),
+                    ClientInsightsTab(
+                      selectedPeriod: _selectedPeriod,
+                      selectedLocation: _selectedLocation,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildTab(IconData icon, String text, bool isMobile) {
+    return Tab(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          // Filter bar
-          Container(
-            margin: const EdgeInsets.all(16),
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
-            child: _buildFilterBar(),
+          Icon(
+            icon,
+            size: isMobile ? 16 : 18,
           ),
-          
-          // Tab bar
-          Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16),
-            decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: Colors.white.withOpacity(0.1)),
-            ),
-            child: TabBar(
-              controller: _tabController,
-              isScrollable: true,
-              indicatorColor: ChoiceLuxTheme.richGold,
-              labelColor: ChoiceLuxTheme.richGold,
-              unselectedLabelColor: Colors.white.withOpacity(0.7),
-              labelStyle: const TextStyle(fontWeight: FontWeight.bold),
-              tabs: const [
-                Tab(
-                  icon: Icon(Icons.work_outline),
-                  text: 'Jobs',
-                ),
-                Tab(
-                  icon: Icon(Icons.attach_money),
-                  text: 'Financial',
-                ),
-                Tab(
-                  icon: Icon(Icons.person_outline),
-                  text: 'Drivers',
-                ),
-                Tab(
-                  icon: Icon(Icons.directions_car_outlined),
-                  text: 'Vehicles',
-                ),
-                Tab(
-                  icon: Icon(Icons.business_outlined),
-                  text: 'Clients',
-                ),
-              ],
-            ),
-          ),
-          
-          // Tab content
-          Expanded(
-            child: TabBarView(
-              controller: _tabController,
-              children: [
-                JobsInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                FinancialInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                DriverInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                VehicleInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-                ClientInsightsTab(
-                  selectedPeriod: _selectedPeriod,
-                  selectedLocation: _selectedLocation,
-                ),
-              ],
+          SizedBox(width: isMobile ? 6 : 8),
+          Flexible(
+            child: Text(
+              text,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
@@ -166,6 +207,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
   }
 
   Widget _buildFilterBar() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,20 +218,20 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
             Icon(
               Icons.filter_list,
               color: ChoiceLuxTheme.richGold,
-              size: 20,
+              size: ResponsiveTokens.getIconSize(screenWidth),
             ),
-            const SizedBox(width: 8),
-            const Text(
+            SizedBox(width: spacing),
+            Text(
               'Filters',
               style: TextStyle(
-                fontSize: 16,
+                fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ],
         ),
-        const SizedBox(height: 16),
+        SizedBox(height: spacing * 2),
         Row(
           children: [
             Expanded(

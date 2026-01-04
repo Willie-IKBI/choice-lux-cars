@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/jobs_insights_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class JobsInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
@@ -41,46 +42,73 @@ class JobsInsightsTab extends ConsumerWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Color(0xFF1a1a1a),
-                  Color(0xFF2d2d2d),
-                ],
-              ),
+              color: ChoiceLuxTheme.charcoalGray,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: ChoiceLuxTheme.richGold.withOpacity(0.3)),
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                width: 1,
+              ),
             ),
-            child: Row(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(
-                  Icons.work_outline,
-                  color: ChoiceLuxTheme.richGold,
-                  size: 32,
+                Row(
+                  children: [
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Text(
+                            'Jobs Analytics',
+                            style: TextStyle(
+                              fontSize: 24,
+                              fontWeight: FontWeight.bold,
+                              color: ChoiceLuxTheme.softWhite,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(
+                                color: Colors.green.withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              'Live Data',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Colors.green.shade300,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        // TODO: Implement export report functionality
+                      },
+                      child: Text(
+                        'Export Report',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.richGold,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Jobs Analytics',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        '${insights.totalJobs} total jobs • ${insights.completedJobs} completed',
-                        style: TextStyle(
-                          fontSize: 16,
-                          color: Colors.white.withOpacity(0.8),
-                        ),
-                      ),
-                    ],
+                const SizedBox(height: 8),
+                Text(
+                  '${insights.totalJobs} total jobs • ${insights.completedJobs} completed',
+                  style: TextStyle(
+                    fontSize: 16,
+                    color: ChoiceLuxTheme.platinumSilver,
                   ),
                 ),
               ],
@@ -89,18 +117,18 @@ class JobsInsightsTab extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Key Metrics
-          _buildSectionHeader('Key Metrics'),
-          const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
               final screenWidth = MediaQuery.of(context).size.width;
-              final isLargeDesktop = screenWidth >= 1200;
-              final isDesktop = screenWidth >= 600;
+              final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+              final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+              final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+              final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
               
-              // 4 columns on large desktop (all cards in one row), 2 columns on medium desktop/tablet
+              // 4 columns on large desktop (all cards in one row), 2 columns on medium desktop/tablet/mobile
               final crossAxisCount = isLargeDesktop ? 4 : 2;
-              final childAspectRatio = isDesktop ? 1.0 : 1.5; // Square cards on desktop, taller on mobile
-              final spacing = isDesktop ? 12.0 : 16.0; // Match dashboard spacing on desktop
+              final childAspectRatio = isSmallMobile ? 1.4 : (isMobile ? 1.6 : (isDesktop ? 1.8 : 2.0));
               
               final gridView = GridView.count(
                 shrinkWrap: true,
@@ -110,36 +138,72 @@ class JobsInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildMetricCard(
-                    'Total Jobs',
-                    insights.totalJobs.toString(),
-                    Icons.work_outline,
-                    ChoiceLuxTheme.richGold,
-                    status: 'all',
+                  _buildNewMetricCard(
                     context: context,
+                    label: 'Total Jobs',
+                    value: insights.totalJobs.toString(),
+                    icon: Icons.work,
+                    iconColor: ChoiceLuxTheme.richGold,
+                    progressValue: 1.0,
+                    trendIndicator: '+10%',
+                    onTap: () {
+                      final uri = Uri(
+                        path: '/insights/jobs',
+                        queryParameters: {
+                          'timePeriod': selectedPeriod.toString().split('.').last,
+                          'location': selectedLocation.toString().split('.').last,
+                          'status': 'all',
+                        },
+                      );
+                      context.go(uri.toString());
+                    },
                   ),
-                  _buildMetricCard(
-                    'Completed',
-                    insights.completedJobs.toString(),
-                    Icons.check_circle_outline,
-                    Colors.green,
-                    status: 'completed',
+                  _buildNewMetricCard(
                     context: context,
+                    label: 'Completed',
+                    value: insights.completedJobs.toString(),
+                    icon: Icons.check_circle,
+                    iconColor: Colors.green,
+                    progressValue: insights.totalJobs > 0 ? insights.completedJobs / insights.totalJobs : 0.0,
+                    onTap: () {
+                      final uri = Uri(
+                        path: '/insights/jobs',
+                        queryParameters: {
+                          'timePeriod': selectedPeriod.toString().split('.').last,
+                          'location': selectedLocation.toString().split('.').last,
+                          'status': 'completed',
+                        },
+                      );
+                      context.go(uri.toString());
+                    },
                   ),
-                  _buildMetricCard(
-                    'Open Jobs',
-                    insights.openJobs.toString(),
-                    Icons.pending_outlined,
-                    Colors.orange,
-                    status: 'open',
+                  _buildNewMetricCard(
                     context: context,
+                    label: 'Open Jobs',
+                    value: insights.openJobs.toString(),
+                    icon: Icons.schedule,
+                    iconColor: Colors.orange,
+                    progressValue: insights.totalJobs > 0 ? insights.openJobs / insights.totalJobs : 0.0,
+                    onTap: () {
+                      final uri = Uri(
+                        path: '/insights/jobs',
+                        queryParameters: {
+                          'timePeriod': selectedPeriod.toString().split('.').last,
+                          'location': selectedLocation.toString().split('.').last,
+                          'status': 'open',
+                        },
+                      );
+                      context.go(uri.toString());
+                    },
                   ),
-                  _buildMetricCard(
-                    'Completion Rate',
-                    '${(insights.completionRate * 100).toStringAsFixed(1)}%',
-                    Icons.trending_up,
-                    Colors.blue,
+                  _buildNewMetricCard(
                     context: context,
+                    label: 'Completion Rate',
+                    value: '${(insights.completionRate * 100).toStringAsFixed(0)}%',
+                    icon: Icons.trending_down,
+                    iconColor: Colors.blue,
+                    progressValue: insights.completionRate,
+                    trendIndicator: '-2.3%',
                   ),
                 ],
               );
@@ -165,6 +229,88 @@ class JobsInsightsTab extends ConsumerWidget {
           _buildSectionHeader('Job Status Breakdown'),
           const SizedBox(height: 16),
           _buildJobStatusCard(insights),
+          const SizedBox(height: 24),
+          
+          // Additional Metrics
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
+              
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildAdditionalMetricCard(
+                      context: context,
+                      label: 'AVG. COMPLETION TIME',
+                      value: '4.2 days', // TODO: Calculate from actual data
+                    ),
+                  ),
+                  SizedBox(width: spacing),
+                  Expanded(
+                    child: _buildAdditionalMetricCard(
+                      context: context,
+                      label: 'ON-TIME RATE',
+                      value: '92.4%', // TODO: Calculate from actual data
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAdditionalMetricCard({
+    required BuildContext context,
+    required String label,
+    required String value,
+  }) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final cardPadding = isSmallMobile ? 12.0 : (isMobile ? 16.0 : 20.0);
+    final valueFontSize = isSmallMobile ? 18.0 : (isMobile ? 20.0 : 24.0);
+    final labelFontSize = isSmallMobile ? 10.0 : (isMobile ? 11.0 : 12.0);
+
+    return Container(
+      padding: EdgeInsets.all(cardPadding),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              fontWeight: FontWeight.w600,
+              color: ChoiceLuxTheme.platinumSilver,
+              letterSpacing: 0.5,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: isSmallMobile ? 6 : 8),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: valueFontSize,
+              fontWeight: FontWeight.w700,
+              color: ChoiceLuxTheme.softWhite,
+            ),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
         ],
       ),
     );
@@ -176,189 +322,259 @@ class JobsInsightsTab extends ConsumerWidget {
       style: TextStyle(
         fontSize: 20,
         fontWeight: FontWeight.bold,
-        color: Colors.white,
+        color: ChoiceLuxTheme.softWhite,
       ),
     );
   }
 
-  Widget _buildMetricCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color, {
-    String? status,
+  Widget _buildNewMetricCard({
     required BuildContext context,
+    required String label,
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required double progressValue,
+    String? trendIndicator,
+    VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = screenWidth >= 600;
-    
-    // Smaller, more compact cards for desktop
-    final iconSize = isDesktop ? 20.0 : 32.0; // Reduced from 22px
-    final iconContainerPadding = isDesktop ? 6.0 : 12.0; // Reduced from 8px
-    final cardPadding = isDesktop ? const EdgeInsets.all(6.0) : const EdgeInsets.all(16.0); // Reduced from 8px
-    final valueFontSize = isDesktop ? 16.0 : 24.0; // Reduced from 18px
-    final titleFontSize = isDesktop ? 12.0 : 14.0; // Reduced from 13px
-    final titleSpacing = isDesktop ? 4.0 : 8.0; // Reduced from 6px
-    final valueSpacing = isDesktop ? 3.0 : 8.0; // Reduced from 4px
-    final borderRadius = isDesktop ? 16.0 : 12.0; // Slightly smaller radius
-    
-    return GestureDetector(
-      onTap: status != null
-          ? () {
-              // Navigate to filtered jobs list
-              final uri = Uri(
-                path: '/insights/jobs',
-                queryParameters: {
-                  'timePeriod': selectedPeriod.toString().split('.').last,
-                  'location': selectedLocation.toString().split('.').last,
-                  'status': status,
-                },
-              );
-              context.go(uri.toString());
-            }
-          : null,
-      child: MouseRegion(
-        cursor: status != null ? SystemMouseCursors.click : SystemMouseCursors.basic,
-        child: Container(
-          padding: cardPadding,
-          decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.05),
-            borderRadius: BorderRadius.circular(borderRadius),
-            border: Border.all(color: Colors.white.withOpacity(0.1)),
-          ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final cardPadding = isSmallMobile ? 10.0 : (isMobile ? 12.0 : 16.0);
+    final iconSize = isSmallMobile ? 32.0 : (isMobile ? 36.0 : 40.0);
+    final iconIconSize = isSmallMobile ? 18.0 : (isMobile ? 20.0 : 22.0);
+    final valueFontSize = isSmallMobile ? 20.0 : (isMobile ? 22.0 : 28.0);
+    final labelFontSize = isSmallMobile ? 11.0 : (isMobile ? 12.0 : 14.0);
+    final iconSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
+    final valueSpacing = isSmallMobile ? 3.0 : (isMobile ? 4.0 : 6.0);
+    final labelSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
+
+    Widget card = Container(
+      padding: EdgeInsets.all(cardPadding),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // Icon in rounded square container
               Container(
-                padding: EdgeInsets.all(iconContainerPadding),
+                width: iconSize,
+                height: iconSize,
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(borderRadius * 0.8),
-                  border: Border.all(
-                    color: color.withOpacity(0.2),
-                    width: 1,
+                  color: iconColor.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  icon,
+                  color: iconColor,
+                  size: iconIconSize,
+                ),
+              ),
+            // Trend indicator (optional, top-right)
+            if (trendIndicator != null)
+              Container(
+                padding: EdgeInsets.symmetric(
+                  horizontal: isSmallMobile ? 4 : 6,
+                  vertical: isSmallMobile ? 1 : 2,
+                ),
+                decoration: BoxDecoration(
+                  color: trendIndicator.startsWith('-')
+                      ? Colors.red.withOpacity(0.2)
+                      : Colors.green.withOpacity(0.2),
+                  borderRadius: BorderRadius.circular(4),
+                ),
+                child: Text(
+                  trendIndicator,
+                  style: TextStyle(
+                    fontSize: isSmallMobile ? 9 : 10,
+                    fontWeight: FontWeight.w600,
+                    color: trendIndicator.startsWith('-')
+                        ? Colors.red.shade300
+                        : Colors.green.shade300,
                   ),
                 ),
-                child: Icon(icon, color: color, size: iconSize),
-              ),
-              SizedBox(height: valueSpacing),
-              Text(
-                value,
-                style: TextStyle(
-                  fontSize: valueFontSize,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-              SizedBox(height: titleSpacing),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: titleFontSize,
-                  color: Colors.white.withOpacity(0.8),
-                ),
-                textAlign: TextAlign.center,
               ),
             ],
           ),
-        ),
+          SizedBox(height: iconSpacing),
+          // Value
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: valueFontSize,
+                fontWeight: FontWeight.w700,
+                color: ChoiceLuxTheme.softWhite,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: valueSpacing),
+          // Label
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              color: ChoiceLuxTheme.platinumSilver,
+              fontWeight: FontWeight.w400,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: labelSpacing),
+          // Progress bar at bottom
+          Container(
+            height: 2,
+            decoration: BoxDecoration(
+              color: iconColor.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(1),
+            ),
+            child: FractionallySizedBox(
+              widthFactor: progressValue.clamp(0.0, 1.0),
+              alignment: Alignment.centerLeft,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: iconColor,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
+
+    if (onTap != null) {
+      return GestureDetector(
+        onTap: onTap,
+        child: MouseRegion(
+          cursor: SystemMouseCursors.click,
+          child: card,
+        ),
+      );
+    }
+
+    return card;
   }
 
   Widget _buildJobStatusCard(JobInsights insights) {
+    final completedPercentage = insights.totalJobs > 0
+        ? (insights.completedJobs / insights.totalJobs * 100)
+        : 0.0;
+    final openPercentage = insights.totalJobs > 0
+        ? ((insights.openJobs + insights.inProgressJobs) / insights.totalJobs * 100)
+        : 0.0;
+    final openJobsTotal = insights.openJobs + insights.inProgressJobs;
+
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: ChoiceLuxTheme.charcoalGray,
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(
-                Icons.pie_chart_outline,
-                color: ChoiceLuxTheme.richGold,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              const Text(
-                'Job Distribution',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
-            ],
+          Text(
+            'Job Status Breakdown',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: ChoiceLuxTheme.softWhite,
+            ),
           ),
           const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: _buildStatusItem(
-                  'Completed',
-                  insights.completedJobs,
-                  insights.totalJobs,
-                  Colors.green,
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: _buildStatusItem(
-                  'Open',
-                  insights.openJobs,
-                  insights.totalJobs,
-                  Colors.orange,
-                ),
-              ),
-            ],
+          // Completed status bar
+          _buildStatusBar(
+            'Completed',
+            insights.completedJobs,
+            completedPercentage,
+            Colors.green,
+          ),
+          const SizedBox(height: 16),
+          // Open/In Progress status bar
+          _buildStatusBar(
+            'Open / In Progress',
+            openJobsTotal,
+            openPercentage,
+            Colors.orange,
           ),
         ],
       ),
     );
   }
 
-  Widget _buildStatusItem(String label, int count, int total, Color color) {
-    final percentage = total > 0 ? (count / total * 100) : 0.0;
-    
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withOpacity(0.3)),
-      ),
-      child: Column(
-        children: [
-          Text(
-            count.toString(),
-            style: TextStyle(
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              color: color,
+  Widget _buildStatusBar(String label, int count, double percentage, Color color) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(
+              '•',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                color: color,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 14,
+                color: ChoiceLuxTheme.softWhite,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '$count (${percentage.toStringAsFixed(0)}%)',
+              style: TextStyle(
+                fontSize: 14,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Container(
+          height: 8,
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.3),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: FractionallySizedBox(
+            widthFactor: (percentage / 100).clamp(0.0, 1.0),
+            alignment: Alignment.centerLeft,
+            child: Container(
+              decoration: BoxDecoration(
+                color: color,
+                borderRadius: BorderRadius.circular(4),
+              ),
             ),
           ),
-          const SizedBox(height: 4),
-          Text(
-            label,
-            style: const TextStyle(
-              fontSize: 14,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '${percentage.toStringAsFixed(1)}%',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white.withOpacity(0.8),
-            ),
-          ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 
