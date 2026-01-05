@@ -277,7 +277,7 @@ class _UserCardState extends State<UserCard>
 
   String _getRoleLabel(String? role) {
     if (role == null) return 'UNASSIGNED';
-    return role.toUpperCase();
+    return role.toUpperCase().replaceAll('_', ' ');
   }
 
   Widget _statusChip(_StatusInfo status, bool isSmallMobile) {
