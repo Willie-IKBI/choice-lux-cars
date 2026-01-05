@@ -46,6 +46,11 @@ class _UserFormState extends State<UserForm> {
 
   final List<_RoleOption> roles = const [
     _RoleOption(
+      'super_admin',
+      'Super Admin',
+      Icons.verified_user,
+    ),
+    _RoleOption(
       'administrator',
       'Administrator',
       Icons.admin_panel_settings_outlined,
