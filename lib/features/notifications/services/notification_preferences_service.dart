@@ -1,5 +1,4 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
-import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class NotificationPreferencesService {
@@ -49,7 +48,6 @@ class NotificationPreferencesService {
           .from('profiles')
           .update({
             'notification_prefs': preferences,
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('id', currentUser.id);
 
