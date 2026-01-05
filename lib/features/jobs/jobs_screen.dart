@@ -31,10 +31,11 @@ class JobsScreen extends ConsumerStatefulWidget {
 
 class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
-  String _currentFilter = 'all'; // open, in_progress, completed, all
+  String _currentFilter = 'active'; // active, open, in_progress, completed, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
+  String _dateRangeFilter = '90'; // '7', '30', '90', 'all' - days for completed jobs
 
   @override
   void initState() {
@@ -245,65 +246,124 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
     return Container(
       padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: [
-            _buildFilterButton(
-              'Open Jobs',
-              'open',
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              isDesktop,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Status filter buttons
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                _buildFilterButton(
+                  'Active',
+                  'active',
+                  isSmallMobile,
+                  isMobile,
+                  isTablet,
+                  isDesktop,
+                ),
+                SizedBox(
+                  width: isSmallMobile
+                      ? 6
+                      : isMobile
+                      ? 8
+                      : 12,
+                ),
+                _buildFilterButton(
+                  'Open',
+                  'open',
+                  isSmallMobile,
+                  isMobile,
+                  isTablet,
+                  isDesktop,
+                ),
+                SizedBox(
+                  width: isSmallMobile
+                      ? 6
+                      : isMobile
+                      ? 8
+                      : 12,
+                ),
+                _buildFilterButton(
+                  'In Progress',
+                  'in_progress',
+                  isSmallMobile,
+                  isMobile,
+                  isTablet,
+                  isDesktop,
+                ),
+                SizedBox(
+                  width: isSmallMobile
+                      ? 6
+                      : isMobile
+                      ? 8
+                      : 12,
+                ),
+                _buildFilterButton(
+                  'Completed',
+                  'completed',
+                  isSmallMobile,
+                  isMobile,
+                  isTablet,
+                  isDesktop,
+                ),
+                SizedBox(
+                  width: isSmallMobile
+                      ? 6
+                      : isMobile
+                      ? 8
+                      : 12,
+                ),
+                _buildFilterButton(
+                  'All Jobs',
+                  'all',
+                  isSmallMobile,
+                  isMobile,
+                  isTablet,
+                  isDesktop,
+                ),
+              ],
             ),
-            SizedBox(
-              width: isSmallMobile
-                  ? 6
-                  : isMobile
-                  ? 8
-                  : 12,
-            ),
-            _buildFilterButton(
-              'In Progress',
-              'in_progress',
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              isDesktop,
-            ),
-            SizedBox(
-              width: isSmallMobile
-                  ? 6
-                  : isMobile
-                  ? 8
-                  : 12,
-            ),
-            _buildFilterButton(
-              'Completed',
-              'completed',
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              isDesktop,
-            ),
-            SizedBox(
-              width: isSmallMobile
-                  ? 6
-                  : isMobile
-                  ? 8
-                  : 12,
-            ),
-            _buildFilterButton(
-              'All Jobs',
-              'all',
-              isSmallMobile,
-              isMobile,
-              isTablet,
-              isDesktop,
+          ),
+          // Date range selector (only show for completed and all filters)
+          if (_currentFilter == 'completed' || _currentFilter == 'all') ...[
+            SizedBox(height: spacing),
+            SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: Row(
+                children: [
+                  _buildDateRangeChip(
+                    'Last 7 Days',
+                    '7',
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
+                    'Last 30 Days',
+                    '30',
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
+                    'Last 90 Days',
+                    '90',
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
+                    'All Time',
+                    'all',
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                ],
+              ),
             ),
           ],
-        ),
+        ],
       ),
     );
   }
@@ -726,8 +786,69 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     );
   }
 
+  // Date Range Chip
+  Widget _buildDateRangeChip(
+    String label,
+    String value,
+    bool isSmallMobile,
+    bool isMobile,
+  ) {
+    final isSelected = _dateRangeFilter == value;
+    final fontSize = isSmallMobile ? 11.0 : 12.0;
+
+    return GestureDetector(
+      onTap: () => setState(() {
+        _dateRangeFilter = value;
+        _currentPage = 1; // Reset to first page when date range changes
+      }),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmallMobile ? 8 : 12,
+          vertical: isSmallMobile ? 5 : 7,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? ChoiceLuxTheme.richGold.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected
+                ? ChoiceLuxTheme.richGold
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Text(
+          label,
+          style: TextStyle(
+            color: isSelected
+                ? ChoiceLuxTheme.richGold
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+            fontSize: fontSize,
+            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+          ),
+        ),
+      ),
+    );
+  }
+
   List<Job> _filterJobs(List<Job> jobs) {
+    final now = DateTime.now();
+    final cutoffDate = _dateRangeFilter == 'all'
+        ? null
+        : now.subtract(Duration(days: int.parse(_dateRangeFilter)));
+    
     switch (_currentFilter) {
+      case 'active':
+        // Active = open + in_progress (show all, no date limit)
+        return jobs
+            .where((job) =>
+                job.status == 'open' ||
+                job.status == 'assigned' ||
+                job.status == 'in_progress' ||
+                job.status == 'started' ||
+                job.status == 'ready_to_close')
+            .toList();
       case 'open':
         // Treat 'open' and 'assigned' as open jobs
         return jobs
@@ -743,13 +864,36 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             )
             .toList();
       case 'completed':
-        return jobs
+        // Completed jobs with date filter (default 90 days)
+        var completed = jobs
             .where((job) =>
                 job.status == 'completed' ||
                 job.status == 'closed' ||
                 job.status == 'cancelled')
             .toList();
+        
+        if (cutoffDate != null) {
+          completed = completed.where((job) {
+            final jobDate = job.updatedAt ?? job.createdAt;
+            return jobDate.isAfter(cutoffDate);
+          }).toList();
+        }
+        return completed;
       case 'all':
+        // All jobs, but exclude completed/closed/cancelled older than 90 days
+        if (cutoffDate != null) {
+          return jobs.where((job) {
+            final isCompleted = job.status == 'completed' ||
+                job.status == 'closed' ||
+                job.status == 'cancelled';
+            if (isCompleted) {
+              final jobDate = job.updatedAt ?? job.createdAt;
+              return jobDate.isAfter(cutoffDate);
+            }
+            return true; // Include all non-completed jobs
+          }).toList();
+        }
+        return jobs;
       default:
         return jobs;
     }
