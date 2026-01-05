@@ -42,6 +42,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     final userProfile = ref.watch(currentUserProfileProvider);
     final isMobile = MediaQuery.of(context).size.width < 600;
     final tokens = Theme.of(context).extension<AppTokens>()!;
+    final statusBarHeight = MediaQuery.of(context).padding.top;
 
     // Get display name from profile, fallback to email, then to 'User'
     String displayName = 'User';
@@ -52,7 +53,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     }
 
     return Container(
-      height: isMobile ? 64 : 72,
+      height: (isMobile ? 64 : 72) + statusBarHeight,
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -72,7 +73,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
         ],
       ),
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: EdgeInsets.only(
+          top: statusBarHeight,
+          left: 20,
+          right: 20,
+        ),
         child: Row(
             children: [
               // Back Button or Menu Button
