@@ -10,7 +10,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class AddEditClientScreen extends ConsumerStatefulWidget {
   final Client? client; // null for add, non-null for edit
@@ -71,56 +71,46 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
   Widget build(BuildContext context) {
     final isEditMode = widget.client != null;
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: isEditMode ? 'Edit Client' : 'Add Client',
-            showBackButton: true,
-            onBackPressed: () => context.go('/clients'),
-          ),
-          body: SafeArea(
-            child: LayoutBuilder(
-              builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 600;
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: isEditMode ? 'Edit Client' : 'Add Client',
+        showBackButton: true,
+        onBackPressed: () => context.go('/clients'),
+      ),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenWidth = constraints.maxWidth;
+            final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+            final padding = ResponsiveTokens.getPadding(screenWidth);
+            final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
-                return Column(
-                  children: [
-                    // Form Content
-                    Expanded(
-                      child: SingleChildScrollView(
-                        padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(maxWidth: 600),
-                            child: _buildForm(isMobile),
-                          ),
-                        ),
+            return Column(
+              children: [
+                // Form Content
+                Expanded(
+                  child: SingleChildScrollView(
+                    padding: EdgeInsets.all(padding * 1.5),
+                    child: Center(
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(maxWidth: 600),
+                        child: _buildForm(isMobile),
                       ),
                     ),
-                  ],
-                );
-              },
-            ),
-          ),
+                  ),
+                ),
+              ],
+            );
+          },
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildForm(bool isMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return Form(
       key: _formKey,
       child: Column(
@@ -129,11 +119,11 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
           // Company Logo Section
           _buildLogoSection(isMobile),
 
-          const SizedBox(height: 24),
+          SizedBox(height: spacing * 3),
 
           // Company Information
           _buildSectionTitle('Company Information', isMobile),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _companyNameController,
@@ -149,11 +139,11 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           // Contact Information
           _buildSectionTitle('Contact Information', isMobile),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _contactPersonController,
@@ -169,7 +159,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _contactEmailController,
@@ -191,7 +181,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _contactNumberController,
@@ -212,13 +202,13 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
 
           // Additional Company Information
           _buildSectionTitle('Additional Information', isMobile),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _websiteAddressController,
             label: 'Website Address',
             hint: 'Enter website URL (optional)',
-            icon: Icons.language,
+            icon: Icons.public,
             keyboardType: TextInputType.url,
             validator: (value) {
               // Optional field - no validation required
@@ -227,7 +217,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _companyRegistrationNumberController,
@@ -241,7 +231,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _vatNumberController,
@@ -255,7 +245,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
             isMobile: isMobile,
           ),
 
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
 
           _buildTextField(
             controller: _billingAddressController,
@@ -273,11 +263,26 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
 
           const SizedBox(height: 32),
 
-          // Save Button (Mobile)
-          if (isMobile) ...[
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
+          // Action Buttons
+          Row(
+            mainAxisAlignment: MainAxisAlignment.end,
+            children: [
+              TextButton(
+                onPressed: _isLoading ? null : () => context.go('/clients'),
+                style: TextButton.styleFrom(
+                  foregroundColor: ChoiceLuxTheme.platinumSilver,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Cancel'),
+              ),
+              const SizedBox(width: 12),
+              ElevatedButton.icon(
                 onPressed: _isLoading ? null : _saveClient,
                 icon: _isLoading
                     ? const SizedBox(
@@ -288,53 +293,22 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                           color: Colors.black,
                         ),
                       )
-                    : const Icon(Icons.save),
+                    : const Icon(Icons.save, size: 18),
                 label: Text(_isLoading ? 'Saving...' : 'Save Client'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: ChoiceLuxTheme.richGold,
                   foregroundColor: Colors.black,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
                   ),
                 ),
               ),
-            ),
-          ],
-
-          // Save Button (Desktop)
-          if (!isMobile) ...[
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
-              children: [
-                ElevatedButton.icon(
-                  onPressed: _isLoading ? null : _saveClient,
-                  icon: _isLoading
-                      ? const SizedBox(
-                          width: 16,
-                          height: 16,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: Colors.black,
-                          ),
-                        )
-                      : const Icon(Icons.save),
-                  label: Text(_isLoading ? 'Saving...' : 'Save Client'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.richGold,
-                    foregroundColor: Colors.black,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 16,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ],
       ),
     );
@@ -426,7 +400,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Icon(Icons.add_a_photo, color: ChoiceLuxTheme.richGold, size: 32),
+        Icon(Icons.camera_alt, color: ChoiceLuxTheme.richGold, size: 32),
         const SizedBox(height: 4),
         Text(
           'Add Logo',
@@ -442,11 +416,12 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
 
   Widget _buildSectionTitle(String title, bool isMobile) {
     return Text(
-      title,
+      title.toUpperCase(),
       style: TextStyle(
         fontSize: isMobile ? 16 : 18,
         fontWeight: FontWeight.bold,
         color: ChoiceLuxTheme.richGold,
+        letterSpacing: 0.5,
       ),
     );
   }
@@ -471,7 +446,7 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
         fontSize: isMobile ? 14 : 16,
       ),
       decoration: InputDecoration(
-        labelText: label,
+        labelText: label.toUpperCase(),
         hintText: hint,
         prefixIcon: Icon(icon, color: ChoiceLuxTheme.platinumSilver),
         border: OutlineInputBorder(

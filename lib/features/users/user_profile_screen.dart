@@ -7,8 +7,8 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
-import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class UserProfileScreen extends ConsumerStatefulWidget {
   const UserProfileScreen({super.key});
@@ -169,69 +169,70 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
   InputDecoration _modernInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+      ),
+      filled: true,
+      fillColor: ChoiceLuxTheme.charcoalGray,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.richGold,
+          width: 2,
+        ),
       ),
-      filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
-      labelStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      ),
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
+      errorStyle: const TextStyle(
+        fontWeight: FontWeight.w600,
+        color: Colors.redAccent,
+      ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
     final userProfile = ref.watch(currentUserProfileProvider);
-    final isMobile = MediaQuery.of(context).size.width < 600;
-    final isWide = MediaQuery.of(context).size.width > 900;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 900;
 
     if (userProfile == null) {
-      return Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(painter: BackgroundPatterns.dashboard),
-          ),
-          const Scaffold(
-            backgroundColor: Colors.transparent,
-            body: Center(child: CircularProgressIndicator()),
-          ),
-        ],
+      return SystemSafeScaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
 
-    return Stack(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        Scaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'My Profile',
-            showProfile: false, // Hide profile menu since we're on profile page
-            showBackButton: true,
-            onBackPressed: () => context.go('/'),
-          ),
-          drawer: isMobile ? const LuxuryDrawer() : null,
-          body: SingleChildScrollView(
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'My Profile',
+        showProfile: false, // Hide profile menu since we're on profile page
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+      ),
+      body: SingleChildScrollView(
           padding: const EdgeInsets.all(24.0),
           child: Center(
             child: ConstrainedBox(
@@ -241,257 +242,188 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                 child: Column(
                   children: [
                     // Profile Image Section
-                    Card(
-                      margin: const EdgeInsets.only(bottom: 24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
-                          width: 1,
-                        ),
-                      ),
-                      elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.08),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 24,
-                          horizontal: 16,
-                        ),
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                    Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Stack(
+                          alignment: Alignment.center,
                           children: [
-                            Stack(
-                              alignment: Alignment.center,
-                              children: [
-                                CircleAvatar(
-                                  radius: isWide ? 52 : 44,
-                                  backgroundColor: Colors.grey[800],
-                                  backgroundImage:
-                                      _profileImage != null &&
-                                          _profileImage!.isNotEmpty
-                                      ? NetworkImage(_profileImage!)
-                                      : null,
-                                  child:
-                                      _profileImage == null ||
-                                          _profileImage!.isEmpty
-                                      ? Text(
+                            Container(
+                              width: isWide ? 104 : 88,
+                              height: isWide ? 104 : 88,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: ChoiceLuxTheme.charcoalGray,
+                                border: Border.all(
+                                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                                  width: 2,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: _profileImage != null &&
+                                        _profileImage!.isNotEmpty
+                                    ? Image.network(
+                                        _profileImage!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Center(
+                                            child: Text(
+                                              _displayNameController.text.isNotEmpty
+                                                  ? _displayNameController.text[0]
+                                                        .toUpperCase()
+                                                  : '?',
+                                              style: TextStyle(
+                                                fontSize: 32,
+                                                color: ChoiceLuxTheme.softWhite,
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Center(
+                                        child: Text(
                                           _displayNameController.text.isNotEmpty
                                               ? _displayNameController.text[0]
                                                     .toUpperCase()
                                               : '?',
-                                          style: const TextStyle(
+                                          style: TextStyle(
                                             fontSize: 32,
-                                            color: Colors.white,
+                                            color: ChoiceLuxTheme.softWhite,
                                           ),
-                                        )
-                                      : null,
+                                        ),
+                                      ),
+                              ),
+                            ),
+                            if (_isUploading)
+                              const Positioned.fill(
+                                child: Center(
+                                  child: CircularProgressIndicator(),
                                 ),
-                                if (_isUploading)
-                                  const Positioned.fill(
-                                    child: Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                              ],
-                            ),
-                            const SizedBox(height: 16),
-                            TextButton.icon(
-                              icon: const Icon(Icons.camera_alt_outlined),
-                              label: const Text('Change Profile Image'),
-                              onPressed: _isUploading
-                                  ? null
-                                  : _pickAndUploadImage,
-                            ),
+                              ),
                           ],
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        TextButton.icon(
+                          icon: Icon(
+                            Icons.camera_alt_outlined,
+                            color: ChoiceLuxTheme.richGold,
+                          ),
+                          label: Text(
+                            'Change Profile Image',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.richGold,
+                            ),
+                          ),
+                          onPressed: _isUploading
+                              ? null
+                              : _pickAndUploadImage,
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 32),
 
                     // Profile Form
-                    Card(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                        side: BorderSide(
-                          color: Colors.white.withOpacity(0.2),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: ChoiceLuxTheme.charcoalGray,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
                           width: 1,
                         ),
                       ),
-                      elevation: 4,
-                      shadowColor: Colors.black.withOpacity(0.08),
                       child: Padding(
-                        padding: const EdgeInsets.all(24),
+                        padding: const EdgeInsets.all(20),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Section Header
                             Row(
                               children: [
-                                const Icon(
+                                Icon(
                                   Icons.person,
                                   size: 22,
-                                  color: ChoiceLuxTheme.richGold,
+                                  color: ChoiceLuxTheme.softWhite,
                                 ),
                                 const SizedBox(width: 8),
                                 Text(
-                                  'Personal Information',
+                                  'PERSONAL INFORMATION',
                                   style: Theme.of(context).textTheme.titleMedium
                                       ?.copyWith(
                                         fontWeight: FontWeight.w600,
-                                        fontSize: 18,
+                                        fontSize: 16,
                                         color: ChoiceLuxTheme.softWhite,
+                                        letterSpacing: 0.5,
                                       ),
                                 ),
                               ],
                             ),
+                            const SizedBox(height: 20),
+
+                            // Form Fields - Single column layout
+                            TextFormField(
+                              controller: _displayNameController,
+                              decoration: _modernInputDecoration('FULL NAME'),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                              validator: (val) => val == null || val.isEmpty
+                                  ? 'Required'
+                                  : null,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _kinController,
+                              decoration: _modernInputDecoration(
+                                'EMERGENCY CONTACT (NEXT OF KIN)',
+                              ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _numberController,
+                              decoration: _modernInputDecoration(
+                                'CONTACT NUMBER',
+                              ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _kinNumberController,
+                              decoration: _modernInputDecoration(
+                                'EMERGENCY CONTACT NUMBER',
+                              ),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                              keyboardType: TextInputType.phone,
+                            ),
+                            const SizedBox(height: 16),
+                            TextFormField(
+                              controller: _addressController,
+                              decoration: _modernInputDecoration('ADDRESS'),
+                              style: TextStyle(
+                                fontSize: 15,
+                                color: ChoiceLuxTheme.softWhite,
+                              ),
+                              maxLines: 3,
+                            ),
+
                             const SizedBox(height: 24),
-
-                            // Form Fields
-                            if (isWide) ...[
-                              // Two column layout for wide screens
-                              Row(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Expanded(
-                                    child: Column(
-                                      children: [
-                                        TextFormField(
-                                          controller: _displayNameController,
-                                          decoration: _modernInputDecoration(
-                                            'Full Name',
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            color: ChoiceLuxTheme.softWhite,
-                                          ),
-                                          validator: (val) =>
-                                              val == null || val.isEmpty
-                                              ? 'Required'
-                                              : null,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _numberController,
-                                          decoration: _modernInputDecoration(
-                                            'Contact Number',
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            color: ChoiceLuxTheme.softWhite,
-                                          ),
-                                          keyboardType: TextInputType.phone,
-                                        ),
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _addressController,
-                                          decoration: _modernInputDecoration(
-                                            'Address',
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            color: ChoiceLuxTheme.softWhite,
-                                          ),
-                                          maxLines: 3,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  const SizedBox(width: 24),
-                                  Expanded(
-                                    child: Column(
-                                      children: [
-                                        TextFormField(
-                                          controller: _kinController,
-                                          decoration: _modernInputDecoration(
-                                            'Emergency Contact (Next of Kin)',
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            color: ChoiceLuxTheme.softWhite,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 16),
-                                        TextFormField(
-                                          controller: _kinNumberController,
-                                          decoration: _modernInputDecoration(
-                                            'Emergency Contact Number',
-                                          ),
-                                          style: const TextStyle(
-                                            fontSize: 15,
-                                            color: ChoiceLuxTheme.softWhite,
-                                          ),
-                                          keyboardType: TextInputType.phone,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ] else ...[
-                              // Single column layout for mobile/tablet
-                              TextFormField(
-                                controller: _displayNameController,
-                                decoration: _modernInputDecoration('Full Name'),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                validator: (val) => val == null || val.isEmpty
-                                    ? 'Required'
-                                    : null,
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _numberController,
-                                decoration: _modernInputDecoration(
-                                  'Contact Number',
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                keyboardType: TextInputType.phone,
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _addressController,
-                                decoration: _modernInputDecoration('Address'),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                maxLines: 3,
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _kinController,
-                                decoration: _modernInputDecoration(
-                                  'Emergency Contact (Next of Kin)',
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-                              TextFormField(
-                                controller: _kinNumberController,
-                                decoration: _modernInputDecoration(
-                                  'Emergency Contact Number',
-                                ),
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  color: ChoiceLuxTheme.softWhite,
-                                ),
-                                keyboardType: TextInputType.phone,
-                              ),
-                            ],
-
-                            const SizedBox(height: 32),
 
                             // Save Button
                             SizedBox(
                               width: double.infinity,
-                              child: FilledButton.icon(
+                              child: ElevatedButton.icon(
                                 onPressed: _isLoading ? null : _saveProfile,
                                 icon: _isLoading
                                     ? const SizedBox(
@@ -499,18 +431,23 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                                         height: 20,
                                         child: CircularProgressIndicator(
                                           strokeWidth: 2,
+                                          color: Colors.black,
                                         ),
                                       )
-                                    : const Icon(Icons.save),
+                                    : const Icon(Icons.save, size: 18),
                                 label: Text(
                                   _isLoading ? 'Saving...' : 'Save Changes',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
                                 ),
-                                style: FilledButton.styleFrom(
+                                style: ElevatedButton.styleFrom(
                                   backgroundColor: ChoiceLuxTheme.richGold,
-                                  foregroundColor: ChoiceLuxTheme.jetBlack,
+                                  foregroundColor: Colors.black,
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 16,
                                   ),
+                                  elevation: 0,
                                   shape: RoundedRectangleBorder(
                                     borderRadius: BorderRadius.circular(12),
                                   ),
@@ -526,9 +463,7 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
               ),
             ),
           ),
-        ),
       ),
-      ],
     );
   }
 }

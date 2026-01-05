@@ -38,7 +38,7 @@ class CompactMetricTile extends StatelessWidget {
     
     final iconColorValue = iconColor ?? ChoiceLuxTheme.richGold;
     final backgroundColorValue = backgroundColor ?? 
-        ChoiceLuxTheme.charcoalGray.withOpacity(0.5);
+        ChoiceLuxTheme.charcoalGray;
 
     Widget content;
 
@@ -92,30 +92,28 @@ class CompactMetricTile extends StatelessWidget {
                     mainAxisAlignment: MainAxisAlignment.center,
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Flexible(
-                        child: Text(
-                          value,
-                          style: TextStyle(
-                            fontSize: adjustedValueFontSize,
-                            fontWeight: FontWeight.w700,
-                            color: ChoiceLuxTheme.softWhite,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      // Value - allow 2 lines for longer values
+                      Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: adjustedValueFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: ChoiceLuxTheme.softWhite,
                         ),
+                        maxLines: 2, // Changed from 1 to 2
+                        overflow: TextOverflow.visible, // Changed from ellipsis to visible
                       ),
                       SizedBox(height: adjustedColumnSpacing),
-                      Flexible(
-                        child: Text(
-                          label,
-                          style: TextStyle(
-                            fontSize: adjustedLabelFontSize,
-                            color: ChoiceLuxTheme.platinumSilver,
-                            fontWeight: FontWeight.w500,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                      // Label - allow wrapping
+                      Text(
+                        label,
+                        style: TextStyle(
+                          fontSize: adjustedLabelFontSize,
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontWeight: FontWeight.w500,
                         ),
+                        maxLines: 2, // Changed from 1 to 2
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
@@ -133,18 +131,18 @@ class CompactMetricTile extends StatelessWidget {
           final availableHeight = constraints.maxHeight;
           final isVerySmall = availableHeight < 100;
           
-          // Adjust sizes based on available space
-          final adjustedPadding = isVerySmall ? padding * 0.5 : padding;
-          final adjustedIconPadding = isVerySmall ? spacing * 0.8 : spacing * 1.5;
-          final adjustedIconSize = isVerySmall ? iconSize * 0.6 : iconSize * 0.75;
-          final adjustedSpacing = isVerySmall ? spacing * 0.5 : spacing * 1.5;
+          // Adjust sizes based on available space - reduced to prevent text cutoff
+          final adjustedPadding = isVerySmall ? padding * 0.5 : padding * 0.75;
+          final adjustedIconPadding = isVerySmall ? spacing * 0.6 : spacing * 1.0; // Reduced from 1.5
+          final adjustedIconSize = isVerySmall ? iconSize * 0.5 : iconSize * 0.65; // Reduced from 0.75
+          final adjustedSpacing = isVerySmall ? spacing * 0.3 : spacing * 0.8; // Reduced from 1.5
           final adjustedValueFontSize = isVerySmall 
-              ? ResponsiveTokens.getFontSize(screenWidth, baseSize: 14)
-              : ResponsiveTokens.getFontSize(screenWidth, baseSize: 18);
+              ? ResponsiveTokens.getFontSize(screenWidth, baseSize: 12) // Reduced from 14
+              : ResponsiveTokens.getFontSize(screenWidth, baseSize: 16); // Reduced from 18
           final adjustedLabelFontSize = isVerySmall
-              ? ResponsiveTokens.getFontSize(screenWidth, baseSize: 10)
-              : ResponsiveTokens.getFontSize(screenWidth, baseSize: 12);
-          final adjustedSmallSpacing = isVerySmall ? spacing * 0.25 : spacing * 0.5;
+              ? ResponsiveTokens.getFontSize(screenWidth, baseSize: 9) // Reduced from 10
+              : ResponsiveTokens.getFontSize(screenWidth, baseSize: 11); // Reduced from 12
+          final adjustedSmallSpacing = isVerySmall ? spacing * 0.2 : spacing * 0.4; // Reduced from 0.5
           
           return Container(
             padding: EdgeInsets.all(adjustedPadding),
@@ -160,50 +158,53 @@ class CompactMetricTile extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               mainAxisSize: MainAxisSize.min,
               children: [
-                Flexible(
-                  flex: isVerySmall ? 2 : 3,
-                  child: Container(
-                    padding: EdgeInsets.all(adjustedIconPadding),
-                    decoration: BoxDecoration(
-                      color: iconColorValue.withOpacity(0.15),
-                      borderRadius: BorderRadius.circular(ResponsiveTokens.getCornerRadius(screenWidth) * 0.8),
-                    ),
-                    child: Icon(
-                      icon,
-                      color: iconColorValue,
-                      size: adjustedIconSize,
-                    ),
+                // Icon - use fixed size instead of Flexible to prevent taking too much space
+                Container(
+                  padding: EdgeInsets.all(adjustedIconPadding),
+                  decoration: BoxDecoration(
+                    color: iconColorValue.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(ResponsiveTokens.getCornerRadius(screenWidth) * 0.8),
+                  ),
+                  child: Icon(
+                    icon,
+                    color: iconColorValue,
+                    size: adjustedIconSize,
                   ),
                 ),
                 SizedBox(height: adjustedSpacing),
+                // Value - allow up to 2 lines and use Flexible with constraints
                 Flexible(
-                  flex: isVerySmall ? 1 : 2,
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      fontSize: adjustedValueFontSize,
-                      fontWeight: FontWeight.w700,
-                      color: ChoiceLuxTheme.softWhite,
+                  child: SizedBox(
+                    height: adjustedValueFontSize * 2.5, // Max height for 2 lines
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.center,
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          fontSize: adjustedValueFontSize,
+                          fontWeight: FontWeight.w700,
+                          color: ChoiceLuxTheme.softWhite,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        textAlign: TextAlign.center,
+                      ),
                     ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
                   ),
                 ),
                 SizedBox(height: adjustedSmallSpacing),
-                Flexible(
-                  flex: 1,
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: adjustedLabelFontSize,
-                      color: ChoiceLuxTheme.platinumSilver,
-                      fontWeight: FontWeight.w500,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    textAlign: TextAlign.center,
+                // Label - allow wrapping
+                Text(
+                  label,
+                  style: TextStyle(
+                    fontSize: adjustedLabelFontSize,
+                    color: ChoiceLuxTheme.platinumSilver,
+                    fontWeight: FontWeight.w500,
                   ),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
                 ),
               ],
             ),

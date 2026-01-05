@@ -13,6 +13,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/dashboard_card.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
@@ -64,7 +65,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       // Start deadline check service for admin/manager/driver_manager
       _startDeadlineCheckService(ref);
     });
-    final isMobile = MediaQuery.of(context).size.width < 600;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
 
     // Get display name from profile, fallback to email, then to 'User'
     String userName = 'User';
@@ -97,8 +99,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         : 0;
 
     // Responsive padding - provide minimal padding for mobile
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 400;
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
     final horizontalPadding = isSmallMobile
         ? 8.0
@@ -118,22 +119,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
+        // Layer 1: The background that fills the entire screen (solid obsidian)
         Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
+          color: ChoiceLuxTheme.jetBlack,
         ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        // Layer 2: The SystemSafeScaffold with proper system UI handling
         SystemSafeScaffold(
           scaffoldKey: _scaffoldKey,
           backgroundColor: Colors.transparent, // CRITICAL
           appBar: LuxuryAppBar(
             title: 'Dashboard',
+            subtitle: 'OVERVIEW & STATISTICS',
             showLogo: true,
             showProfile: true,
             onNotificationTap: _handleNotifications,
@@ -213,67 +209,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   Widget _buildWelcomeSection(BuildContext context, String userName) {
+    // Get time-based greeting
+    final hour = DateTime.now().hour;
+    String timeGreeting;
+    if (hour < 12) {
+      timeGreeting = 'Good Morning';
+    } else if (hour < 17) {
+      timeGreeting = 'Good Afternoon';
+    } else {
+      timeGreeting = 'Good Evening';
+    }
+
     // Responsive sizing for mobile
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
     final titleSize = isSmallMobile
-        ? 18.0
+        ? 24.0
         : isMobile
-        ? 20.0
-        : 20.0; // Further reduced to 20px for desktop
+        ? 28.0
+        : 32.0;
     final subtitleSize = isSmallMobile
-        ? 12.0
-        : isMobile
         ? 14.0
-        : 14.0; // Further reduced to 14px for desktop
-    final spacing = isSmallMobile
-        ? 3.0
         : isMobile
-        ? 4.0
-        : 4.0; // Further reduced to 4px for desktop
-    final sectionSpacing = isSmallMobile
-        ? 6.0
+        ? 16.0
+        : 16.0;
+    final lineHeight = 2.0;
+    final lineWidth = isSmallMobile
+        ? 60.0
         : isMobile
-        ? 8.0
-        : 6.0; // Further reduced to 6px for desktop
-
-    // Add horizontal padding for mobile (accounting for main container padding)
-    final horizontalPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 8.0
-        : 0.0;
+        ? 80.0
+        : 100.0;
 
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 24.0 : 0.0,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'Welcome back, $userName 👋',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w500,
+            '$timeGreeting, $userName',
+            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+              color: ChoiceLuxTheme.softWhite,
+              fontWeight: FontWeight.w700,
+              fontSize: titleSize,
+            ),
+          ),
+          SizedBox(height: 8),
+          Text(
+            "Here's what's happening in your fleet today.",
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+              fontWeight: FontWeight.w400,
               fontSize: subtitleSize,
             ),
           ),
-          SizedBox(height: sectionSpacing),
+          SizedBox(height: 12),
           Container(
-            height: 2,
-            width: isSmallMobile
-                ? 30
-                : isMobile
-                ? 40
-                : 50, // Reduced from 60px to 50px for desktop
+            height: lineHeight,
+            width: lineWidth,
             decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.5),
-                ],
-              ),
+              color: ChoiceLuxTheme.richGold,
               borderRadius: BorderRadius.circular(1),
             ),
           ),
@@ -313,7 +311,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               : 'No jobs today',
           icon: Icons.work_outline,
           route: '/jobs',
-          color: ChoiceLuxTheme.richGold,
+          color: const Color(0xFFEF5350), // Red
           badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
         ),
       ];
@@ -328,7 +326,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 : 'User & driver management',
             icon: Icons.people,
             route: '/users',
-            color: ChoiceLuxTheme.richGold,
+            color: const Color(0xFFFFA726), // Orange/Gold
             badge: unassignedUsersCount > 0
                 ? unassignedUsersCount.toString()
                 : null,
@@ -338,21 +336,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           subtitle: 'Manage client relationships',
           icon: Icons.people_outline,
           route: '/clients',
-          color: ChoiceLuxTheme.richGold,
+          color: const Color(0xFF42A5F5), // Blue
         ),
         DashboardItem(
           title: 'Vehicles',
           subtitle: 'Manage fleet vehicles',
           icon: Icons.directions_car_outlined,
           route: '/vehicles',
-          color: ChoiceLuxTheme.richGold,
+          color: const Color(0xFF26A69A), // Teal/Green
         ),
         DashboardItem(
           title: 'Quotes',
           subtitle: 'Create and manage quotes',
           icon: Icons.description_outlined,
           route: '/quotes',
-          color: ChoiceLuxTheme.richGold,
+          color: const Color(0xFF8E24AA), // Purple
         ),
         DashboardItem(
           title: 'Jobs',
@@ -361,7 +359,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               : 'Track job progress',
           icon: Icons.work_outline,
           route: '/jobs',
-          color: ChoiceLuxTheme.richGold,
+          color: const Color(0xFFEF5350), // Red
           badge: todayJobsCount > 0 ? todayJobsCount.toString() : null,
         ),
       ];
@@ -375,7 +373,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             subtitle: 'View business analytics and reports',
             icon: Icons.analytics_outlined,
             route: '/insights',
-            color: ChoiceLuxTheme.richGold,
+            color: const Color(0xFFFFA726), // Orange/Gold
           ),
         );
       } else {
@@ -386,60 +384,64 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     // Responsive grid configuration based on screen size
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
     // Debug logging for screen dimensions
     Log.d('Screen dimensions: ${screenWidth}x${screenHeight}');
 
     // Responsive grid configuration with compact sizing for desktop
     int crossAxisCount;
-    double spacing;
+    double spacingValue;
     double childAspectRatio;
-    // Reduce outer padding for desktop to save vertical space
-    final EdgeInsets outerPadding = screenWidth >= 600 
-        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 8) // Less vertical padding on desktop
-        : const EdgeInsets.all(16);
+    // Reduced padding for more compact layout
+    final EdgeInsets outerPadding = !isMobile
+        ? EdgeInsets.symmetric(horizontal: 32.0, vertical: 24.0) // Compact padding
+        : EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0); // Compact mobile padding
 
-    if (screenWidth >= 600) {
-      // Desktop/Tablet - 3 columns, 2 rows (6 cards), square cards
-      Log.d('Layout: Desktop (3 columns, 2 rows - square cards)');
+    if (!isMobile) {
+      // Desktop/Tablet/Large Desktop - 3 columns, 2 rows (6 cards), square cards (more compact)
+      Log.d('Layout: Desktop/Tablet (3 columns, 2 rows - compact square cards)');
       crossAxisCount = 3;
-      spacing = 12.0; // Clean 12px spacing
+      spacingValue = 16.0; // Reduced spacing
       childAspectRatio = 1.0; // Square cards (height = width)
     } else {
-      // Mobile - 2 columns
-      Log.d('Layout: Mobile (2 columns)');
-      crossAxisCount = 2;
-      spacing = 12.0;
-      childAspectRatio = 0.9;
+      // Mobile - 1 column (single cards)
+      Log.d('Layout: Mobile (1 column - single cards)');
+      crossAxisCount = 1;
+      spacingValue = 16.0; // Reduced spacing
+      childAspectRatio = 2.5; // Wider cards (width is 2.5x height)
     }
 
     Log.d(
-      'Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacing, aspectRatio=$childAspectRatio',
+      'Final GridView config: crossAxisCount=$crossAxisCount, spacing=$spacingValue, aspectRatio=$childAspectRatio',
     );
 
-    // For desktop, center the grid with max width to ensure 2 rows fit without scrolling
-    if (screenWidth >= 600) {
-      // Calculate max width: ensure 2 rows of square cards fit in viewport
-      // Account for: header (~72px), welcome section (~60px), padding/spacing (~40px)
-      // Remaining height for cards: screenHeight - 172px
-      // For 2 rows: (remainingHeight - 12px spacing) / 2 = card height
-      // Card width = card height (square), so max grid width = (card width * 3) + (spacing * 2)
-      final availableHeight = screenHeight - 180; // Reserve space for header, welcome, padding
-      final cardHeight = (availableHeight - spacing) / 2; // 2 rows with spacing
-      final maxGridWidth = (cardHeight * 3) + (spacing * 2); // 3 columns with spacing
-      final constrainedWidth = maxGridWidth < 750.0 ? maxGridWidth : 750.0; // Cap at 750px, ensure double
+    // For desktop/tablet/large desktop, center the grid with fixed width constraint
+    if (!isMobile) {
+      // Fixed maximum card size to prevent cards from expanding
+      // Max card width: 200px, so grid content width: (200 * 3) + (spacing * 2) = 632px
+      const maxCardWidth = 200.0;
+      const gridContentWidth = (maxCardWidth * 3) + (16.0 * 2); // 3 columns + 2 spacing gaps
       
       return Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(maxWidth: constrainedWidth),
-          child: Padding(
-            padding: outerPadding,
+        child: Padding(
+          padding: outerPadding,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: gridContentWidth,
+              minWidth: gridContentWidth,
+            ),
             child: GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: spacing,
-              mainAxisSpacing: spacing,
+              crossAxisSpacing: spacingValue,
+              mainAxisSpacing: spacingValue,
               childAspectRatio: childAspectRatio,
               children: dashboardItems
                   .map(
@@ -466,8 +468,8 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         crossAxisCount: crossAxisCount,
-        crossAxisSpacing: spacing,
-        mainAxisSpacing: spacing,
+        crossAxisSpacing: spacingValue,
+        mainAxisSpacing: spacingValue,
         childAspectRatio: childAspectRatio,
         children: dashboardItems
             .map(

@@ -4,7 +4,6 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/constants/notification_constants.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/widgets/notification_card.dart';
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
@@ -12,6 +11,7 @@ import 'package:choice_lux_cars/features/notifications/models/notification.dart'
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class NotificationListScreen extends ConsumerStatefulWidget {
   const NotificationListScreen({super.key});
@@ -30,11 +30,17 @@ class _NotificationListScreenState
   @override
   void initState() {
     super.initState();
-    // Initialize notifications when screen loads
+    // Start realtime subscription immediately (lightweight, non-blocking)
+    ref.read(notificationProvider.notifier).startRealtimeSubscription();
+    
+    // Defer data loading to allow navigation animation to complete first
+    // This prevents blocking the navigation transition
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationProvider.notifier).loadNotifications();
-      ref.read(notificationProvider.notifier).loadStats();
-      ref.read(notificationProvider.notifier).startRealtimeSubscription();
+      Future.microtask(() {
+        // loadNotifications() already calls _updateStatsFromNotifications(),
+        // so we only need to load notifications, not stats separately
+        ref.read(notificationProvider.notifier).loadNotifications();
+      });
     });
   }
 
@@ -47,6 +53,8 @@ class _NotificationListScreenState
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Notifications',
@@ -65,7 +73,6 @@ class _NotificationListScreenState
               switch (value) {
                 case 'refresh':
                   ref.read(notificationProvider.notifier).loadNotifications();
-                  ref.read(notificationProvider.notifier).loadStats();
                   break;
                 case 'mark_all_read':
                   _showMarkAllReadDialog(context);
@@ -93,8 +100,8 @@ class _NotificationListScreenState
                 value: 'refresh',
                 child: Row(
                   children: [
-                    Icon(Icons.refresh, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    Icon(Icons.refresh, color: ChoiceLuxTheme.richGold, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                    SizedBox(width: spacing * 1.5),
                     Text('Refresh', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
@@ -103,8 +110,8 @@ class _NotificationListScreenState
                 value: 'filter_all',
                 child: Row(
                   children: [
-                    Icon(Icons.all_inbox, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    Icon(Icons.all_inbox, color: ChoiceLuxTheme.richGold, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                    SizedBox(width: spacing * 1.5),
                     Text('All Notifications', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
@@ -113,8 +120,8 @@ class _NotificationListScreenState
                 value: 'filter_unread',
                 child: Row(
                   children: [
-                    Icon(Icons.mark_email_unread, color: ChoiceLuxTheme.richGold, size: 18),
-                    const SizedBox(width: 12),
+                    Icon(Icons.mark_email_unread, color: ChoiceLuxTheme.richGold, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                    SizedBox(width: spacing * 1.5),
                     Text('Unread Only', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
@@ -123,8 +130,8 @@ class _NotificationListScreenState
                 value: 'mark_all_read',
                 child: Row(
                   children: [
-                    Icon(Icons.done_all, color: ChoiceLuxTheme.successColor, size: 18),
-                    const SizedBox(width: 12),
+                    Icon(Icons.done_all, color: ChoiceLuxTheme.successColor, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                    SizedBox(width: spacing * 1.5),
                     Text('Mark All Read', style: TextStyle(color: ChoiceLuxTheme.softWhite)),
                   ],
                 ),
@@ -133,91 +140,80 @@ class _NotificationListScreenState
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          // Layer 1: Gradient background
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          // Layer 2: Background pattern
-          const Positioned.fill(
-            child: CustomPaint(
-              painter: BackgroundPatterns.dashboard,
-            ),
-          ),
-          // Layer 3: Content
-          SingleChildScrollView(
-            child: Column(
-              children: [
-                // Filter and Stats Section
-                _buildFilterSection(),
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      body: SingleChildScrollView(
+        child: Column(
+          children: [
+            // Summary Section
+            _buildFilterSection(),
 
-                // Notifications List
-                SizedBox(
-                  height: MediaQuery.of(context).size.height - 
-                          MediaQuery.of(context).padding.top - 
-                          kToolbarHeight - 
-                          200, // Approximate height for filter section
-                  child: Consumer(
-                  builder: (context, ref, child) {
-                    final notificationState = ref.watch(notificationProvider);
+            // Notifications List
+            Consumer(
+              builder: (context, ref, child) {
+                final notificationState = ref.watch(notificationProvider);
 
-                    if (notificationState.isLoading) {
-                      return _buildLoadingState();
-                    }
+                if (notificationState.isLoading) {
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: _buildLoadingState(),
+                  );
+                }
 
-                    if (notificationState.error != null) {
-                      return _buildErrorState(notificationState.error!);
-                    }
+                if (notificationState.error != null) {
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: _buildErrorState(notificationState.error!),
+                  );
+                }
 
-                    if (notificationState.notifications.isEmpty) {
-                      return _buildEmptyState();
-                    }
+                if (notificationState.notifications.isEmpty) {
+                  return SizedBox(
+                    height: MediaQuery.of(context).size.height * 0.6,
+                    child: _buildEmptyState(),
+                  );
+                }
 
-                    return RefreshIndicator(
-                      onRefresh: () async {
-                        await ref
-                            .read(notificationProvider.notifier)
-                            .loadNotifications();
-                      },
-                      color: ChoiceLuxTheme.richGold,
-                      backgroundColor: ChoiceLuxTheme.charcoalGray,
-                      child: ListView.builder(
-                        controller: _scrollController,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        itemCount: _getFilteredNotifications(
-                          notificationState.notifications,
-                        ).length,
-                        itemBuilder: (context, index) {
-                          final filteredNotifications = _getFilteredNotifications(
-                            notificationState.notifications,
-                          );
-                          final notification = filteredNotifications[index];
-                          return Padding(
-                            padding: const EdgeInsets.only(bottom: 12),
-                            child: NotificationCard(
-                              notification: notification,
-                              onTap: () => _handleNotificationTap(notification),
-                              onDismiss: () =>
-                                  _handleNotificationDismiss(notification),
-                              onMarkRead: () => _handleMarkAsRead(notification),
-                            ),
-                          );
-                        },
-                      ),
-                    );
+                // Cache filtered notifications to avoid recalculating in itemBuilder
+                final filteredNotifications = _getFilteredNotifications(
+                  notificationState.notifications,
+                );
+
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    await ref
+                        .read(notificationProvider.notifier)
+                        .loadNotifications();
                   },
-                ),
-                ),
-              ],
+                  color: ChoiceLuxTheme.richGold,
+                  backgroundColor: ChoiceLuxTheme.charcoalGray,
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    itemCount: filteredNotifications.length,
+                    itemBuilder: (context, index) {
+                      final notification = filteredNotifications[index];
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: NotificationCard(
+                          notification: notification,
+                          onTap: () => _handleNotificationTap(notification),
+                          onDismiss: () =>
+                              _handleNotificationDismiss(notification),
+                          onMarkRead: () => _handleMarkAsRead(notification),
+                        ),
+                      );
+                    },
+                  ),
+                );
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -286,24 +282,32 @@ class _NotificationListScreenState
           'Active notifications: ${notificationState.notifications.where((n) => !n.isHidden).length}',
         );
 
-        return Container(
-          margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
-          decoration: BoxDecoration(
-            gradient: ChoiceLuxTheme.cardGradient,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-              width: 1,
-            ),
-          ),
-          child: Column(
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Row(
             children: [
-              // Summary Card with clickable filter numbers
-              _buildSummaryCard(
-                fallbackTotalCount,
-                fallbackUnreadCount,
-                fallbackHighPriorityCount,
+              Expanded(
+                child: _buildSummaryCardItem(
+                  'TOTAL',
+                  fallbackTotalCount.toString(),
+                  Icons.email_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSummaryCardItem(
+                  'UNREAD',
+                  fallbackUnreadCount.toString(),
+                  Icons.email_outlined,
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildSummaryCardItem(
+                  'PRIORITY',
+                  fallbackHighPriorityCount.toString(),
+                  Icons.info_outline,
+                ),
               ),
             ],
           ),
@@ -782,6 +786,52 @@ class _NotificationListScreenState
                 'priority',
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryCardItem(
+    String label,
+    String value,
+    IconData icon,
+  ) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            color: ChoiceLuxTheme.softWhite,
+            size: 24,
+          ),
+          const SizedBox(height: 12),
+          Text(
+            value,
+            style: TextStyle(
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              color: ChoiceLuxTheme.softWhite,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
           ),
         ],
       ),

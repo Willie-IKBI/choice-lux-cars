@@ -11,6 +11,7 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class QuoteTransportDetailsScreen extends ConsumerStatefulWidget {
   final String quoteId;
@@ -232,17 +233,19 @@ class _QuoteTransportDetailsScreenState
       return _buildEmptyState();
     }
 
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+
     return Column(
       children: [
         // Total Amount Summary
         _buildTotalAmountCard(),
-        
-        const SizedBox(height: 16),
-        
+        SizedBox(height: spacing * 2),
         // Transport Details List
         Expanded(
           child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: padding),
             itemCount: _transportDetails.length,
             itemBuilder: (context, index) {
               final transport = _transportDetails[index];
@@ -380,8 +383,8 @@ class _QuoteTransportDetailsScreenState
       builder: (context, constraints) {
         // Responsive breakpoints for mobile optimization
         final screenWidth = constraints.maxWidth;
-        final isMobile = screenWidth < 600;
-        final isSmallMobile = screenWidth < 400;
+        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+        final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
         
         // Responsive sizing
         final cardPadding = isSmallMobile ? 12.0 : isMobile ? 16.0 : 20.0;

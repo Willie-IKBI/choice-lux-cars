@@ -5,6 +5,8 @@ import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
 
@@ -90,24 +92,23 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   Widget build(BuildContext context) {
     final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
 
-    return Scaffold(
+    return SystemSafeScaffold(
+      backgroundColor: Colors.transparent,
       appBar: const LuxuryAppBar(title: 'Trip Management'),
       drawer: const LuxuryDrawer(),
-      body: SafeArea(
-        child: tripsState.when(
-          data: (trips) => _buildTripsContent(trips),
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (error, stack) => Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Text('Error: $error'),
-                ElevatedButton(
-                  onPressed: () => ref.invalidate(tripsByJobProvider(widget.jobId)),
-                  child: const Text('Retry'),
-                ),
-              ],
-            ),
+      body: tripsState.when(
+        data: (trips) => _buildTripsContent(context, trips),
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (error, stack) => Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text('Error: $error'),
+              ElevatedButton(
+                onPressed: () => ref.invalidate(tripsByJobProvider(widget.jobId)),
+                child: const Text('Retry'),
+              ),
+            ],
           ),
         ),
       ),
@@ -123,17 +124,20 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     );
   }
 
-  Widget _buildTripsContent(List<Trip> trips) {
+  Widget _buildTripsContent(BuildContext context, List<Trip> trips) {
     final totalAmount = trips.fold(0.0, (sum, trip) => sum + trip.amount);
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
     return SingleChildScrollView(
-      padding: const EdgeInsets.fromLTRB(16, 16, 16, 100), // Added bottom padding for FAB
+      padding: EdgeInsets.fromLTRB(padding, padding, padding, 100), // Added bottom padding for FAB
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           // Header
           Container(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(padding * 1.5), // Slightly larger for header
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
@@ -182,11 +186,11 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
           // Trips list
           if (trips.isNotEmpty) ...[
             ...trips.map((trip) => _buildTripCard(trip)).toList(),
-            const SizedBox(height: 24),
+            SizedBox(height: spacing * 3),
 
             // Total amount
             Container(
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(padding * 1.25),
               decoration: BoxDecoration(
                 color: ChoiceLuxTheme.richGold.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(16),
@@ -263,10 +267,14 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   }
 
   Widget _buildTripCard(Trip trip) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     return Card(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: EdgeInsets.only(bottom: spacing * 2),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.all(padding),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

@@ -9,7 +9,6 @@ import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ClientsScreen extends ConsumerStatefulWidget {
   const ClientsScreen({super.key});
@@ -32,61 +31,57 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   Widget build(BuildContext context) {
     // Responsive breakpoints for mobile optimization
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
     final clientsAsync = _searchQuery.isEmpty
         ? ref.watch(clientsProvider)
         : ref.watch(clientSearchProvider(_searchQuery));
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'Clients',
-            showBackButton: true,
-            onBackPressed: () => context.go('/'),
-            onSignOut: () async {
-              await ref.read(authProvider.notifier).signOut();
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'Clients',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
+        actions: [
+          ElevatedButton.icon(
+            onPressed: () {
+              context.go('/clients/add');
             },
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Client'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.black,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
-          floatingActionButton: _buildMobileOptimizedFAB(isMobile),
-          body: SafeArea(
+        ],
+      ),
+      body: SafeArea(
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 1200),
             child: Column(
               children: [
                 // Responsive Search Bar with Filter
                 Padding(
-                  padding: EdgeInsets.all(
-                    isSmallMobile
-                        ? 12.0
-                        : isMobile
-                        ? 16.0
-                        : 24.0,
-                  ),
+                  padding: EdgeInsets.all(padding),
                   child: _buildResponsiveSearchAndFilter(isMobile, isSmallMobile),
                 ),
 
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 1.5),
 
                 // Clients List
                 Expanded(
@@ -117,11 +112,14 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 
   Widget _buildMobileLoadingState(bool isMobile, bool isSmallMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -144,41 +142,21 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
               strokeWidth: isMobile ? 2.0 : 3.0,
             ),
           ),
-          SizedBox(
-            height: isSmallMobile
-                ? 16
-                : isMobile
-                ? 20
-                : 24,
-          ),
+          SizedBox(height: spacing * 2),
           // Loading text
           Text(
             'Loading clients...',
             style: TextStyle(
-              fontSize: isSmallMobile
-                  ? 14
-                  : isMobile
-                  ? 16
-                  : 18,
+              fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(
-            height: isSmallMobile
-                ? 8
-                : isMobile
-                ? 10
-                : 12,
-          ),
+          SizedBox(height: spacing),
           Text(
             'Please wait while we fetch client data',
             style: TextStyle(
-              fontSize: isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 13
-                  : 14,
+              fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 13),
               color: ChoiceLuxTheme.platinumSilver,
             ),
             textAlign: TextAlign.center,
@@ -189,6 +167,9 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
   }
 
   Widget _buildErrorState(Object error, bool isMobile, bool isSmallMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -207,40 +188,20 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
             ),
             child: Icon(
               Icons.error_outline,
-              size: isSmallMobile
-                  ? 40
-                  : isMobile
-                  ? 48
-                  : 56,
+              size: ResponsiveTokens.getIconSize(screenWidth) * 2.5,
               color: ChoiceLuxTheme.errorColor,
             ),
           ),
-          SizedBox(
-            height: isSmallMobile
-                ? 16
-                : isMobile
-                ? 20
-                : 24,
-          ),
+          SizedBox(height: spacing * 2),
           Text(
             'Error loading clients',
             style: TextStyle(
-              fontSize: isSmallMobile
-                  ? 16
-                  : isMobile
-                  ? 18
-                  : 20,
+              fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 18),
               fontWeight: FontWeight.w500,
               color: ChoiceLuxTheme.softWhite,
             ),
           ),
-          SizedBox(
-            height: isSmallMobile
-                ? 8
-                : isMobile
-                ? 10
-                : 12,
-          ),
+          SizedBox(height: spacing),
           Text(
             error.toString(),
             style: TextStyle(
@@ -957,27 +918,4 @@ class _ClientsScreenState extends ConsumerState<ClientsScreen> {
     );
   }
 
-  Widget _buildMobileOptimizedFAB(bool isMobile) {
-    if (isMobile) {
-      // Mobile: Compact FAB with icon only
-      return FloatingActionButton(
-        onPressed: () => context.go('/clients/add'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        elevation: 6,
-        child: const Icon(Icons.add, size: 24),
-        tooltip: 'Add Client',
-      );
-    } else {
-      // Desktop: Extended FAB with label
-      return FloatingActionButton.extended(
-        onPressed: () => context.go('/clients/add'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        elevation: 6,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Client'),
-      );
-    }
-  }
 }

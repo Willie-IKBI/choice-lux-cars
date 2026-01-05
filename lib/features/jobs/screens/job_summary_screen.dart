@@ -10,6 +10,7 @@ import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -320,7 +321,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
     // Calculate total amount from trips
     final totalAmount = _trips.fold(0.0, (sum, trip) => sum + trip.amount);
-    final isDesktop = MediaQuery.of(context).size.width > 768;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth) || ResponsiveBreakpoints.isLargeDesktop(screenWidth);
 
     return Stack(
       children: [
@@ -354,14 +356,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildDesktopLayout(double totalAmount) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Left Column - Job Details, Client & Agent, Vehicle & Driver
-        Expanded(
-          flex: 1,
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
+    return Center(
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(maxWidth: 1200),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Left Column - Job Details, Client & Agent, Vehicle & Driver
+            Expanded(
+              flex: 1,
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(padding * 1.5),
             child: Column(
               children: [
                 _buildStatusCard(),
@@ -388,19 +397,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         Expanded(
           flex: 1,
           child: SingleChildScrollView(
-            padding: const EdgeInsets.all(24),
+            padding: EdgeInsets.all(padding * 1.5),
             child: Column(
               children: [
                 _buildTripsSummaryCard(totalAmount),
-                const SizedBox(height: 24),
+                SizedBox(height: spacing * 2),
                 if (_trips.isNotEmpty) _buildTripsListCard(),
-                const SizedBox(height: 32),
+                SizedBox(height: spacing * 2.5),
                 _buildActionButtons(),
               ],
             ),
           ),
         ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class PendingApprovalScreen extends ConsumerWidget {
   const PendingApprovalScreen({super.key});
@@ -11,7 +12,7 @@ class PendingApprovalScreen extends ConsumerWidget {
     final userProfile = ref.watch(currentUserProfileProvider);
     final displayName = userProfile?.displayNameOrEmail ?? 'User';
 
-    return Scaffold(
+    return SystemSafeScaffold(
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
@@ -31,7 +32,7 @@ class PendingApprovalScreen extends ConsumerWidget {
               constraints: const BoxConstraints(maxWidth: 500),
               child: Card(
                 elevation: 8,
-                shadowColor: Colors.black.withOpacity(0.3),
+                shadowColor: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20),
                   side: BorderSide(
@@ -153,8 +154,8 @@ class PendingApprovalScreen extends ConsumerWidget {
                           icon: const Icon(Icons.logout),
                           label: const Text('Sign Out'),
                           style: FilledButton.styleFrom(
-                            backgroundColor: Colors.red.withOpacity(0.8),
-                            foregroundColor: Colors.white,
+                            backgroundColor: ChoiceLuxTheme.errorColor.withOpacity(0.8),
+                            foregroundColor: ChoiceLuxTheme.softWhite,
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),

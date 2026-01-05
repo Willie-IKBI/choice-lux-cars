@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/app/theme_helpers.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class DashboardCard extends StatefulWidget {
   final IconData icon;
@@ -69,36 +71,27 @@ class _DashboardCardState extends State<DashboardCard>
 
     // Responsive sizing based on screen width
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth);
 
     // Debug: Print card sizing info
     debugPrint(
       'DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile',
     );
 
-    // Responsive sizing - small compact cards for desktop, touch-friendly for mobile
-    final iconSize = isSmallMobile
+    // Responsive sizing - compact cards (fixed sizes to prevent overflow)
+    final iconSizeValue = isSmallMobile
         ? 24.0
         : isMobile
         ? 28.0
-        : 22.0; // Smaller icons for desktop (22px)
-    final iconContainerPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 10.0
-        : 8.0; // 8px for desktop
-    final cardPadding = isSmallMobile
-        ? const EdgeInsets.all(12.0)
-        : isMobile
-        ? const EdgeInsets.all(16.0)
-        : const EdgeInsets.all(8.0); // Smaller padding (8px) for desktop
-    final titleSpacing = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 10.0
-        : 6.0; // 6px spacing for desktop
-    final borderRadius = isMobile ? context.radiusMd : 20.0;
+        : 20.0; // Smaller icons for compact design
+    final iconContainerPadding = isMobile ? 8.0 : 6.0;
+    final cardPadding = EdgeInsets.all(isMobile ? 14.0 : 10.0); // Reduced padding to prevent overflow
+    final titleSpacing = isMobile ? 6.0 : 4.0; // Reduced spacing
+    final borderRadius = 12.0; // Fixed border radius
 
     return MouseRegion(
       onEnter: (_) => _onHover(true),
@@ -111,26 +104,13 @@ class _DashboardCardState extends State<DashboardCard>
             child: Container(
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(borderRadius),
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    backgroundColor,
-                    backgroundColor.withValues(alpha: 0.8),
-                  ],
-                ),
+                color: backgroundColor,
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.3),
                     blurRadius: _isHovered ? 20 : 10,
                     offset: Offset(0, _isHovered ? 8 : 4),
                   ),
-                  if (_isHovered)
-                    BoxShadow(
-                      color: iconColor.withValues(alpha: 0.2),
-                      blurRadius: 15,
-                      offset: const Offset(0, 5),
-                    ),
                 ],
                 border: Border.all(
                   color: _isHovered
@@ -139,111 +119,130 @@ class _DashboardCardState extends State<DashboardCard>
                   width: _isHovered ? 1.5 : 1,
                 ),
               ),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  onTap: () {
-                    debugPrint('DashboardCard - Tapped: ${widget.title}');
-                    widget.onTap();
-                  },
-                  borderRadius: BorderRadius.circular(borderRadius),
-                  child: Container(
-                    padding: cardPadding,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        // Icon Container with better touch target
-                        Stack(
+              child: Stack(
+                fit: StackFit.expand,
+                children: [
+                  // Main card content
+                  Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        debugPrint('DashboardCard - Tapped: ${widget.title}');
+                        widget.onTap();
+                      },
+                      borderRadius: BorderRadius.circular(borderRadius),
+                      child: Container(
+                        padding: cardPadding,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          mainAxisSize: MainAxisSize.max,
                           children: [
-                            Container(
-                              padding: EdgeInsets.all(iconContainerPadding),
-                              decoration: BoxDecoration(
-                                color: iconColor.withValues(alpha: 0.1),
-                                borderRadius: BorderRadius.circular(
-                                  borderRadius * 0.8,
-                                ),
-                                border: Border.all(
-                                  color: iconColor.withValues(alpha: 0.2),
-                                  width: 1,
-                                ),
-                              ),
-                              child: Icon(
-                                widget.icon,
-                                size: iconSize,
-                                color: iconColor,
-                              ),
-                            ),
-                            // Badge
-                            if (widget.badge != null)
-                              Positioned(
-                                top: 0,
-                                right: 0,
-                                child: Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 6,
-                                    vertical: 2,
-                                  ),
+                            // Icon Container with dark background and colored outline
+                            Stack(
+                              alignment: Alignment.center,
+                              children: [
+                                Container(
+                                  padding: EdgeInsets.all(iconContainerPadding),
                                   decoration: BoxDecoration(
-                                    color: Colors.red,
-                                    borderRadius: BorderRadius.circular(10),
+                                    color: ChoiceLuxTheme.jetBlack,
+                                    borderRadius: BorderRadius.circular(8),
                                     border: Border.all(
-                                      color: Colors.white,
-                                      width: 1,
+                                      color: iconColor,
+                                      width: 1.5,
                                     ),
                                   ),
-                                  child: Text(
-                                    widget.badge!,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                    ),
+                                  child: Icon(
+                                    widget.icon,
+                                    size: iconSizeValue,
+                                    color: iconColor,
                                   ),
                                 ),
+                                // Badge
+                                if (widget.badge != null)
+                                  Positioned(
+                                    top: 0,
+                                    right: 0,
+                                    child: Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 6,
+                                        vertical: 2,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: Colors.red,
+                                        borderRadius: BorderRadius.circular(10),
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 1,
+                                        ),
+                                      ),
+                                      child: Text(
+                                        widget.badge!,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                            SizedBox(height: titleSpacing),
+
+                            // Title - gold color to match reference images (Outfit font)
+                            Text(
+                              widget.title,
+                              style: GoogleFonts.outfit(
+                                fontWeight: FontWeight.w700,
+                                color: iconColor,
+                                fontSize: isMobile ? 13.0 : 14.0,
                               ),
+                              textAlign: TextAlign.center,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+
+                            // Subtitle - always visible, consistent styling (Inter font)
+                            if (widget.subtitle != null) ...[
+                              SizedBox(height: 4),
+                              Text(
+                                widget.subtitle!,
+                                style: GoogleFonts.inter(
+                                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                                  fontWeight: FontWeight.w400,
+                                  fontSize: isMobile ? 10.0 : 11.0,
+                                ),
+                                textAlign: TextAlign.center,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ],
                           ],
                         ),
-                        SizedBox(height: titleSpacing),
-
-                        // Title - simplified for mobile
-                        Text(
-                          widget.title,
-                          style: Theme.of(context).textTheme.titleMedium
-                              ?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: ChoiceLuxTheme.softWhite,
-                                fontSize: isSmallMobile
-                                    ? 14
-                                    : isMobile
-                                    ? 16
-                                    : 13, // Smaller title (13px) for desktop
-                              ),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-
-                        // Subtitle - only show on larger screens for cleaner mobile experience
-                        if (widget.subtitle != null && !isMobile) ...[
-                          SizedBox(height: 3),
-                          Text(
-                            widget.subtitle!,
-                            style: Theme.of(context).textTheme.bodySmall
-                                ?.copyWith(
-                                  color: ChoiceLuxTheme.platinumSilver,
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 10, // 10px subtitle for desktop
-                                ),
-                            textAlign: TextAlign.center,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
+                  // Colored shine overlay on hover
+                  if (_isHovered)
+                    IgnorePointer(
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(borderRadius),
+                          gradient: RadialGradient(
+                            center: Alignment.topLeft,
+                            radius: 1.8,
+                            colors: [
+                              iconColor.withValues(alpha: 0.2),
+                              iconColor.withValues(alpha: 0.08),
+                              iconColor.withValues(alpha: 0.0),
+                            ],
+                            stops: [0.0, 0.3, 0.7],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
               ),
             ),
           );

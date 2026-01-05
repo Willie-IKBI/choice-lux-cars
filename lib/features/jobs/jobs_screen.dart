@@ -149,25 +149,28 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 child: CustomPaint(painter: BackgroundPatterns.dashboard),
               ),
               SafeArea(
-                child: Column(
-                  children: [
-                    // Enhanced Filter Section with better mobile layout
-                    _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
+                      children: [
+                        // Enhanced Filter Section with better mobile layout
+                        _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
-                    // Enhanced Search Section
-                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
+                        // Enhanced Search Section
+                        _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
 
-                    // Results count with better mobile optimization
-                    _buildResultsCount(
-                      filteredJobs.length,
-                      isSmallMobile,
-                      isMobile,
-                      isTablet,
-                      isDesktop,
-                    ),
+                        // Results count with better mobile optimization
+                        _buildResultsCount(
+                          filteredJobs.length,
+                          isSmallMobile,
+                          isMobile,
+                          isTablet,
+                          isDesktop,
+                        ),
 
-                    // Enhanced Jobs list with better responsive behavior
-                    Expanded(
+                        // Enhanced Jobs list with better responsive behavior
+                        Expanded(
                       child: paginatedJobs.isEmpty
                           ? _buildEmptyState(
                               isSmallMobile,
@@ -204,17 +207,19 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                             ),
                     ),
 
-                    // Enhanced Pagination with better mobile layout
-                    if (totalPages > 1)
-                      _buildPaginationSection(
-                        totalPages,
-                        filteredJobs.length,
+                        // Enhanced Pagination with better mobile layout
+                        if (totalPages > 1)
+                          _buildPaginationSection(
+                            totalPages,
+                            filteredJobs.length,
                         isSmallMobile,
                         isMobile,
                         isTablet,
-                        isDesktop,
-                      ),
-                  ],
+                            isDesktop,
+                          ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ],
@@ -361,9 +366,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   ? 12
                   : 16,
             ),
-            ElevatedButton.icon(
-              onPressed: () => context.go('/jobs/create'),
-              icon: const Icon(Icons.add, size: 18),
+            Builder(
+              builder: (context) {
+                final screenWidth = MediaQuery.of(context).size.width;
+                return ElevatedButton.icon(
+                  onPressed: () => context.go('/jobs/create'),
+                  icon: Icon(Icons.add, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
               label: Text(
                 isSmallMobile ? 'New' : 'Create Job',
                 style: TextStyle(
@@ -371,18 +379,20 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   fontWeight: FontWeight.w600,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.richGold,
-                foregroundColor: Colors.black,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
                 padding: EdgeInsets.symmetric(
                   horizontal: isSmallMobile ? 12 : 16,
                   vertical: isSmallMobile ? 8 : 12,
                 ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(cornerRadius),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                  ),
                 ),
-              ),
-            ),
+              );
+            },
+          ),
           ],
           if (_searchQuery.isNotEmpty) ...[
             SizedBox(

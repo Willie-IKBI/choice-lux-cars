@@ -69,39 +69,24 @@ class _AgentCardState extends State<AgentCard>
             builder: (context, child) {
               return Transform.scale(
                 scale: _scaleAnimation.value,
-                child: Card(
+                child: Container(
                   margin: EdgeInsets.all(isMobile ? 8.0 : 12.0),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      gradient: ChoiceLuxTheme.cardGradient,
-                      border: _isHovered
-                          ? Border.all(color: ChoiceLuxTheme.richGold, width: 2)
-                          : null,
-                      boxShadow: _isHovered
-                          ? [
-                              BoxShadow(
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                                blurRadius: 12,
-                                spreadRadius: 2,
-                              ),
-                            ]
-                          : [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.2),
-                                blurRadius: 8,
-                                offset: const Offset(0, 4),
-                              ),
-                            ],
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    color: ChoiceLuxTheme.charcoalGray,
+                    border: Border.all(
+                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+                      width: 1,
                     ),
-                    child: InkWell(
-                      onTap: widget.onTap,
-                      borderRadius: BorderRadius.circular(16),
-                      child: Padding(
-                        padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
+                  ),
+                  child: InkWell(
+                    onTap: widget.onTap,
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: EdgeInsets.all(isMobile ? 16.0 : 20.0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
                             // Header with avatar and agent name
                             Row(
                               children: [
@@ -213,8 +198,7 @@ class _AgentCardState extends State<AgentCard>
                                 ),
                               ),
                             ],
-                          ],
-                        ),
+                        ],
                       ),
                     ),
                   ),

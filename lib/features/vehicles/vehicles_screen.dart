@@ -6,9 +6,9 @@ import 'package:choice_lux_cars/features/vehicles/widgets/vehicle_card.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class VehicleListScreen extends ConsumerStatefulWidget {
   const VehicleListScreen({Key? key}) : super(key: key);
@@ -45,73 +45,72 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
 
     // Responsive breakpoints - consistent with our design system
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
-    final isLargeDesktop = screenWidth >= 1200;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'Vehicles',
-            showBackButton: true,
-            onBackPressed: () => context.go('/'),
-            onSignOut: () async {
-              await ref.read(authProvider.notifier).signOut();
-            },
-          ),
-          body: SafeArea(
-            child: Padding(
-              padding: EdgeInsets.all(
-                isSmallMobile
-                    ? 12.0
-                    : isMobile
-                    ? 16.0
-                    : 24.0,
-              ),
-              child: Column(
-                children: [
-                  // Responsive search bar
-                  _buildResponsiveSearchBar(isMobile, isSmallMobile),
-                  SizedBox(
-                    height: isSmallMobile
-                        ? 12.0
-                        : isMobile
-                        ? 16.0
-                        : 20.0,
-                  ),
-                  Expanded(
-                    child: _buildResponsiveVehicleGrid(
-                      filteredVehicles,
-                      isMobile,
-                      isSmallMobile,
-                      isTablet,
-                      isDesktop,
-                      isLargeDesktop,
-                    ),
-                  ),
-                ],
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'Vehicles',
+        subtitle: 'OVERVIEW & STATISTICS',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(authProvider.notifier).signOut();
+        },
+        actions: [
+          ElevatedButton.icon(
+            onPressed: () => context.push('/vehicles/edit'),
+            icon: const Icon(Icons.add, size: 18),
+            label: const Text('Add Vehicle'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.black,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
               ),
             ),
           ),
-          floatingActionButton: _buildMobileOptimizedFAB(),
+        ],
+      ),
+      body: Padding(
+        padding: EdgeInsets.all(
+          isSmallMobile
+              ? 12.0
+              : isMobile
+                  ? 16.0
+                  : 24.0,
         ),
-      ],
-    );
+        child: Column(
+          children: [
+            // Responsive search bar
+            _buildResponsiveSearchBar(isMobile, isSmallMobile),
+            SizedBox(
+              height: isSmallMobile
+                  ? 12.0
+                  : isMobile
+                      ? 16.0
+                      : 20.0,
+            ),
+            Expanded(
+              child: _buildResponsiveVehicleGrid(
+                filteredVehicles,
+                isMobile,
+                isSmallMobile,
+                isTablet,
+                isDesktop,
+                isLargeDesktop,
+              ),
+            ),
+          ],
+        ),
+      ),
+        );
   }
 
   Widget _buildResponsiveSearchBar(bool isMobile, bool isSmallMobile) {
@@ -178,32 +177,40 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     bool isDesktop,
     bool isLargeDesktop,
   ) {
+    // Get screen width for responsive tokens
+    final screenWidth = MediaQuery.of(context).size.width;
+    
     // Responsive grid configuration - using maxCrossAxisExtent for better flexibility
     double maxCrossAxisExtent;
     double spacing;
-    EdgeInsets padding;
+    double childAspectRatio;
 
     if (isLargeDesktop) {
       maxCrossAxisExtent = 320.0;
-      spacing = 20.0;
-      padding = const EdgeInsets.all(24.0);
+      spacing = ResponsiveTokens.getSpacing(screenWidth);
+      childAspectRatio = 0.75;
     } else if (isDesktop) {
       maxCrossAxisExtent = 350.0;
-      spacing = 18.0;
-      padding = const EdgeInsets.all(20.0);
+      spacing = ResponsiveTokens.getSpacing(screenWidth);
+      childAspectRatio = 0.75;
     } else if (isTablet) {
       maxCrossAxisExtent = 400.0;
-      spacing = 16.0;
-      padding = const EdgeInsets.all(16.0);
+      spacing = ResponsiveTokens.getSpacing(screenWidth);
+      childAspectRatio = 0.78;
     } else if (isMobile) {
-      maxCrossAxisExtent = 450.0;
-      spacing = 12.0;
-      padding = const EdgeInsets.all(12.0);
+      // Mobile: Single column with full width minus padding
+      maxCrossAxisExtent = screenWidth - (isSmallMobile ? 24.0 : 32.0);
+      spacing = ResponsiveTokens.getSpacing(screenWidth);
+      // Calculate aspect ratio based on actual content: image (120px) + padding (24px) + text (~50px) = ~194px
+      // For width ~328px: aspectRatio = 328/194 ≈ 1.7
+      childAspectRatio = 1.7;
     } else {
-      // Small mobile
-      maxCrossAxisExtent = double.infinity;
-      spacing = 12.0;
-      padding = const EdgeInsets.all(12.0);
+      // Small mobile: Single column with full width minus padding
+      maxCrossAxisExtent = screenWidth - 24.0;
+      spacing = ResponsiveTokens.getSpacing(screenWidth);
+      // Calculate aspect ratio based on actual content: image (100px) + padding (20px) + text (~45px) = ~165px
+      // For width ~336px: aspectRatio = 336/165 ≈ 2.0
+      childAspectRatio = 2.0;
     }
 
     return RefreshIndicator(
@@ -211,12 +218,12 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
       color: ChoiceLuxTheme.richGold,
       backgroundColor: ChoiceLuxTheme.charcoalGray,
       child: GridView.builder(
-        padding: padding,
+        padding: EdgeInsets.zero,
         gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
           maxCrossAxisExtent: maxCrossAxisExtent,
           crossAxisSpacing: spacing,
           mainAxisSpacing: spacing,
-          // Removed childAspectRatio to allow natural content-based sizing
+          childAspectRatio: childAspectRatio,
         ),
         itemCount: vehicles.length,
         itemBuilder: (context, i) => VehicleCard(
@@ -296,38 +303,28 @@ class _VehicleListScreenState extends ConsumerState<VehicleListScreen> {
     );
   }
 
-  Widget _buildMobileOptimizedFAB() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-
-    if (isMobile) {
-      // Mobile: Compact FAB with icon only
-      return FloatingActionButton(
-        onPressed: () => context.push('/vehicles/edit'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        elevation: 6,
-        child: const Icon(Icons.add, size: 24),
-        tooltip: 'Add Vehicle',
-      );
-    } else {
-      // Desktop: Extended FAB with label
-      return FloatingActionButton.extended(
-        onPressed: () => context.push('/vehicles/edit'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        icon: const Icon(Icons.add),
-        label: const Text('Add Vehicle'),
-        elevation: 6,
-      );
-    }
-  }
 
   Widget _buildLoadingState() {
-    return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    return SystemSafeScaffold(
+      backgroundColor: Colors.transparent,
+      appBar: LuxuryAppBar(
+        title: 'Vehicles',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+      ),
+      body: const Center(child: CircularProgressIndicator()),
+    );
   }
 
   Widget _buildErrorState(Object error) {
-    return Scaffold(body: Center(child: Text('Error: $error')));
+    return SystemSafeScaffold(
+      backgroundColor: Colors.transparent,
+      appBar: LuxuryAppBar(
+        title: 'Vehicles',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+      ),
+      body: Center(child: Text('Error: $error')),
+    );
   }
 }

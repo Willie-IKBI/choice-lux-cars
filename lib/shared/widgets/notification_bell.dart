@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
-import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class NotificationBell extends StatefulWidget {
@@ -121,13 +121,13 @@ class _NotificationBellState extends State<NotificationBell>
                   vertical: 2,
                 ),
                 decoration: BoxDecoration(
-                  color: Colors.red,
+                  color: ChoiceLuxTheme.errorColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
                   unreadCount > 99 ? '99+' : unreadCount.toString(),
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.softWhite,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                   ),
@@ -310,8 +310,8 @@ class _NotificationBellState extends State<NotificationBell>
                                   displayCount > 99
                                       ? '99+'
                                       : displayCount.toString(),
-                                  style: const TextStyle(
-                                    color: Colors.white,
+                                  style: TextStyle(
+                                    color: ChoiceLuxTheme.softWhite,
                                     fontSize: 10,
                                     fontWeight: FontWeight.w500,
                                     height: 1.0,
@@ -338,19 +338,19 @@ class _NotificationBellState extends State<NotificationBell>
 
   Color _getIconColor(bool hasUrgent, bool hasHighPriority) {
     if (hasUrgent) {
-      return Colors.red;
+      return ChoiceLuxTheme.errorColor;
     } else if (hasHighPriority) {
-      return Colors.orange;
+      return ChoiceLuxTheme.orange;
     }
     return widget.iconColor ?? Theme.of(context).iconTheme.color!;
   }
 
   Color _getBadgeColor(bool hasUrgent, bool hasHighPriority) {
     if (hasUrgent) {
-      return Colors.red;
+      return ChoiceLuxTheme.errorColor;
     } else if (hasHighPriority) {
-      return Colors.orange;
+      return ChoiceLuxTheme.orange;
     }
-    return const Color(0xFFD32F2F); // Default dark red
+    return ChoiceLuxTheme.errorColor; // Default dark red
   }
 }

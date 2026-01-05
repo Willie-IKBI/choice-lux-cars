@@ -11,7 +11,7 @@ import 'package:choice_lux_cars/features/clients/widgets/agent_card.dart';
 import 'package:choice_lux_cars/features/clients/screens/add_edit_agent_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class ClientDetailScreen extends ConsumerStatefulWidget {
   final String clientId;
@@ -67,30 +67,20 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
       ref.invalidate(clientProvider(widget.clientId));
     }
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'Client Details',
-            showBackButton: true,
-            onBackPressed: () => context.go('/clients'),
-          ),
-          body: SafeArea(
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'Client Details',
+        showBackButton: true,
+        onBackPressed: () => context.go('/clients'),
+      ),
+      body: SafeArea(
             child: LayoutBuilder(
               builder: (context, constraints) {
-                final isMobile = constraints.maxWidth < 600;
+                final screenWidth = constraints.maxWidth;
+                final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+                final padding = ResponsiveTokens.getPadding(screenWidth);
+                final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
                 return Column(
                   children: [
@@ -123,114 +113,113 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               },
             ),
           ),
-        ),
-      ],
-    );
+        );
   }
 
   Widget _buildClientHeader(Client client, bool isMobile) {
     return Container(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-      child: Row(
-        children: [
-          // Company Logo - Rounded Square Style (matching client list)
-          Container(
-            width: isMobile ? 70 : 90,
-            height: isMobile ? 70 : 90,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(8),
-              color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                width: 2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: client.companyLogo != null
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      client.companyLogo!,
-                      fit: BoxFit.cover,
-                      width: double.infinity,
-                      height: double.infinity,
-                      errorBuilder: (context, error, stackTrace) =>
-                          _buildLogoPlaceholder(),
-                    ),
-                  )
-                : _buildLogoPlaceholder(),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16.0 : 24.0,
+        vertical: isMobile ? 12.0 : 16.0,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? double.infinity : 1200,
           ),
-
-          const SizedBox(width: 20),
-
-          // Client Info
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  client.companyName,
-                  style: TextStyle(
-                    fontSize: isMobile ? 20 : 26,
-                    fontWeight: FontWeight.w700,
-                    color: ChoiceLuxTheme.softWhite,
-                    letterSpacing: 0.3,
+          child: Row(
+            children: [
+              // Company Logo - Circular Style
+              Container(
+                width: isMobile ? 70 : 90,
+                height: isMobile ? 70 : 90,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.blue.withOpacity(0.2),
+                  border: Border.all(
+                    color: Colors.white.withOpacity(0.3),
+                    width: 2,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'Contact: ${client.contactPerson}',
-                  style: TextStyle(
-                    fontSize: isMobile ? 15 : 17,
-                    color: ChoiceLuxTheme.platinumSilver,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.email,
-                      size: isMobile ? 16 : 18,
-                      color: ChoiceLuxTheme.richGold,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        client.contactEmail,
-                        style: TextStyle(
-                          fontSize: isMobile ? 13 : 15,
-                          color: ChoiceLuxTheme.platinumSilver,
+                child: client.companyLogo != null
+                    ? ClipOval(
+                        child: Image.network(
+                          client.companyLogo!,
+                          fit: BoxFit.cover,
+                          width: double.infinity,
+                          height: double.infinity,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildLogoPlaceholder(),
                         ),
-                        overflow: TextOverflow.ellipsis,
+                      )
+                    : _buildLogoPlaceholder(),
+              ),
+
+              SizedBox(width: isMobile ? 16 : 20),
+
+              // Client Info
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      client.companyName,
+                      style: TextStyle(
+                        fontSize: isMobile ? 18 : 22,
+                        fontWeight: FontWeight.w700,
+                        color: ChoiceLuxTheme.softWhite,
+                        letterSpacing: 0.3,
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 6),
-                Row(
-                  children: [
-                    Icon(
-                      Icons.phone,
-                      size: isMobile ? 16 : 18,
-                      color: ChoiceLuxTheme.richGold,
-                    ),
-                    const SizedBox(width: 8),
+                    SizedBox(height: isMobile ? 6 : 8),
                     Text(
-                      client.contactNumber,
+                      'Contact: ${client.contactPerson}',
                       style: TextStyle(
                         fontSize: isMobile ? 13 : 15,
                         color: ChoiceLuxTheme.platinumSilver,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
-                  ],
-                ),
+                    SizedBox(height: isMobile ? 4 : 6),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.email,
+                          size: isMobile ? 14 : 16,
+                          color: ChoiceLuxTheme.platinumSilver,
+                        ),
+                        SizedBox(width: 6),
+                        Expanded(
+                          child: Text(
+                            client.contactEmail,
+                            style: TextStyle(
+                              fontSize: isMobile ? 12 : 14,
+                              color: ChoiceLuxTheme.platinumSilver,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.phone,
+                          size: isMobile ? 14 : 16,
+                          color: ChoiceLuxTheme.platinumSilver,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          client.contactNumber,
+                          style: TextStyle(
+                            fontSize: isMobile ? 12 : 14,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                        ),
+                      ],
+                    ),
                 
                 // Additional Information (only show if available)
                 if (client.websiteAddress != null && client.websiteAddress!.isNotEmpty) ...[
@@ -329,17 +318,20 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                       ),
                     ],
                   ),
+                  ],
                 ],
-              ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
+    ),
     );
   }
 
   Widget _buildLogoPlaceholder() {
-    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 32);
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: ResponsiveTokens.getIconSize(screenWidth) * 1.3);
   }
 
   // Helper method to format currency with comma separators
@@ -414,50 +406,25 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
 
   Widget _buildTabBar(bool isMobile) {
     return Container(
-      margin: EdgeInsets.symmetric(horizontal: isMobile ? 12 : 24),
+      margin: EdgeInsets.symmetric(
+        horizontal: isMobile ? 12 : 24,
+        vertical: isMobile ? 8 : 12,
+      ),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [
-            ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
-            ChoiceLuxTheme.charcoalGray.withOpacity(0.6),
-          ],
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-        ),
-        borderRadius: BorderRadius.circular(20),
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-          width: 1.5,
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.4),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
-          ),
-        ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isMobile ? 12 : 10),
+        padding: EdgeInsets.all(isMobile ? 8 : 6),
         child: TabBar(
           controller: _tabController,
           indicator: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                ChoiceLuxTheme.richGold,
-                ChoiceLuxTheme.richGold.withOpacity(0.8),
-              ],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(16),
-            boxShadow: [
-              BoxShadow(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.4),
-                blurRadius: 12,
-                offset: const Offset(0, 3),
-              ),
-            ],
+            color: ChoiceLuxTheme.richGold,
+            borderRadius: BorderRadius.circular(12),
           ),
           indicatorPadding: EdgeInsets.all(3),
           dividerColor: Colors.transparent,
@@ -474,13 +441,13 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             letterSpacing: 0.3,
           ),
           labelPadding: EdgeInsets.symmetric(
-            horizontal: isMobile ? 12 : 24,
-            vertical: isMobile ? 14 : 16,
+            horizontal: isMobile ? 12 : 20,
+            vertical: isMobile ? 10 : 12,
           ),
           tabs: [
-            _buildTab('Overview', Icons.dashboard_outlined, isMobile),
+            _buildTab('Overview', Icons.grid_view, isMobile),
             _buildTab('Agents', Icons.people_outlined, isMobile),
-            _buildTab('Activity', Icons.history_outlined, isMobile),
+            _buildTab('Activity', Icons.bolt, isMobile),
           ],
         ),
       ),
@@ -506,18 +473,28 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     bool isMobile,
   ) {
     return SingleChildScrollView(
-      padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Quick Stats
-          _buildQuickStats(clientAsync, agentsAsync, isMobile),
+      padding: EdgeInsets.symmetric(
+        horizontal: isMobile ? 16.0 : 24.0,
+        vertical: isMobile ? 12.0 : 16.0,
+      ),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: isMobile ? double.infinity : 1200,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Quick Stats
+              _buildQuickStats(clientAsync, agentsAsync, isMobile),
 
-          const SizedBox(height: 32),
+              SizedBox(height: isMobile ? 20 : 24),
 
-          // Recent Activity
-          _buildRecentActivity(isMobile),
-        ],
+              // Recent Activity
+              _buildRecentActivity(isMobile),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -536,72 +513,203 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         Text(
           'QUICK STATS',
           style: TextStyle(
-            fontSize: isMobile ? 14 : 16,
+            fontSize: isMobile ? 13 : 15,
             fontWeight: FontWeight.w700,
-            color: ChoiceLuxTheme.richGold,
+            color: ChoiceLuxTheme.softWhite,
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isMobile ? 12 : 16),
 
         LayoutBuilder(
           builder: (context, constraints) {
-            final isSmallMobile = constraints.maxWidth < 400;
-            final crossAxisCount = isSmallMobile ? 1 : 2;
+            final screenWidth = constraints.maxWidth;
+            final spacing = ResponsiveTokens.getSpacing(screenWidth);
+            final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(constraints.maxWidth);
+            final isMobile = ResponsiveBreakpoints.isMobile(constraints.maxWidth);
+            final isTablet = ResponsiveBreakpoints.isTablet(constraints.maxWidth);
+            final isDesktop = ResponsiveBreakpoints.isDesktop(constraints.maxWidth);
+            
+            int crossAxisCount;
+            if (isSmallMobile) {
+              crossAxisCount = 1;
+            } else if (isTablet) {
+              crossAxisCount = 2;
+            } else if (isDesktop) {
+              crossAxisCount = 3;
+            } else {
+              crossAxisCount = 4; // Large desktop
+            }
+
+            // Calculate aspect ratio based on screen size
+            double aspectRatio;
+            final isVeryNarrow = screenWidth < 400;
+            if (isSmallMobile) {
+              aspectRatio = 1.35; // 1 column - more vertical space
+            } else if (crossAxisCount == 2 && (isVeryNarrow || screenWidth < 500)) {
+              aspectRatio = 1.15; // 2 columns on narrow screens - need more height
+            } else if (isTablet && crossAxisCount == 2) {
+              aspectRatio = 1.2; // 2 columns on tablet
+            } else if (isMobile) {
+              aspectRatio = 1.25; // Mobile with multiple columns
+            } else {
+              aspectRatio = 1.6; // Desktop
+            }
 
             return GridView.count(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisCount: crossAxisCount,
-              crossAxisSpacing: 16,
-              mainAxisSpacing: 16,
-              childAspectRatio: 2.8,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: aspectRatio,
               children: [
-                _buildStatCard(
-                  'Total Agents',
-                  agentsAsync.when(
+                _buildQuickStatCard(
+                  label: 'Total Agents',
+                  value: agentsAsync.when(
                     data: (agents) => agents.length.toString(),
                     loading: () => '...',
                     error: (_, __) => '0',
                   ),
-                  Icons.people,
-                  isMobile,
+                  icon: Icons.people,
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
-                _buildStatCard(
-                  'Completed Jobs',
-                  clientStatsAsync.when(
+                _buildQuickStatCard(
+                  label: 'Completed Jobs',
+                  value: clientStatsAsync.when(
                     data: (stats) => stats['completedJobs'].toString(),
                     loading: () => '...',
                     error: (_, __) => '0',
                   ),
-                  Icons.work,
-                  isMobile,
+                  icon: Icons.work,
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
-                _buildStatCard(
-                  'Total Quotes',
-                  clientStatsAsync.when(
+                _buildQuickStatCard(
+                  label: 'Total Quotes',
+                  value: clientStatsAsync.when(
                     data: (stats) => stats['totalQuotes'].toString(),
                     loading: () => '...',
                     error: (_, __) => '0',
                   ),
-                  Icons.description,
-                  isMobile,
+                  icon: Icons.description,
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
-                _buildStatCard(
-                  'Total Revenue',
-                  clientStatsAsync.when(
+                _buildQuickStatCard(
+                  label: 'Total Revenue',
+                  value: clientStatsAsync.when(
                     data: (stats) => _formatCurrency(stats['totalRevenue']),
                     loading: () => '...',
                     error: (_, __) => 'R0',
                   ),
-                  Icons.attach_money,
-                  isMobile,
+                  icon: Icons.attach_money,
+                  isMobile: isMobile,
+                  screenWidth: screenWidth,
                 ),
               ],
             );
           },
         ),
       ],
+    );
+  }
+
+  Widget _buildQuickStatCard({
+    required String label,
+    required String value,
+    required IconData icon,
+    required bool isMobile,
+    required double screenWidth,
+  }) {
+    final isVeryNarrow = screenWidth < 400;
+    final cardPadding = isVeryNarrow ? 10.0 : (isMobile ? 10.0 : 16.0);
+    final iconSize = isVeryNarrow ? 32.0 : (isMobile ? 36.0 : 40.0);
+    final iconIconSize = isVeryNarrow ? 18.0 : (isMobile ? 20.0 : 22.0);
+    final valueFontSize = isVeryNarrow ? 20.0 : (isMobile ? 22.0 : 28.0);
+    final labelFontSize = isMobile ? 12.0 : 14.0;
+    final iconSpacing = isVeryNarrow ? 6.0 : (isMobile ? 8.0 : 16.0);
+    final valueSpacing = isVeryNarrow ? 2.0 : (isMobile ? 2.0 : 6.0);
+    final labelSpacing = isVeryNarrow ? 4.0 : (isMobile ? 6.0 : 16.0);
+
+    return Container(
+      padding: EdgeInsets.all(cardPadding),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Icon in rounded square container
+          Container(
+            width: iconSize,
+            height: iconSize,
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(
+              icon,
+              color: ChoiceLuxTheme.richGold,
+              size: iconIconSize,
+            ),
+          ),
+          SizedBox(height: iconSpacing),
+          // Value - use Flexible to allow it to shrink if needed
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: valueFontSize,
+                fontWeight: FontWeight.w700,
+                color: ChoiceLuxTheme.softWhite,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: valueSpacing),
+          // Label
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: labelFontSize,
+              color: ChoiceLuxTheme.platinumSilver,
+              fontWeight: FontWeight.w400,
+            ),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+          ),
+          SizedBox(height: labelSpacing),
+          // Progress bar at bottom
+          Container(
+            height: 2,
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              borderRadius: BorderRadius.circular(1),
+            ),
+            child: FractionallySizedBox(
+              widthFactor: 0.6, // Partial fill
+              alignment: Alignment.centerLeft,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold,
+                  borderRadius: BorderRadius.circular(1),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -614,7 +722,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
     return Container(
       decoration: BoxDecoration(
         gradient: ChoiceLuxTheme.cardGradient,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: ChoiceLuxTheme.richGold.withOpacity(0.2),
           width: 1,
@@ -622,47 +730,48 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
+            blurRadius: 6,
             offset: const Offset(0, 2),
           ),
         ],
       ),
       child: Padding(
-        padding: EdgeInsets.all(isMobile ? 16 : 20),
+        padding: EdgeInsets.all(isMobile ? 12 : 14),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Container(
-              padding: EdgeInsets.all(isMobile ? 10 : 14),
+              padding: EdgeInsets.all(isMobile ? 8 : 10),
               decoration: BoxDecoration(
                 color: ChoiceLuxTheme.richGold.withOpacity(0.15),
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(
                 icon,
                 color: ChoiceLuxTheme.richGold,
-                size: isMobile ? 22 : 26,
+                size: isMobile ? 18 : 22,
               ),
             ),
-            const SizedBox(width: 16),
+            SizedBox(width: isMobile ? 12 : 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
                     value,
                     style: TextStyle(
-                      fontSize: isMobile ? 20 : 24,
+                      fontSize: isMobile ? 18 : 20,
                       fontWeight: FontWeight.w800,
                       color: ChoiceLuxTheme.softWhite,
                       letterSpacing: 0.5,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  SizedBox(height: 2),
                   Text(
                     title,
                     style: TextStyle(
-                      fontSize: isMobile ? 13 : 15,
+                      fontSize: isMobile ? 11 : 13,
                       color: ChoiceLuxTheme.platinumSilver,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.3,
@@ -684,72 +793,60 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
         Text(
           'RECENT ACTIVITY',
           style: TextStyle(
-            fontSize: isMobile ? 14 : 16,
+            fontSize: isMobile ? 13 : 15,
             fontWeight: FontWeight.w700,
-            color: ChoiceLuxTheme.richGold,
+            color: ChoiceLuxTheme.softWhite,
             letterSpacing: 1.2,
           ),
         ),
-        const SizedBox(height: 20),
+        SizedBox(height: isMobile ? 12 : 16),
 
-        Container(
-          decoration: BoxDecoration(
-            gradient: ChoiceLuxTheme.cardGradient,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-              width: 1,
+        Column(
+          children: [
+            _buildActivityCard(
+              'Client created',
+              '2 days ago',
+              Icons.person_add,
+              isMobile,
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.2),
-                blurRadius: 8,
-                offset: const Offset(0, 2),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: EdgeInsets.all(isMobile ? 16 : 20),
-            child: Column(
-              children: [
-                _buildActivityItem(
-                  'Client created',
-                  '2 days ago',
-                  Icons.person_add,
-                  isMobile,
-                ),
-                const Divider(color: ChoiceLuxTheme.platinumSilver),
-                _buildActivityItem(
-                  'First agent added',
-                  '1 day ago',
-                  Icons.people,
-                  isMobile,
-                ),
-                const Divider(color: ChoiceLuxTheme.platinumSilver),
-                _buildActivityItem(
-                  'No recent activity',
-                  'No activity yet',
-                  Icons.info_outline,
-                  isMobile,
-                  isPlaceholder: true,
-                ),
-              ],
+            SizedBox(height: isMobile ? 12 : 16),
+            _buildActivityCard(
+              'First agent added',
+              '1 day ago',
+              Icons.people,
+              isMobile,
             ),
-          ),
+            SizedBox(height: isMobile ? 12 : 16),
+            _buildActivityCard(
+              'No recent activity',
+              'No activity yet',
+              Icons.access_time,
+              isMobile,
+              isPlaceholder: true,
+            ),
+          ],
         ),
       ],
     );
   }
 
-  Widget _buildActivityItem(
+  Widget _buildActivityCard(
     String title,
     String time,
     IconData icon,
     bool isMobile, {
     bool isPlaceholder = false,
   }) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: isMobile ? 8 : 12),
+    return Container(
+      padding: EdgeInsets.all(isMobile ? 12 : 16),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
+      ),
       child: Row(
         children: [
           Container(
@@ -768,15 +865,16 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
               size: isMobile ? 18 : 20,
             ),
           ),
-          const SizedBox(width: 16),
+          SizedBox(width: isMobile ? 12 : 16),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   title,
                   style: TextStyle(
-                    fontSize: isMobile ? 15 : 17,
+                    fontSize: isMobile ? 14 : 16,
                     fontWeight: FontWeight.w600,
                     color: isPlaceholder
                         ? ChoiceLuxTheme.platinumSilver.withOpacity(0.5)
@@ -784,12 +882,12 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                     letterSpacing: 0.2,
                   ),
                 ),
-                const SizedBox(height: 4),
+                SizedBox(height: 4),
                 Text(
                   time,
                   style: TextStyle(
                     fontSize: isMobile ? 12 : 14,
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
                     fontWeight: FontWeight.w400,
                   ),
                 ),
@@ -815,7 +913,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                 style: TextStyle(
                   fontSize: isMobile ? 14 : 16,
                   fontWeight: FontWeight.w700,
-                  color: ChoiceLuxTheme.richGold,
+                  color: ChoiceLuxTheme.softWhite,
                   letterSpacing: 1.2,
                 ),
               ),
@@ -974,7 +1072,7 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                   content: Text(
                     'Error: Agent ID is null. Cannot edit this agent.',
                   ),
-                  backgroundColor: Colors.red,
+                  backgroundColor: ChoiceLuxTheme.errorColor,
                 ),
               );
               return;
@@ -1004,57 +1102,37 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
             style: TextStyle(
               fontSize: isMobile ? 14 : 16,
               fontWeight: FontWeight.w700,
-              color: ChoiceLuxTheme.richGold,
+              color: ChoiceLuxTheme.softWhite,
               letterSpacing: 1.2,
             ),
           ),
 
           const SizedBox(height: 20),
 
-          Container(
-            decoration: BoxDecoration(
-              gradient: ChoiceLuxTheme.cardGradient,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                width: 1,
+          Column(
+            children: [
+              _buildActivityCard(
+                'Client created',
+                '2 days ago',
+                Icons.person_add,
+                isMobile,
               ),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.2),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(isMobile ? 16 : 20),
-              child: Column(
-                children: [
-                  _buildActivityItem(
-                    'Client created',
-                    '2 days ago',
-                    Icons.person_add,
-                    isMobile,
-                  ),
-                  const Divider(color: ChoiceLuxTheme.platinumSilver),
-                  _buildActivityItem(
-                    'First agent added',
-                    '1 day ago',
-                    Icons.people,
-                    isMobile,
-                  ),
-                  const Divider(color: ChoiceLuxTheme.platinumSilver),
-                  _buildActivityItem(
-                    'No recent activity',
-                    'No activity yet',
-                    Icons.info_outline,
-                    isMobile,
-                    isPlaceholder: true,
-                  ),
-                ],
+              SizedBox(height: isMobile ? 12 : 16),
+              _buildActivityCard(
+                'First agent added',
+                '1 day ago',
+                Icons.people,
+                isMobile,
               ),
-            ),
+              SizedBox(height: isMobile ? 12 : 16),
+              _buildActivityCard(
+                'No recent activity',
+                'No activity yet',
+                Icons.access_time,
+                isMobile,
+                isPlaceholder: true,
+              ),
+            ],
           ),
         ],
       ),

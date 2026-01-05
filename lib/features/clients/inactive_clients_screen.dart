@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/clients/providers/clients_provider.dart
 import 'package:choice_lux_cars/features/clients/widgets/client_card.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
@@ -30,6 +31,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final inactiveClientsAsync = ref.watch(inactiveClientsProvider);
 
     return Stack(
@@ -44,8 +46,8 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
         Positioned.fill(
           child: CustomPaint(painter: BackgroundPatterns.dashboard),
         ),
-        // Layer 3: The Scaffold with a transparent background
-        Scaffold(
+        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: 'Inactive Clients',
@@ -64,12 +66,11 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
               ),
             ],
           ),
-          body: SafeArea(
-          child: Column(
+          body: Column(
             children: [
               // Search Bar
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16),
+                padding: EdgeInsets.symmetric(horizontal: ResponsiveTokens.getPadding(screenWidth)),
                 child: TextField(
                   controller: _searchController,
                   onChanged: (value) {
@@ -122,7 +123,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              SizedBox(height: ResponsiveTokens.getSpacing(screenWidth) * 2),
 
               // Inactive Clients List
               Expanded(
@@ -161,7 +162,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                           size: 64,
                           color: ChoiceLuxTheme.errorColor,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ResponsiveTokens.getSpacing(screenWidth) * 2),
                         Text(
                           'Error loading inactive clients',
                           style: Theme.of(context).textTheme.headlineSmall
@@ -174,7 +175,7 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
                               ?.copyWith(color: ChoiceLuxTheme.platinumSilver),
                           textAlign: TextAlign.center,
                         ),
-                        const SizedBox(height: 16),
+                        SizedBox(height: ResponsiveTokens.getSpacing(screenWidth) * 2),
                         ElevatedButton(
                           onPressed: () {
                             ref.invalidate(inactiveClientsProvider);
@@ -189,7 +190,6 @@ class _InactiveClientsScreenState extends ConsumerState<InactiveClientsScreen> {
             ],
           ),
         ),
-      ),
       ],
     );
   }

@@ -189,9 +189,9 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: Colors.white.withOpacity(0.05),
+              color: ChoiceLuxTheme.softWhite.withOpacity(0.05),
               border: Border(
-                bottom: BorderSide(color: Colors.white.withOpacity(0.1)),
+                bottom: BorderSide(color: ChoiceLuxTheme.softWhite.withOpacity(0.1)),
               ),
             ),
             child: Row(
@@ -204,8 +204,8 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                 const SizedBox(width: 8),
                 Text(
                   '${widget.timePeriod.displayName} • ${widget.location.displayName}',
-                  style: const TextStyle(
-                    color: Colors.white,
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.softWhite,
                     fontSize: 14,
                   ),
                 ),
@@ -213,7 +213,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                 Text(
                   '$_totalJobs jobs',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.8),
+                    color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
                     fontSize: 14,
                   ),
                 ),
@@ -236,14 +236,14 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                           children: [
                             Icon(
                               Icons.error_outline,
-                              color: Colors.red,
+                              color: ChoiceLuxTheme.errorColor,
                               size: 48,
                             ),
                             const SizedBox(height: 16),
                             Text(
                               'Error loading jobs',
-                              style: const TextStyle(
-                                color: Colors.white,
+                              style: TextStyle(
+                                color: ChoiceLuxTheme.softWhite,
                                 fontSize: 18,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -252,7 +252,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                             Text(
                               _error!,
                               style: TextStyle(
-                                color: Colors.white.withOpacity(0.8),
+                                color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
                               ),
                               textAlign: TextAlign.center,
                             ),
@@ -274,14 +274,14 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                               children: [
                                 Icon(
                                   Icons.work_off,
-                                  color: Colors.white.withOpacity(0.5),
+                                  color: ChoiceLuxTheme.softWhite.withOpacity(0.5),
                                   size: 64,
                                 ),
                                 const SizedBox(height: 16),
                                 Text(
                                   'No jobs found',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.8),
+                                    color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
                                     fontSize: 18,
                                   ),
                                 ),
@@ -354,7 +354,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                             error: (error, stack) => Center(
                               child: Text(
                                 'Error loading clients: $error',
-                                style: const TextStyle(color: Colors.red),
+                                style: TextStyle(color: ChoiceLuxTheme.errorColor),
                               ),
                             ),
                           ),

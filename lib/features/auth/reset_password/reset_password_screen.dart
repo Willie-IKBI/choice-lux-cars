@@ -2,12 +2,12 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/services/supabase_service.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class ResetPasswordScreen extends ConsumerStatefulWidget {
   const ResetPasswordScreen({super.key});
@@ -150,15 +150,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Container(
-        decoration: BoxDecoration(gradient: ChoiceLuxTheme.backgroundGradient),
-        child: Stack(
-          children: [
-                         // Subtle background pattern
-             Positioned.fill(
-               child: CustomPaint(painter: BackgroundPatterns.signin),
-             ),
-            SafeArea(
-              child: LayoutBuilder(
+        decoration: BoxDecoration(gradient: ChoiceLuxTheme.authBackgroundGradient),
+        child: SafeArea(
+          child: LayoutBuilder(
                 builder: (context, constraints) {
                   final isMobile = constraints.maxWidth < 600;
                   final isTablet =
@@ -208,9 +202,9 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     // Title
                                     Text(
                                       'Create New Password',
-                                      style: TextStyle(
+                                      style: GoogleFonts.outfit(
                                         fontSize: 28,
-                                        fontWeight: FontWeight.bold,
+                                        fontWeight: FontWeight.w700,
                                         color: ChoiceLuxTheme.softWhite,
                                       ),
                                       textAlign: TextAlign.center,
@@ -220,7 +214,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     // Subtitle
                                     Text(
                                       'Please enter your new password below.',
-                                      style: TextStyle(
+                                      style: GoogleFonts.inter(
                                         fontSize: 16,
                                         color: ChoiceLuxTheme.platinumSilver
                                             .withOpacity(0.8),
@@ -238,13 +232,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         color: ChoiceLuxTheme.softWhite,
                                       ),
                                       decoration: InputDecoration(
-                                        labelText: 'New Password',
+                                        labelText: 'NEW PASSWORD',
                                         labelStyle: TextStyle(
-                                          color: ChoiceLuxTheme.platinumSilver,
+                                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
                                         ),
                                         prefixIcon: Icon(
                                           Icons.lock_outline,
-                                          color: ChoiceLuxTheme.richGold,
+                                          color: ChoiceLuxTheme.platinumSilver,
                                         ),
                                         suffixIcon: IconButton(
                                           icon: Icon(
@@ -259,11 +253,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                             });
                                           },
                                         ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: Colors.white.withOpacity(0.2),
+                                          ),
+                                        ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.platinumSilver
-                                                .withOpacity(0.3),
+                                            color: Colors.white.withOpacity(0.2),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
@@ -276,19 +275,18 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         errorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.errorColor,
+                                            color: Colors.red.withOpacity(0.5),
                                           ),
                                         ),
                                         focusedErrorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.errorColor,
+                                            color: Colors.red.withOpacity(0.8),
                                             width: 2,
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: ChoiceLuxTheme.charcoalGray
-                                            .withOpacity(0.3),
+                                        fillColor: Colors.white.withOpacity(0.05),
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -311,13 +309,13 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         color: ChoiceLuxTheme.softWhite,
                                       ),
                                       decoration: InputDecoration(
-                                        labelText: 'Confirm New Password',
+                                        labelText: 'CONFIRM NEW PASSWORD',
                                         labelStyle: TextStyle(
-                                          color: ChoiceLuxTheme.platinumSilver,
+                                          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
                                         ),
                                         prefixIcon: Icon(
                                           Icons.lock_outline,
-                                          color: ChoiceLuxTheme.richGold,
+                                          color: ChoiceLuxTheme.platinumSilver,
                                         ),
                                         suffixIcon: IconButton(
                                           icon: Icon(
@@ -333,11 +331,16 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                             });
                                           },
                                         ),
+                                        border: OutlineInputBorder(
+                                          borderRadius: BorderRadius.circular(12),
+                                          borderSide: BorderSide(
+                                            color: Colors.white.withOpacity(0.2),
+                                          ),
+                                        ),
                                         enabledBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.platinumSilver
-                                                .withOpacity(0.3),
+                                            color: Colors.white.withOpacity(0.2),
                                           ),
                                         ),
                                         focusedBorder: OutlineInputBorder(
@@ -350,19 +353,18 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                         errorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.errorColor,
+                                            color: Colors.red.withOpacity(0.5),
                                           ),
                                         ),
                                         focusedErrorBorder: OutlineInputBorder(
                                           borderRadius: BorderRadius.circular(12),
                                           borderSide: BorderSide(
-                                            color: ChoiceLuxTheme.errorColor,
+                                            color: Colors.red.withOpacity(0.8),
                                             width: 2,
                                           ),
                                         ),
                                         filled: true,
-                                        fillColor: ChoiceLuxTheme.charcoalGray
-                                            .withOpacity(0.3),
+                                        fillColor: Colors.white.withOpacity(0.05),
                                       ),
                                       validator: (value) {
                                         if (value == null || value.isEmpty) {
@@ -378,40 +380,53 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     const SizedBox(height: 24),
 
                                     // Update Password button
-                                    ElevatedButton(
-                                      onPressed: _isLoading ? null : _resetPassword,
-                                      style: ElevatedButton.styleFrom(
-                                        backgroundColor: ChoiceLuxTheme.richGold,
-                                        foregroundColor: Colors.black,
-                                        elevation: 4,
-                                        shadowColor: ChoiceLuxTheme.richGold
-                                            .withOpacity(0.3),
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 16,
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 56,
+                                      child: ElevatedButton(
+                                        onPressed: _isLoading ? null : _resetPassword,
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: ChoiceLuxTheme.richGold,
+                                          foregroundColor: Colors.black,
+                                          elevation: 8,
+                                          shadowColor: ChoiceLuxTheme.richGold
+                                              .withOpacity(0.4),
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
                                         ),
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(12),
-                                        ),
-                                      ),
-                                      child: _isLoading
-                                          ? SizedBox(
-                                              height: 20,
-                                              width: 20,
-                                              child: CircularProgressIndicator(
-                                                strokeWidth: 2,
-                                                valueColor:
-                                                    AlwaysStoppedAnimation<Color>(
-                                                  Colors.black,
+                                        child: _isLoading
+                                            ? Row(
+                                                mainAxisAlignment: MainAxisAlignment.center,
+                                                children: [
+                                                  SizedBox(
+                                                    height: 20,
+                                                    width: 20,
+                                                    child: CircularProgressIndicator(
+                                                      strokeWidth: 2,
+                                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.black),
+                                                    ),
+                                                  ),
+                                                  const SizedBox(width: 12),
+                                                  Text(
+                                                    'Updating...',
+                                                    style: TextStyle(
+                                                      fontSize: 16,
+                                                      fontWeight: FontWeight.w600,
+                                                      color: Colors.black,
+                                                    ),
+                                                  ),
+                                                ],
+                                              )
+                                            : Text(
+                                                'Update Password',
+                                                style: TextStyle(
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w600,
+                                                  color: Colors.black,
                                                 ),
                                               ),
-                                            )
-                                          : Text(
-                                              'Update Password',
-                                              style: TextStyle(
-                                                fontSize: 16,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
+                                      ),
                                     ),
                                     const SizedBox(height: 24),
 
@@ -440,8 +455,6 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                 },
               ),
             ),
-          ],
-        ),
       ),
     );
   }

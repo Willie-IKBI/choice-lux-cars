@@ -262,6 +262,102 @@ class JobsInsightsTab extends ConsumerWidget {
               );
             },
           ),
+          const SizedBox(height: 24),
+
+          // Sprint 1: Time-Based Metrics
+          _buildSectionHeader('Time-Based Metrics'),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+              final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+              final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+              final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
+              
+              final crossAxisCount = isLargeDesktop ? 4 : 2;
+              final childAspectRatio = isSmallMobile ? 1.4 : (isMobile ? 1.6 : (isDesktop ? 1.8 : 2.0));
+              
+              final gridView = GridView.count(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                crossAxisCount: crossAxisCount,
+                childAspectRatio: childAspectRatio,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                children: [
+                  _buildAdditionalMetricCard(
+                    context: context,
+                    label: 'AVG. TIME TO START',
+                    value: '${insights.averageTimeToStart.toStringAsFixed(1)} days',
+                  ),
+                  _buildNewMetricCard(
+                    context: context,
+                    label: 'Starting Today',
+                    value: insights.jobsStartingToday.toString(),
+                    icon: Icons.today,
+                    iconColor: Colors.blue,
+                    progressValue: 1.0,
+                  ),
+                  _buildNewMetricCard(
+                    context: context,
+                    label: 'Starting Tomorrow',
+                    value: insights.jobsStartingTomorrow.toString(),
+                    icon: Icons.calendar_today,
+                    iconColor: Colors.purple,
+                    progressValue: 1.0,
+                  ),
+                  _buildNewMetricCard(
+                    context: context,
+                    label: 'Overdue Jobs',
+                    value: insights.overdueJobs.toString(),
+                    icon: Icons.warning,
+                    iconColor: Colors.red,
+                    progressValue: insights.overdueJobs > 0 ? 1.0 : 0.0,
+                  ),
+                ],
+              );
+              
+              if (isDesktop) {
+                final maxWidth = isLargeDesktop ? 800.0 : 600.0;
+                return Center(
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(maxWidth: maxWidth),
+                    child: gridView,
+                  ),
+                );
+              }
+              
+              return gridView;
+            },
+          ),
+          const SizedBox(height: 24),
+
+          // Sprint 1: Operational Metrics
+          _buildSectionHeader('Operational Metrics'),
+          const SizedBox(height: 16),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
+              
+              return Row(
+                children: [
+                  Expanded(
+                    child: _buildNewMetricCard(
+                      context: context,
+                      label: 'Unassigned Jobs',
+                      value: insights.unassignedJobs.toString(),
+                      icon: Icons.person_off,
+                      iconColor: Colors.orange,
+                      progressValue: insights.unassignedJobs > 0 ? 1.0 : 0.0,
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
         ],
       ),
     );
@@ -275,9 +371,16 @@ class JobsInsightsTab extends ConsumerWidget {
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
     final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-    final cardPadding = isSmallMobile ? 12.0 : (isMobile ? 16.0 : 20.0);
-    final valueFontSize = isSmallMobile ? 18.0 : (isMobile ? 20.0 : 24.0);
-    final labelFontSize = isSmallMobile ? 10.0 : (isMobile ? 11.0 : 12.0);
+    
+    // Match padding from _buildNewMetricCard
+    final cardPadding = isSmallMobile ? 10.0 : (isMobile ? 12.0 : 16.0);
+    final valueFontSize = isSmallMobile ? 20.0 : (isMobile ? 22.0 : 28.0);
+    final labelFontSize = isSmallMobile ? 11.0 : (isMobile ? 12.0 : 14.0);
+    
+    // Match spacing from _buildNewMetricCard
+    final iconSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
+    final valueSpacing = isSmallMobile ? 3.0 : (isMobile ? 4.0 : 6.0);
+    final labelSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
 
     return Container(
       padding: EdgeInsets.all(cardPadding),
@@ -291,29 +394,45 @@ class JobsInsightsTab extends ConsumerWidget {
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Add spacing at top to match main cards structure
+          SizedBox(height: iconSpacing),
+          // Value (moved up to match main cards layout)
+          Flexible(
+            child: Text(
+              value,
+              style: TextStyle(
+                fontSize: valueFontSize,
+                fontWeight: FontWeight.w700,
+                color: ChoiceLuxTheme.softWhite,
+                letterSpacing: 0.5,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          SizedBox(height: valueSpacing),
+          // Label
           Text(
             label,
             style: TextStyle(
               fontSize: labelFontSize,
-              fontWeight: FontWeight.w600,
               color: ChoiceLuxTheme.platinumSilver,
-              letterSpacing: 0.5,
+              fontWeight: FontWeight.w400,
             ),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
           ),
-          SizedBox(height: isSmallMobile ? 6 : 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: valueFontSize,
-              fontWeight: FontWeight.w700,
-              color: ChoiceLuxTheme.softWhite,
+          SizedBox(height: labelSpacing),
+          // Add a thin spacer bar at bottom to match visual weight
+          Container(
+            height: 2,
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(1),
             ),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
           ),
         ],
       ),

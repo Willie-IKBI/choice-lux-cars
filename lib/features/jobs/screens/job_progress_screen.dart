@@ -16,6 +16,7 @@ import 'package:choice_lux_cars/features/jobs/widgets/address_display_widget.dar
 import 'package:choice_lux_cars/features/jobs/models/job_step.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
@@ -26,6 +27,7 @@ import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/widgets/job_completion_dialog.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 class JobProgressScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -52,9 +54,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   JobsNotifier? _jobsNotifier;
 
   /// Responsive design helpers
-  bool get _isMobile => MediaQuery.of(context).size.width < 768;
-  bool get _isTablet => MediaQuery.of(context).size.width >= 768 && MediaQuery.of(context).size.width < 1024;
-  bool get _isDesktop => MediaQuery.of(context).size.width >= 1024;
+  bool get _isMobile {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return ResponsiveBreakpoints.isMobile(screenWidth) || ResponsiveBreakpoints.isSmallMobile(screenWidth);
+  }
+  bool get _isTablet {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return ResponsiveBreakpoints.isTablet(screenWidth);
+  }
+  bool get _isDesktop {
+    final screenWidth = MediaQuery.of(context).size.width;
+    return ResponsiveBreakpoints.isDesktop(screenWidth) || ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+  }
 
   /// Navigation and contact helper methods
   Future<void> _openNavigation(String address) async {
@@ -3010,36 +3021,39 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           ),
         ),
         // Layer 2: The Scaffold with a transparent background
-        Scaffold(
+        SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: PreferredSize(
             preferredSize: const Size.fromHeight(72),
             child: _buildLuxuryAppBar(),
           ),
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
-              ),
-              _isLoading == true
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          ChoiceLuxTheme.richGold,
-                        ),
-                      ),
-                    )
-                  : _jobProgress == null
-                      ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(
-                                Icons.play_circle_outline,
-                                size: 64,
-                                color: ChoiceLuxTheme.richGold.withOpacity(0.7),
-                              ),
-                              const SizedBox(height: 16),
+          body: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              child: Stack(
+                children: [
+                  Positioned.fill(
+                    child: CustomPaint(painter: BackgroundPatterns.dashboard),
+                  ),
+                  _isLoading == true
+                      ? const Center(
+                          child: CircularProgressIndicator(
+                            valueColor: AlwaysStoppedAnimation<Color>(
+                              ChoiceLuxTheme.richGold,
+                            ),
+                          ),
+                        )
+                      : _jobProgress == null
+                          ? Center(
+                              child: Column(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.play_circle_outline,
+                                    size: 64,
+                                    color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                                  ),
+                                  const SizedBox(height: 16),
                               Text(
                                 'Ready to Start Job',
                                 style: TextStyle(
@@ -3204,7 +3218,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                             ),
                           ),
                         ),
-            ],
+                ],
+              ),
+            ),
           ),
         ),
       ],

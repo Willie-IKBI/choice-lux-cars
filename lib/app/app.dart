@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -37,6 +38,7 @@ import 'package:choice_lux_cars/features/notifications/screens/notification_list
 import 'package:choice_lux_cars/features/notifications/screens/notification_preferences_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
+import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
@@ -53,6 +55,16 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
   @override
   void initState() {
     super.initState();
+    // Configure system UI overlay style for status bar
+    SystemChrome.setSystemUIOverlayStyle(
+      const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent, // Transparent status bar
+        statusBarIconBrightness: Brightness.light, // Light icons (white) for dark background
+        statusBarBrightness: Brightness.dark, // Dark status bar content for Android
+        systemNavigationBarColor: Colors.transparent, // Transparent navigation bar
+        systemNavigationBarIconBrightness: Brightness.light, // Light navigation icons
+      ),
+    );
     // Initialize FCM service
     FCMService.initialize(ref);
   }
@@ -63,13 +75,22 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
     final userProfile = ref.watch(currentUserProfileProvider);
     final authNotifier = ref.read(authProvider.notifier);
 
-    return MaterialApp.router(
-      title: 'Choice Lux Cars',
-      theme: ChoiceLuxTheme.lightTheme,
-      darkTheme: ChoiceLuxTheme.darkTheme,
-      themeMode: ThemeMode.dark,
-      debugShowCheckedModeBanner: false,
-      routerConfig: _buildRouter(authState, userProfile, authNotifier),
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: const SystemUiOverlayStyle(
+        statusBarColor: Colors.transparent,
+        statusBarIconBrightness: Brightness.light,
+        statusBarBrightness: Brightness.dark,
+        systemNavigationBarColor: Colors.transparent,
+        systemNavigationBarIconBrightness: Brightness.light,
+      ),
+      child: MaterialApp.router(
+        title: 'Choice Lux Cars',
+        theme: ChoiceLuxTheme.lightTheme,
+        darkTheme: ChoiceLuxTheme.darkTheme,
+        themeMode: ThemeMode.dark,
+        debugShowCheckedModeBanner: false,
+        routerConfig: _buildRouter(authState, userProfile, authNotifier),
+      ),
     );
   }
 
@@ -341,6 +362,19 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/insights',
           name: 'insights',
           builder: (context, state) => const InsightsScreen(),
+        ),
+        GoRoute(
+          path: '/insights/client-statement',
+          name: 'client-statement',
+          builder: (context, state) {
+            final extra = state.extra as Map<String, dynamic>?;
+            final clientId = extra?['clientId'] as String? ?? '';
+            final clientName = extra?['clientName'] as String?;
+            return ClientStatementScreen(
+              clientId: clientId,
+              clientName: clientName,
+            );
+          },
         ),
         GoRoute(
           path: '/insights/jobs',

@@ -11,6 +11,8 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
 
 class AdminMonitoringScreen extends ConsumerStatefulWidget {
   const AdminMonitoringScreen({Key? key}) : super(key: key);
@@ -141,6 +143,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Job Monitoring',
@@ -175,9 +180,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
               labelColor: ChoiceLuxTheme.richGold,
               unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
               indicatorWeight: 3,
-              labelStyle: const TextStyle(
+              labelStyle: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14),
               ),
               tabs: const [
                 Tab(text: 'Summary', icon: Icon(Icons.dashboard_rounded)),
@@ -210,64 +215,64 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
   Widget _buildSummaryTab() {
     return SingleChildScrollView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(padding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           ActiveJobsSummary(summary: _summary),
-          const SizedBox(height: 24),
+          SizedBox(height: spacing * 3),
 
           // Quick Stats Cards
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  'Active Jobs',
-                  _summary['total_active_jobs']?.toString() ?? '0',
-                  Icons.work,
-                  Colors.blue,
+                child: CompactMetricTile(
+                  label: 'Active Jobs',
+                  value: _summary['total_active_jobs']?.toString() ?? '0',
+                  icon: Icons.work,
+                  iconColor: Colors.blue,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: spacing * 2),
               Expanded(
-                child: _buildStatCard(
-                  'Active Drivers',
-                  _summary['active_drivers']?.toString() ?? '0',
-                  Icons.person,
-                  Colors.green,
+                child: CompactMetricTile(
+                  label: 'Active Drivers',
+                  value: _summary['active_drivers']?.toString() ?? '0',
+                  icon: Icons.person,
+                  iconColor: Colors.green,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
           Row(
             children: [
               Expanded(
-                child: _buildStatCard(
-                  'Recent Activity',
-                  _summary['very_recent_jobs']?.toString() ?? '0',
-                  Icons.trending_up,
-                  Colors.orange,
+                child: CompactMetricTile(
+                  label: 'Recent Activity',
+                  value: _summary['very_recent_jobs']?.toString() ?? '0',
+                  icon: Icons.trending_up,
+                  iconColor: Colors.orange,
                 ),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: spacing * 2),
               Expanded(
-                child: _buildStatCard(
-                  'Stale Jobs',
-                  _summary['stale_jobs']?.toString() ?? '0',
-                  Icons.warning,
-                  Colors.red,
+                child: CompactMetricTile(
+                  label: 'Stale Jobs',
+                  value: _summary['stale_jobs']?.toString() ?? '0',
+                  icon: Icons.warning,
+                  iconColor: Colors.red,
                 ),
               ),
             ],
           ),
 
-          const SizedBox(height: 24),
+          SizedBox(height: spacing * 3),
 
           // Recent Activity Timeline
           Card(
             child: Padding(
-              padding: const EdgeInsets.all(16.0),
+              padding: EdgeInsets.all(padding),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -277,7 +282,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  SizedBox(height: spacing * 2),
                   ..._activeJobs
                       .take(5)
                       .map((job) => _buildActivityItem(job))
@@ -314,7 +319,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(padding),
       itemCount: _activeJobs.length,
       itemBuilder: (context, index) {
         final job = _activeJobs[index];
@@ -349,7 +354,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
     return ListView.builder(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: const EdgeInsets.all(16.0),
+      padding: EdgeInsets.all(padding),
       itemCount: _driverActivity.length,
       itemBuilder: (context, index) {
         final driver = _driverActivity[index];
@@ -372,7 +377,7 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
   ) {
     return Card(
       child: Padding(
-        padding: const EdgeInsets.all(16.0),
+        padding: EdgeInsets.all(padding),
         child: Column(
           children: [
             Icon(icon, color: color, size: 32),

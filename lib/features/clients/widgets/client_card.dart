@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
 class ClientCard extends StatefulWidget {
@@ -65,9 +66,11 @@ class _ClientCardState extends State<ClientCard>
       builder: (context, constraints) {
         // Responsive breakpoints for mobile optimization
         final screenWidth = constraints.maxWidth;
-        final isMobile = screenWidth < 600;
-        final isSmallMobile = screenWidth < 400;
+        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+        final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
+        final spacing = ResponsiveTokens.getSpacing(screenWidth);
+        
         return MouseRegion(
           onEnter: (_) => _onHover(true),
           onExit: (_) => _onHover(false),
@@ -77,13 +80,7 @@ class _ClientCardState extends State<ClientCard>
               return Transform.scale(
                 scale: _scaleAnimation.value,
                 child: Card(
-                  margin: EdgeInsets.all(
-                    isSmallMobile
-                        ? 2.0
-                        : isMobile
-                        ? 4.0
-                        : 6.0,
-                  ),
+                  margin: EdgeInsets.all(spacing * 0.5),
                   elevation: _isHovered ? 8 : 4,
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -208,7 +205,7 @@ class _ClientCardState extends State<ClientCard>
                                       // Fix: Check for both null and empty URLs
                                       child: _buildLogo(),
                                     ),
-                                    const SizedBox(width: 10),
+                                    SizedBox(width: spacing),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment:
@@ -221,29 +218,21 @@ class _ClientCardState extends State<ClientCard>
                                                 .titleMedium
                                                 ?.copyWith(
                                                   fontWeight: FontWeight.bold,
-                                                  fontSize: isSmallMobile
-                                                      ? 14
-                                                      : isMobile
-                                                      ? 15
-                                                      : 18,
+                                                  fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
                                                   color:
                                                       ChoiceLuxTheme.softWhite,
                                                 ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
-                                          const SizedBox(height: 2),
+                                          SizedBox(height: spacing * 0.25),
                                           Text(
                                             'Contact: ${widget.client.contactPerson}',
                                             style: Theme.of(context)
                                                 .textTheme
                                                 .bodySmall
                                                 ?.copyWith(
-                                                  fontSize: isSmallMobile
-                                                      ? 12
-                                                      : isMobile
-                                                      ? 13
-                                                      : 14,
+                                                  fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 13),
                                                   color: ChoiceLuxTheme
                                                       .platinumSilver
                                                       .withOpacity(0.8),
@@ -381,10 +370,14 @@ class _ClientCardState extends State<ClientCard>
   }
 
   Widget _buildLogoPlaceholder() {
-    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: 20);
+    final screenWidth = MediaQuery.of(context).size.width;
+    return Icon(Icons.business, color: ChoiceLuxTheme.richGold, size: ResponsiveTokens.getIconSize(screenWidth));
   }
 
   Widget _buildStatusIndicator() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     Color backgroundColor;
     Color textColor;
     String label;
@@ -419,7 +412,7 @@ class _ClientCardState extends State<ClientCard>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      padding: EdgeInsets.symmetric(horizontal: spacing, vertical: spacing * 0.5),
       decoration: BoxDecoration(
         color: backgroundColor,
         borderRadius: BorderRadius.circular(16),

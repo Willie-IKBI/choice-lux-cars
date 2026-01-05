@@ -8,19 +8,19 @@ class StatusColorUtils {
   static Color getJobStatusColor(JobStatus status) {
     switch (status) {
       case JobStatus.open:
-        return Colors.blue;
+        return ChoiceLuxTheme.infoColor;
       case JobStatus.assigned:
-        return Colors.orange;
+        return ChoiceLuxTheme.orange;
       case JobStatus.started:
-        return Colors.purple;
+        return ChoiceLuxTheme.purple;
       case JobStatus.inProgress:
-        return Colors.indigo;
+        return ChoiceLuxTheme.infoColor;
       case JobStatus.readyToClose:
-        return Colors.amber;
+        return ChoiceLuxTheme.warningColor;
       case JobStatus.completed:
-        return Colors.green;
+        return ChoiceLuxTheme.successColor;
       case JobStatus.cancelled:
-        return Colors.red;
+        return ChoiceLuxTheme.errorColor;
     }
   }
 
@@ -33,7 +33,7 @@ class StatusColorUtils {
         return ChoiceLuxTheme.successColor;
       case 'pending':
       case 'waiting':
-        return Colors.orange;
+        return ChoiceLuxTheme.orange;
       case 'in_progress':
       case 'active':
         return ChoiceLuxTheme.infoColor;
@@ -42,7 +42,7 @@ class StatusColorUtils {
       case 'error':
         return ChoiceLuxTheme.errorColor;
       case 'urgent':
-        return Colors.red;
+        return ChoiceLuxTheme.errorColor;
       default:
         return ChoiceLuxTheme.platinumSilver;
     }
@@ -86,7 +86,7 @@ class StatusColorUtils {
       case 'recent':
         return ChoiceLuxTheme.successColor;
       case 'older':
-        return Colors.orange;
+        return ChoiceLuxTheme.orange;
       case 'old':
         return ChoiceLuxTheme.errorColor;
       default:

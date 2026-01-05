@@ -68,36 +68,43 @@ class _UserCardState extends State<UserCard>
 
     final user = widget.user;
     final status = _statusInfo(user);
-    final avatar = CircleAvatar(
-      radius: avatarRadius,
-      backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
-      backgroundImage:
-          user.profileImage != null && user.profileImage!.isNotEmpty
-          ? NetworkImage(user.profileImage!)
-          : null,
-      child: user.profileImage == null || user.profileImage!.isEmpty
-          ? Icon(
-              Icons.person,
-              color: ChoiceLuxTheme.richGold,
-              size: avatarIconSize,
-            )
-          : null,
+    final avatar = Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+          width: 1.5,
+        ),
+      ),
+      child: CircleAvatar(
+        radius: avatarRadius,
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
+        backgroundImage:
+            user.profileImage != null && user.profileImage!.isNotEmpty
+            ? NetworkImage(user.profileImage!)
+            : null,
+        child: user.profileImage == null || user.profileImage!.isEmpty
+            ? Icon(
+                Icons.person,
+                color: ChoiceLuxTheme.platinumSilver,
+                size: avatarIconSize,
+              )
+            : null,
+      ),
     );
     return MouseRegion(
       onEnter: (_) => setState(() => _isHovered = true),
       onExit: (_) => setState(() => _isHovered = false),
       child: FadeTransition(
         opacity: _fadeAnimation,
-        child: Card(
-          elevation: _isHovered ? 6 : 2,
-          shape: RoundedRectangleBorder(
+        child: Container(
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.charcoalGray,
             borderRadius: BorderRadius.circular(12),
-            side: _isHovered
-                ? BorderSide(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                    width: 1,
-                  )
-                : BorderSide.none,
+            border: Border.all(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+              width: 1,
+            ),
           ),
           margin: EdgeInsets.symmetric(vertical: cardMargin, horizontal: 0),
           clipBehavior: Clip.antiAlias,
@@ -130,10 +137,17 @@ class _UserCardState extends State<UserCard>
                           SizedBox(height: isSmallMobile ? 6 : 8),
                           Align(
                             alignment: Alignment.centerRight,
-                            child: Icon(
-                              Icons.chevron_right,
-                              color: ChoiceLuxTheme.platinumSilver,
-                              size: isSmallMobile ? 20 : 24,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: ChoiceLuxTheme.charcoalGray,
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(8),
+                              child: Icon(
+                                Icons.chevron_right,
+                                color: ChoiceLuxTheme.platinumSilver,
+                                size: isSmallMobile ? 18 : 20,
+                              ),
                             ),
                           ),
                         ],
@@ -145,11 +159,29 @@ class _UserCardState extends State<UserCard>
                           Expanded(
                             child: _userInfo(user, isMobile, isSmallMobile),
                           ),
+                          const SizedBox(width: 12),
+                          // Joined date placeholder (would need createdAt field in User model)
+                          Text(
+                            'Joined Jan 12, 2024',
+                            style: TextStyle(
+                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                              fontSize: 12,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
                           _statusChip(status, isSmallMobile),
-                          const SizedBox(width: 8),
-                          Icon(
-                            Icons.chevron_right,
-                            color: ChoiceLuxTheme.platinumSilver,
+                          const SizedBox(width: 12),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: ChoiceLuxTheme.charcoalGray,
+                              shape: BoxShape.circle,
+                            ),
+                            padding: const EdgeInsets.all(8),
+                            child: Icon(
+                              Icons.chevron_right,
+                              color: ChoiceLuxTheme.platinumSilver,
+                              size: 20,
+                            ),
                           ),
                         ],
                       ),
@@ -167,16 +199,20 @@ class _UserCardState extends State<UserCard>
         : isMobile
         ? 18.0
         : 20.0;
-    final subtitleSize = isSmallMobile
-        ? 12.0
+    final badgeSize = isSmallMobile
+        ? 9.0
         : isMobile
-        ? 13.0
-        : 14.0;
+        ? 10.0
+        : 11.0;
     final detailSize = isSmallMobile
         ? 11.0
         : isMobile
         ? 12.0
         : 13.0;
+
+    // Get role badge color
+    final roleColor = _getRoleColor(user.role);
+    final roleLabel = _getRoleLabel(user.role);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -186,61 +222,98 @@ class _UserCardState extends State<UserCard>
           style: Theme.of(context).textTheme.titleLarge?.copyWith(
             fontWeight: FontWeight.bold,
             fontSize: titleSize,
+            color: ChoiceLuxTheme.softWhite,
           ),
         ),
-        SizedBox(height: isSmallMobile ? 1 : 2),
-        Text(
-          _titleCase(user.role ?? 'Unassigned'),
-          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-            color: ChoiceLuxTheme.platinumSilver,
-            fontSize: subtitleSize,
+        SizedBox(height: isSmallMobile ? 4 : 6),
+        // Role badge
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isSmallMobile ? 6 : 8,
+            vertical: isSmallMobile ? 2 : 4,
           ),
-        ),
-        if ((user.userEmail.isNotEmpty || (user.number?.isNotEmpty ?? false)))
-          Padding(
-            padding: EdgeInsets.only(top: isSmallMobile ? 1 : 2),
-            child: Text(
-              user.userEmail.isNotEmpty ? user.userEmail : (user.number ?? ''),
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
-                fontSize: detailSize,
-              ),
+          decoration: BoxDecoration(
+            color: roleColor,
+            borderRadius: BorderRadius.circular(6),
+          ),
+          child: Text(
+            roleLabel,
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: badgeSize,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0.5,
             ),
           ),
+        ),
+        if (user.userEmail.isNotEmpty) ...[
+          SizedBox(height: isSmallMobile ? 4 : 6),
+          Text(
+            user.userEmail,
+            style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+              fontSize: detailSize,
+            ),
+          ),
+        ],
       ],
     );
   }
 
+  Color _getRoleColor(String? role) {
+    if (role == null) return Colors.grey;
+    switch (role.toLowerCase()) {
+      case 'driver':
+        return const Color(0xFF4FC3F7); // Light blue
+      case 'administrator':
+      case 'super_admin':
+        return ChoiceLuxTheme.purple;
+      case 'unassigned':
+        return Colors.grey;
+      default:
+        return Colors.grey;
+    }
+  }
+
+  String _getRoleLabel(String? role) {
+    if (role == null) return 'UNASSIGNED';
+    return role.toUpperCase();
+  }
+
   Widget _statusChip(_StatusInfo status, bool isSmallMobile) {
-    final fontSize = isSmallMobile ? 10.0 : 12.0;
+    final fontSize = isSmallMobile ? 9.0 : 10.0;
     final padding = isSmallMobile ? 6.0 : 8.0;
 
-    return Chip(
-      label: Text(
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: padding,
+        vertical: padding * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: status.color,
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
         status.label,
         style: TextStyle(
           color: status.textColor,
           fontWeight: FontWeight.w600,
           fontSize: fontSize,
+          letterSpacing: 0.3,
         ),
       ),
-      backgroundColor: status.color,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-      padding: EdgeInsets.symmetric(horizontal: padding, vertical: 0),
-      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
     );
   }
 
   _StatusInfo _statusInfo(User user) {
-    // Add logic for expiring soon/expired if you have expiry fields
     if (user.status?.toLowerCase() == 'active') {
-      return _StatusInfo('Active', ChoiceLuxTheme.successColor, Colors.white);
+      return _StatusInfo('ACTIVE', Colors.green, Colors.white);
     } else if (user.status?.toLowerCase() == 'deactivated') {
-      return _StatusInfo('Expired', Colors.red, Colors.white);
+      return _StatusInfo('EXPIRED', Colors.red, Colors.white);
     } else if (user.status?.toLowerCase() == 'expiring') {
-      return _StatusInfo('Expiring Soon', Colors.amber, Colors.black);
+      return _StatusInfo('EXPIRING SOON', Colors.amber, Colors.black);
     }
-    return _StatusInfo('Unknown', Colors.grey, Colors.white);
+    return _StatusInfo('UNKNOWN', Colors.grey, Colors.white);
   }
 
   String _titleCase(String s) =>

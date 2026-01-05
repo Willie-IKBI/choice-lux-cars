@@ -78,71 +78,49 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         offset: offset,
       );
 
-      // Calculate stats from active notifications only
-      final activeNotifications = notifications
-          .where((n) => !n.isHidden)
-          .toList();
-      final unreadCount = activeNotifications
-          .where((n) => !n.isRead && !n.isDismissed)
-          .length;
-      final totalCount = activeNotifications.length;
-      final highPriorityCount = activeNotifications
-          .where((n) => n.isHighPriority)
-          .length;
-
+      // Update stats in a single optimized pass (consolidated from separate method)
+      await _updateStatsFromNotifications(notifications);
+      
       state = state.copyWith(
         notifications: notifications,
-        unreadCount: unreadCount,
-        totalCount: totalCount,
-        highPriorityCount: highPriorityCount,
         isLoading: false,
       );
-
-      Log.d(
-        'Loaded ${notifications.length} notifications, ${unreadCount} unread',
-      );
-      Log.d(
-        'Active notifications - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
-      );
-      
-      // Debug logging to identify the issue
-      Log.d('=== DEBUG: Provider stats calculation ===');
-      Log.d('Total notifications loaded: ${notifications.length}');
-      Log.d('Hidden notifications: ${notifications.where((n) => n.isHidden).length}');
-      Log.d('Active notifications: ${notifications.where((n) => !n.isHidden).length}');
-      Log.d('Unread active: ${notifications.where((n) => !n.isHidden && !n.isRead).length}');
-      Log.d('Dismissed notifications: ${notifications.where((n) => n.isDismissed).length}');
-
-      // Also update stats based on loaded notifications
-      await _updateStatsFromNotifications(notifications);
     } catch (e) {
       Log.e('Error loading notifications: $e');
       state = state.copyWith(isLoading: false, error: e.toString());
     }
   }
 
-  /// Update stats based on loaded notifications
+  /// Update stats based on loaded notifications (optimized single-pass calculation)
   Future<void> _updateStatsFromNotifications(
     List<app_notification.AppNotification> notifications,
   ) async {
     try {
-      // Calculate stats from active notifications only (not hidden)
-      final activeNotifications = notifications
-          .where((n) => !n.isHidden)
-          .toList();
-      final totalCount = activeNotifications.length;
-      final unreadCount = activeNotifications.where((n) => !n.isRead).length;
-      final readCount = activeNotifications.where((n) => n.isRead).length;
-      final dismissedCount = notifications.where((n) => n.isDismissed).length;
-      final highPriorityCount = activeNotifications
-          .where((n) => n.isHighPriority)
-          .length;
-
-      // Group by type
+      // Single-pass calculation for better performance
+      int totalCount = 0;
+      int unreadCount = 0;
+      int readCount = 0;
+      int dismissedCount = 0;
+      int highPriorityCount = 0;
       final byType = <String, int>{};
-      for (final notification in activeNotifications) {
-        byType[notification.notificationType] =
-            (byType[notification.notificationType] ?? 0) + 1;
+
+      for (final notification in notifications) {
+        if (!notification.isHidden) {
+          totalCount++;
+          if (!notification.isRead) {
+            unreadCount++;
+          } else {
+            readCount++;
+          }
+          if (notification.isHighPriority) {
+            highPriorityCount++;
+          }
+          byType[notification.notificationType] =
+              (byType[notification.notificationType] ?? 0) + 1;
+        }
+        if (notification.isDismissed) {
+          dismissedCount++;
+        }
       }
 
       final stats = {
@@ -159,11 +137,6 @@ class NotificationNotifier extends StateNotifier<NotificationState> {
         totalCount: totalCount,
         unreadCount: unreadCount,
         highPriorityCount: highPriorityCount,
-      );
-
-      Log.d('Updated stats from notifications: $stats');
-      Log.d(
-        'Updated state counts - Total: $totalCount, Unread: $unreadCount, High Priority: $highPriorityCount',
       );
     } catch (e) {
       Log.e('Error updating stats from notifications: $e');

@@ -128,6 +128,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                 const SizedBox(width: 12), // Reduced from 16px for better spacing
               ],
 
+              // Custom Actions (like Add Vehicle button)
+              if (actions != null) ...[...actions!, const SizedBox(width: 12)],
+
               // User Profile Section
               if (showProfile && currentUser != null) ...[
                 if (isMobile)
@@ -136,9 +139,6 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                   _buildDesktopUserMenu(context, displayName, userProfile),
                 const SizedBox(width: 8),
               ],
-
-              // Custom Actions
-              if (actions != null) ...[...actions!],
             ],
         ),
       ),
@@ -146,6 +146,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
   }
 
   Widget _buildBackButton(BuildContext context) {
+    final callback = onBackPressed;
     return Container(
       decoration: BoxDecoration(
         color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
@@ -161,24 +162,24 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           color: ChoiceLuxTheme.richGold,
           size: 20,
         ),
-        onPressed:
-            onBackPressed ??
-            () {
-              Log.d('Back button pressed - attempting to pop context');
-              try {
-                if (Navigator.of(context).canPop()) {
-                  context.pop();
-                  Log.d('Context pop successful');
-                } else {
-                  Log.d('Cannot pop - navigating to dashboard');
+        onPressed: callback != null
+            ? callback
+            : () {
+                Log.d('Back button pressed - attempting to pop context');
+                try {
+                  if (Navigator.of(context).canPop()) {
+                    context.pop();
+                    Log.d('Context pop successful');
+                  } else {
+                    Log.d('Cannot pop - navigating to dashboard');
+                    context.go('/dashboard');
+                  }
+                } catch (e) {
+                  Log.d('Error popping context: $e');
+                  // Fallback to go to dashboard
                   context.go('/dashboard');
                 }
-              } catch (e) {
-                Log.d('Error popping context: $e');
-                // Fallback to go to dashboard
-                context.go('/dashboard');
-              }
-            },
+              },
         style: IconButton.styleFrom(
           padding: const EdgeInsets.all(8),
           minimumSize: const Size(40, 40),
@@ -448,61 +449,58 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           await _showSignOutDialog(context);
         }
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
-            width: 1,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // Name and SIGN OUT text on the left
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                displayName,
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                'SIGN OUT',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                  fontWeight: FontWeight.w400,
+                  fontSize: 11,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
           ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Enhanced Avatar with Gold Ring
-            Container(
-              padding: const EdgeInsets.all(2),
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    ChoiceLuxTheme.richGold,
-                    ChoiceLuxTheme.richGold.withOpacity(0.7),
-                  ],
-                ),
+          const SizedBox(width: 12),
+          // Circular avatar on the right
+          Container(
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(
+                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
+                width: 1.5,
               ),
-              child: CircleAvatar(
-                radius: 16,
-                backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                child: Text(
-                  displayName.substring(0, 1).toUpperCase(),
-                  style: TextStyle(
-                    color: ChoiceLuxTheme.richGold,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 14,
-                  ),
+            ),
+            child: CircleAvatar(
+              radius: 18,
+              backgroundColor: ChoiceLuxTheme.charcoalGray,
+              child: Text(
+                displayName.substring(0, 1).toUpperCase(),
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 16,
                 ),
               ),
             ),
-            const SizedBox(width: 12),
-            Text(
-              displayName,
-              style: TextStyle(
-                color: ChoiceLuxTheme.softWhite,
-                fontWeight: FontWeight.w500,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(width: 8),
-            Icon(
-              Icons.keyboard_arrow_down_rounded,
-              color: ChoiceLuxTheme.richGold,
-              size: 18,
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
       itemBuilder: (context) => [
         // Enhanced User Info Header

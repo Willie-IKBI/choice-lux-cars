@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/features/notifications/services/notification_preferences_service.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class NotificationPreferencesScreen extends ConsumerStatefulWidget {
@@ -48,6 +50,10 @@ class _NotificationPreferencesScreenState
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     final userProfile = ref.watch(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
     final isSuperAdmin = userRole == 'super_admin';
@@ -64,23 +70,23 @@ class _NotificationPreferencesScreenState
         ),
         body: Center(
           child: Padding(
-            padding: const EdgeInsets.all(24.0),
+            padding: EdgeInsets.all(padding * 1.5),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.lock_outline, size: 64, color: Colors.orange[300]),
-                const SizedBox(height: 16),
+                Icon(Icons.lock_outline, size: ResponsiveTokens.getIconSize(screenWidth) * 2.5, color: ChoiceLuxTheme.orange),
+                SizedBox(height: spacing * 2),
                 Text(
                   'Access Restricted',
-                  style: TextStyle(fontSize: 18, color: Colors.orange[300], fontWeight: FontWeight.bold),
+                  style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 18), color: ChoiceLuxTheme.orange, fontWeight: FontWeight.bold),
                 ),
-                const SizedBox(height: 8),
+                SizedBox(height: spacing),
                 Text(
                   'Only Super Administrators can configure notification settings.',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[400]),
+                  style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14), color: ChoiceLuxTheme.platinumSilver),
                   textAlign: TextAlign.center,
                 ),
-                const SizedBox(height: 24),
+                SizedBox(height: spacing * 3),
                 ElevatedButton(
                   onPressed: () => Navigator.of(context).pop(),
                   child: const Text('Go Back'),
@@ -106,19 +112,19 @@ class _NotificationPreferencesScreenState
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Icon(Icons.error_outline,
-                          size: 64, color: Colors.red[300]),
-                      const SizedBox(height: 16),
+                          size: ResponsiveTokens.getIconSize(screenWidth) * 2.5, color: ChoiceLuxTheme.errorColor),
+                      SizedBox(height: spacing * 2),
                       Text(
                         'Error loading preferences',
-                        style: TextStyle(fontSize: 18, color: Colors.red[300]),
+                        style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 18), color: ChoiceLuxTheme.errorColor),
                       ),
-                      const SizedBox(height: 8),
+                      SizedBox(height: spacing),
                       Text(
                         _errorMessage!,
-                        style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                        style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14), color: ChoiceLuxTheme.platinumSilver),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
+                      SizedBox(height: spacing * 3),
                       ElevatedButton(
                         onPressed: _loadPreferences,
                         child: const Text('Retry'),
@@ -126,14 +132,17 @@ class _NotificationPreferencesScreenState
                     ],
                   ),
                 )
-              : SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
+              : Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 800),
+                    child: SingleChildScrollView(
+                      padding: EdgeInsets.all(padding),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
             // Notification Types Section
             _buildSectionHeader('Notification Types', Icons.category),
-            const SizedBox(height: 16),
+            SizedBox(height: spacing * 2),
 
             _buildSwitchTile(
               'Job Assignments',
@@ -259,11 +268,11 @@ class _NotificationPreferencesScreenState
               },
             ),
 
-            const SizedBox(height: 32),
+            SizedBox(height: spacing * 4),
 
             // Actions Section
             _buildSectionHeader('Actions', Icons.settings),
-            const SizedBox(height: 16),
+            SizedBox(height: spacing * 2),
 
             _buildActionTile(
               'Test Notification',
@@ -286,21 +295,25 @@ class _NotificationPreferencesScreenState
               () => _resetToDefaults(),
             ),
 
-            const SizedBox(height: 32),
-          ],
-        ),
-      ),
+            SizedBox(height: spacing * 4),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
     );
   }
 
   Widget _buildSectionHeader(String title, IconData icon) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return Row(
       children: [
-        Icon(icon, color: Colors.blue[600]),
-        const SizedBox(width: 8),
+        Icon(icon, color: ChoiceLuxTheme.infoColor, size: ResponsiveTokens.getIconSize(screenWidth)),
+        SizedBox(width: spacing),
         Text(
           title,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+          style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 18), fontWeight: FontWeight.w600),
         ),
       ],
     );
@@ -313,18 +326,21 @@ class _NotificationPreferencesScreenState
     bool value,
     ValueChanged<bool> onChanged,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: spacing),
       child: SwitchListTile(
         title: Row(
           children: [
-            Icon(icon, size: 20, color: Colors.grey[600]),
-            const SizedBox(width: 12),
+            Icon(icon, size: ResponsiveTokens.getIconSize(screenWidth), color: ChoiceLuxTheme.platinumSilver),
+            SizedBox(width: spacing * 1.5),
             Expanded(
               child: Text(
                 title,
-                style: const TextStyle(
-                  fontSize: 16,
+                style: TextStyle(
+                  fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
                   fontWeight: FontWeight.w500,
                 ),
               ),
@@ -332,16 +348,16 @@ class _NotificationPreferencesScreenState
           ],
         ),
         subtitle: Padding(
-          padding: const EdgeInsets.only(left: 32),
+          padding: EdgeInsets.only(left: padding * 2),
           child: Text(
             subtitle,
-            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+            style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14), color: ChoiceLuxTheme.platinumSilver),
           ),
         ),
         value: value,
         onChanged: onChanged,
-        activeColor: Colors.blue,
-        activeTrackColor: Colors.blue.withOpacity(0.5),
+        activeColor: ChoiceLuxTheme.infoColor,
+        activeTrackColor: ChoiceLuxTheme.infoColor.withOpacity(0.5),
       ),
     );
   }
@@ -352,20 +368,22 @@ class _NotificationPreferencesScreenState
     IconData icon,
     VoidCallback onTap,
   ) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return Card(
-      margin: const EdgeInsets.only(bottom: 8),
+      margin: EdgeInsets.only(bottom: spacing),
       child: ListTile(
-        leading: Icon(icon, color: Colors.grey[600]),
+        leading: Icon(icon, color: ChoiceLuxTheme.platinumSilver, size: ResponsiveTokens.getIconSize(screenWidth)),
         title: Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+          style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16), fontWeight: FontWeight.w500),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+          style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14), color: ChoiceLuxTheme.platinumSilver),
         ),
         onTap: onTap,
-        trailing: const Icon(Icons.arrow_forward_ios, size: 16),
+        trailing: Icon(Icons.arrow_forward_ios, size: ResponsiveTokens.getIconSize(screenWidth) * 0.7),
       ),
     );
   }
@@ -495,7 +513,7 @@ class _NotificationPreferencesScreenState
                 }
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(backgroundColor: ChoiceLuxTheme.errorColor),
             child: const Text('Clear All'),
           ),
         ],

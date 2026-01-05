@@ -8,7 +8,7 @@ import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class UserDetailScreen extends ConsumerWidget {
   final String userId;
@@ -26,71 +26,37 @@ class UserDetailScreen extends ConsumerWidget {
       user = null;
     }
     if (usersList.isEmpty) {
-      return Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(painter: BackgroundPatterns.dashboard),
-          ),
-          const SystemSafeScaffold(
-            backgroundColor: Colors.transparent,
-            body: Center(child: CircularProgressIndicator()),
-          ),
-        ],
+      return SystemSafeScaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: const Center(child: CircularProgressIndicator()),
       );
     }
     if (user == null) {
-      return Stack(
-        children: [
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          Positioned.fill(
-            child: CustomPaint(painter: BackgroundPatterns.dashboard),
-          ),
-          SystemSafeScaffold(
-            backgroundColor: Colors.transparent,
-            appBar: LuxuryAppBar(
-              title: 'User Not Found',
-              showBackButton: true,
-              onBackPressed: () => context.go('/users'),
-            ),
-            body: const Center(child: Text('User not found.')),
-          ),
-        ],
+      return SystemSafeScaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        appBar: LuxuryAppBar(
+          title: 'User Not Found',
+          showBackButton: true,
+          onBackPressed: () => context.go('/users'),
+        ),
+        body: const Center(child: Text('User not found.')),
       );
     }
     final canDeactivate = user.status == 'active';
-    return Stack(
-      children: [
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'Edit User',
-            showBackButton: true,
-            onBackPressed: () => context.go('/users'),
-          ),
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'Edit User',
+        showBackButton: true,
+        onBackPressed: () => context.go('/users'),
+      ),
           body: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 0),
+            padding: EdgeInsets.symmetric(vertical: ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width) * 3, horizontal: 0),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 900),
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  padding: EdgeInsets.symmetric(horizontal: ResponsiveTokens.getPadding(MediaQuery.of(context).size.width)),
                   child: UserForm(
                     user: user,
                     canDeactivate: canDeactivate,
@@ -137,8 +103,6 @@ class UserDetailScreen extends ConsumerWidget {
               ),
             ),
           ),
-        ),
-      ],
     );
   }
 }

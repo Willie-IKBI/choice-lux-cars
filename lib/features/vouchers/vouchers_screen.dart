@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
@@ -30,20 +31,26 @@ class VouchersScreen extends StatelessWidget {
             showBackButton: true,
             onBackPressed: () => context.go('/'),
           ),
-          body: const Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.card_giftcard, size: 64, color: Colors.teal),
-                SizedBox(height: 16),
-                Text(
-                  'Vouchers Management',
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+          body: Builder(
+            builder: (context) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
+              return Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.card_giftcard, size: ResponsiveTokens.getIconSize(screenWidth) * 2.5, color: Colors.teal),
+                    SizedBox(height: spacing * 2),
+                    Text(
+                      'Vouchers Management',
+                      style: TextStyle(fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 24), fontWeight: FontWeight.bold),
+                    ),
+                    SizedBox(height: spacing * 2),
+                    Text('Coming soon...'),
+                  ],
                 ),
-                SizedBox(height: 16),
-                Text('Coming soon...'),
-              ],
-            ),
+              );
+            },
           ),
           floatingActionButton: FloatingActionButton(
             onPressed: () {

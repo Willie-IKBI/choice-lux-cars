@@ -132,7 +132,7 @@ class PaginationWidget extends StatelessWidget {
               ? ChoiceLuxTheme.richGold
               : ChoiceLuxTheme.charcoalGray,
           foregroundColor: isEnabled
-              ? Colors.black
+              ? ChoiceLuxTheme.jetBlack
               : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
           elevation: isEnabled ? 1 : 0,
           padding: isMobile
@@ -230,7 +230,7 @@ class PaginationWidget extends StatelessWidget {
               ? ChoiceLuxTheme.richGold
               : ChoiceLuxTheme.charcoalGray,
           foregroundColor: isCurrentPage
-              ? Colors.black
+              ? ChoiceLuxTheme.jetBlack
               : ChoiceLuxTheme.platinumSilver,
           elevation: isCurrentPage ? 1 : 0,
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),

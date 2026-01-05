@@ -26,6 +26,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
   TimePeriod _selectedPeriod = TimePeriod.thisMonth;
   LocationFilter _selectedLocation = LocationFilter.all;
   late TabController _tabController;
+  bool _showFilters = false; // Filters hidden by default
 
   @override
   void initState() {
@@ -70,6 +71,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
 
     final screenWidth = MediaQuery.of(context).size.width;
     final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
     final padding = ResponsiveTokens.getPadding(screenWidth);
     final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
@@ -88,57 +90,147 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
           constraints: const BoxConstraints(maxWidth: 1400),
           child: Column(
             children: [
-              // Filter bar
+              // Filter Toggle Button + Collapsible Filter Bar
               Container(
-                margin: EdgeInsets.all(padding),
-                padding: EdgeInsets.all(padding),
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.05),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.white.withOpacity(0.1)),
+                margin: EdgeInsets.only(
+                  left: padding,
+                  right: padding,
+                  top: isMobile ? 4 : 8,
+                  bottom: 2,
                 ),
-                child: _buildFilterBar(),
+                child: Column(
+                  children: [
+                    // Filter Toggle Button
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _showFilters = !_showFilters;
+                            });
+                          },
+                          child: Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: isMobile ? 10 : 12,
+                              vertical: isMobile ? 6 : 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: _showFilters 
+                                  ? ChoiceLuxTheme.richGold.withOpacity(0.2)
+                                  : Colors.white.withOpacity(0.05),
+                              borderRadius: BorderRadius.circular(6),
+                              border: Border.all(
+                                color: _showFilters
+                                    ? ChoiceLuxTheme.richGold.withOpacity(0.5)
+                                    : Colors.white.withOpacity(0.1),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(
+                                  Icons.filter_list,
+                                  size: isMobile ? 16 : 18,
+                                  color: _showFilters
+                                      ? ChoiceLuxTheme.richGold
+                                      : ChoiceLuxTheme.platinumSilver,
+                                ),
+                                SizedBox(width: isMobile ? 4 : 6),
+                                Text(
+                                  'Filters',
+                                  style: TextStyle(
+                                    fontSize: isMobile ? 12 : 13,
+                                    fontWeight: FontWeight.w600,
+                                    color: _showFilters
+                                        ? ChoiceLuxTheme.richGold
+                                        : ChoiceLuxTheme.platinumSilver,
+                                  ),
+                                ),
+                                SizedBox(width: isMobile ? 4 : 6),
+                                Icon(
+                                  _showFilters ? Icons.expand_less : Icons.expand_more,
+                                  size: isMobile ? 16 : 18,
+                                  color: _showFilters
+                                      ? ChoiceLuxTheme.richGold
+                                      : ChoiceLuxTheme.platinumSilver,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    // Collapsible Filter Bar
+                    AnimatedSize(
+                      duration: const Duration(milliseconds: 200),
+                      curve: Curves.easeInOut,
+                      child: _showFilters
+                          ? Container(
+                              margin: EdgeInsets.only(top: isMobile ? 6 : 8),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: isMobile ? 10 : 12,
+                                vertical: isMobile ? 8 : 10,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.03),
+                                borderRadius: BorderRadius.circular(6),
+                                border: Border.all(
+                                  color: Colors.white.withOpacity(0.08),
+                                  width: 1,
+                                ),
+                              ),
+                              child: _buildCompactFilterBar(isMobile, isSmallMobile),
+                            )
+                          : const SizedBox.shrink(),
+                    ),
+                  ],
+                ),
               ),
               
-              // Tab bar
+              // Ultra-Compact Tab bar - Icon-only on mobile
               Container(
-                margin: EdgeInsets.symmetric(horizontal: padding),
+                margin: EdgeInsets.symmetric(
+                  horizontal: padding,
+                  vertical: isMobile ? 2 : 4,
+                ),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.charcoalGray,
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(6),
                   border: Border.all(
                     color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
                     width: 1,
                   ),
                 ),
                 child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 4 : 8),
+                  padding: EdgeInsets.all(isMobile ? 2 : 4),
                   child: TabBar(
                     controller: _tabController,
-                    isScrollable: true, // Always scrollable for better spacing
+                    isScrollable: true,
                     indicator: BoxDecoration(
                       color: ChoiceLuxTheme.richGold,
-                      borderRadius: BorderRadius.circular(10),
+                      borderRadius: BorderRadius.circular(6),
                     ),
-                    indicatorPadding: EdgeInsets.all(4),
+                    indicatorPadding: EdgeInsets.all(2),
                     dividerColor: Colors.transparent,
                     labelColor: Colors.black,
                     unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
                     labelStyle: TextStyle(
-                      fontSize: isMobile ? 14 : 15,
+                      fontSize: isMobile ? 11 : 13,
                       fontWeight: FontWeight.w700,
-                      letterSpacing: 0.5,
+                      letterSpacing: 0.2,
                     ),
                     unselectedLabelStyle: TextStyle(
-                      fontSize: isMobile ? 14 : 15,
+                      fontSize: isMobile ? 11 : 13,
                       fontWeight: FontWeight.w500,
-                      letterSpacing: 0.3,
+                      letterSpacing: 0.1,
                     ),
                     labelPadding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 16 : 24,
-                      vertical: isMobile ? 12 : 14,
+                      horizontal: isMobile ? 8 : 14,
+                      vertical: isMobile ? 6 : 8,
                     ),
-                    tabAlignment: TabAlignment.start, // Align tabs to start for better scrolling
+                    tabAlignment: TabAlignment.start,
                     tabs: [
                       _buildTab(Icons.work, 'Jobs', isMobile),
                       _buildTab(Icons.attach_money, 'Financial', isMobile),
@@ -188,142 +280,131 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
   Widget _buildTab(IconData icon, String text, bool isMobile) {
     return Tab(
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 4 : 8), // Add padding between tabs
+        padding: EdgeInsets.symmetric(horizontal: isMobile ? 2 : 4),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               icon,
-              size: isMobile ? 17 : 19,
+              size: isMobile ? 18 : 20,
             ),
-            SizedBox(width: isMobile ? 8 : 10), // Increased spacing between icon and text
-            Text(
-              text,
-              overflow: TextOverflow.ellipsis,
-            ),
+            // Show text only on desktop, icon-only on mobile
+            if (!isMobile) ...[
+              SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  text,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+              ),
+            ],
           ],
         ),
       ),
     );
   }
 
-  Widget _buildFilterBar() {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final spacing = ResponsiveTokens.getSpacing(screenWidth);
-    
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildCompactFilterBar(bool isMobile, bool isSmallMobile) {
+    return Row(
       children: [
-        Row(
-          children: [
-            Icon(
-              Icons.filter_list,
-              color: ChoiceLuxTheme.richGold,
-              size: ResponsiveTokens.getIconSize(screenWidth),
-            ),
-            SizedBox(width: spacing),
-            Text(
-              'Filters',
-              style: TextStyle(
-                fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
-                fontWeight: FontWeight.bold,
-                color: Colors.white,
+        // Time Period Filter - Ultra-compact
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showTimePeriodPicker(context),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 8 : 10,
+                vertical: isMobile ? 8 : 10,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 1,
+                ),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: isMobile ? 16 : 18,
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.9),
+                  ),
+                  SizedBox(width: isMobile ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      _selectedPeriod.displayName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isMobile ? 12 : 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
+                    ),
+                  ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: isMobile ? 18 : 20,
+                    color: Colors.white.withOpacity(0.7),
+                  ),
+                ],
               ),
             ),
-          ],
+          ),
         ),
-        SizedBox(height: spacing * 2),
-        Row(
-          children: [
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+        
+        SizedBox(width: isMobile ? 6 : 8),
+        
+        // Location Filter - Ultra-compact
+        Expanded(
+          child: GestureDetector(
+            onTap: () => _showLocationPicker(context),
+            child: Container(
+              padding: EdgeInsets.symmetric(
+                horizontal: isMobile ? 8 : 10,
+                vertical: isMobile ? 8 : 10,
+              ),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(6),
+                border: Border.all(
+                  color: Colors.white.withOpacity(0.15),
+                  width: 1,
+                ),
+              ),
+              child: Row(
                 children: [
-                  const Text(
-                    'Time Period',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
+                  Icon(
+                    Icons.location_on,
+                    size: isMobile ? 16 : 18,
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.9),
+                  ),
+                  SizedBox(width: isMobile ? 6 : 8),
+                  Expanded(
+                    child: Text(
+                      _selectedLocation.displayName,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: isMobile ? 12 : 13,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                      maxLines: 1,
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showTimePeriodPicker(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _selectedPeriod.displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ],
-                      ),
-                    ),
+                  Icon(
+                    Icons.arrow_drop_down,
+                    size: isMobile ? 18 : 20,
+                    color: Colors.white.withOpacity(0.7),
                   ),
                 ],
               ),
             ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Location',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.white70,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  GestureDetector(
-                    onTap: () => _showLocationPicker(context),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
-                        border: Border.all(color: Colors.white.withOpacity(0.2)),
-                      ),
-                      child: Row(
-                        children: [
-                          Expanded(
-                            child: Text(
-                              _selectedLocation.displayName,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                              ),
-                            ),
-                          ),
-                          Icon(
-                            Icons.arrow_drop_down,
-                            color: Colors.white.withOpacity(0.7),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+          ),
         ),
       ],
     );

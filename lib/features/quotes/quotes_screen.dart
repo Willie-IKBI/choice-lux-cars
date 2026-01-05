@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'providers/quotes_provider.dart';
@@ -74,9 +75,11 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
     // Responsive breakpoints
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isDesktop = screenWidth > 1200;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
 
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
@@ -84,49 +87,53 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
         showBackButton: true,
         onBackPressed: () => context.go('/'),
       ),
-      body: Stack(
-        children: [
-          // Background gradient
-          Positioned.fill(
-            child: Container(
-              decoration: const BoxDecoration(
-                gradient: ChoiceLuxTheme.backgroundGradient,
+      body: Center(
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 1200),
+          child: Stack(
+            children: [
+              // Background gradient
+              Positioned.fill(
+                child: Container(
+                  decoration: const BoxDecoration(
+                    gradient: ChoiceLuxTheme.backgroundGradient,
+                  ),
+                ),
               ),
-            ),
-          ),
-          // Background pattern overlay
-          Positioned.fill(
-            child: CustomPaint(painter: BackgroundPatterns.dashboard),
-          ),
-          // Content
-          SafeArea(
-            child: Column(
-              children: [
-                // Header Section with Stats
-                _buildHeaderSection(
-                  filteredQuotes.length,
-                  (quotes.value ?? []).length,
+              // Background pattern overlay
+              Positioned.fill(
+                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+              ),
+              // Content
+              SafeArea(
+                child: Column(
+                  children: [
+                    // Header Section with Stats
+                    _buildHeaderSection(
+                      filteredQuotes.length,
+                      (quotes.value ?? []).length,
+                    ),
+
+                    // Search and Filter Section
+                    _buildSearchAndFilterSection(isMobile),
+
+                    // Quotes List/Grid
+                    Expanded(
+                      child: filteredQuotes.isEmpty
+                          ? _buildEmptyState()
+                          : _buildQuotesList(
+                              filteredQuotes,
+                              isMobile,
+                              isSmallMobile,
+                              isDesktop,
+                            ),
+                    ),
+                  ],
                 ),
-
-                // Search and Filter Section
-                _buildSearchAndFilterSection(isMobile),
-
-
-                // Quotes List/Grid
-                Expanded(
-                  child: filteredQuotes.isEmpty
-                      ? _buildEmptyState()
-                      : _buildQuotesList(
-                          filteredQuotes,
-                          isMobile,
-                          isSmallMobile,
-                          isDesktop,
-                        ),
-                ),
-              ],
-            ),
+              ),
+            ],
           ),
-        ],
+        ),
       ),
       floatingActionButton: canCreateQuotes ? _buildMobileOptimizedFAB() : null,
     );
@@ -134,10 +141,10 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
   Widget _buildHeaderSection(int filteredCount, int totalCount) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
 
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
     final horizontalPadding = isSmallMobile
@@ -169,11 +176,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                 : '$filteredCount of $totalCount quotes',
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
               color: ChoiceLuxTheme.platinumSilver,
-              fontSize: isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 14
-                  : 16,
+              fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14),
             ),
           ),
           const SizedBox(height: 16),
@@ -201,9 +204,9 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
   Widget _buildSearchAndFilterSection(bool isMobile) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
 
     // Responsive padding system: 12px mobile, 16px tablet, 24px desktop
     final horizontalPadding = isSmallMobile
@@ -252,19 +255,19 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
                     : 'Search quotes by passenger name or quote ID...',
                 hintStyle: TextStyle(
                   color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                  fontSize: isMobile ? 14 : 16,
+                  fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 15),
                 ),
                 prefixIcon: Icon(
                   Icons.search,
                   color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                  size: isMobile ? 20 : 24,
+                  size: ResponsiveTokens.getIconSize(screenWidth),
                 ),
                 suffixIcon: _searchQuery.isNotEmpty
                     ? IconButton(
                         icon: Icon(
                           Icons.clear,
                           color: ChoiceLuxTheme.platinumSilver.withOpacity(0.6),
-                          size: isMobile ? 20 : 24,
+                          size: ResponsiveTokens.getIconSize(screenWidth),
                         ),
                         onPressed: () => setState(() => _searchQuery = ''),
                         tooltip: 'Clear search',
@@ -278,7 +281,7 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
               ),
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
-                fontSize: isMobile ? 14 : 16,
+                  fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 15),
               ),
             ),
           ),
@@ -286,37 +289,45 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           const SizedBox(height: 16),
 
           // Status Filter - Mobile uses bottom sheet, Desktop uses horizontal chips
-          if (isMobile)
-            _buildMobileFilterButton()
-          else
-            SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: Row(
-                children: [
-                  _buildStatusChip('all', 'All', Colors.grey),
-                  const SizedBox(width: 8),
-                  _buildStatusChip('draft', 'Draft', Colors.orange),
-                  const SizedBox(width: 8),
-                  _buildStatusChip('open', 'Open', Colors.blue),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(
-                    'accepted',
-                    'Accepted',
-                    ChoiceLuxTheme.successColor,
+          Builder(
+            builder: (context) {
+              final screenWidth = MediaQuery.of(context).size.width;
+              final spacing = ResponsiveTokens.getSpacing(screenWidth);
+              
+              if (isMobile) {
+                return _buildMobileFilterButton();
+              } else {
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      _buildStatusChip('all', 'All', Colors.grey),
+                      SizedBox(width: spacing),
+                      _buildStatusChip('draft', 'Draft', Colors.orange),
+                      SizedBox(width: spacing),
+                      _buildStatusChip('open', 'Open', Colors.blue),
+                      SizedBox(width: spacing),
+                      _buildStatusChip(
+                        'accepted',
+                        'Accepted',
+                        ChoiceLuxTheme.successColor,
+                      ),
+                      SizedBox(width: spacing),
+                      _buildStatusChip(
+                        'expired',
+                        'Expired',
+                        ChoiceLuxTheme.errorColor,
+                      ),
+                      SizedBox(width: spacing),
+                      _buildStatusChip('closed', 'Closed', Colors.grey),
+                      SizedBox(width: spacing),
+                      _buildStatusChip('rejected', 'Rejected', Colors.red),
+                    ],
                   ),
-                  const SizedBox(width: 8),
-                  _buildStatusChip(
-                    'expired',
-                    'Expired',
-                    ChoiceLuxTheme.errorColor,
-                  ),
-                  const SizedBox(width: 8),
-                  _buildStatusChip('closed', 'Closed', Colors.grey),
-                  const SizedBox(width: 8),
-                  _buildStatusChip('rejected', 'Rejected', Colors.red),
-                ],
-              ),
-            ),
+                );
+              }
+            },
+          ),
         ],
       ),
     );
@@ -666,8 +677,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
 
   Widget _buildMobileOptimizedFAB() {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
     if (isMobile) {
       // Mobile: Compact FAB with icon only

@@ -6,8 +6,9 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:intl/intl.dart';
 
 class VehicleEditorScreen extends ConsumerStatefulWidget {
   final Vehicle? vehicle;
@@ -37,6 +38,10 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   static const double fieldSpacing = 20.0;
   static const double sectionSpacing = 32.0;
   static const double buttonSpacing = 24.0;
+
+  String _formatDate(DateTime date) {
+    return '${date.day.toString().padLeft(2, '0')}/${date.month.toString().padLeft(2, '0')}/${date.year}';
+  }
 
   @override
   void initState() {
@@ -444,14 +449,15 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
         const SizedBox(height: 32),
         Row(
           children: [
-            Icon(icon, size: 24, color: ChoiceLuxTheme.platinumSilver),
+            Icon(icon, size: 20, color: ChoiceLuxTheme.softWhite),
             const SizedBox(width: 12),
             Text(
               title,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-                fontSize: 18,
-                color: ChoiceLuxTheme.platinumSilver,
+              style: GoogleFonts.inter(
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+                color: ChoiceLuxTheme.softWhite,
+                letterSpacing: 0.5,
               ),
             ),
           ],
@@ -472,9 +478,12 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
               TextFormField(
                 initialValue: make,
                 onChanged: (value) => make = value,
+                style: TextStyle(color: ChoiceLuxTheme.softWhite),
                 decoration: InputDecoration(
                   labelText: 'Make',
                   hintText: 'Enter vehicle make',
+                  filled: true,
+                  fillColor: ChoiceLuxTheme.charcoalGray,
                   labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
                   hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
                   floatingLabelBehavior: FloatingLabelBehavior.always,
@@ -488,7 +497,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
                   ),
                   errorBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -832,107 +841,157 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        TextFormField(
-          readOnly: true,
-          controller: TextEditingController(
-            text: regDate != DateTime(2000, 1, 1)
-                ? regDate.toString().split(' ')[0]
-                : '',
-          ),
-          decoration: InputDecoration(
-            labelText: 'Registration Date',
-            hintText: 'Select registration date',
-            labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-            hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
-            floatingLabelBehavior: FloatingLabelBehavior.always,
-            suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-            border: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+        Row(
+          children: [
+            Expanded(
+              child: TextFormField(
+                readOnly: true,
+                controller: TextEditingController(
+                  text: regDate != DateTime(2000, 1, 1)
+                      ? _formatDate(regDate)
+                      : '',
+                ),
+                style: TextStyle(color: ChoiceLuxTheme.softWhite),
+                decoration: InputDecoration(
+                  labelText: 'Registration Date',
+                  hintText: 'Select registration date',
+                  filled: true,
+                  fillColor: ChoiceLuxTheme.charcoalGray,
+                  labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                  floatingLabelBehavior: FloatingLabelBehavior.always,
+                  suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+                  ),
+                  errorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                  ),
+                  focusedErrorBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                  ),
+                ),
+                onTap: () async {
+                  final date = await showDatePicker(
+                    context: context,
+                    initialDate: regDate != DateTime(2000, 1, 1)
+                        ? regDate
+                        : DateTime.now(),
+                    firstDate: DateTime(2000),
+                    lastDate: DateTime(2100),
+                  );
+                  if (date != null) {
+                    setState(() => regDate = date);
+                  }
+                },
+              ),
             ),
-            enabledBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            const SizedBox(width: 8),
+            ElevatedButton.icon(
+              onPressed: () => setState(() => regDate = DateTime.now()),
+              icon: Icon(Icons.access_time, size: 16),
+              label: Text('Today'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.charcoalGray,
+                foregroundColor: ChoiceLuxTheme.platinumSilver,
+                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                ),
+                elevation: 0,
+              ),
             ),
-            focusedBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-            ),
-            errorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
-            ),
-            focusedErrorBorder: OutlineInputBorder(
-              borderRadius: BorderRadius.circular(12),
-              borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
-            ),
-          ),
-          onTap: () async {
-            final date = await showDatePicker(
-              context: context,
-              initialDate: regDate != DateTime(2000, 1, 1)
-                  ? regDate
-                  : DateTime.now(),
-              firstDate: DateTime(2000),
-              lastDate: DateTime(2100),
-            );
-            if (date != null) {
-              setState(() => regDate = date);
-            }
-          },
+          ],
         ),
         const SizedBox(height: fieldSpacing),
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            TextFormField(
-              readOnly: true,
-              controller: TextEditingController(
-                text: licenseExpiryDate != DateTime(2000, 1, 1)
-                    ? licenseExpiryDate.toString().split(' ')[0]
-                    : '',
-              ),
-              decoration: InputDecoration(
-                labelText: 'License Expiry Date',
-                hintText: 'Select expiry date',
-                labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-                hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
-                floatingLabelBehavior: FloatingLabelBehavior.always,
-                suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+            Row(
+              children: [
+                Expanded(
+                  child: TextFormField(
+                    readOnly: true,
+                    controller: TextEditingController(
+                      text: licenseExpiryDate != DateTime(2000, 1, 1)
+                          ? _formatDate(licenseExpiryDate)
+                          : '',
+                    ),
+                    style: TextStyle(color: ChoiceLuxTheme.softWhite),
+                    decoration: InputDecoration(
+                      labelText: 'License Expiry Date',
+                      hintText: 'Select expiry date',
+                      filled: true,
+                      fillColor: ChoiceLuxTheme.charcoalGray,
+                      labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                      hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+                      floatingLabelBehavior: FloatingLabelBehavior.always,
+                      suffixIcon: Icon(Icons.calendar_today, color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                      ),
+                      enabledBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+                      ),
+                      errorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+                      ),
+                      focusedErrorBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+                      ),
+                    ),
+                    onTap: () async {
+                      final date = await showDatePicker(
+                        context: context,
+                        initialDate: licenseExpiryDate != DateTime(2000, 1, 1)
+                            ? licenseExpiryDate
+                            : DateTime.now(),
+                        firstDate: DateTime(2000),
+                        lastDate: DateTime(2100),
+                      );
+                      if (date != null) {
+                        setState(() => licenseExpiryDate = date);
+                      }
+                    },
+                  ),
                 ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                const SizedBox(width: 8),
+                ElevatedButton.icon(
+                  onPressed: () => setState(() => licenseExpiryDate = DateTime.now()),
+                  icon: Icon(Icons.access_time, size: 16),
+                  label: Text('Today'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.charcoalGray,
+                    foregroundColor: ChoiceLuxTheme.platinumSilver,
+                    padding: EdgeInsets.symmetric(horizontal: 12, vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+                    ),
+                    elevation: 0,
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
-                ),
-                errorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
-                ),
-                focusedErrorBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
-                ),
-              ),
-              onTap: () async {
-                final date = await showDatePicker(
-                  context: context,
-                  initialDate: licenseExpiryDate != DateTime(2000, 1, 1)
-                      ? licenseExpiryDate
-                      : DateTime.now(),
-                  firstDate: DateTime(2000),
-                  lastDate: DateTime(2100),
-                );
-                if (date != null) {
-                  setState(() => licenseExpiryDate = date);
-                }
-              },
+              ],
             ),
             const SizedBox(height: 8),
             _buildLicenseCountdownIndicator(),
@@ -1360,81 +1419,52 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     final isDesktop = screenWidth >= 900;
     final fieldSpacing = isMobile ? 16.0 : 20.0;
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with a transparent background
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
-            showBackButton: true,
-            onBackPressed: () => Navigator.of(context).pop(),
-          ),
-          body: Form(
-            key: _formKey,
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: BoxConstraints(
-                    maxWidth: isDesktop ? 800 : double.infinity,
-                  ),
-                  child: Card(
-                    color: ChoiceLuxTheme.charcoalGray,
-                    elevation: 8,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      side: BorderSide(
-                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
-                        width: 1,
-                      ),
-                    ),
-                    child: Padding(
-                      padding: EdgeInsets.all(isMobile ? 20.0 : 32.0),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Vehicle details section
-                          _buildModernSectionHeader('Vehicle Details', Icons.directions_car, isMobile, isSmallMobile),
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: isEdit ? 'Edit Vehicle' : 'Add Vehicle',
+        showBackButton: true,
+        onBackPressed: () => Navigator.of(context).pop(),
+      ),
+      body: Form(
+        key: _formKey,
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(isMobile ? 16.0 : 24.0),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: isDesktop ? 800 : double.infinity,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Vehicle details section
+                  _buildModernSectionHeader('VEHICLE DETAILS', Icons.directions_car, isMobile, isSmallMobile),
 
-                          _buildVehicleDetailsForm(isMobile, isSmallMobile),
+                  _buildVehicleDetailsForm(isMobile, isSmallMobile),
 
-                          // Registration & License section
-                          _buildModernSectionHeader('Registration & License', Icons.assignment, isMobile, isSmallMobile),
+                  // Registration & License section
+                  _buildModernSectionHeader('REGISTRATION & LICENSE', Icons.description_outlined, isMobile, isSmallMobile),
 
-                          _buildRegistrationForm(isMobile, isSmallMobile),
+                  _buildRegistrationForm(isMobile, isSmallMobile),
 
-                          // Vehicle Image section
-                          _buildModernSectionHeader('Vehicle Image', Icons.photo_camera, isMobile, isSmallMobile),
+                  // Vehicle Image section
+                  _buildModernSectionHeader('VEHICLE IMAGE', Icons.photo_camera, isMobile, isSmallMobile),
 
-                          _buildImageSection(isMobile, isSmallMobile),
+                  _buildImageSection(isMobile, isSmallMobile),
 
-                          // Action buttons with divider
-                          const SizedBox(height: 32),
-                          Divider(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2), height: 1),
-                          const SizedBox(height: 24),
-                          _buildModernActionButtons(isMobile, isSmallMobile),
-                          const SizedBox(height: 24),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
+                  // Action buttons with divider
+                  const SizedBox(height: 32),
+                  Divider(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2), height: 1),
+                  const SizedBox(height: 24),
+                  _buildModernActionButtons(isMobile, isSmallMobile),
+                  const SizedBox(height: 24),
+                ],
               ),
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 }

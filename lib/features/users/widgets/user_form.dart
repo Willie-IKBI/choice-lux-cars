@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'dart:io';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart' as usersp;
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/core/logging/log.dart';
 
@@ -109,7 +110,8 @@ class _UserFormState extends State<UserForm> {
       builder: (context, ref, _) {
         final userProfile = ref.watch(auth.currentUserProfileProvider);
         final isAdmin = userProfile?.role?.toLowerCase() == 'administrator' || userProfile?.role?.toLowerCase() == 'super_admin';
-        final isWide = MediaQuery.of(context).size.width > 900;
+        final screenWidth = MediaQuery.of(context).size.width;
+        final isWide = screenWidth > 900;
         // Error summary state
         String? errorSummary;
         return Form(
@@ -143,65 +145,58 @@ class _UserFormState extends State<UserForm> {
                   ),
                 ),
               // Avatar + Header Section
-              Card(
-                margin: const EdgeInsets.only(bottom: 24),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(
-                    color: Colors.white.withOpacity(0.2),
-                    width: 1,
-                  ),
-                ),
-                elevation: 4,
-                shadowColor: Colors.black.withOpacity(0.08),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    vertical: 24,
-                    horizontal: 16,
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          CircleAvatar(
-                            radius: isWide ? 52 : 44,
-                            backgroundColor: Colors.grey[800],
-                            backgroundImage:
-                                profileImage != null && profileImage!.isNotEmpty
-                                ? NetworkImage(profileImage!)
-                                : null,
-                            child: profileImage == null || profileImage!.isEmpty
-                                ? Text(
-                                    displayName.isNotEmpty
-                                        ? displayName[0].toUpperCase()
-                                        : '?',
-                                    style: const TextStyle(
-                                      fontSize: 32,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : null,
-                          ),
-                          if (_uploading)
-                            const Positioned.fill(
-                              child: Center(child: CircularProgressIndicator()),
-                            ),
-                        ],
+                      CircleAvatar(
+                        radius: isWide ? 52 : 44,
+                        backgroundColor: ChoiceLuxTheme.charcoalGray,
+                        backgroundImage:
+                            profileImage != null && profileImage!.isNotEmpty
+                            ? NetworkImage(profileImage!)
+                            : null,
+                        child: profileImage == null || profileImage!.isEmpty
+                            ? Text(
+                                displayName.isNotEmpty
+                                    ? displayName[0].toUpperCase()
+                                    : '?',
+                                style: TextStyle(
+                                  fontSize: 32,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
+                              )
+                            : null,
                       ),
-                      const SizedBox(height: 16),
-                      TextButton.icon(
-                        icon: const Icon(Icons.camera_alt_outlined),
-                        label: const Text('Change Profile Image'),
-                        onPressed: widget.user == null
-                            ? null
-                            : () => _pickAndUploadImage(ref, widget.user!.id),
-                      ),
+                      if (_uploading)
+                        const Positioned.fill(
+                          child: Center(child: CircularProgressIndicator()),
+                        ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 16),
+                  Consumer(
+                    builder: (context, ref, _) => TextButton.icon(
+                      icon: Icon(
+                        Icons.camera_alt_outlined,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                      label: Text(
+                        'Change Profile Image',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.richGold,
+                        ),
+                      ),
+                      onPressed: widget.user == null
+                          ? null
+                          : () => _pickAndUploadImage(ref, widget.user!.id),
+                    ),
+                  ),
+                ],
               ),
+              const SizedBox(height: 32),
               // Responsive layout for form sections
               isWide
                   ? Row(
@@ -227,22 +222,25 @@ class _UserFormState extends State<UserForm> {
               // Responsive button row
               Builder(
                 builder: (context) {
-                  final isMobile = MediaQuery.of(context).size.width < 600;
+                  final screenWidth = MediaQuery.of(context).size.width;
+                  final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
                   if (isMobile) {
                     // Stack buttons vertically, full width
                     return Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
                         if (widget.canDeactivate && widget.onDeactivate != null)
-                          OutlinedButton.icon(
-                            icon: const Icon(Icons.block),
+                          ElevatedButton.icon(
+                            icon: const Icon(Icons.block, size: 18),
                             label: const Text('Deactivate'),
-                            style: OutlinedButton.styleFrom(
-                              foregroundColor: Theme.of(
-                                context,
-                              ).colorScheme.error,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: ChoiceLuxTheme.errorColor,
+                              foregroundColor: Colors.white,
                               minimumSize: const Size.fromHeight(48),
                               padding: const EdgeInsets.symmetric(vertical: 16),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
                             ),
                             onPressed: () {
                               Log.d('Deactivate button pressed in UserForm');
@@ -251,15 +249,20 @@ class _UserFormState extends State<UserForm> {
                           ),
                         if (widget.canDeactivate && widget.onDeactivate != null)
                           const SizedBox(height: 12),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ChoiceLuxTheme.richGold,
+                            foregroundColor: Colors.black,
                             minimumSize: const Size.fromHeight(48),
                             padding: const EdgeInsets.symmetric(vertical: 16),
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
-                            elevation: 2,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
@@ -301,13 +304,15 @@ class _UserFormState extends State<UserForm> {
                         if (widget.canDeactivate && widget.onDeactivate != null)
                           Padding(
                             padding: const EdgeInsets.only(right: 12),
-                            child: OutlinedButton.icon(
-                              icon: const Icon(Icons.block),
+                            child: ElevatedButton.icon(
+                              icon: const Icon(Icons.block, size: 18),
                               label: const Text('Deactivate'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Theme.of(
-                                  context,
-                                ).colorScheme.error,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: ChoiceLuxTheme.errorColor,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
                               ),
                               onPressed: () {
                                 Log.d(
@@ -317,13 +322,18 @@ class _UserFormState extends State<UserForm> {
                               },
                             ),
                           ),
-                        FilledButton(
-                          style: FilledButton.styleFrom(
+                        ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ChoiceLuxTheme.richGold,
+                            foregroundColor: Colors.black,
                             textStyle: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 16,
                             ),
-                            elevation: 2,
+                            elevation: 0,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
                           ),
                           onPressed: () {
                             if (_formKey.currentState!.validate()) {
@@ -368,28 +378,35 @@ class _UserFormState extends State<UserForm> {
   }
 
   Widget _buildBasicInfoSection(bool isAdmin) {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
       ),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.person, size: 22),
+                Icon(
+                  Icons.person,
+                  size: 22,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Basic Info',
+                  'BASIC INFO',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 16,
+                    color: ChoiceLuxTheme.softWhite,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -398,7 +415,10 @@ class _UserFormState extends State<UserForm> {
             TextFormField(
               initialValue: displayName,
               decoration: _modernInputDecoration('Full Name'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               validator: (val) =>
                   val == null || val.isEmpty ? 'Required' : null,
               onSaved: (val) => displayName = val ?? '',
@@ -407,7 +427,10 @@ class _UserFormState extends State<UserForm> {
             TextFormField(
               initialValue: userEmail,
               decoration: _modernInputDecoration('Email'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               readOnly: true,
             ),
             const SizedBox(height: 12),
@@ -415,6 +438,15 @@ class _UserFormState extends State<UserForm> {
                 ? DropdownButtonFormField<String>(
                     value: role,
                     decoration: _modernInputDecoration('Role'),
+                    dropdownColor: ChoiceLuxTheme.charcoalGray,
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 15,
+                    ),
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: ChoiceLuxTheme.platinumSilver,
+                    ),
                     items: roles
                         .map(
                           (r) => DropdownMenuItem<String>(
@@ -422,9 +454,18 @@ class _UserFormState extends State<UserForm> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(r.icon, size: 18),
+                                Icon(
+                                  r.icon,
+                                  size: 18,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 const SizedBox(width: 8),
-                                Text(r.label),
+                                Text(
+                                  r.label,
+                                  style: TextStyle(
+                                    color: ChoiceLuxTheme.softWhite,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -441,7 +482,10 @@ class _UserFormState extends State<UserForm> {
                         )
                         .label,
                     decoration: _modernInputDecoration('Role'),
-                    style: const TextStyle(fontSize: 15),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: ChoiceLuxTheme.softWhite,
+                    ),
                     readOnly: true,
                   ),
             const SizedBox(height: 12),
@@ -449,6 +493,15 @@ class _UserFormState extends State<UserForm> {
                 ? DropdownButtonFormField<String>(
                     value: status,
                     decoration: _modernInputDecoration('Status'),
+                    dropdownColor: ChoiceLuxTheme.charcoalGray,
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 15,
+                    ),
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: ChoiceLuxTheme.platinumSilver,
+                    ),
                     items: statuses
                         .map(
                           (s) => DropdownMenuItem<String>(
@@ -456,9 +509,18 @@ class _UserFormState extends State<UserForm> {
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(s.icon, size: 18),
+                                Icon(
+                                  s.icon,
+                                  size: 18,
+                                  color: ChoiceLuxTheme.softWhite,
+                                ),
                                 const SizedBox(width: 8),
-                                Text(s.label),
+                                Text(
+                                  s.label,
+                                  style: TextStyle(
+                                    color: ChoiceLuxTheme.softWhite,
+                                  ),
+                                ),
                               ],
                             ),
                           ),
@@ -470,7 +532,10 @@ class _UserFormState extends State<UserForm> {
                 : TextFormField(
                     initialValue: _getStatusLabel(status),
                     decoration: _modernInputDecoration('Status'),
-                    style: const TextStyle(fontSize: 15),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: ChoiceLuxTheme.softWhite,
+                    ),
                     readOnly: true,
                   ),
           ],
@@ -480,28 +545,35 @@ class _UserFormState extends State<UserForm> {
   }
 
   Widget _buildContactSection() {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
       ),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.phone, size: 22),
+                Icon(
+                  Icons.phone,
+                  size: 22,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Contact Info',
+                  'CONTACT INFO',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 16,
+                    color: ChoiceLuxTheme.softWhite,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -510,28 +582,40 @@ class _UserFormState extends State<UserForm> {
             TextFormField(
               initialValue: number,
               decoration: _modernInputDecoration('Contact Number'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               onSaved: (val) => number = val,
             ),
             const SizedBox(height: 12),
             TextFormField(
               initialValue: address,
               decoration: _modernInputDecoration('Address'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               onSaved: (val) => address = val,
             ),
             const SizedBox(height: 12),
             TextFormField(
               initialValue: kin,
               decoration: _modernInputDecoration('Emergency Contact Name'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               onSaved: (val) => kin = val,
             ),
             const SizedBox(height: 12),
             TextFormField(
               initialValue: kinNumber,
               decoration: _modernInputDecoration('Emergency Contact Number'),
-              style: const TextStyle(fontSize: 15),
+              style: TextStyle(
+                fontSize: 15,
+                color: ChoiceLuxTheme.softWhite,
+              ),
               onSaved: (val) => kinNumber = val,
             ),
           ],
@@ -541,28 +625,35 @@ class _UserFormState extends State<UserForm> {
   }
 
   Widget _buildDriverSection() {
-    return Card(
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: BorderSide(color: Colors.white.withOpacity(0.2), width: 1),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+          width: 1,
+        ),
       ),
-      elevation: 2,
-      shadowColor: Colors.black.withOpacity(0.08),
       child: Padding(
-        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 20),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
-                const Icon(Icons.directions_car, size: 22),
+                Icon(
+                  Icons.description_outlined,
+                  size: 22,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
                 const SizedBox(width: 8),
                 Text(
-                  'Driver Details',
+                  'DRIVER DETAILS',
                   style: Theme.of(context).textTheme.titleMedium?.copyWith(
                     fontWeight: FontWeight.w600,
-                    fontSize: 18,
+                    fontSize: 16,
+                    color: ChoiceLuxTheme.softWhite,
+                    letterSpacing: 0.5,
                   ),
                 ),
               ],
@@ -676,19 +767,31 @@ class _UserFormState extends State<UserForm> {
   InputDecoration _modernInputDecoration(String label) {
     return InputDecoration(
       labelText: label,
+      labelStyle: TextStyle(
+        fontSize: 14,
+        fontWeight: FontWeight.w400,
+        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+      ),
       filled: true,
-      fillColor: Colors.white.withOpacity(0.05),
+      fillColor: ChoiceLuxTheme.charcoalGray,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(color: Colors.white.withOpacity(0.2)),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.blueAccent, width: 2),
+        borderSide: BorderSide(
+          color: ChoiceLuxTheme.richGold,
+          width: 2,
+        ),
       ),
       errorBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -699,7 +802,6 @@ class _UserFormState extends State<UserForm> {
         borderSide: const BorderSide(color: Colors.redAccent, width: 2),
       ),
       contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 14),
-      labelStyle: const TextStyle(fontSize: 14, fontWeight: FontWeight.w400),
       errorStyle: const TextStyle(
         fontWeight: FontWeight.w600,
         color: Colors.redAccent,

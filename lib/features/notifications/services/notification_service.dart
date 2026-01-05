@@ -9,7 +9,7 @@ class NotificationService {
 
   /// Get notifications
   Future<List<app_notification.AppNotification>> getNotifications({
-    int limit = 1000,  // Increased from 50 to fetch more notifications
+    int limit = 50,  // Reduced from 1000 to improve initial load performance
     int offset = 0,
     bool unreadOnly = false,
     String? notificationType,

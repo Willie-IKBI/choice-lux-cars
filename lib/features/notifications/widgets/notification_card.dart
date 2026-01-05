@@ -21,10 +21,8 @@ class NotificationCard extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final isUnread = notification.isUnread;
     final isHighPriority = notification.isHighPriority;
     final isUrgent = notification.isUrgent;
-    final isExpired = notification.isExpired;
 
     return Dismissible(
       key: Key(notification.id),
@@ -42,310 +40,215 @@ class NotificationCard extends ConsumerWidget {
         alignment: Alignment.centerRight,
         padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.centerLeft,
-            end: Alignment.centerRight,
-            colors: [
-              ChoiceLuxTheme.errorColor.withValues(alpha: 0.1),
-              ChoiceLuxTheme.errorColor,
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
+          color: ChoiceLuxTheme.errorColor,
+          borderRadius: BorderRadius.circular(12),
         ),
         child: Icon(Icons.delete, color: ChoiceLuxTheme.softWhite, size: 24),
       ),
       child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 0, vertical: 4),
+        margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          gradient: ChoiceLuxTheme.cardGradient,
-          borderRadius: BorderRadius.circular(16),
+          color: ChoiceLuxTheme.charcoalGray,
+          borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _getCardBorderColor(isUnread, isHighPriority, isUrgent),
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
             width: 1,
           ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 8,
-              offset: const Offset(0, 2),
-              spreadRadius: 0,
-            ),
-          ],
         ),
-        child: InkWell(
-          onTap: () => _handleTap(context, ref),
-          borderRadius: BorderRadius.circular(16),
-          child: Container(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header row with icon, priority, and actions
-                Row(
-                  children: [
-                    // Notification icon
-                    Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        color: _getIconBackgroundColor(
-                          isUnread,
-                          isHighPriority,
-                          isUrgent,
+        child: Stack(
+          children: [
+            Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _handleTap(context, ref),
+                borderRadius: BorderRadius.circular(12),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Square icon on left
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: _getIconBackgroundColor(),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        borderRadius: BorderRadius.circular(24),
-                        border: Border.all(
-                          color: _getIconBorderColor(
-                            isUnread,
-                            isHighPriority,
-                            isUrgent,
-                          ),
-                          width: 2,
+                        child: Icon(
+                          _getNotificationIcon(),
+                          color: _getIconColor(),
+                          size: 24,
                         ),
                       ),
-                      child: Icon(
-                        _getNotificationIcon(),
-                        color: ChoiceLuxTheme.softWhite,
-                        size: 24,
-                      ),
-                    ),
 
-                    const SizedBox(width: 16),
+                      const SizedBox(width: 12),
 
-                    // Content
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Title row
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  _getNotificationTitle(),
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: isUnread
-                                        ? FontWeight.w600
-                                        : FontWeight.w500,
-                                    color: ChoiceLuxTheme.softWhite,
-                                  ),
-                                ),
+                      // Content in middle
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Title
+                            Text(
+                              _getNotificationTitle(),
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: ChoiceLuxTheme.softWhite,
                               ),
-
-                              // Priority indicator
-                              if (isHighPriority) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 4,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: isUrgent
-                                        ? ChoiceLuxTheme.errorColor.withValues(
-                                            alpha: 0.2,
-                                          )
-                                        : ChoiceLuxTheme.orange.withValues(
-                                            alpha: 0.2,
-                                          ),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: isUrgent
-                                          ? ChoiceLuxTheme.errorColor
-                                                .withValues(alpha: 0.5)
-                                          : ChoiceLuxTheme.orange.withValues(
-                                              alpha: 0.5,
-                                            ),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    isUrgent ? 'URGENT' : 'HIGH',
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.bold,
-                                      color: isUrgent
-                                          ? ChoiceLuxTheme.errorColor
-                                          : ChoiceLuxTheme.orange,
-                                    ),
-                                  ),
-                                ),
-                                const SizedBox(width: 8),
-                              ],
-
-                              // Action buttons
-                              Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (!notification.isRead)
-                                    IconButton(
-                                      onPressed: () =>
-                                          _handleMarkAsRead(context, ref),
-                                      icon: Icon(
-                                        Icons.check_circle_outline,
-                                        color: ChoiceLuxTheme.successColor,
-                                        size: 20,
-                                      ),
-                                      tooltip: 'Mark as read',
-                                      style: IconButton.styleFrom(
-                                        padding: const EdgeInsets.all(4),
-                                        minimumSize: const Size(32, 32),
-                                      ),
-                                    ),
-                                  IconButton(
-                                    onPressed: () =>
-                                        _handleDismiss(context, ref),
-                                    icon: Icon(
-                                      Icons.close,
-                                      color: ChoiceLuxTheme.platinumSilver,
-                                      size: 20,
-                                    ),
-                                    tooltip: 'Dismiss',
-                                    style: IconButton.styleFrom(
-                                      padding: const EdgeInsets.all(4),
-                                      minimumSize: const Size(32, 32),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-
-                          const SizedBox(height: 8),
-
-                          // Message
-                          Text(
-                            notification.message,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: ChoiceLuxTheme.platinumSilver,
-                              height: 1.4,
                             ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-
-                          const SizedBox(height: 12),
-
-                          // Footer row with timestamp and action
-                          Row(
-                            children: [
-                              // Timestamp
-                              Icon(
-                                Icons.access_time,
-                                size: 14,
-                                color: ChoiceLuxTheme.platinumSilver.withValues(
-                                  alpha: 0.7,
-                                ),
+                            const SizedBox(height: 4),
+                            // Message
+                            Text(
+                              notification.message,
+                              style: TextStyle(
+                                fontSize: 14,
+                                color: ChoiceLuxTheme.platinumSilver,
+                                height: 1.4,
                               ),
-                              const SizedBox(width: 4),
-                              Text(
-                                _getTimeAgo(),
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            const SizedBox(height: 4),
+                            // Timestamp
+                            Text(
+                              _getTimeAgo(),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(width: 12),
+
+                      // Actions on right
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Priority badge
+                          if (isHighPriority)
+                            Container(
+                              margin: const EdgeInsets.only(bottom: 8),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: ChoiceLuxTheme.richGold,
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                'HIGH',
                                 style: TextStyle(
-                                  fontSize: 12,
-                                  color: ChoiceLuxTheme.platinumSilver
-                                      .withValues(alpha: 0.7),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
                                 ),
                               ),
-
-                              const Spacer(),
-
-                              // Action button
-                              if (notification.actionData != null &&
-                                  notification.actionRoute != null)
-                                GestureDetector(
-                                  onTap: () => _handleActionButtonTap(context),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: ChoiceLuxTheme.richGold.withValues(
-                                        alpha: 0.1,
-                                      ),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(
-                                        color: ChoiceLuxTheme.richGold
-                                            .withValues(alpha: 0.3),
-                                        width: 1,
-                                      ),
-                                    ),
-                                    child: Text(
-                                      _getActionButtonText(),
+                            ),
+                          // View Details button
+                          if (notification.actionData != null &&
+                              notification.actionRoute != null)
+                            GestureDetector(
+                              onTap: () => _handleActionButtonTap(context),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: ChoiceLuxTheme.charcoalGray,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      'View Details',
                                       style: TextStyle(
                                         fontSize: 12,
-                                        fontWeight: FontWeight.w600,
-                                        color: ChoiceLuxTheme.richGold,
+                                        fontWeight: FontWeight.w500,
+                                        color: ChoiceLuxTheme.softWhite,
                                       ),
                                     ),
-                                  ),
+                                    const SizedBox(width: 4),
+                                    Icon(
+                                      Icons.chevron_right,
+                                      size: 16,
+                                      color: ChoiceLuxTheme.softWhite,
+                                    ),
+                                  ],
                                 ),
-                            ],
-                          ),
+                              ),
+                            ),
                         ],
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ],
+              ),
             ),
-          ),
+            // X icon in top right corner
+            Positioned(
+              top: 8,
+              right: 8,
+              child: Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _handleDismiss(context, ref),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.close,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      size: 18,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Color _getCardBorderColor(bool isUnread, bool isHighPriority, bool isUrgent) {
-    if (notification.isExpired) {
-      return ChoiceLuxTheme.grey.withValues(alpha: 0.3);
+  Color _getIconBackgroundColor() {
+    // Based on reference: gold briefcase for job confirmed, blue checkmark for step completed
+    if (notification.notificationType == 'job_confirmation' ||
+        notification.notificationType == 'job_assignment' ||
+        notification.notificationType == 'job_reassignment') {
+      return ChoiceLuxTheme.richGold.withOpacity(0.2);
     }
-    if (isUrgent) {
-      return ChoiceLuxTheme.errorColor.withValues(alpha: 0.5);
+    if (notification.notificationType == 'step_completion' ||
+        notification.notificationType == 'job_completion') {
+      return ChoiceLuxTheme.infoColor.withOpacity(0.2);
     }
-    if (isHighPriority) {
-      return ChoiceLuxTheme.orange.withValues(alpha: 0.5);
-    }
-    if (isUnread) {
-      return ChoiceLuxTheme.richGold.withValues(alpha: 0.5);
-    }
-    return ChoiceLuxTheme.richGold.withValues(alpha: 0.2);
+    return ChoiceLuxTheme.charcoalGray;
   }
 
-  Color _getIconBackgroundColor(
-    bool isUnread,
-    bool isHighPriority,
-    bool isUrgent,
-  ) {
-    if (notification.isExpired) {
-      return ChoiceLuxTheme.grey;
-    }
-    if (isUrgent) {
-      return ChoiceLuxTheme.errorColor;
-    }
-    if (isHighPriority) {
-      return ChoiceLuxTheme.orange;
-    }
-    if (isUnread) {
+  Color _getIconColor() {
+    // Based on reference: gold for job confirmed, blue for step completed
+    if (notification.notificationType == 'job_confirmation' ||
+        notification.notificationType == 'job_assignment' ||
+        notification.notificationType == 'job_reassignment') {
       return ChoiceLuxTheme.richGold;
     }
-    return ChoiceLuxTheme.infoColor;
-  }
-
-  Color _getIconBorderColor(bool isUnread, bool isHighPriority, bool isUrgent) {
-    if (notification.isExpired) {
-      return ChoiceLuxTheme.grey.withValues(alpha: 0.5);
+    if (notification.notificationType == 'step_completion' ||
+        notification.notificationType == 'job_completion') {
+      return ChoiceLuxTheme.infoColor;
     }
-    if (isUrgent) {
-      return ChoiceLuxTheme.errorColor.withValues(alpha: 0.8);
-    }
-    if (isHighPriority) {
-      return ChoiceLuxTheme.orange.withValues(alpha: 0.8);
-    }
-    if (isUnread) {
-      return ChoiceLuxTheme.richGold.withValues(alpha: 0.8);
-    }
-    return ChoiceLuxTheme.infoColor.withValues(alpha: 0.8);
+    return ChoiceLuxTheme.softWhite;
   }
 
   IconData _getNotificationIcon() {
@@ -353,15 +256,16 @@ class NotificationCard extends ConsumerWidget {
       case 'job_assignment':
       case 'job_reassignment':
       case 'job_confirmation':
-        return Icons.work;
+        return Icons.business_center; // Briefcase icon for job confirmed
       case 'job_status_change':
         return Icons.update;
       case 'job_cancelled':
         return Icons.cancel;
       case 'job_start':
       case 'job_completion':
-      case 'step_completion':
         return Icons.check_circle;
+      case 'step_completion':
+        return Icons.check_circle; // Checkmark for step completed
       case 'payment_reminder':
         return Icons.payment;
       case 'system_alert':
@@ -405,16 +309,8 @@ class NotificationCard extends ConsumerWidget {
   }
 
   String _getActionButtonText() {
-    switch (notification.actionType) {
-      case 'view_job':
-        return 'View Job';
-      case 'start_job':
-        return 'Start Job';
-      case 'complete_job':
-        return 'Complete Job';
-      default:
-        return 'View';
-    }
+    // Always return "View Details" to match reference
+    return 'View Details';
   }
 
   String _getTimeAgo() {

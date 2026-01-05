@@ -12,6 +12,7 @@ import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
@@ -252,11 +253,13 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
   Widget build(BuildContext context) {
     // Responsive breakpoints for mobile optimization
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
-    final isLargeDesktop = screenWidth >= 1200;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    final isLargeDesktop = ResponsiveBreakpoints.isLargeDesktop(screenWidth);
 
     final maxWidth = _getMaxWidth(screenWidth);
 
@@ -329,6 +332,8 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
     bool isSmallMobile,
   ) {
     final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     final maxWidth = _getMaxWidth(screenWidth);
 
     return Center(
@@ -336,13 +341,7 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
         constraints: BoxConstraints(maxWidth: maxWidth),
         child: SingleChildScrollView(
           controller: _scrollController,
-          padding: EdgeInsets.all(
-            isSmallMobile
-                ? 12.0
-                : isMobile
-                ? 16.0
-                : 24.0,
-          ),
+          padding: EdgeInsets.all(padding * 1.5),
           child: Form(
             key: _formKey,
             child: Column(
@@ -350,83 +349,35 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
               children: [
                 // Progress indicator
                 _buildMobileProgressIndicator(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Client Selection
                 _buildClientSelection(clients, isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Agent Selection (auto-populated from client)
                 _buildAgentSelection(clients, isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Vehicle Selection
                 _buildVehicleSelection(vehicles, isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Driver Selection
                 _buildDriverSelection(users, isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Location and Date
                 _buildLocationAndDateSection(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Passenger Details
                 _buildPassengerDetails(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Quote Details
                 _buildQuoteDetails(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
+                SizedBox(height: spacing * 2),
 
                 // Notes
                 _buildNotesSection(isMobile, isSmallMobile),

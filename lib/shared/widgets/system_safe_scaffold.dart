@@ -50,6 +50,7 @@ class SystemSafeScaffold extends StatelessWidget {
       extendBodyBehindAppBar: extendBodyBehindAppBar,
       body: body != null
           ? SafeArea(
+              top: true,
               bottom: true,
               child: body!,
             )
@@ -102,6 +103,7 @@ class SystemSafeContainer extends StatelessWidget {
       color: color,
       decoration: decoration,
       child: SafeArea(
+        top: true,
         bottom: true,
         child: child,
       ),

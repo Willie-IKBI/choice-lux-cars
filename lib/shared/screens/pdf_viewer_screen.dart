@@ -7,6 +7,7 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/services/pdf_viewer_service.dart';
 import 'package:http/http.dart' as http;
@@ -170,6 +171,8 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildLoadingState() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -177,12 +180,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
           const CircularProgressIndicator(
             valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing * 2),
           Text(
             'Loading PDF...',
             style: TextStyle(
               color: ChoiceLuxTheme.platinumSilver,
-              fontSize: 16,
+              fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 16),
               fontWeight: FontWeight.w500,
             ),
           ),
@@ -192,39 +195,43 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildErrorState({String? message}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth) * 2.5;
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(24),
+        padding: EdgeInsets.all(padding * 1.5),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Icon(
               Icons.error_outline,
-              size: 64,
+              size: iconSize,
               color: ChoiceLuxTheme.errorColor,
             ),
-            const SizedBox(height: 16),
+            SizedBox(height: spacing * 2),
             Text(
               'Failed to load PDF',
               style: TextStyle(
                 color: ChoiceLuxTheme.softWhite,
-                fontSize: 18,
+                fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 18),
                 fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 8),
+            SizedBox(height: spacing),
             Text(
               message ?? _errorMessage ?? 'Unknown error occurred',
               style: TextStyle(
                 color: ChoiceLuxTheme.platinumSilver,
-                fontSize: 14,
+                fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14),
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 24),
+            SizedBox(height: spacing * 2),
             ElevatedButton.icon(
               onPressed: _downloadAndCachePdf,
-              icon: const Icon(Icons.refresh),
+              icon: Icon(Icons.refresh, size: ResponsiveTokens.getIconSize(screenWidth)),
               label: const Text('Retry'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: ChoiceLuxTheme.richGold,
@@ -238,12 +245,16 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
   }
 
   Widget _buildPdfViewer() {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth);
     return Column(
       children: [
         // PDF Info Bar
         if (_isReady && _totalPages > 0)
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
             decoration: BoxDecoration(
               color: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
               border: Border(
@@ -258,14 +269,14 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                 Icon(
                   Icons.picture_as_pdf,
                   color: ChoiceLuxTheme.richGold,
-                  size: 20,
+                  size: iconSize * 0.75,
                 ),
-                const SizedBox(width: 8),
+                SizedBox(width: spacing),
                 Text(
                   'Page $_currentPage of $_totalPages',
                   style: TextStyle(
                     color: ChoiceLuxTheme.platinumSilver,
-                    fontSize: 14,
+                    fontSize: ResponsiveTokens.getFontSize(screenWidth, baseSize: 14),
                     fontWeight: FontWeight.w500,
                   ),
                 ),
@@ -274,12 +285,12 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
                   Row(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.chevron_left),
+                        icon: Icon(Icons.chevron_left, size: iconSize),
                         onPressed: _currentPage > 0 ? _previousPage : null,
                         color: ChoiceLuxTheme.richGold,
                       ),
                       IconButton(
-                        icon: const Icon(Icons.chevron_right),
+                        icon: Icon(Icons.chevron_right, size: iconSize),
                         onPressed: _currentPage < _totalPages - 1 ? _nextPage : null,
                         color: ChoiceLuxTheme.richGold,
                       ),
@@ -291,7 +302,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
         // PDF Viewer
         Expanded(
           child: Container(
-            margin: const EdgeInsets.all(16),
+            margin: EdgeInsets.all(padding),
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
               boxShadow: [

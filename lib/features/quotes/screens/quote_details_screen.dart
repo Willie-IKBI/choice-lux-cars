@@ -8,6 +8,8 @@ import 'package:choice_lux_cars/features/quotes/models/quote.dart';
 import 'package:choice_lux_cars/features/quotes/providers/quotes_provider.dart';
 import 'package:choice_lux_cars/features/quotes/services/quote_pdf_service.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
+import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:url_launcher/url_launcher_string.dart';
@@ -139,11 +141,12 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
     if (_isLoading) {
-      return Scaffold(
+      return SystemSafeScaffold(
+        backgroundColor: Colors.transparent,
         appBar: LuxuryAppBar(
           title: 'Quote Details',
           showBackButton: true,
@@ -158,7 +161,8 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
     }
 
     if (_quote == null) {
-      return Scaffold(
+      return SystemSafeScaffold(
+        backgroundColor: Colors.transparent,
         appBar: LuxuryAppBar(
           title: 'Quote Details',
           showBackButton: true,
@@ -193,7 +197,8 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
       );
     }
 
-    return Scaffold(
+    return SystemSafeScaffold(
+      backgroundColor: Colors.transparent,
       appBar: LuxuryAppBar(
         title: 'Quote #${_quote!.id}',
         subtitle: _isEditMode ? 'Edit Quote' : 'Quote Details',
@@ -226,33 +231,32 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
           gradient: ChoiceLuxTheme.backgroundGradient,
         ),
         child: SafeArea(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 12
-                  : isMobile
-                  ? 16
-                  : 24,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header with Status and Actions
-                _buildHeader(isMobile, isSmallMobile),
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: SingleChildScrollView(
+                padding: EdgeInsets.all(ResponsiveTokens.getPadding(screenWidth)),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Header with Status and Actions
+                    _buildHeader(isMobile, isSmallMobile),
 
-                const SizedBox(height: 24),
+                    SizedBox(height: ResponsiveTokens.getSpacing(screenWidth) * 2),
 
-                // Main Content
-                if (_isEditMode)
-                  _buildEditForm(isMobile, isSmallMobile)
-                else
-                  _buildViewContent(isMobile, isSmallMobile),
+                    // Main Content
+                    if (_isEditMode)
+                      _buildEditForm(isMobile, isSmallMobile)
+                    else
+                      _buildViewContent(isMobile, isSmallMobile),
 
-                const SizedBox(height: 24),
+                    SizedBox(height: ResponsiveTokens.getSpacing(screenWidth) * 2),
 
-                // Action Buttons
-                _buildActionButtons(isMobile, isSmallMobile),
-              ],
+                    // Action Buttons
+                    _buildActionButtons(isMobile, isSmallMobile),
+                  ],
+                ),
+              ),
             ),
           ),
         ),

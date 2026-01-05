@@ -8,8 +8,8 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class UsersScreen extends ConsumerStatefulWidget {
   const UsersScreen({Key? key}) : super(key: key);
@@ -62,6 +62,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     final userProfile = ref.watch(auth.currentUserProfileProvider);
     if (userProfile == null ||
         (userProfile.role?.toLowerCase() != 'administrator' &&
@@ -77,11 +79,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     }
 
     // Responsive breakpoints for mobile optimization
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = screenWidth < 600;
-    final isSmallMobile = screenWidth < 400;
-    final isTablet = screenWidth >= 600 && screenWidth < 800;
-    final isDesktop = screenWidth >= 800;
+    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
 
     final users = ref.watch(usersp.usersProvider);
     final usersNotifier = ref.read(usersp.usersProvider.notifier);
@@ -96,50 +98,26 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       final matchesStatus = _statusFilter == null || u.status == _statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     }).toList();
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent,
-          appBar: LuxuryAppBar(
-            title: 'Users',
-            showBackButton: true,
-            onBackPressed: () => context.go('/'),
-            onSignOut: () async {
-              await ref.read(auth.authProvider.notifier).signOut();
-            },
-          ),
+    return SystemSafeScaffold(
+      backgroundColor: ChoiceLuxTheme.jetBlack,
+      appBar: LuxuryAppBar(
+        title: 'Users',
+        subtitle: 'OVERVIEW & STATISTICS',
+        showBackButton: true,
+        onBackPressed: () => context.go('/'),
+        onSignOut: () async {
+          await ref.read(auth.authProvider.notifier).signOut();
+        },
+      ),
       body: SafeArea(
           child: Padding(
-            padding: EdgeInsets.all(
-              isSmallMobile
-                  ? 12.0
-                  : isMobile
-                  ? 16.0
-                  : 24.0,
-            ),
+            padding: EdgeInsets.all(padding),
             child: Column(
               children: [
                 // Responsive search and filters section
                 _buildResponsiveSearchAndFilters(isMobile, isSmallMobile),
-                SizedBox(
-                  height: isSmallMobile
-                      ? 12.0
-                      : isMobile
-                      ? 16.0
-                      : 20.0,
-                ),
-                const SizedBox(height: 12),
+                SizedBox(height: spacing * 1.5),
+                SizedBox(height: spacing * 1.5),
                 Expanded(
                   child: isLoading
                       ? _buildMobileLoadingState(isMobile, isSmallMobile)
@@ -154,16 +132,12 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                                   child: ListView.separated(
                                     key: ValueKey(filtered.length),
                                     padding: EdgeInsets.symmetric(
-                                      horizontal: isSmallMobile
-                                          ? 4.0
-                                          : isMobile
-                                          ? 6.0
-                                          : 8.0,
-                                      vertical: 8.0,
+                                      horizontal: padding * 0.5,
+                                      vertical: spacing,
                                     ),
                                     itemCount: filtered.length,
                                     separatorBuilder: (_, __) => SizedBox(
-                                      height: isSmallMobile ? 8 : 12,
+                                      height: spacing,
                                     ),
                                     itemBuilder: (context, index) {
                                       final user = filtered[index];
@@ -189,19 +163,20 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             ),
           ),
         ),
-      ),
-      ],
     );
   }
 
   Widget _buildResponsiveSearchAndFilters(bool isMobile, bool isSmallMobile) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
     if (isMobile) {
       // Mobile: Search bar + filter button that opens bottom sheet
       return Column(
         children: [
           // Search bar
           _buildResponsiveSearchBar(isMobile, isSmallMobile),
-          SizedBox(height: isSmallMobile ? 8.0 : 12.0),
+          SizedBox(height: spacing),
           // Filter button
           _buildMobileFilterButton(isSmallMobile),
         ],
@@ -211,7 +186,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       return Row(
         children: [
           Expanded(child: _buildResponsiveSearchBar(isMobile, isSmallMobile)),
-          const SizedBox(width: 12),
+          SizedBox(width: spacing * 1.5),
           SizedBox(
             width: 180,
             child: _buildResponsiveDropdown(
@@ -225,8 +200,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(r.icon, size: 18),
-                        const SizedBox(width: 8),
+                        Icon(r.icon, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                        SizedBox(width: spacing),
                         Flexible(
                           child: Text(r.label, overflow: TextOverflow.ellipsis),
                         ),
@@ -240,7 +215,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               isSmallMobile: isSmallMobile,
             ),
           ),
-          const SizedBox(width: 12),
+          SizedBox(width: spacing * 1.5),
           SizedBox(
             width: 160,
             child: _buildResponsiveDropdown(
@@ -257,8 +232,8 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(s.icon, size: 18),
-                        const SizedBox(width: 8),
+                        Icon(s.icon, size: ResponsiveTokens.getIconSize(screenWidth) * 0.75),
+                        SizedBox(width: spacing),
                         Flexible(
                           child: Text(s.label, overflow: TextOverflow.ellipsis),
                         ),
