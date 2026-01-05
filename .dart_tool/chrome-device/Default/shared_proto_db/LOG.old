@@ -1,5 +1,10 @@
-2026/01/05-12:04:25.876 34c4 Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.a2dc8035\flutter_tools_chrome_device.c54bdc60\Default\shared_proto_db/MANIFEST-000001
-2026/01/05-12:04:25.877 34c4 Recovering log #7
-2026/01/05-12:04:25.877 34c4 Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.a2dc8035\flutter_tools_chrome_device.c54bdc60\Default\shared_proto_db/000007.log 
-2026/01/05-12:04:25.877 34c4 Delete type=0 #3
-2026/01/05-12:04:25.877 34c4 Delete type=0 #4
+2026/01/05-15:39:01.561 5e9c Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.d066caaa\flutter_tools_chrome_device.b6991931\Default\shared_proto_db/MANIFEST-000001
+2026/01/05-15:39:01.561 5e9c Recovering log #13
+2026/01/05-15:39:01.562 5e9c Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.d066caaa\flutter_tools_chrome_device.b6991931\Default\shared_proto_db/000013.log 
+2026/01/05-15:39:01.562 5e9c Delete type=0 #3
+2026/01/05-15:39:01.562 5e9c Delete type=0 #4
+2026/01/05-15:39:01.562 5e9c Delete type=0 #7
+2026/01/05-15:39:01.562 5e9c Delete type=0 #10
+2026/01/05-15:39:15.148 5e9c Level-0 table #17: started
+2026/01/05-15:39:15.151 5e9c Level-0 table #17: 134759 bytes OK
+2026/01/05-15:39:15.153 5e9c Delete type=0 #13

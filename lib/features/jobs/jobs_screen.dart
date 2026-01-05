@@ -18,9 +18,8 @@ import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
-import 'package:choice_lux_cars/features/jobs/widgets/job_list_card.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/job_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -31,7 +30,7 @@ class JobsScreen extends ConsumerStatefulWidget {
 
 class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
-  String _currentFilter = 'active'; // active, open, in_progress, completed, all
+  String _currentFilter = 'open'; // open, in_progress, closed, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
@@ -127,13 +126,28 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
     );
 
+    // Responsive padding - matching dashboard screen
+    final horizontalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 24.0;
+    final verticalPadding = isSmallMobile
+        ? 8.0
+        : isMobile
+        ? 12.0
+        : 8.0;
+    final sectionSpacing = isSmallMobile
+        ? 16.0
+        : isMobile
+        ? 24.0
+        : 12.0;
+
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
+        // Layer 1: The background that fills the entire screen (solid obsidian)
         Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
+          color: ChoiceLuxTheme.jetBlack,
         ),
         // Layer 2: The SystemSafeScaffold with proper system UI handling
         SystemSafeScaffold(
@@ -144,86 +158,89 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             onBackPressed: () => context.go('/'),
           ),
           drawer: const LuxuryDrawer(),
-          body: Stack( // The body is now just the content stack
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
-              ),
-              SafeArea(
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Column(
-                      children: [
-                        // Enhanced Filter Section with better mobile layout
-                        _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
+          body: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: horizontalPadding,
+              vertical: verticalPadding,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 1200),
+                child: Column(
+                  children: [
+                    // Enhanced Filter Section with better mobile layout
+                    _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
 
-                        // Enhanced Search Section
-                        _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
+                    SizedBox(height: sectionSpacing),
 
-                        // Results count with better mobile optimization
-                        _buildResultsCount(
-                          filteredJobs.length,
-                          isSmallMobile,
-                          isMobile,
-                          isTablet,
-                          isDesktop,
-                        ),
+                    // Enhanced Search Section
+                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
 
-                        // Enhanced Jobs list with better responsive behavior
-                        Expanded(
-                      child: paginatedJobs.isEmpty
-                          ? _buildEmptyState(
+                    SizedBox(height: sectionSpacing * 0.5),
+
+                    // Results count with better mobile optimization
+                    _buildResultsCount(
+                      filteredJobs.length,
+                      isSmallMobile,
+                      isMobile,
+                      isTablet,
+                      isDesktop,
+                    ),
+
+                    SizedBox(height: sectionSpacing),
+
+                    // Enhanced Jobs list with better responsive behavior
+                    paginatedJobs.isEmpty
+                        ? _buildEmptyState(
+                            isSmallMobile,
+                            isMobile,
+                            isTablet,
+                            isDesktop,
+                          )
+                        : clientsAsync.when(
+                            data: (clients) => _buildJobsList(
+                              paginatedJobs,
+                              clients,
+                              (vehiclesState.value ?? []),
+                              (users.value ?? []),
                               isSmallMobile,
                               isMobile,
                               isTablet,
                               isDesktop,
-                            )
-                          : clientsAsync.when(
-                              data: (clients) => _buildJobsList(
-                                paginatedJobs,
-                                clients,
-                                (vehiclesState.value ?? []),
-                                (users.value ?? []),
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                                canCreateVoucher,
-                                canCreateInvoice,
-                              ),
-                              loading: () => _buildLoadingState(
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                              ),
-                              error: (error, stack) => _buildErrorState(
-                                error,
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                              ),
+                              canCreateVoucher,
+                              canCreateInvoice,
                             ),
-                    ),
+                            loading: () => _buildLoadingState(
+                              isSmallMobile,
+                              isMobile,
+                              isTablet,
+                              isDesktop,
+                            ),
+                            error: (error, stack) => _buildErrorState(
+                              error,
+                              isSmallMobile,
+                              isMobile,
+                              isTablet,
+                              isDesktop,
+                            ),
+                          ),
 
-                        // Enhanced Pagination with better mobile layout
-                        if (totalPages > 1)
-                          _buildPaginationSection(
-                            totalPages,
-                            filteredJobs.length,
+                    SizedBox(height: sectionSpacing),
+
+                    // Enhanced Pagination with better mobile layout
+                    if (totalPages > 1)
+                      _buildPaginationSection(
+                        totalPages,
+                        filteredJobs.length,
                         isSmallMobile,
                         isMobile,
                         isTablet,
-                            isDesktop,
-                          ),
-                      ],
-                    ),
-                  ),
+                        isDesktop,
+                      ),
+                  ],
                 ),
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -255,22 +272,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             child: Row(
               children: [
                 _buildFilterButton(
-                  'Active',
-                  'active',
-                  isSmallMobile,
-                  isMobile,
-                  isTablet,
-                  isDesktop,
-                ),
-                SizedBox(
-                  width: isSmallMobile
-                      ? 6
-                      : isMobile
-                      ? 8
-                      : 12,
-                ),
-                _buildFilterButton(
-                  'Open',
+                  'Open Jobs',
                   'open',
                   isSmallMobile,
                   isMobile,
@@ -285,7 +287,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                       : 12,
                 ),
                 _buildFilterButton(
-                  'In Progress',
+                  'Jobs in Progress',
                   'in_progress',
                   isSmallMobile,
                   isMobile,
@@ -300,8 +302,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                       : 12,
                 ),
                 _buildFilterButton(
-                  'Completed',
-                  'completed',
+                  'Closed Jobs',
+                  'closed',
                   isSmallMobile,
                   isMobile,
                   isTablet,
@@ -325,8 +327,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               ],
             ),
           ),
-          // Date range selector (only show for completed and all filters)
-          if (_currentFilter == 'completed' || _currentFilter == 'all') ...[
+          // Date range selector (only show for closed and all filters)
+          if (_currentFilter == 'closed' || _currentFilter == 'all') ...[
             SizedBox(height: spacing),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -620,6 +622,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     );
 
     return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
       padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
       itemCount: jobs.length,
       itemBuilder: (context, index) {
@@ -652,7 +656,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
         return Padding(
           padding: EdgeInsets.only(bottom: spacing),
-          child: JobListCard(
+          child: JobCard(
             job: job,
             client: client,
             vehicle: vehicle,
@@ -839,16 +843,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         : now.subtract(Duration(days: int.parse(_dateRangeFilter)));
     
     switch (_currentFilter) {
-      case 'active':
-        // Active = open + in_progress (show all, no date limit)
-        return jobs
-            .where((job) =>
-                job.status == 'open' ||
-                job.status == 'assigned' ||
-                job.status == 'in_progress' ||
-                job.status == 'started' ||
-                job.status == 'ready_to_close')
-            .toList();
       case 'open':
         // Treat 'open' and 'assigned' as open jobs
         return jobs
@@ -863,9 +857,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   job.status == 'ready_to_close',
             )
             .toList();
-      case 'completed':
-        // Completed jobs with date filter (default 90 days)
-        var completed = jobs
+      case 'closed':
+        // Closed jobs (completed, closed, cancelled) with date filter (default 90 days)
+        var closed = jobs
             .where((job) =>
                 job.status == 'completed' ||
                 job.status == 'closed' ||
@@ -873,12 +867,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             .toList();
         
         if (cutoffDate != null) {
-          completed = completed.where((job) {
+          closed = closed.where((job) {
             final jobDate = job.updatedAt ?? job.createdAt;
             return jobDate.isAfter(cutoffDate);
           }).toList();
         }
-        return completed;
+        return closed;
       case 'all':
         // All jobs, but exclude completed/closed/cancelled older than 90 days
         if (cutoffDate != null) {

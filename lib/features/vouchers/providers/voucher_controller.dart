@@ -170,10 +170,10 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
   bool _canCreateVoucher(String? userRole) {
     if (userRole == null) return false;
 
-    // Handle both role variations (admin/administrator, driver_manager/driverManager)
+    // Handle role variations (driver_manager/driverManager)
     const allowedRoles = [
-      'admin',
       'administrator',
+      'super_admin',
       'manager',
       'driver_manager',
       'drivermanager',
@@ -230,9 +230,8 @@ final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
         .single();
 
     final userRole = profile['role'] as String?;
-    // Handle both role variations (admin/administrator, driver_manager/driverManager)
+    // Handle role variations (driver_manager/driverManager)
     const allowedRoles = [
-      'admin',
       'administrator',
       'super_admin',
       'manager',

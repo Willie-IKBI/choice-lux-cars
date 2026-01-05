@@ -5,7 +5,7 @@ import 'package:choice_lux_cars/app/theme_tokens.dart';
 /// Maps to a stable palette to unblock web without altering logic.
 class ChoiceLuxTheme {
   // Core brand palette (Obsidian Luxury Ops)
-  static const Color richGold = Color(0xFFC6A87C); // Champagne Gold (was #C8A24A)
+  static const Color richGold = Color(0xFFDAA520); // Goldenrod - Warm Orange-Gold (was #C6A87C Champagne Gold)
   static const Color purple = Color(0xFF8E24AA);
   static const Color orange = Color(0xFFFFA726);
   static const Color errorColor = Color(0xFFEF5350);

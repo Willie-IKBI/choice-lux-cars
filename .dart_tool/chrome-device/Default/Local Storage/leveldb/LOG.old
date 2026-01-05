@@ -1,3 +1,6 @@
-2026/01/05-12:04:25.842 6758 Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.a2dc8035\flutter_tools_chrome_device.c54bdc60\Default\Local Storage\leveldb/MANIFEST-000001
-2026/01/05-12:04:25.845 6758 Recovering log #3
-2026/01/05-12:04:25.846 6758 Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.a2dc8035\flutter_tools_chrome_device.c54bdc60\Default\Local Storage\leveldb/000003.log 
+2026/01/05-15:39:01.521 4650 Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.d066caaa\flutter_tools_chrome_device.b6991931\Default\Local Storage\leveldb/MANIFEST-000001
+2026/01/05-15:39:01.523 4650 Recovering log #3
+2026/01/05-15:39:01.524 4650 Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.d066caaa\flutter_tools_chrome_device.b6991931\Default\Local Storage\leveldb/000003.log 
+2026/01/05-15:40:01.531 3fb0 Level-0 table #5: started
+2026/01/05-15:40:01.534 3fb0 Level-0 table #5: 26765 bytes OK
+2026/01/05-15:40:01.535 3fb0 Delete type=0 #3

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/invoices/models/invoice_data.dart';
 import 'package:choice_lux_cars/features/invoices/providers/invoice_controller.dart';
 import 'package:choice_lux_cars/features/invoices/services/invoice_sharing_service.dart';
@@ -401,8 +402,8 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
           icon: const Icon(Icons.receipt_long, size: 16),
           label: const Text('Create Invoice', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Theme.of(context).colorScheme.primary,
-            foregroundColor: Theme.of(context).colorScheme.onPrimary,
+            backgroundColor: ChoiceLuxTheme.richGold,
+            foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             minimumSize: const Size(0, 36),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -481,11 +482,11 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
         width: double.infinity,
         child: ElevatedButton.icon(
           onPressed: null, // Status button, not clickable
-          icon: const Icon(Icons.check_circle, size: 16),
+          icon: const Icon(Icons.access_time, size: 16),
           label: const Text('Invoice Created', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
-            backgroundColor: Colors.green,
-            foregroundColor: Colors.white,
+            backgroundColor: ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
+            foregroundColor: ChoiceLuxTheme.platinumSilver,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             minimumSize: const Size(0, 36),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -506,77 +507,72 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
     double verticalGap,
     double maxWidth,
   ) {
-    return Wrap(
-      spacing: horizontalGap,
-      runSpacing: verticalGap,
-      crossAxisAlignment: WrapCrossAlignment.center,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // View Invoice button
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: isTight ? 100 : 120,
-            maxWidth: maxWidth * 0.6,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: widget.invoiceState.isLoading ? null : widget.onOpenInvoice,
-              icon: const Icon(Icons.open_in_new, size: 14),
-              label: const Text('View Invoice', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.primary,
-                foregroundColor: Theme.of(context).colorScheme.onPrimary,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
-                ),
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
-                ),
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: widget.invoiceState.isLoading ? null : widget.onOpenInvoice,
+            icon: const Icon(Icons.description, size: 14),
+            label: const Text('View Invoice', style: TextStyle(fontSize: 11)),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(
+                vertical: 8,
+                horizontal: 12,
+              ),
+              minimumSize: const Size(0, 32),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              visualDensity: VisualDensity.compact,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(6),
               ),
             ),
           ),
         ),
-
-        // Reload Invoice button
-        ConstrainedBox(
-          constraints: BoxConstraints(
-            minWidth: isTight ? 100 : 120,
-            maxWidth: maxWidth * 0.6,
-          ),
-          child: SizedBox(
-            width: double.infinity,
-            child: ElevatedButton.icon(
-              onPressed: widget.invoiceState.isLoading ? null : widget.onRegenerateInvoice,
-              icon: const Icon(Icons.refresh, size: 14),
-              label: const Text('Reload Invoice', style: TextStyle(fontSize: 11)),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Theme.of(context).colorScheme.secondary,
-                foregroundColor: Theme.of(context).colorScheme.onSecondary,
-                padding: const EdgeInsets.symmetric(
-                  vertical: 8,
-                  horizontal: 12,
-                ),
-                minimumSize: const Size(0, 32),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                visualDensity: VisualDensity.compact,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(6),
+        
+        const SizedBox(height: 8),
+        
+        // Reload Invoice button with share icon
+        Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                onPressed: widget.invoiceState.isLoading ? null : widget.onRegenerateInvoice,
+                icon: const Icon(Icons.refresh, size: 14),
+                label: const Text('Reload Invoice', style: TextStyle(fontSize: 11)),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: ChoiceLuxTheme.charcoalGray,
+                  foregroundColor: Colors.white,
+                  side: BorderSide(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.4),
+                    width: 1,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: 8,
+                    horizontal: 12,
+                  ),
+                  minimumSize: const Size(0, 32),
+                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                  visualDensity: VisualDensity.compact,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(6),
+                  ),
                 ),
               ),
             ),
-          ),
-        ),
-
-        // Share icon action
-        _iconAction(
-          context,
-          Icons.share,
-          'Share Invoice',
-          onTap: widget.invoiceState.isLoading ? null : widget.onShowShareOptions,
+            const SizedBox(width: 8),
+            // Share icon button
+            _iconAction(
+              context,
+              Icons.share,
+              'Share Invoice',
+              onTap: widget.invoiceState.isLoading ? null : widget.onShowShareOptions,
+            ),
+          ],
         ),
       ],
     );

@@ -15,7 +15,6 @@ import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
 import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
@@ -326,11 +325,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
+        // Layer 1: The background that fills the entire screen (solid obsidian)
         Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
+          color: ChoiceLuxTheme.jetBlack,
         ),
         // Layer 2: The Scaffold with a transparent background
         SystemSafeScaffold(
@@ -340,16 +337,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             showBackButton: true,
             onBackPressed: () => context.go('/jobs'),
           ),
-          body: Stack( // The body is now just the content stack
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
-              ),
-              isDesktop
-                  ? _buildDesktopLayout(totalAmount)
-                  : _buildMobileLayout(totalAmount),
-            ],
-          ),
+          body: isDesktop
+              ? _buildDesktopLayout(totalAmount)
+              : _buildMobileLayout(totalAmount),
         ),
       ],
     );
@@ -495,9 +485,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     Widget content,
     IconData icon,
   ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: ExpansionTile(
         key: Key(key),
         initiallyExpanded: _expandedSections[key] ?? true,
@@ -506,10 +498,20 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             _expandedSections[key] = expanded;
           });
         },
+        tilePadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+        childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
+        collapsedBackgroundColor: ChoiceLuxTheme.charcoalGray,
+        iconColor: ChoiceLuxTheme.richGold,
+        collapsedIconColor: ChoiceLuxTheme.richGold,
         leading: Icon(icon, color: ChoiceLuxTheme.richGold),
         title: Text(
           title,
-          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          style: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.bold,
+            color: Colors.white,
+          ),
         ),
         children: [
           Padding(
@@ -602,9 +604,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildJobDetailsCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -644,9 +648,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildClientAgentCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -718,9 +724,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildVehicleDriverCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -772,9 +780,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildPaymentCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -931,9 +941,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildStepTimelineCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1628,9 +1640,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildNotesCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1739,9 +1753,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripsSummaryCard(double totalAmount) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -1802,9 +1818,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripsListCard() {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
       child: Padding(
         padding: const EdgeInsets.all(20),
         child: Column(
@@ -2021,8 +2039,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   icon: const Icon(Icons.list_alt),
                   label: const Text('View All Trips'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.platinumSilver,
-                    foregroundColor: Colors.black,
+                    backgroundColor: Colors.grey,
+                    foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(8),
@@ -2156,8 +2174,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               icon: const Icon(Icons.list_alt),
               label: const Text('View All Trips'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: ChoiceLuxTheme.platinumSilver,
-                foregroundColor: Colors.black,
+                backgroundColor: Colors.grey,
+                foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(8),

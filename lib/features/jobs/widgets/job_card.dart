@@ -6,136 +6,26 @@ import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
-import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
-import 'package:choice_lux_cars/features/vouchers/providers/voucher_controller.dart';
-import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
-import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
-import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
-import 'package:choice_lux_cars/shared/widgets/status_pill.dart';
+import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
+import 'package:choice_lux_cars/shared/utils/date_utils.dart' as app_date_utils;
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
-import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
+import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons.dart';
 
-/// Centralized constants for JobCard widget to eliminate magic numbers
-class JobCardConstants {
-  // Responsive sizing multipliers
-  static const double paddingMultiplier = 0.75;
-  static const double spacingMultiplier = 0.75;
-  static const double iconSizeMultiplier = 0.8;
-  static const double baseFontSize = 12.0;
-
-  // Card styling
-  static const double cardElevationMobile = 2.0;
-  static const double cardElevationDesktop = 1.0;
-  static const double shadowAlpha = 0.1;
-  static const double borderAlpha = 0.15;
-  static const double borderWidth = 0.5;
-
-  // Chip styling
-  static const double chipHeightSmallMobile = 16.0;
-  static const double chipHeightMobile = 18.0;
-  static const double chipHeightDesktop = 20.0;
-  static const double chipPaddingHorizontalSmallMobile = 4.0;
-  static const double chipPaddingHorizontalMobile = 5.0;
-  static const double chipPaddingHorizontalDesktop = 6.0;
-  static const double chipFontSizeOffset = 3.0;
-  static const double chipSpacingSmallMobile = 2.0;
-  static const double chipSpacingMobile = 3.0;
-  static const double chipSpacingDesktop = 4.0;
-
-  // Container styling
-  static const double containerBackgroundAlpha = 0.06;
-  static const double containerBorderAlpha = 0.15;
-  static const double containerBorderRadiusSmallMobile = 4.0;
-  static const double containerBorderRadiusMobile = 5.0;
-  static const double containerBorderRadiusDesktop = 6.0;
-  static const double containerPaddingSmallMobile = 6.0;
-  static const double containerPaddingMobile = 7.0;
-  static const double containerPaddingDesktop = 8.0;
-  static const double containerInnerSpacingSmallMobile = 2.0;
-  static const double containerInnerSpacingMobile = 3.0;
-  static const double containerInnerSpacingDesktop = 4.0;
-
-  // Button styling
-  static const double buttonPaddingVertical = 6.0;
-  static const double buttonPaddingHorizontal = 8.0;
-  static const double buttonBorderRadius = 4.0;
-  static const double buttonIconSizeMultiplier = 0.8;
-  static const double buttonFontSizeOffset = 1.0;
-
-  // Confirmation styling
-  static const double confirmationPaddingVertical = 4.0;
-  static const double confirmationPaddingHorizontal = 8.0;
-  static const double confirmationBorderRadius = 4.0;
-  static const double confirmationIconSizeMultiplier = 0.7;
-  static const double confirmationSpacing = 4.0;
-  static const double confirmationBackgroundAlpha = 0.1;
-  static const double confirmationBorderAlpha = 0.3;
-
-  // Text styling
-  static const double titleFontSizeOffset = 1.0;
-  static const double titleLineHeight = 1.1;
-  static const double detailFontSizeOffset = 1.0;
-  static const double detailIconAlpha = 0.7;
-  static const double detailLabelAlpha = 0.6;
-
-  // Metric styling
-  static const double metricBackgroundAlpha = 0.08;
-  static const double metricBorderAlpha = 0.2;
-  static const double metricBorderRadiusSmallMobile = 6.0;
-  static const double metricBorderRadiusMobile = 7.0;
-  static const double metricBorderRadiusDesktop = 8.0;
-  static const double metricPaddingHorizontalSmallMobile = 4.0;
-  static const double metricPaddingHorizontalMobile = 5.0;
-  static const double metricPaddingHorizontalDesktop = 6.0;
-  static const double metricPaddingVerticalSmallMobile = 2.0;
-  static const double metricPaddingVerticalMobile = 3.0;
-  static const double metricPaddingVerticalDesktop = 4.0;
-  static const double metricIconSizeMultiplier = 0.6;
-  static const double metricFontSizeOffset = 2.0;
-  static const double metricTileSpacing = 6.0;
-  static const double metricTileInnerSpacingSmallMobile = 1.0;
-  static const double metricTileInnerSpacingMobile = 2.0;
-  static const double metricTilePaddingSmallMobile = 4.0;
-  static const double metricTilePaddingMobile = 5.0;
-  static const double metricTilePaddingDesktop = 6.0;
-  static const double metricTileBackgroundAlpha = 0.06;
-  static const double metricTileBorderAlpha = 0.15;
-  static const double metricTileBorderRadiusSmallMobile = 4.0;
-  static const double metricTileBorderRadiusMobile = 5.0;
-  static const double metricTileBorderRadiusDesktop = 6.0;
-  static const double metricTileIconSizeMultiplier = 0.8;
-  static const double metricTileValueAlpha = 0.7;
-
-  // Spacing
-  static const double actionButtonSpacing = 6.0;
-  static const double confirmationButtonSpacing = 8.0;
-  static const double footerMarginTopSmallMobile = 2.0;
-  static const double footerMarginTopMobile = 3.0;
-  static const double footerMarginTopDesktop = 4.0;
-  static const double footerPaddingVerticalSmallMobile = 2.0;
-  static const double footerPaddingVerticalMobile = 3.0;
-  static const double footerPaddingVerticalDesktop = 4.0;
-
-  // Error handling
-  static const Duration snackBarDurationShort = Duration(seconds: 2);
-  static const Duration snackBarDurationMedium = Duration(seconds: 3);
-  static const Duration snackBarDurationLong = Duration(seconds: 4);
-
-  // Default values
-  static const String defaultPassengerName = 'Unnamed Job';
-  static const String defaultClientName = 'Unknown Client';
-  static const String defaultDriverName = 'Unassigned';
-  static const String defaultVehicleName = 'Vehicle not assigned';
-  static const String defaultJobNumberPrefix = 'Job #';
-}
-
-class JobCard extends ConsumerWidget {
+class JobCard extends ConsumerStatefulWidget {
   final Job job;
   final Client? client;
   final Vehicle? vehicle;
   final User? driver;
+  final bool isSmallMobile;
+  final bool isMobile;
+  final bool isTablet;
+  final bool isDesktop;
+  final bool canCreateVoucher;
+  final bool canCreateInvoice;
 
   const JobCard({
     super.key,
@@ -143,1079 +33,671 @@ class JobCard extends ConsumerWidget {
     this.client,
     this.vehicle,
     this.driver,
+    required this.isSmallMobile,
+    required this.isMobile,
+    required this.isTablet,
+    required this.isDesktop,
+    this.canCreateVoucher = false,
+    this.canCreateInvoice = false,
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        // Use centralized responsive system
-        final screenWidth = constraints.maxWidth;
-        final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-        final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+  ConsumerState<JobCard> createState() => _JobCardState();
+}
 
-        // Get responsive design tokens - use smaller values to prevent overflow
-        final padding =
-            ResponsiveTokens.getPadding(screenWidth) *
-            JobCardConstants.paddingMultiplier;
-        final spacing =
-            ResponsiveTokens.getSpacing(screenWidth) *
-            JobCardConstants.spacingMultiplier;
-        final cornerRadius = ResponsiveTokens.getCornerRadius(screenWidth);
-        final iconSize =
-            ResponsiveTokens.getIconSize(screenWidth) *
-            JobCardConstants.iconSizeMultiplier;
-        final fontSize = ResponsiveTokens.getFontSize(
-          screenWidth,
-          baseSize: JobCardConstants.baseFontSize,
-        );
+class _JobCardState extends ConsumerState<JobCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isHovered = false;
 
-        return Card(
-          margin: EdgeInsets.all(spacing * 0.5),
-          elevation: isMobile
-              ? JobCardConstants.cardElevationMobile
-              : JobCardConstants.cardElevationDesktop,
-          shadowColor: Colors.black.withValues(
-            alpha: JobCardConstants.shadowAlpha,
-          ),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(cornerRadius),
-          ),
-          child: Container(
-            width: double.infinity,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(cornerRadius),
-              gradient: ChoiceLuxTheme.cardGradient,
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withValues(
-                  alpha: JobCardConstants.borderAlpha,
-                ),
-                width: JobCardConstants.borderWidth,
-              ),
-            ),
-            child: Padding(
-              padding: EdgeInsets.all(padding),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Status row: chips + date badge - More compact
-                  _buildStatusRow(isMobile, isSmallMobile, iconSize, fontSize),
-
-                  SizedBox(height: spacing * 0.5),
-
-                  // Title row: passenger/job title
-                  _buildTitleRow(isMobile, isSmallMobile, fontSize),
-
-                  SizedBox(height: spacing * 0.5),
-
-                  // Details block: key fields - Use Flexible instead of Expanded
-                  Flexible(
-                    child: _buildDetailsBlock(
-                      isMobile,
-                      isSmallMobile,
-                      iconSize,
-                      fontSize,
-                    ),
-                  ),
-
-                  SizedBox(height: spacing * 0.5),
-
-                  // Metrics row: stat tiles - More compact
-                  _buildMetricsRow(isMobile, isSmallMobile, iconSize, fontSize),
-
-                  SizedBox(height: spacing * 0.5),
-
-                  // Progress row: show current step and progress for in-progress jobs
-                  if (job.statusEnum == JobStatus.started ||
-                      job.statusEnum == JobStatus.inProgress)
-                    _buildProgressRow(
-                      isMobile,
-                      isSmallMobile,
-                      iconSize,
-                      fontSize,
-                    ),
-
-                  if (job.statusEnum == JobStatus.started ||
-                      job.statusEnum == JobStatus.inProgress)
-                    SizedBox(height: spacing * 0.5),
-
-                  // Action row: buttons - More compact
-                  _buildActionRow(
-                    context,
-                    ref,
-                    isMobile,
-                    isSmallMobile,
-                    iconSize,
-                    fontSize,
-                  ),
-
-                  SizedBox(height: spacing * 0.5),
-
-                  // Footer row: voucher state - More compact
-                  _buildVoucherFooter(ref, isMobile, isSmallMobile, fontSize),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: const Duration(milliseconds: 200),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 1.02).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.easeInOut),
     );
   }
 
-  // Status row: chips + date badge
-  Widget _buildStatusRow(
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final chipHeight = isSmallMobile
-        ? JobCardConstants.chipHeightSmallMobile
-        : isMobile
-        ? JobCardConstants.chipHeightMobile
-        : JobCardConstants.chipHeightDesktop;
-    final chipPadding = EdgeInsets.symmetric(
-      horizontal: isSmallMobile
-          ? JobCardConstants.chipPaddingHorizontalSmallMobile
-          : isMobile
-          ? JobCardConstants.chipPaddingHorizontalMobile
-          : JobCardConstants.chipPaddingHorizontalDesktop,
-    );
-    final chipFontSize = fontSize - JobCardConstants.chipFontSizeOffset;
-    final chipSpacing = isSmallMobile
-        ? JobCardConstants.chipSpacingSmallMobile
-        : isMobile
-        ? JobCardConstants.chipSpacingMobile
-        : JobCardConstants.chipSpacingDesktop;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // First line: status chips
-        Row(
-          children: [
-            Expanded(
-              child: Wrap(
-                spacing: chipSpacing,
-                runSpacing: chipSpacing,
-                children: [
-                  // Use JobStatus enum for status chip
-                  StatusPill(
-                    color: job.statusEnum.color,
-                    text: job.statusEnum.label,
-                    height: chipHeight,
-                    padding: chipPadding,
-                    fontSize: chipFontSize,
-                    showDot: true,
-                  ),
-                  if (!isMobile)
-                    DriverConfirmationPill(
-                      isConfirmed: job.driverConfirmation,
-                      height: chipHeight,
-                      padding: chipPadding,
-                      fontSize: chipFontSize,
-                    ),
-                ],
-              ),
-            ),
-            SizedBox(width: chipSpacing),
-            // Use TimeStatusPill for time chip
-            TimeStatusPill(
-              daysUntilStart: job.daysUntilStart,
-              height: chipHeight,
-              padding: chipPadding,
-              fontSize: chipFontSize,
-              isSmallScreen: isSmallMobile,
-            ),
-          ],
-        ),
-        // Second line: additional chips for mobile mode
-        if (isMobile) ...[
-          SizedBox(height: chipSpacing * 0.5),
-          DriverConfirmationPill(
-            isConfirmed: job.driverConfirmation,
-            height: chipHeight,
-            padding: chipPadding,
-            fontSize: chipFontSize,
-          ),
-        ],
-      ],
-    );
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
   }
 
-  // Title row: passenger/job title (1 line, ellipsis)
-  Widget _buildTitleRow(bool isMobile, bool isSmallMobile, double fontSize) {
-    // Add null safety for passenger name
-    final passenger = job.passengerName?.trim().isNotEmpty == true
-        ? job.passengerName!
-        : JobCardConstants.defaultPassengerName;
-
-    return Text(
-      passenger,
-      style: TextStyle(
-        fontWeight: FontWeight.bold,
-        fontSize: fontSize + JobCardConstants.titleFontSizeOffset,
-        color: ChoiceLuxTheme.softWhite,
-        height: JobCardConstants.titleLineHeight,
-      ),
-      overflow: TextOverflow.ellipsis,
-      maxLines: 1,
-    );
-  }
-
-  // Details block: 3-4 key fields (each 1 line, ellipsis)
-  Widget _buildDetailsBlock(
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final blockPadding = isSmallMobile
-        ? JobCardConstants.containerPaddingSmallMobile
-        : isMobile
-        ? JobCardConstants.containerPaddingMobile
-        : JobCardConstants.containerPaddingDesktop;
-    final innerSpacing = isSmallMobile
-        ? JobCardConstants.containerInnerSpacingSmallMobile
-        : isMobile
-        ? JobCardConstants.containerInnerSpacingMobile
-        : JobCardConstants.containerInnerSpacingDesktop;
-    final borderRadius = isSmallMobile
-        ? JobCardConstants.containerBorderRadiusSmallMobile
-        : isMobile
-        ? JobCardConstants.containerBorderRadiusMobile
-        : JobCardConstants.containerBorderRadiusDesktop;
-
-    return Container(
-      padding: EdgeInsets.all(blockPadding),
-      decoration: BoxDecoration(
-        color: Colors.grey.withValues(
-          alpha: JobCardConstants.containerBackgroundAlpha,
-        ),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: Colors.grey.withValues(
-            alpha: JobCardConstants.containerBorderAlpha,
-          ),
-          width: JobCardConstants.borderWidth,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'Job Details',
-            style: TextStyle(
-              fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
-              fontWeight: FontWeight.w600,
-              color: ChoiceLuxTheme.platinumSilver,
-            ),
-          ),
-          SizedBox(height: innerSpacing),
-          _buildDetailRow(
-            Icons.business,
-            'Client',
-            client?.companyName ?? JobCardConstants.defaultClientName,
-            isMobile,
-            isSmallMobile,
-            iconSize,
-            fontSize,
-          ),
-          SizedBox(height: innerSpacing),
-          _buildDetailRow(
-            Icons.person,
-            'Driver',
-            driver?.displayName ?? JobCardConstants.defaultDriverName,
-            isMobile,
-            isSmallMobile,
-            iconSize,
-            fontSize,
-          ),
-          SizedBox(height: innerSpacing),
-          _buildDetailRow(
-            Icons.directions_car,
-            'Vehicle',
-            vehicle != null
-                ? '${vehicle!.make} ${vehicle!.model}'
-                : JobCardConstants.defaultVehicleName,
-            isMobile,
-            isSmallMobile,
-            iconSize,
-            fontSize,
-          ),
-          if (!isMobile) ...[
-            SizedBox(height: innerSpacing),
-            _buildDetailRow(
-              Icons.tag,
-              'Job Number',
-              '${JobCardConstants.defaultJobNumberPrefix}${job.id}',
-              isMobile,
-              isSmallMobile,
-              iconSize,
-              fontSize,
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  // Metrics row: two small stat tiles (Passengers/Bags)
-  Widget _buildMetricsRow(
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    // These fields are not nullable in the Job model
-    final pax = job.pasCount;
-    final bags = job.luggageCount;
-
-    if (isMobile) {
-      // Mobile: collapse into small pills
-      return Row(
-        children: [
-          _buildCompactMetricPill(
-            Icons.people,
-            '$pax pax',
-            isMobile,
-            isSmallMobile,
-            iconSize,
-            fontSize,
-          ),
-          SizedBox(
-            width: isSmallMobile
-                ? JobCardConstants.chipSpacingSmallMobile
-                : JobCardConstants.chipSpacingMobile,
-          ),
-          _buildCompactMetricPill(
-            Icons.work,
-            '$bags bags',
-            isMobile,
-            isSmallMobile,
-            iconSize,
-            fontSize,
-          ),
-        ],
-      );
+  void _onHover(bool isHovered) {
+    if (widget.isMobile) return; // No hover on mobile
+    setState(() {
+      _isHovered = isHovered;
+    });
+    if (isHovered) {
+      _animationController.forward();
     } else {
-      // Desktop: separate metric tiles
-      return Row(
-        children: [
-          Expanded(
-            child: _buildMetricTile(
-              Icons.people,
-              'Passengers',
-              pax.toString(),
-              ChoiceLuxTheme.infoColor,
-              isMobile,
-              isSmallMobile,
-              iconSize,
-              fontSize,
-            ),
-          ),
-          const SizedBox(width: JobCardConstants.metricTileSpacing),
-          Expanded(
-            child: _buildMetricTile(
-              Icons.work,
-              'Bags',
-              bags,
-              ChoiceLuxTheme.infoColor,
-              isMobile,
-              isSmallMobile,
-              iconSize,
-              fontSize,
-            ),
-          ),
-        ],
-      );
+      _animationController.reverse();
     }
   }
 
-  // Progress row: show current step and progress percentage for in-progress jobs
-  Widget _buildProgressRow(
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    return FutureBuilder<Map<String, dynamic>?>(
-      future: DriverFlowApiService.getJobProgress(job.id),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return Container(
-            padding: EdgeInsets.symmetric(
-              vertical: JobCardConstants.metricPaddingVerticalMobile,
-              horizontal: JobCardConstants.metricPaddingHorizontalMobile,
-            ),
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold.withOpacity(
-                JobCardConstants.metricBackgroundAlpha,
-              ),
-              borderRadius: BorderRadius.circular(
-                JobCardConstants.metricBorderRadiusMobile,
-              ),
-              border: Border.all(
-                color: ChoiceLuxTheme.richGold.withOpacity(
-                  JobCardConstants.metricBorderAlpha,
-                ),
-                width: JobCardConstants.borderWidth,
-              ),
-            ),
-            child: Row(
-              children: [
-                SizedBox(
-                  width: iconSize * JobCardConstants.metricIconSizeMultiplier,
-                  height: iconSize * JobCardConstants.metricIconSizeMultiplier,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      ChoiceLuxTheme.richGold,
+  @override
+  Widget build(BuildContext context) {
+    // Watch jobs provider to get updated job data
+    final jobsAsync = ref.watch(jobsProvider);
+    
+    // Get the updated job data if available, otherwise use the passed job
+    final currentJob = jobsAsync.when(
+      data: (jobs) => jobs.firstWhere(
+        (j) => j.id == widget.job.id,
+        orElse: () => widget.job,
+      ),
+      loading: () => widget.job,
+      error: (_, __) => widget.job,
+    );
+
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    final padding = ResponsiveTokens.getPadding(screenWidth);
+    final cornerRadius = ResponsiveTokens.getCornerRadius(screenWidth);
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        return MouseRegion(
+          onEnter: (_) => _onHover(true),
+          onExit: (_) => _onHover(false),
+          child: AnimatedBuilder(
+            animation: _scaleAnimation,
+            builder: (context, child) {
+              return Transform.scale(
+                scale: widget.isMobile ? 1.0 : _scaleAnimation.value,
+                child: Card(
+                  margin: EdgeInsets.all(spacing * 0.5),
+                  elevation: _isHovered ? 8 : 4,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(cornerRadius),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.charcoalGray,
+                      borderRadius: BorderRadius.circular(cornerRadius),
+                      border: Border.all(
+                        color: _isHovered
+                            ? ChoiceLuxTheme.platinumSilver.withOpacity(0.08)
+                            : ChoiceLuxTheme.platinumSilver.withOpacity(0.05),
+                        width: 1,
+                      ),
+                      boxShadow: widget.isMobile
+                          ? null
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.2),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
                     ),
-                  ),
-                ),
-                SizedBox(width: JobCardConstants.metricTileInnerSpacingMobile),
-                Text(
-                  'Loading progress...',
-                  style: TextStyle(
-                    fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
-                    color: ChoiceLuxTheme.richGold,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          );
-        }
+                    child: Material(
+                      color: Colors.transparent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(cornerRadius),
+                      ),
+                      clipBehavior: Clip.antiAlias,
+                      child: InkWell(
+                        onTap: () => context.go('/jobs/${currentJob.id}/summary'),
+                        splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                        highlightColor: ChoiceLuxTheme.richGold.withOpacity(
+                          0.05,
+                        ),
+                        borderRadius: BorderRadius.circular(cornerRadius),
+                        child: Padding(
+                          padding: EdgeInsets.fromLTRB(
+                            widget.isSmallMobile
+                                ? padding * 0.5
+                                : widget.isMobile
+                                ? padding * 0.75
+                                : padding,
+                            widget.isSmallMobile
+                                ? padding * 0.5
+                                : widget.isMobile
+                                ? padding * 0.75
+                                : padding,
+                            widget.isSmallMobile
+                                ? padding * 0.5
+                                : widget.isMobile
+                                ? padding * 0.75
+                                : padding,
+                            widget.isSmallMobile
+                                ? padding * 0.4
+                                : widget.isMobile
+                                ? padding * 0.6
+                                : padding * 0.8,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              // Header: Status badge + Job ID
+                              _buildHeader(context, currentJob, spacing, screenWidth),
+                              
+                              SizedBox(
+                                height: widget.isSmallMobile
+                                    ? spacing * 0.5
+                                    : spacing,
+                              ),
 
-        if (snapshot.hasError || !snapshot.hasData || snapshot.data == null) {
-          return const SizedBox.shrink();
-        }
+                              // Primary Info: Passenger Name
+                              _buildPrimaryInfo(context, currentJob, spacing, screenWidth),
 
-        final progressData = snapshot.data!;
-        final currentStep =
-            progressData['current_step']?.toString() ?? 'vehicle_collection';
-        final progressPercentage =
-            progressData['progress_percentage']?.toDouble() ?? 0.0;
+                              SizedBox(
+                                height: widget.isSmallMobile
+                                    ? spacing * 0.25
+                                    : spacing * 0.5,
+                              ),
 
-        final stepTitle = DriverFlowUtils.getStepTitle(currentStep);
-        final stepIcon = DriverFlowUtils.getStepIcon(currentStep);
+                              // Secondary Info: Location, Date
+                              _buildSecondaryInfo(context, currentJob, spacing, screenWidth),
 
-        return Container(
-          padding: EdgeInsets.symmetric(
-            vertical: JobCardConstants.metricPaddingVerticalMobile,
-            horizontal: JobCardConstants.metricPaddingHorizontalMobile,
-          ),
-          decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withOpacity(
-              JobCardConstants.metricBackgroundAlpha,
-            ),
-            borderRadius: BorderRadius.circular(
-              JobCardConstants.metricBorderRadiusMobile,
-            ),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(
-                JobCardConstants.metricBorderAlpha,
-              ),
-              width: JobCardConstants.borderWidth,
-            ),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                children: [
-                  Icon(
-                    stepIcon,
-                    size: iconSize * JobCardConstants.metricIconSizeMultiplier,
-                    color: ChoiceLuxTheme.richGold,
-                  ),
-                  SizedBox(
-                    width: JobCardConstants.metricTileInnerSpacingMobile,
-                  ),
-                  Expanded(
-                    child: Text(
-                      stepTitle,
-                      style: TextStyle(
-                        fontSize:
-                            fontSize - JobCardConstants.metricFontSizeOffset,
-                        color: ChoiceLuxTheme.richGold,
-                        fontWeight: FontWeight.w600,
+                              SizedBox(
+                                height: widget.isSmallMobile
+                                    ? spacing * 0.25
+                                    : spacing * 0.5,
+                              ),
+
+                              // Tertiary Info: Pax, Luggage, Vehicle
+                              _buildTertiaryInfo(context, currentJob, spacing, screenWidth),
+
+                              SizedBox(
+                                height: widget.isSmallMobile
+                                    ? spacing * 0.5
+                                    : spacing,
+                              ),
+
+                              // PDF Actions (Voucher & Invoice)
+                              if (widget.canCreateVoucher || widget.canCreateInvoice)
+                                _buildPdfActions(context, ref, currentJob, spacing, screenWidth),
+
+                              SizedBox(
+                                height: widget.isSmallMobile
+                                    ? spacing * 0.5
+                                    : spacing,
+                              ),
+
+                              // Action Buttons
+                              _buildActionButtons(context, ref, currentJob, spacing, screenWidth),
+                            ],
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  Text(
-                    '${progressPercentage.toInt()}%',
-                    style: TextStyle(
-                      fontSize:
-                          fontSize - JobCardConstants.metricFontSizeOffset,
-                      color: ChoiceLuxTheme.richGold,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-              ),
-              SizedBox(height: JobCardConstants.metricTileInnerSpacingMobile),
-              LinearProgressIndicator(
-                value: progressPercentage / 100.0,
-                backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                valueColor: AlwaysStoppedAnimation<Color>(
-                  ChoiceLuxTheme.richGold,
                 ),
-                minHeight: 4,
-              ),
-            ],
+              );
+            },
           ),
         );
       },
     );
   }
 
-  // Action row: Primary (Start Job), secondary (View)
-  Widget _buildActionRow(
-    BuildContext context,
-    WidgetRef ref,
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final isAssignedDriver = _isAssignedDriver(ref);
-    final isConfirmed =
-        job.isConfirmed == true || job.driverConfirmation == true;
-    final needsConfirmation = isAssignedDriver && !isConfirmed;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Confirmation Status - Show for assigned driver
-        if (isAssignedDriver) ...[
-          Container(
-            padding: EdgeInsets.symmetric(
-              vertical: JobCardConstants.confirmationPaddingVertical,
-              horizontal: JobCardConstants.confirmationPaddingHorizontal,
-            ),
-            decoration: BoxDecoration(
-              color: isConfirmed
-                  ? ChoiceLuxTheme.successColor.withValues(
-                      alpha: JobCardConstants.confirmationBackgroundAlpha,
-                    )
-                  : ChoiceLuxTheme.orange.withValues(
-                      alpha: JobCardConstants.confirmationBackgroundAlpha,
-                    ),
-              borderRadius: BorderRadius.circular(
-                JobCardConstants.confirmationBorderRadius,
-              ),
-              border: Border.all(
-                color: isConfirmed
-                    ? ChoiceLuxTheme.successColor.withValues(
-                        alpha: JobCardConstants.confirmationBorderAlpha,
-                      )
-                    : ChoiceLuxTheme.orange.withValues(
-                        alpha: JobCardConstants.confirmationBorderAlpha,
-                      ),
-                width: JobCardConstants.borderWidth,
-              ),
-            ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(
-                  isConfirmed ? Icons.check_circle : Icons.pending,
-                  size:
-                      iconSize *
-                      JobCardConstants.confirmationIconSizeMultiplier,
-                  color: isConfirmed
-                      ? ChoiceLuxTheme.successColor
-                      : ChoiceLuxTheme.orange,
-                ),
-                SizedBox(width: JobCardConstants.confirmationSpacing),
-                Text(
-                  isConfirmed ? 'Job Confirmed' : 'Awaiting Confirmation',
-                  style: TextStyle(
-                    fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
-                    color: isConfirmed
-                        ? ChoiceLuxTheme.successColor
-                        : ChoiceLuxTheme.orange,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          SizedBox(height: JobCardConstants.confirmationButtonSpacing),
-        ],
-
-        // Confirm Button - Show only for assigned driver who hasn't confirmed
-        if (needsConfirmation) ...[
-          ElevatedButton.icon(
-            key: Key('confirmJobBtn_${job.id}'),
-            onPressed: () => _handleDriverConfirmation(context, ref),
-            icon: Icon(
-              Icons.check_circle,
-              size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
-            ),
-            label: Text(
-              'Confirm Job',
-              style: TextStyle(
-                fontSize: fontSize - JobCardConstants.buttonFontSizeOffset,
-              ),
-            ),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.orange.withValues(
-                alpha: JobCardConstants.confirmationBackgroundAlpha,
-              ),
-              foregroundColor: ChoiceLuxTheme.orange,
-              padding: const EdgeInsets.symmetric(
-                vertical: JobCardConstants.buttonPaddingVertical,
-                horizontal: JobCardConstants.buttonPaddingHorizontal,
-              ),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(
-                  JobCardConstants.buttonBorderRadius,
-                ),
-              ),
-            ),
-          ),
-          SizedBox(height: JobCardConstants.confirmationButtonSpacing),
-        ],
-
-        // Action buttons row
-        Row(
-          children: [
-            // Driver Flow Button - Show only for assigned driver and when appropriate
-            if (DriverFlowUtils.shouldShowDriverFlowButton(
-              currentUserId: ref.read(currentUserProfileProvider)?.id,
-              jobDriverId: job.driverId,
-              jobStatus: job.statusEnum,
-              isJobConfirmed: isConfirmed,
-            )) ...[
-              Expanded(
-                child: ElevatedButton.icon(
-                  key: Key('driverFlowBtn_${job.id}'),
-                  onPressed: () {
-                    // Simplified route logic using JobStatus enum
-                    final route = switch (job.statusEnum) {
-                      JobStatus.completed => '/jobs/${job.id}/summary',
-                      _ => '/jobs/${job.id}/progress',
-                    };
-                    context.go(route);
-                  },
-                  icon: Icon(
-                    DriverFlowUtils.getDriverFlowIcon(job.statusEnum),
-                    size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
-                  ),
-                  label: Text(
-                    DriverFlowUtils.getDriverFlowText(job.statusEnum),
-                    style: TextStyle(
-                      fontSize:
-                          fontSize - JobCardConstants.buttonFontSizeOffset,
-                    ),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor:
-                        DriverFlowUtils.getDriverFlowColor(
-                          job.statusEnum,
-                        ).withValues(
-                          alpha: JobCardConstants.confirmationBackgroundAlpha,
-                        ),
-                    foregroundColor: DriverFlowUtils.getDriverFlowColor(
-                      job.statusEnum,
-                    ),
-                    padding: const EdgeInsets.symmetric(
-                      vertical: JobCardConstants.buttonPaddingVertical,
-                      horizontal: JobCardConstants.buttonPaddingHorizontal,
-                    ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(
-                        JobCardConstants.buttonBorderRadius,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: JobCardConstants.actionButtonSpacing),
-            ],
-
-            // View Button
-            Expanded(
-              child: TextButton.icon(
-                key: Key('viewJobBtn_${job.id}'),
-                onPressed: () {
-                  context.go('/jobs/${job.id}/summary');
-                },
-                icon: Icon(
-                  Icons.arrow_forward,
-                  size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
-                ),
-                label: Text(
-                  _getActionText(job.statusEnum),
-                  style: TextStyle(
-                    fontSize: fontSize - JobCardConstants.buttonFontSizeOffset,
-                  ),
-                ),
-                style: TextButton.styleFrom(
-                  foregroundColor: job.statusEnum.color,
-                  backgroundColor: job.statusEnum.color.withValues(
-                    alpha: JobCardConstants.confirmationBackgroundAlpha,
-                  ),
-                  padding: const EdgeInsets.symmetric(
-                    vertical: JobCardConstants.buttonPaddingVertical,
-                    horizontal: JobCardConstants.buttonPaddingHorizontal,
-                  ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(
-                      JobCardConstants.buttonBorderRadius,
-                    ),
-                    side: BorderSide(
-                      color: job.statusEnum.color.withValues(
-                        alpha: JobCardConstants.confirmationBorderAlpha,
-                      ),
-                      width: JobCardConstants.borderWidth,
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  // Footer row: Voucher state chip
-  Widget _buildVoucherFooter(
-    WidgetRef ref,
-    bool isMobile,
-    bool isSmallMobile,
-    double fontSize,
-  ) {
-    final hasVoucher = job.voucherPdf != null && job.voucherPdf!.isNotEmpty;
-    final marginTop = isSmallMobile
-        ? JobCardConstants.footerMarginTopSmallMobile
-        : isMobile
-        ? JobCardConstants.footerMarginTopMobile
-        : JobCardConstants.footerMarginTopDesktop;
-    final paddingVertical = isSmallMobile
-        ? JobCardConstants.footerPaddingVerticalSmallMobile
-        : isMobile
-        ? JobCardConstants.footerPaddingVerticalMobile
-        : JobCardConstants.footerPaddingVerticalDesktop;
-
-    return Container(
-      margin: EdgeInsets.only(top: marginTop),
-      padding: EdgeInsets.symmetric(vertical: paddingVertical),
-      child: VoucherActionButtons(
-        jobId: job.id.toString(),
-        voucherPdfUrl: hasVoucher ? job.voucherPdf : null,
-        canCreateVoucher: ref.watch(canCreateVoucherProvider).value ?? false,
-      ),
-    );
-  }
-
-  // Helper methods
-  Widget _buildDetailRow(
-    IconData icon,
-    String label,
-    String value,
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final iconSpacing = isSmallMobile
-        ? JobCardConstants.chipSpacingSmallMobile
-        : isMobile
-        ? JobCardConstants.chipSpacingMobile
-        : JobCardConstants.chipSpacingDesktop;
+  // Header: Status Badge + Job ID
+  Widget _buildHeader(BuildContext context, Job job, double spacing, double screenWidth) {
+    final statusColor = StatusColorUtils.getJobStatusColor(job.statusEnum);
+    final statusLabel = job.statusEnum.label;
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 12);
 
     return Row(
       children: [
-        Icon(
-          icon,
-          size: iconSize * JobCardConstants.buttonIconSizeMultiplier,
-          color: ChoiceLuxTheme.platinumSilver.withValues(
-            alpha: JobCardConstants.detailIconAlpha,
+        // Status Badge
+        Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: spacing * 0.75,
+            vertical: spacing * 0.5,
+          ),
+          decoration: BoxDecoration(
+            color: statusColor.withOpacity(0.2),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: statusColor.withOpacity(0.4),
+              width: 1,
+            ),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 6,
+                height: 6,
+                decoration: BoxDecoration(
+                  color: statusColor,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              SizedBox(width: spacing * 0.5),
+              Text(
+                statusLabel,
+                style: TextStyle(
+                  fontSize: fontSize,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ],
           ),
         ),
-        SizedBox(width: iconSpacing),
+        const Spacer(),
+        // Job ID
         Text(
-          '$label: ',
+          'Job #${job.id}',
           style: TextStyle(
-            color: ChoiceLuxTheme.platinumSilver.withValues(
-              alpha: JobCardConstants.detailLabelAlpha,
-            ),
-            fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
+            fontSize: fontSize,
             fontWeight: FontWeight.w500,
-          ),
-        ),
-        Expanded(
-          child: Text(
-            value,
-            style: TextStyle(
-              color: ChoiceLuxTheme.softWhite,
-              fontSize: fontSize - JobCardConstants.detailFontSizeOffset,
-              fontWeight: FontWeight.w600,
-            ),
-            overflow: TextOverflow.ellipsis,
-            maxLines: 1,
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
           ),
         ),
       ],
     );
   }
 
-  Widget _buildCompactMetricPill(
-    IconData icon,
-    String text,
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final paddingHorizontal = isSmallMobile
-        ? JobCardConstants.metricPaddingHorizontalSmallMobile
-        : isMobile
-        ? JobCardConstants.metricPaddingHorizontalMobile
-        : JobCardConstants.metricPaddingHorizontalDesktop;
-    final paddingVertical = isSmallMobile
-        ? JobCardConstants.metricPaddingVerticalSmallMobile
-        : isMobile
-        ? JobCardConstants.metricPaddingVerticalMobile
-        : JobCardConstants.metricPaddingVerticalDesktop;
-    final borderRadius = isSmallMobile
-        ? JobCardConstants.metricBorderRadiusSmallMobile
-        : isMobile
-        ? JobCardConstants.metricBorderRadiusMobile
-        : JobCardConstants.metricBorderRadiusDesktop;
-    final iconSpacing = isSmallMobile
-        ? JobCardConstants.chipSpacingSmallMobile
-        : isMobile
-        ? JobCardConstants.chipSpacingMobile
-        : JobCardConstants.chipSpacingDesktop;
+  // Primary Info: Passenger Name
+  Widget _buildPrimaryInfo(BuildContext context, Job job, double spacing, double screenWidth) {
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 18);
 
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: paddingHorizontal,
-        vertical: paddingVertical,
+    return Text(
+      job.passengerName ?? 'No Passenger Name',
+      style: TextStyle(
+        fontSize: fontSize,
+        fontWeight: FontWeight.bold,
+        color: ChoiceLuxTheme.softWhite,
+        height: 1.2,
       ),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.infoColor.withValues(
-          alpha: JobCardConstants.metricBackgroundAlpha,
-        ),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: ChoiceLuxTheme.infoColor.withValues(
-            alpha: JobCardConstants.metricBorderAlpha,
-          ),
-          width: JobCardConstants.borderWidth,
-        ),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: iconSize * JobCardConstants.metricIconSizeMultiplier,
-            color: ChoiceLuxTheme.infoColor,
-          ),
-          SizedBox(width: iconSpacing),
-          Text(
-            text,
-            style: TextStyle(
-              color: ChoiceLuxTheme.infoColor,
-              fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ],
-      ),
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
     );
   }
 
-  Widget _buildMetricTile(
-    IconData icon,
-    String label,
-    String value,
-    Color color,
-    bool isMobile,
-    bool isSmallMobile,
-    double iconSize,
-    double fontSize,
-  ) {
-    final padding = isSmallMobile
-        ? JobCardConstants.metricTilePaddingSmallMobile
-        : isMobile
-        ? JobCardConstants.metricTilePaddingMobile
-        : JobCardConstants.metricTilePaddingDesktop;
-    final borderRadius = isSmallMobile
-        ? JobCardConstants.metricTileBorderRadiusSmallMobile
-        : isMobile
-        ? JobCardConstants.metricTileBorderRadiusMobile
-        : JobCardConstants.metricTileBorderRadiusDesktop;
-    final innerSpacing = isSmallMobile
-        ? JobCardConstants.metricTileInnerSpacingSmallMobile
-        : JobCardConstants.metricTileInnerSpacingMobile;
+  // Secondary Info: Location, Date
+  Widget _buildSecondaryInfo(BuildContext context, Job job, double spacing, double screenWidth) {
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth) * 0.6;
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 13);
 
-    return Container(
-      padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        color: color.withValues(
-          alpha: JobCardConstants.metricTileBackgroundAlpha,
-        ),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(
-          color: color.withValues(
-            alpha: JobCardConstants.metricTileBorderAlpha,
-          ),
-          width: JobCardConstants.borderWidth,
-        ),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            icon,
-            size: iconSize * JobCardConstants.metricTileIconSizeMultiplier,
-            color: color,
-          ),
-          SizedBox(height: innerSpacing),
-          Text(
-            value,
-            style: TextStyle(
-              color: color,
-              fontSize: fontSize,
-              fontWeight: FontWeight.bold,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Location
+        Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              size: iconSize,
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
             ),
-          ),
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withValues(
-                alpha: JobCardConstants.metricTileValueAlpha,
+            SizedBox(width: spacing * 0.25),
+            Expanded(
+              child: Text(
+                _formatLocation(job.location),
+                style: TextStyle(
+                  fontSize: fontSize,
+                  color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+                ),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
               ),
-              fontSize: fontSize - JobCardConstants.metricFontSizeOffset,
-              fontWeight: FontWeight.w500,
             ),
-          ),
-        ],
-      ),
+          ],
+        ),
+        SizedBox(height: spacing * 0.25),
+        // Date
+        Row(
+          children: [
+            Icon(
+              Icons.calendar_today,
+              size: iconSize * 0.85,
+              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+            ),
+            SizedBox(width: spacing * 0.25),
+            Text(
+              app_date_utils.DateUtils.formatDate(job.jobStartDate),
+              style: TextStyle(
+                fontSize: fontSize * 0.9,
+                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+              ),
+            ),
+          ],
+        ),
+      ],
     );
   }
 
-  // Helper methods for action text using centralized logic
-  String _getActionText(JobStatus status) {
-    return switch (status) {
-      JobStatus.open => 'VIEW',
-      JobStatus.inProgress => 'TRACK',
-      JobStatus.completed => 'OVERVIEW',
-      _ => 'VIEW',
-    };
+  // Tertiary Info: Pax, Luggage, Vehicle
+  Widget _buildTertiaryInfo(BuildContext context, Job job, double spacing, double screenWidth) {
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth) * 0.5;
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 12);
+
+    return Wrap(
+      spacing: spacing * 0.75,
+      runSpacing: spacing * 0.5,
+      children: [
+        _buildInfoChip(
+          Icons.person,
+          '${job.pasCount} pax',
+          iconSize,
+          fontSize,
+          spacing,
+        ),
+        _buildInfoChip(
+          Icons.work,
+          '${job.luggageCount} bags',
+          iconSize,
+          fontSize,
+          spacing,
+        ),
+        if (widget.vehicle?.model != null)
+          _buildInfoChip(
+            Icons.directions_car,
+            widget.vehicle!.model,
+            iconSize,
+            fontSize,
+            spacing,
+          ),
+      ],
+    );
   }
 
-  // Check if current user is the assigned driver
-  bool _isAssignedDriver(WidgetRef ref) {
-    final currentUser = ref.read(currentUserProfileProvider);
-    return currentUser?.id == job.driverId;
+  Widget _buildInfoChip(IconData icon, String label, double iconSize, double fontSize, double spacing) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(
+          icon,
+          size: iconSize,
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+        ),
+        SizedBox(width: spacing * 0.25),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: fontSize,
+            color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
   }
 
-  // Handle driver confirmation with safe integer parsing and proper error handling
-  Future<void> _handleDriverConfirmation(
+  // PDF Actions (Voucher & Invoice)
+  Widget _buildPdfActions(
     BuildContext context,
     WidgetRef ref,
-  ) async {
-    Log.d('=== JOB CARD: _handleDriverConfirmation() called ===');
-    Log.d('Job ID: ${job.id}');
-    Log.d('Job Status: ${job.status}');
-    Log.d('Is Confirmed: ${job.isConfirmed}');
-    Log.d('Driver Confirmation: ${job.driverConfirmation}');
+    Job job,
+    double spacing,
+    double screenWidth,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (widget.canCreateVoucher) ...[
+          VoucherActionButtons(
+            jobId: job.id.toString(),
+            voucherPdfUrl: job.voucherPdf,
+            voucherData: null,
+            canCreateVoucher: widget.canCreateVoucher,
+          ),
+          if (widget.canCreateInvoice) SizedBox(height: spacing),
+        ],
+        if (widget.canCreateInvoice)
+          InvoiceActionButtons(
+            jobId: job.id.toString(),
+            invoicePdfUrl: job.invoicePdf,
+            invoiceData: null,
+            canCreateInvoice: widget.canCreateInvoice,
+          ),
+      ],
+    );
+  }
 
-    final jobId = job.id is int ? job.id : int.tryParse(job.id.toString());
-    if (jobId == null) {
-      Log.d('Invalid job ID: ${job.id}');
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Invalid job ID'),
-          backgroundColor: Colors.red,
-          duration: Duration(seconds: 2),
-        ),
-      );
-      return;
-    }
+  // Action Buttons
+  Widget _buildActionButtons(
+    BuildContext context,
+    WidgetRef ref,
+    Job job,
+    double spacing,
+    double screenWidth,
+  ) {
+    final userProfile = ref.read(currentUserProfileProvider);
+    final shouldShowDriverConfirmation = DriverFlowUtils.shouldShowDriverConfirmationButton(
+      currentUserId: userProfile?.id,
+      jobDriverId: job.driverId,
+      jobStatus: job.statusEnum,
+      isJobConfirmed: job.driverConfirmation == true,
+    );
+    final shouldShowDriverFlow = DriverFlowUtils.shouldShowDriverFlowButton(
+      currentUserId: userProfile?.id,
+      jobDriverId: job.driverId,
+      jobStatus: job.statusEnum,
+      isJobConfirmed: job.driverConfirmation == true,
+    );
 
-    try {
-      // Show loading state
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Row(
-            children: [
-              SizedBox(
-                width: 16,
-                height: 16,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 13);
+    final iconSize = ResponsiveTokens.getIconSize(screenWidth) * 0.7;
+
+    return Column(
+      children: [
+        // Primary Action: View Details
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton.icon(
+            onPressed: () => context.go('/jobs/${job.id}/summary'),
+            icon: Icon(
+              Icons.visibility,
+              size: iconSize,
+            ),
+            label: Text(
+              'View Details',
+              style: TextStyle(
+                fontSize: fontSize,
+                fontWeight: FontWeight.w600,
               ),
-              SizedBox(width: 12),
-              Text('Confirming job...'),
-            ],
+            ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: ChoiceLuxTheme.richGold,
+              foregroundColor: Colors.black,
+              padding: EdgeInsets.symmetric(
+                horizontal: spacing,
+                vertical: spacing * 0.75,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
           ),
-          backgroundColor: Colors.blue,
-          duration: Duration(seconds: 2),
         ),
+
+        // Driver Actions (if applicable)
+        if (shouldShowDriverConfirmation || shouldShowDriverFlow) ...[
+          SizedBox(height: spacing * 0.5),
+          if (widget.isSmallMobile || widget.isMobile)
+            Column(
+              children: [
+                if (shouldShowDriverConfirmation)
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleDriverConfirmation(context, ref, job),
+                      icon: const Icon(Icons.check_circle, size: 16),
+                      label: Text(
+                        'Confirm Job',
+                        style: TextStyle(fontSize: fontSize),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ChoiceLuxTheme.orange,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spacing,
+                          vertical: spacing * 0.75,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (shouldShowDriverFlow) ...[
+                  if (shouldShowDriverConfirmation) SizedBox(height: spacing * 0.5),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleDriverFlow(context, ref, job),
+                      icon: Icon(
+                        DriverFlowUtils.getDriverFlowIcon(job.statusEnum),
+                        size: 16,
+                      ),
+                      label: Text(
+                        DriverFlowUtils.getDriverFlowText(job.statusEnum),
+                        style: TextStyle(fontSize: fontSize),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spacing,
+                          vertical: spacing * 0.75,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            )
+          else
+            Row(
+              children: [
+                if (shouldShowDriverConfirmation)
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleDriverConfirmation(context, ref, job),
+                      icon: const Icon(Icons.check_circle, size: 16),
+                      label: Text(
+                        'Confirm Job',
+                        style: TextStyle(fontSize: fontSize),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: ChoiceLuxTheme.orange,
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spacing,
+                          vertical: spacing * 0.75,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                if (shouldShowDriverFlow) ...[
+                  if (shouldShowDriverConfirmation) SizedBox(width: spacing),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      onPressed: () => _handleDriverFlow(context, ref, job),
+                      icon: Icon(
+                        DriverFlowUtils.getDriverFlowIcon(job.statusEnum),
+                        size: 16,
+                      ),
+                      label: Text(
+                        DriverFlowUtils.getDriverFlowText(job.statusEnum),
+                        style: TextStyle(fontSize: fontSize),
+                      ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: DriverFlowUtils.getDriverFlowColor(job.statusEnum),
+                        foregroundColor: Colors.white,
+                        padding: EdgeInsets.symmetric(
+                          horizontal: spacing,
+                          vertical: spacing * 0.75,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ],
+            ),
+        ],
+      ],
+    );
+  }
+
+  // Helper Methods
+  String _formatLocation(String? location) {
+    if (location == null || location.isEmpty) {
+      return 'Location not specified';
+    }
+    
+    switch (location.toUpperCase()) {
+      case 'JHB':
+        return 'Johannesburg';
+      case 'CPT':
+        return 'Cape Town';
+      case 'DBN':
+        return 'Durban';
+      case 'PTA':
+        return 'Pretoria';
+      default:
+        return location;
+    }
+  }
+
+  Future<void> _handleDriverFlow(BuildContext context, WidgetRef ref, Job job) async {
+    try {
+      final route = DriverFlowUtils.getDriverFlowRoute(
+        int.parse(job.id.toString()),
+        job.statusEnum,
       );
 
-      Log.d('Calling jobsProvider.confirmJob from job card...');
-      // Use the proper jobsProvider.confirmJob method
-      await ref.read(jobsProvider.notifier).confirmJob(job.id.toString());
-      Log.d('jobsProvider.confirmJob completed from job card');
-
-      if (!context.mounted) return;
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.check_circle, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('Job confirmed successfully!'),
-            ],
-          ),
-          backgroundColor: Colors.green,
-          duration: JobCardConstants.snackBarDurationMedium,
-        ),
-      );
-
-      // Refresh notifications only (job data already updated by optimistic update)
-      ref.invalidate(notificationProvider);
-
-      // Optional: Navigate to job progress after confirmation
-      // context.go('/jobs/${job.id}/progress');
+      if (context.mounted) {
+        context.go(route);
+      }
     } catch (e) {
-      Log.e('Error in job card _handleDriverConfirmation: $e');
-      // Error handling driver confirmation
-      if (!context.mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Row(
-            children: [
-              Icon(Icons.error, color: Colors.white, size: 20),
-              SizedBox(width: 8),
-              Text('An error occurred: ${e.toString()}'),
-            ],
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to navigate to driver flow: ${e.toString()}'),
+            backgroundColor: Colors.red,
           ),
-          backgroundColor: Colors.red,
-          duration: JobCardConstants.snackBarDurationLong,
-        ),
-      );
+        );
+      }
+    }
+  }
+
+  Future<void> _handleDriverConfirmation(BuildContext context, WidgetRef ref, Job job) async {
+    try {
+      await ref.read(jobsProvider.notifier).confirmJob(job.id.toString());
+      
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Job confirmed successfully!'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 2),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to confirm job: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
     }
   }
 }
