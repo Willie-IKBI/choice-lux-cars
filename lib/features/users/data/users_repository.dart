@@ -187,6 +187,12 @@ class UsersRepository {
       Log.d('Updating user: ${user.id}');
 
       final data = user.toJson();
+      // Remove id and user_email from update data
+      // id is the primary key and cannot be updated
+      // user_email is tied to auth system and shouldn't be updated here
+      data.remove('id');
+      data.remove('user_email');
+      
       await _supabase
           .from('profiles')
           .update(data)
