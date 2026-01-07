@@ -42,6 +42,7 @@ class _UserFormState extends State<UserForm> {
   String? kin;
   String? kinNumber;
   String? profileImage;
+  String? branchId;
   bool _uploading = false;
 
   final List<_RoleOption> roles = const [
@@ -87,6 +88,7 @@ class _UserFormState extends State<UserForm> {
     kin = widget.user?.kin;
     kinNumber = widget.user?.kinNumber;
     profileImage = widget.user?.profileImage;
+    branchId = widget.user?.branchId;
   }
 
   Future<void> _pickAndUploadImage(WidgetRef ref, String userId) async {
@@ -288,6 +290,7 @@ class _UserFormState extends State<UserForm> {
                                   kin: kin,
                                   kinNumber: kinNumber,
                                   profileImage: profileImage,
+                                  branchId: branchId,
                                 ),
                               );
                             } else {
@@ -359,6 +362,7 @@ class _UserFormState extends State<UserForm> {
                                   kin: kin,
                                   kinNumber: kinNumber,
                                   profileImage: profileImage,
+                                  branchId: branchId,
                                 ),
                               );
                             } else {
@@ -537,6 +541,46 @@ class _UserFormState extends State<UserForm> {
                 : TextFormField(
                     initialValue: _getStatusLabel(status),
                     decoration: _modernInputDecoration('Status'),
+                    style: TextStyle(
+                      fontSize: 15,
+                      color: ChoiceLuxTheme.softWhite,
+                    ),
+                    readOnly: true,
+                  ),
+            const SizedBox(height: 12),
+            isAdmin
+                ? DropdownButtonFormField<String>(
+                    value: branchId,
+                    decoration: _modernInputDecoration('Branch'),
+                    dropdownColor: ChoiceLuxTheme.charcoalGray,
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 15,
+                    ),
+                    icon: Icon(
+                      Icons.arrow_drop_down,
+                      color: ChoiceLuxTheme.platinumSilver,
+                    ),
+                    items: const [
+                      DropdownMenuItem<String>(
+                        value: 'Jhb',
+                        child: Text('Johannesburg (Jhb)'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'Cpt',
+                        child: Text('Cape Town (Cpt)'),
+                      ),
+                      DropdownMenuItem<String>(
+                        value: 'Dbn',
+                        child: Text('Durban (Dbn)'),
+                      ),
+                    ],
+                    onChanged: (val) => setState(() => branchId = val),
+                    onSaved: (val) => branchId = val,
+                  )
+                : TextFormField(
+                    initialValue: branchId ?? 'Not assigned',
+                    decoration: _modernInputDecoration('Branch'),
                     style: TextStyle(
                       fontSize: 15,
                       color: ChoiceLuxTheme.softWhite,

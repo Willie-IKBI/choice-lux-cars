@@ -1,14 +1,65 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
-class PendingApprovalScreen extends ConsumerWidget {
+class PendingApprovalScreen extends ConsumerStatefulWidget {
   const PendingApprovalScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<PendingApprovalScreen> createState() => _PendingApprovalScreenState();
+}
+
+class _PendingApprovalScreenState extends ConsumerState<PendingApprovalScreen> {
+  Timer? _refreshTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    // Poll profile every 3 seconds to check for updates
+    _refreshTimer = Timer.periodic(const Duration(seconds: 3), (timer) {
+      _checkProfileAndRedirect();
+    });
+  }
+
+  @override
+  void dispose() {
+    _refreshTimer?.cancel();
+    super.dispose();
+  }
+
+  void _checkProfileAndRedirect() async {
+    // Refresh profile from server
+    await ref.read(userProfileProvider.notifier).refreshProfile();
+    
+    // Check profile after refresh
+    final userProfile = ref.read(currentUserProfileProvider);
+    if (userProfile != null) {
+      final role = userProfile.role;
+      final status = userProfile.status;
+      final branchId = userProfile.branchId;
+      
+      // Check if user is now fully assigned
+      final isUnassigned = role == null || role == 'unassigned';
+      final isNotActive = status == null || status != 'active';
+      final hasNoBranch = branchId == null || branchId.isEmpty;
+      
+      if (!isUnassigned && !isNotActive && !hasNoBranch) {
+        Log.d('PendingApprovalScreen - User is now fully assigned, redirecting to dashboard');
+        _refreshTimer?.cancel();
+        if (mounted) {
+          context.go('/');
+        }
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final userProfile = ref.watch(currentUserProfileProvider);
     final displayName = userProfile?.displayNameOrEmail ?? 'User';
 
@@ -129,8 +180,9 @@ class PendingApprovalScreen extends ConsumerWidget {
                             Text(
                               '• An administrator will review your account\n'
                               '• You will be assigned an appropriate role\n'
-                              '• You will receive access to the system\n'
-                              '• You can then log in and start using the app',
+                              '• You will be assigned a branch location\n'
+                              '• Your status will be set to active\n'
+                              '• You will then receive access to the system',
                               style: Theme.of(context).textTheme.bodyMedium
                                   ?.copyWith(
                                     color: ChoiceLuxTheme.softWhite.withOpacity(
