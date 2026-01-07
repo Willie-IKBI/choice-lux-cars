@@ -80,6 +80,31 @@ Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
 
   await flutterLocalNotificationsPlugin.initialize(initializationSettings);
 
+  // Create notification channel (required for Android, especially when app is terminated)
+  // This ensures the channel exists before showing notifications
+  if (!kIsWeb) {
+    try {
+      final androidPlugin = flutterLocalNotificationsPlugin
+          .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
+
+      if (androidPlugin != null) {
+        const AndroidNotificationChannel channel = AndroidNotificationChannel(
+          'choice_lux_cars_channel', // MUST match channelId used in notification details
+          'Choice Lux Cars Notifications',
+          description: 'Notifications for job updates, assignments, and system alerts',
+          importance: Importance.high,
+          playSound: true,
+        );
+
+        await androidPlugin.createNotificationChannel(channel);
+        Log.d('Background handler: Notification channel created');
+      }
+    } catch (e) {
+      Log.e('Background handler: Error creating notification channel: $e');
+      // Continue anyway - channel might already exist
+    }
+  }
+
   // Show system notification for background messages
   final title = message.notification?.title ?? 'Choice Lux Cars';
   final body = message.notification?.body ?? 'New notification received';
