@@ -9,12 +9,21 @@ import 'package:choice_lux_cars/app/app.dart';
 import 'package:choice_lux_cars/core/services/firebase_service.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/constants.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   try {
     Log.d('Initializing Choice Lux Cars app...');
+
+    // Ensure GoogleFonts can fetch at runtime on web even if AssetManifest is unavailable
+    try {
+      GoogleFonts.config.allowRuntimeFetching = true;
+      Log.d('GoogleFonts runtime fetching enabled');
+    } catch (e) {
+      Log.e('Failed to configure GoogleFonts: $e');
+    }
 
     // Initialize Supabase
     await Supabase.initialize(
