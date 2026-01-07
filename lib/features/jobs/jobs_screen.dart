@@ -35,6 +35,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   int _currentPage = 1;
   final int _itemsPerPage = 12;
   String _dateRangeFilter = '90'; // '7', '30', '90', 'all' - days for completed jobs
+  String? _openJobsDateFilter; // 'yesterday', 'today', 'tomorrow', or null (all)
 
   @override
   void initState() {
@@ -324,6 +325,11 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               ],
             ),
           ),
+          // Date filter for open jobs (yesterday, today, tomorrow)
+          if (_currentFilter == 'open') ...[
+            SizedBox(height: spacing),
+            _buildOpenJobsDateFilter(isSmallMobile, isMobile),
+          ],
           // Date range selector (only show for closed and all filters)
           if (_currentFilter == 'closed' || _currentFilter == 'all') ...[
             SizedBox(height: spacing),
@@ -503,6 +509,21 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     bool isTablet,
     bool isDesktop,
   ) {
+    // Build filter label for open jobs date filter
+    String? filterLabel;
+    if (_currentFilter == 'open' && _openJobsDateFilter != null) {
+      switch (_openJobsDateFilter) {
+        case 'yesterday':
+          filterLabel = 'Yesterday';
+          break;
+        case 'today':
+          filterLabel = 'Today';
+          break;
+        case 'tomorrow':
+          filterLabel = 'Tomorrow';
+          break;
+      }
+    }
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
     );
@@ -515,7 +536,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       child: Row(
         children: [
           Text(
-            '$count jobs found',
+            filterLabel != null
+                ? '$count jobs found ($filterLabel)'
+                : '$count jobs found',
             style: TextStyle(
               fontSize: ResponsiveTokens.getFontSize(
                 MediaQuery.of(context).size.width,
@@ -747,6 +770,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       onTap: () => setState(() {
         _currentFilter = filter;
         _currentPage = 1; // Reset to first page when filter changes
+        // Reset open jobs date filter when switching away from open jobs
+        if (filter != 'open') {
+          _openJobsDateFilter = null;
+        }
       }),
       child: Container(
         padding: EdgeInsets.symmetric(
@@ -833,6 +860,140 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     );
   }
 
+  // Open Jobs Date Filter Section
+  Widget _buildOpenJobsDateFilter(bool isSmallMobile, bool isMobile) {
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: [
+          _buildOpenJobsDateChip(
+            'All',
+            null,
+            Icons.calendar_today,
+            isSmallMobile,
+            isMobile,
+          ),
+          SizedBox(width: isSmallMobile ? 6 : 8),
+          _buildOpenJobsDateChip(
+            'Yesterday',
+            'yesterday',
+            Icons.arrow_back,
+            isSmallMobile,
+            isMobile,
+          ),
+          SizedBox(width: isSmallMobile ? 6 : 8),
+          _buildOpenJobsDateChip(
+            'Today',
+            'today',
+            Icons.today,
+            isSmallMobile,
+            isMobile,
+          ),
+          SizedBox(width: isSmallMobile ? 6 : 8),
+          _buildOpenJobsDateChip(
+            'Tomorrow',
+            'tomorrow',
+            Icons.arrow_forward,
+            isSmallMobile,
+            isMobile,
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Open Jobs Date Filter Chip
+  Widget _buildOpenJobsDateChip(
+    String label,
+    String? value,
+    IconData icon,
+    bool isSmallMobile,
+    bool isMobile,
+  ) {
+    final isSelected = _openJobsDateFilter == value;
+    final fontSize = isSmallMobile ? 11.0 : 12.0;
+
+    return GestureDetector(
+      onTap: () => setState(() {
+        _openJobsDateFilter = value;
+        _currentPage = 1; // Reset to first page when date filter changes
+      }),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmallMobile ? 8 : 12,
+          vertical: isSmallMobile ? 5 : 7,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? ChoiceLuxTheme.richGold.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected
+                ? ChoiceLuxTheme.richGold
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon,
+              size: isSmallMobile ? 12 : 14,
+              color: isSelected
+                  ? ChoiceLuxTheme.richGold
+                  : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+            ),
+            SizedBox(width: isSmallMobile ? 4 : 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                fontSize: fontSize,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Get date range for open jobs date filter
+  /// Returns (startDateTime, endDateTime) tuple
+  (DateTime, DateTime) _getDateRange(String filter) {
+    final now = DateTime.now();
+    
+    switch (filter) {
+      case 'yesterday':
+        final yesterday = now.subtract(const Duration(days: 1));
+        final start = DateTime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0);
+        final end = DateTime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
+        return (start, end);
+      case 'today':
+        final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
+        final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        return (start, end);
+      case 'tomorrow':
+        final tomorrow = now.add(const Duration(days: 1));
+        final start = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0);
+        final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59);
+        return (start, end);
+      default:
+        // Should not happen, but return today as fallback
+        final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
+        final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        return (start, end);
+    }
+  }
+
   List<Job> _filterJobs(List<Job> jobs) {
     final now = DateTime.now();
     final cutoffDate = _dateRangeFilter == 'all'
@@ -842,9 +1003,37 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     switch (_currentFilter) {
       case 'open':
         // Treat 'open' and 'assigned' as open jobs
-        return jobs
+        var openJobs = jobs
             .where((job) => job.status == 'open' || job.status == 'assigned')
             .toList();
+        
+        // Apply date filter if selected
+        if (_openJobsDateFilter != null) {
+          final dateRange = _getDateRange(_openJobsDateFilter!);
+          openJobs = openJobs.where((job) {
+            // Check if jobStartDate falls within the date range
+            // Compare dates only (ignore time) for accurate day-based filtering
+            final jobDate = DateTime(
+              job.jobStartDate.year,
+              job.jobStartDate.month,
+              job.jobStartDate.day,
+            );
+            final rangeStart = DateTime(
+              dateRange.$1.year,
+              dateRange.$1.month,
+              dateRange.$1.day,
+            );
+            final rangeEnd = DateTime(
+              dateRange.$2.year,
+              dateRange.$2.month,
+              dateRange.$2.day,
+            );
+            return jobDate.isAtSameMomentAs(rangeStart) ||
+                   jobDate.isAtSameMomentAs(rangeEnd) ||
+                   (jobDate.isAfter(rangeStart) && jobDate.isBefore(rangeEnd));
+          }).toList();
+        }
+        return openJobs;
       case 'in_progress':
         return jobs
             .where(
