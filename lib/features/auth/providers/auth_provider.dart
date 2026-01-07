@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
@@ -7,6 +6,7 @@ import 'package:choice_lux_cars/core/services/firebase_service.dart';
 import 'package:choice_lux_cars/core/services/preferences_service.dart';
 import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 // User Profile Model
@@ -20,6 +20,7 @@ class UserProfile {
   final String? kinNumber;
   final String? profileImage;
   final String? status;
+  final String? branchId; // Branch assignment (Jhb, Cpt, Dbn)
 
   UserProfile({
     required this.id,
@@ -31,9 +32,14 @@ class UserProfile {
     this.kinNumber,
     this.profileImage,
     this.status,
+    this.branchId,
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
+    // Convert branch_id (bigint) to branch code (String) for UI
+    final branchIdFromDb = map['branch_id'];
+    final branchCode = BranchUtils.idToCode(branchIdFromDb);
+    
     return UserProfile(
       id: map['id'] ?? '',
       displayName: map['display_name'],
@@ -44,6 +50,7 @@ class UserProfile {
       kinNumber: map['kin_number'],
       profileImage: map['profile_image'],
       status: map['status'],
+      branchId: branchCode, // Store as code (String) for UI consistency
     );
   }
 
@@ -424,6 +431,14 @@ class UserProfileNotifier extends StateNotifier<AsyncValue<UserProfile?>> {
       // Use centralized error handling utility to convert to safe AuthError
       final authError = AuthErrorUtils.toAuthError(error);
       _setErrorState(authError.message);
+    }
+  }
+
+  /// Refresh profile from server
+  Future<void> refreshProfile() async {
+    final currentUser = _authNotifier.currentUser;
+    if (currentUser != null) {
+      await _loadProfile(currentUser.id);
     }
   }
 

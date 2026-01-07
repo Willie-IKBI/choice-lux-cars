@@ -1,3 +1,5 @@
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
+
 // User model for driver management flow
 class User {
   final String id;
@@ -14,6 +16,7 @@ class User {
   final String? kinNumber;
   final String userEmail;
   final String? status;
+  final String? branchId; // Branch assignment (Jhb, Cpt, Dbn)
 
   User({
     required this.id,
@@ -30,9 +33,14 @@ class User {
     this.kin,
     this.kinNumber,
     this.status,
+    this.branchId,
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
+    // Convert branch_id (bigint) to branch code (String) for UI
+    final branchIdFromDb = map['branch_id'];
+    final branchCode = BranchUtils.idToCode(branchIdFromDb);
+    
     return User(
       id: map['id'] as String,
       displayName: map['display_name'] as String? ?? '',
@@ -50,12 +58,16 @@ class User {
       kin: map['kin'] as String?,
       kinNumber: map['kin_number'] as String?,
       status: map['status'] as String?,
+      branchId: branchCode, // Store as code (String) for UI consistency
     );
   }
 
   factory User.fromJson(Map<String, dynamic> json) => User.fromMap(json);
 
   Map<String, dynamic> toMap() {
+    // Convert branch code (String) back to branch_id (bigint) for database
+    final branchIdForDb = BranchUtils.codeToId(branchId);
+    
     return {
       'id': id,
       'display_name': displayName,
@@ -71,6 +83,7 @@ class User {
       'kin': kin,
       'kin_number': kinNumber,
       'status': status,
+      'branch_id': branchIdForDb, // Store as bigint ID for database
     };
   }
 
@@ -91,6 +104,7 @@ class User {
     String? kinNumber,
     String? userEmail,
     String? status,
+    String? branchId,
   }) {
     return User(
       id: id ?? this.id,
@@ -107,6 +121,7 @@ class User {
       kinNumber: kinNumber ?? this.kinNumber,
       userEmail: userEmail ?? this.userEmail,
       status: status ?? this.status,
+      branchId: branchId ?? this.branchId,
     );
   }
 }
