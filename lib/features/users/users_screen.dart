@@ -38,6 +38,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   String _search = '';
   String? _roleFilter;
   String? _statusFilter;
+  bool _showDeactivatedOnly = false;
 
   final List<_RoleOption> roles = const [
     _RoleOption(
@@ -57,7 +58,6 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   ];
   final List<_StatusOption> statuses = const [
     _StatusOption('active', 'Active', Icons.check_circle_outline),
-    _StatusOption('deactivated', 'Deactivated', Icons.block),
     _StatusOption('unassigned', 'Unassigned', Icons.help_outline),
   ];
 
@@ -97,8 +97,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
             u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
             u.userEmail.toLowerCase().contains(_search.toLowerCase());
         final matchesRole = _roleFilter == null || u.role == _roleFilter;
-        final matchesStatus =
-            _statusFilter == null || u.status == _statusFilter;
+        final matchesStatus = _showDeactivatedOnly
+            ? (u.status == 'deactivated')
+            : (_statusFilter == null
+                ? (u.status != 'deactivated')
+                : (u.status == _statusFilter));
         return matchesSearch && matchesRole && matchesStatus;
       }).toList();
 
@@ -256,7 +259,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               items: [
                 DropdownMenuItem<String>(
                   value: null,
-                  child: Text('All Statuses'),
+                  child: Text('All (Non-deactivated)'),
                 ),
                 ...statuses.map(
                   (s) => DropdownMenuItem<String>(
@@ -274,14 +277,76 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                   ),
                 ),
               ],
-              onChanged: (val) => setState(() => _statusFilter = val),
+              onChanged: _showDeactivatedOnly
+                  ? null
+                  : (val) => setState(() => _statusFilter = val),
               isMobile: isMobile,
               isSmallMobile: isSmallMobile,
             ),
           ),
+          SizedBox(width: spacing * 1.5),
+          _buildDeactivatedOnlyToggle(isMobile: false),
         ],
       );
     }
+  }
+
+  Widget _buildDeactivatedOnlyToggle({required bool isMobile}) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(screenWidth);
+
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: 12,
+        vertical: isMobile ? 10 : 6,
+      ),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.2),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha:0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.block,
+            size: 18,
+            color: _showDeactivatedOnly
+                ? ChoiceLuxTheme.richGold
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha:0.7),
+          ),
+          SizedBox(width: spacing * 0.75),
+          Text(
+            'Deactivated Only',
+            style: TextStyle(
+              color: ChoiceLuxTheme.softWhite,
+              fontWeight: FontWeight.w600,
+              fontSize: isMobile ? 14 : 13,
+            ),
+          ),
+          SizedBox(width: spacing * 0.75),
+          Switch.adaptive(
+            value: _showDeactivatedOnly,
+            activeColor: ChoiceLuxTheme.richGold,
+            onChanged: (val) {
+              setState(() {
+                _showDeactivatedOnly = val;
+                if (val) _statusFilter = null;
+              });
+            },
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildResponsiveSearchBar(bool isMobile, bool isSmallMobile) {
@@ -342,7 +407,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
     required String? value,
     required String hintText,
     required List<DropdownMenuItem<String>> items,
-    required ValueChanged<String?> onChanged,
+    required ValueChanged<String?>? onChanged,
     required bool isMobile,
     required bool isSmallMobile,
   }) {
@@ -393,9 +458,11 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
   }
 
   Widget _buildMobileFilterButton(bool isSmallMobile) {
-    final hasActiveFilters = _roleFilter != null || _statusFilter != null;
-    final filterCount =
-        (_roleFilter != null ? 1 : 0) + (_statusFilter != null ? 1 : 0);
+    final hasActiveFilters =
+        _roleFilter != null || _statusFilter != null || _showDeactivatedOnly;
+    final filterCount = (_roleFilter != null ? 1 : 0) +
+        (_statusFilter != null ? 1 : 0) +
+        (_showDeactivatedOnly ? 1 : 0);
 
     return Container(
       width: double.infinity,
@@ -477,6 +544,47 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
               ),
             ),
 
+            // Deactivated-only toggle
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.jetBlack.withValues(alpha:0.35),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.15),
+                  ),
+                ),
+                child: SwitchListTile.adaptive(
+                  value: _showDeactivatedOnly,
+                  activeColor: ChoiceLuxTheme.richGold,
+                  title: Text(
+                    'Deactivated Only',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  subtitle: Text(
+                    'Show only deactivated users',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha:0.8),
+                      fontSize: 13,
+                    ),
+                  ),
+                  onChanged: (value) {
+                    setState(() {
+                      _showDeactivatedOnly = value;
+                      if (value) _statusFilter = null;
+                    });
+                    Navigator.of(context).pop();
+                  },
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 16),
+
             // Filter options
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -501,7 +609,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                         .map((s) => _FilterOption(s.value, s.label, s.icon))
                         .toList(),
                     selectedValue: _statusFilter,
-                    onChanged: (value) => setState(() => _statusFilter = value),
+                    onChanged: _showDeactivatedOnly
+                        ? (_) {}
+                        : (value) => setState(() => _statusFilter = value),
                   ),
                 ],
               ),
@@ -815,7 +925,7 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 : 24,
           ),
           Text(
-            'No users found',
+            _showDeactivatedOnly ? 'No deactivated users found' : 'No users found',
             style: TextStyle(
               fontSize: isSmallMobile
                   ? 16
@@ -834,7 +944,9 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
                 : 12,
           ),
           Text(
-            'Try adjusting your search or filters',
+            _showDeactivatedOnly
+                ? 'Try turning off Deactivated Only or adjusting your search/role filter'
+                : 'Try adjusting your search or filters',
             style: TextStyle(
               fontSize: isSmallMobile
                   ? 12
