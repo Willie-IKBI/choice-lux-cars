@@ -9,6 +9,7 @@ import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:go_router/go_router.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class TripManagementScreen extends ConsumerStatefulWidget {
   final String jobId;
@@ -129,6 +130,10 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     final screenWidth = MediaQuery.of(context).size.width;
     final padding = ResponsiveTokens.getPadding(screenWidth);
     final spacing = ResponsiveTokens.getSpacing(screenWidth);
+    
+    // Check if user is driver
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
 
     return SingleChildScrollView(
       padding: EdgeInsets.fromLTRB(padding, padding, padding, 100), // Added bottom padding for FAB
@@ -168,7 +173,10 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
                         ),
                       ),
                       Text(
-                        '${trips.length} trips • Total: R${totalAmount.toStringAsFixed(2)}',
+                        // Hide total amount for drivers
+                        isDriver 
+                            ? '${trips.length} trips'
+                            : '${trips.length} trips • Total: R${totalAmount.toStringAsFixed(2)}',
                         style: const TextStyle(
                           fontSize: 16,
                           color: Colors.grey,
@@ -188,38 +196,39 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
             ...trips.map((trip) => _buildTripCard(trip)).toList(),
             SizedBox(height: spacing * 3),
 
-            // Total amount
-            Container(
-              padding: EdgeInsets.all(padding * 1.25),
-              decoration: BoxDecoration(
-                color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(
-                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            // Total amount (hidden for drivers)
+            if (!isDriver)
+              Container(
+                padding: EdgeInsets.all(padding * 1.25),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Amount:',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    Text(
+                      'R${totalAmount.toStringAsFixed(2)}',
+                      style: TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.bold,
+                        color: ChoiceLuxTheme.richGold,
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Amount:',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                  ),
-                  Text(
-                    'R${totalAmount.toStringAsFixed(2)}',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: ChoiceLuxTheme.richGold,
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
             const SizedBox(height: 24),
 
@@ -302,7 +311,9 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
               ],
             ),
             const SizedBox(height: 8),
-            Text('Amount: R${trip.amount.toStringAsFixed(2)}'),
+            // Hide amount for drivers
+            if (userProfile?.role?.toLowerCase() != 'driver')
+              Text('Amount: R${trip.amount.toStringAsFixed(2)}'),
             if (trip.pickupLocation != null)
               Text('Pickup: ${trip.pickupLocation}'),
             if (trip.dropoffLocation != null)

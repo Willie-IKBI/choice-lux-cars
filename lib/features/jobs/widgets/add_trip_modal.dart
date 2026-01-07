@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class AddTripModal extends ConsumerStatefulWidget {
   final String jobId;
@@ -269,18 +270,20 @@ class _AddTripModalState extends ConsumerState<AddTripModal> {
 
                       const SizedBox(height: 16),
 
-                      // Amount
-                      TextFormField(
-                        controller: _amountController,
-                        decoration: const InputDecoration(
-                          labelText: 'Amount (R)',
-                          border: OutlineInputBorder(),
-                          prefixIcon: Icon(Icons.attach_money),
+                      // Amount (hidden for drivers)
+                      if (ref.watch(currentUserProfileProvider)?.role?.toLowerCase() != 'driver')
+                        TextFormField(
+                          controller: _amountController,
+                          decoration: const InputDecoration(
+                            labelText: 'Amount (R)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.attach_money),
+                          ),
+                          keyboardType: TextInputType.number,
                         ),
-                        keyboardType: TextInputType.number,
-                      ),
 
-                      const SizedBox(height: 16),
+                      if (ref.watch(currentUserProfileProvider)?.role?.toLowerCase() != 'driver')
+                        const SizedBox(height: 16),
 
                       // Notes
                       TextFormField(

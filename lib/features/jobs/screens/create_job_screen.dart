@@ -1588,6 +1588,15 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildPaymentSection() {
+    // Get current user role
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
+    // Hide payment section from drivers
+    if (isDriver) {
+      return const SizedBox.shrink();
+    }
+    
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

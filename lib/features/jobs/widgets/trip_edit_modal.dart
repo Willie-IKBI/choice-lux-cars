@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 
 class TripEditModal extends ConsumerStatefulWidget {
   final Trip trip;
@@ -338,26 +339,29 @@ class _TripEditModalState extends ConsumerState<TripEditModal> {
               ),
               const SizedBox(height: 16),
 
-              // Amount
-              TextFormField(
-                controller: _amountController,
-                decoration: const InputDecoration(
-                  labelText: 'Amount (R) *',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.attach_money),
+              // Amount (hidden for drivers)
+              if (ref.watch(currentUserProfileProvider)?.role?.toLowerCase() != 'driver')
+                TextFormField(
+                  controller: _amountController,
+                  decoration: const InputDecoration(
+                    labelText: 'Amount (R) *',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.attach_money),
+                  ),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) {
+                      return 'Amount is required';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'Please enter a valid amount';
+                    }
+                    return null;
+                  },
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return 'Amount is required';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'Please enter a valid amount';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
+              
+              if (ref.watch(currentUserProfileProvider)?.role?.toLowerCase() != 'driver')
+                const SizedBox(height: 16),
 
               // Notes
               TextFormField(

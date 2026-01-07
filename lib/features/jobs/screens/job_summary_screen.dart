@@ -800,6 +800,27 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildPaymentContent() {
+    // Get current user role
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isDriver = userRole == 'driver';
+    
+    // Hide payment information from drivers
+    if (isDriver) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'Payment information not available',
+            style: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+    
     return Column(
       children: [
         _buildDetailRow(
@@ -916,17 +937,20 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               fontSize: 12,
                             ),
                           ),
-                          const SizedBox(width: 4),
-                          Text(
-                            'R${trip.amount.toStringAsFixed(0)}',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w600,
-                              color: isSelected 
-                                  ? Colors.white 
-                                  : ChoiceLuxTheme.richGold,
-                              fontSize: 12,
+                          // Hide amount for drivers
+                          if (userProfile?.role?.toLowerCase() != 'driver') ...[
+                            const SizedBox(width: 4),
+                            Text(
+                              'R${trip.amount.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                fontWeight: FontWeight.w600,
+                                color: isSelected 
+                                    ? Colors.white 
+                                    : ChoiceLuxTheme.richGold,
+                                fontSize: 12,
+                              ),
                             ),
-                          ),
+                          ],
                         ],
                       ),
                     ),
@@ -1786,20 +1810,23 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
           child: Row(
             children: [
-              Icon(
-                Icons.attach_money,
-                color: ChoiceLuxTheme.richGold,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                'Total Amount: R${totalAmount.toStringAsFixed(2)}',
-                style: TextStyle(
+              // Hide total amount for drivers
+              if (userProfile?.role?.toLowerCase() != 'driver') ...[
+                Icon(
+                  Icons.attach_money,
                   color: ChoiceLuxTheme.richGold,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 18,
+                  size: 24,
                 ),
-              ),
+                const SizedBox(width: 12),
+                Text(
+                  'Total Amount: R${totalAmount.toStringAsFixed(2)}',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -1888,7 +1915,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   ),
                   child: Text(
-                    'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
+                    // Hide amount for drivers
+                    userProfile?.role?.toLowerCase() == 'driver' 
+                        ? 'Trip ${index + 1}' 
+                        : 'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
                     style: TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
@@ -2571,7 +2601,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // Add trip-specific information
         if (selectedTrip != null) {
           if (stepId == 'trip_complete') {
-            stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            // Hide amount for drivers
+            if (userProfile?.role?.toLowerCase() != 'driver') {
+              stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            }
             stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
           }
         }
@@ -2610,7 +2643,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // Add trip-specific information
         if (selectedTrip != null) {
           if (stepId == 'trip_complete') {
-            stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            // Hide amount for drivers
+            if (userProfile?.role?.toLowerCase() != 'driver') {
+              stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
+            }
             stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
           }
         }
