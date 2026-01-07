@@ -203,7 +203,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       );
     } catch (e, stackTrace) {
       // Catch any unhandled exceptions to prevent white screen
-      Log.e('Dashboard build error: $e', stackTrace: stackTrace);
+      Log.e('Dashboard build error: $e', e, stackTrace);
       return Scaffold(
         backgroundColor: ChoiceLuxTheme.jetBlack,
         appBar: LuxuryAppBar(
