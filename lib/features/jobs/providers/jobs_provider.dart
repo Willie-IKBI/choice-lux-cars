@@ -208,7 +208,16 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         return state.value ?? [];
       }
 
-      final result = await _jobsRepository.getJobsByStatus(status);
+      // Get user context for role-based filtering
+      final userProfile = _ref.read(currentUserProfileProvider);
+      final userId = userProfile?.id;
+      final userRole = userProfile?.role?.toLowerCase();
+
+      final result = await _jobsRepository.getJobsByStatus(
+        status,
+        userId: userId,
+        userRole: userRole,
+      );
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -244,7 +253,16 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Getting jobs by client: $clientId');
 
-      final result = await _jobsRepository.getJobsByClient(clientId);
+      // Get user context for role-based filtering
+      final userProfile = _ref.read(currentUserProfileProvider);
+      final userId = userProfile?.id;
+      final userRole = userProfile?.role?.toLowerCase();
+
+      final result = await _jobsRepository.getJobsByClient(
+        clientId,
+        userId: userId,
+        userRole: userRole,
+      );
       if (result.isSuccess) {
         return result.data!;
       } else {

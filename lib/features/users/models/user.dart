@@ -37,9 +37,9 @@ class User {
   });
 
   factory User.fromMap(Map<String, dynamic> map) {
-    // Convert branch_id (bigint) to branch code (String) for UI
+    // Note: profiles.branch_id is text type storing codes directly (Jhb, Cpt, Dbn)
+    // No conversion needed - just use the value as-is
     final branchIdFromDb = map['branch_id'];
-    final branchCode = BranchUtils.idToCode(branchIdFromDb);
     
     return User(
       id: map['id'] as String,
@@ -58,16 +58,15 @@ class User {
       kin: map['kin'] as String?,
       kinNumber: map['kin_number'] as String?,
       status: map['status'] as String?,
-      branchId: branchCode, // Store as code (String) for UI consistency
+      branchId: branchIdFromDb as String?, // Store as text code (Jhb, Cpt, Dbn) - column is text type
     );
   }
 
   factory User.fromJson(Map<String, dynamic> json) => User.fromMap(json);
 
   Map<String, dynamic> toMap() {
-    // Convert branch code (String) back to branch_id (bigint) for database
-    final branchIdForDb = BranchUtils.codeToId(branchId);
-    
+    // Note: profiles.branch_id is text type, so store the code directly (not the ID)
+    // The branch_id column stores codes like "Jhb", "Cpt", "Dbn" as text
     return {
       'id': id,
       'display_name': displayName,
@@ -83,7 +82,7 @@ class User {
       'kin': kin,
       'kin_number': kinNumber,
       'status': status,
-      'branch_id': branchIdForDb, // Store as bigint ID for database
+      'branch_id': branchId, // Store as text code (Jhb, Cpt, Dbn) - column is text type
     };
   }
 

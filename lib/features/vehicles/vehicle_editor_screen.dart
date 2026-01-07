@@ -29,6 +29,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   late DateTime regDate;
   late DateTime licenseExpiryDate;
   String? vehicleImage;
+  String? branchId; // Branch assignment (Jhb, Cpt, Dbn)
   bool isLoading = false;
   bool showSuccessMessage = false;
 
@@ -55,6 +56,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     regDate = v?.regDate ?? DateTime.now();
     licenseExpiryDate = v?.licenseExpiryDate ?? DateTime.now();
     vehicleImage = v?.vehicleImage;
+    branchId = v?.branchId;
   }
 
   Future<void> _pickAndUploadImage() async {
@@ -186,6 +188,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
           vehicleImage: vehicleImage,
           status: status,
           licenseExpiryDate: licenseExpiryDate,
+          branchId: branchId,
           createdAt: widget.vehicle?.createdAt,
           updatedAt: DateTime.now(),
         );
@@ -833,7 +836,72 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
             ),
           ],
         ),
+        const SizedBox(height: fieldSpacing),
+        
+        // Branch selection field
+        _buildBranchField(isSmallMobile),
       ],
+    );
+  }
+
+  Widget _buildBranchField(bool isSmallMobile) {
+    return DropdownButtonFormField<String>(
+      value: branchId,
+      decoration: InputDecoration(
+        labelText: 'Branch',
+        hintText: 'Select branch',
+        filled: true,
+        fillColor: ChoiceLuxTheme.charcoalGray,
+        labelStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7)),
+        hintStyle: TextStyle(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.5)),
+        floatingLabelBehavior: FloatingLabelBehavior.always,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ChoiceLuxTheme.platinumSilver.withOpacity(0.3)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: ChoiceLuxTheme.richGold, width: 2),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.5)),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: Colors.red.withOpacity(0.7)),
+        ),
+        contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: isSmallMobile ? 14 : 16),
+      ),
+      dropdownColor: ChoiceLuxTheme.charcoalGray,
+      style: TextStyle(
+        color: ChoiceLuxTheme.softWhite,
+        fontSize: isSmallMobile ? 14 : 16,
+      ),
+      icon: Icon(Icons.arrow_drop_down, color: ChoiceLuxTheme.platinumSilver),
+      items: const [
+        DropdownMenuItem<String>(
+          value: null,
+          child: Text('No Branch Assigned'),
+        ),
+        DropdownMenuItem<String>(
+          value: 'Jhb',
+          child: Text('Johannesburg (Jhb)'),
+        ),
+        DropdownMenuItem<String>(
+          value: 'Cpt',
+          child: Text('Cape Town (Cpt)'),
+        ),
+        DropdownMenuItem<String>(
+          value: 'Dbn',
+          child: Text('Durban (Dbn)'),
+        ),
+      ],
+      onChanged: (value) => setState(() => branchId = value),
     );
   }
 

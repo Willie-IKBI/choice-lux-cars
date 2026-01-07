@@ -150,6 +150,43 @@ class VehicleCard extends StatelessWidget {
                         ),
                       ),
                     ),
+                    // Branch assignment (if assigned)
+                    if (vehicle.branchId != null && vehicle.branchId!.isNotEmpty) ...[
+                      SizedBox(height: isMobile ? 8.0 : 12.0),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: isMobile ? 10 : 12,
+                          vertical: isMobile ? 6 : 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold.withOpacity(0.1),
+                          border: Border.all(
+                            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                            width: 1,
+                          ),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.location_on,
+                              size: isMobile ? 12 : 14,
+                              color: ChoiceLuxTheme.richGold,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              vehicle.branchId!,
+                              style: GoogleFonts.inter(
+                                fontSize: isSmallMobile ? 10.0 : (isMobile ? 11.0 : 12.0),
+                                fontWeight: FontWeight.w500,
+                                color: ChoiceLuxTheme.richGold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
