@@ -74,11 +74,33 @@ class SupabaseService {
     try {
       Log.d('Updating profile for user: $userId');
 
-      await supabase.from('profiles').update(data).eq('id', userId);
+      // Filter out null values and empty strings to avoid 400 errors
+      // Supabase REST API doesn't like empty strings for nullable fields
+      final cleanData = <String, dynamic>{};
+      data.forEach((key, value) {
+        if (value != null) {
+          if (value is String && value.isEmpty) {
+            // Skip empty strings - let database use default/null
+            return;
+          }
+          cleanData[key] = value;
+        }
+      });
+      
+      Log.d('Updating profile with data: $cleanData');
+
+      await supabase.from('profiles').update(cleanData).eq('id', userId);
 
       Log.d('Profile updated successfully for user: $userId');
     } catch (error) {
       Log.e('Error updating profile: $error');
+      // Enhanced error logging for debugging
+      if (error is PostgrestException) {
+        Log.e('Error updating profile (PostgrestException): ${error.message}');
+        Log.e('Error details: ${error.details}');
+        Log.e('Error hint: ${error.hint}');
+        Log.e('Error code: ${error.code}');
+      }
       rethrow;
     }
   }

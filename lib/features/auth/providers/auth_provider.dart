@@ -6,7 +6,6 @@ import 'package:choice_lux_cars/core/services/firebase_service.dart';
 import 'package:choice_lux_cars/core/services/preferences_service.dart';
 import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
-import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 // User Profile Model
@@ -36,12 +35,12 @@ class UserProfile {
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
-    // Convert branch_id (bigint) to branch code (String) for UI
+    // Note: profiles.branch_id is text type storing codes directly (Jhb, Cpt, Dbn)
+    // No conversion needed - just use the value as-is
     final branchIdFromDb = map['branch_id'];
-    final branchCode = BranchUtils.idToCode(branchIdFromDb);
     
     return UserProfile(
-      id: map['id'] ?? '',
+      id: map['id'] as String? ?? '',
       displayName: map['display_name'],
       role: map['role'],
       address: map['address'],
@@ -50,7 +49,7 @@ class UserProfile {
       kinNumber: map['kin_number'],
       profileImage: map['profile_image'],
       status: map['status'],
-      branchId: branchCode, // Store as code (String) for UI consistency
+      branchId: branchIdFromDb as String?, // Store as text code (Jhb, Cpt, Dbn) - column is text type
     );
   }
 
