@@ -79,92 +79,119 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       );
     }
 
-    // Responsive breakpoints for mobile optimization
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
-    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
-    final padding = ResponsiveTokens.getPadding(screenWidth);
+    try {
+      // Responsive breakpoints for mobile optimization
+      final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+      final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+      final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+      final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+      final padding = ResponsiveTokens.getPadding(screenWidth);
 
-    final users = ref.watch(usersp.usersProvider);
-    final usersNotifier = ref.read(usersp.usersProvider.notifier);
-    final usersList = users.value ?? [];
-    final isLoading = usersList.isEmpty;
-    final filtered = usersList.where((u) {
-      final matchesSearch =
-          _search.isEmpty ||
-          u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
-          u.userEmail.toLowerCase().contains(_search.toLowerCase());
-      final matchesRole = _roleFilter == null || u.role == _roleFilter;
-      final matchesStatus = _statusFilter == null || u.status == _statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
-    }).toList();
-    return SystemSafeScaffold(
-      backgroundColor: ChoiceLuxTheme.jetBlack,
-      appBar: LuxuryAppBar(
-        title: 'Users',
-        subtitle: 'OVERVIEW & STATISTICS',
-        showBackButton: true,
-        onBackPressed: () => context.go('/'),
-        onSignOut: () async {
-          await ref.read(auth.authProvider.notifier).signOut();
-        },
-      ),
-      body: SafeArea(
+      final users = ref.watch(usersp.usersProvider);
+      final usersNotifier = ref.read(usersp.usersProvider.notifier);
+      final usersList = users.value ?? [];
+      final isLoading = users.isLoading && usersList.isEmpty;
+      final filtered = usersList.where((u) {
+        final matchesSearch =
+            _search.isEmpty ||
+            u.displayName.toLowerCase().contains(_search.toLowerCase()) ||
+            u.userEmail.toLowerCase().contains(_search.toLowerCase());
+        final matchesRole = _roleFilter == null || u.role == _roleFilter;
+        final matchesStatus =
+            _statusFilter == null || u.status == _statusFilter;
+        return matchesSearch && matchesRole && matchesStatus;
+      }).toList();
+
+      return SystemSafeScaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        appBar: LuxuryAppBar(
+          title: 'Users',
+          subtitle: 'OVERVIEW & STATISTICS',
+          showBackButton: true,
+          onBackPressed: () => context.go('/'),
+          onSignOut: () async {
+            await ref.read(auth.authProvider.notifier).signOut();
+          },
+        ),
+        body: SafeArea(
           child: Padding(
             padding: EdgeInsets.all(padding),
             child: Column(
               children: [
-                // Responsive search and filters section
                 _buildResponsiveSearchAndFilters(isMobile, isSmallMobile),
                 SizedBox(height: spacing * 1.5),
                 SizedBox(height: spacing * 1.5),
                 Expanded(
-                  child: isLoading
-                      ? _buildMobileLoadingState(isMobile, isSmallMobile)
-                      : AnimatedSwitcher(
-                          duration: const Duration(milliseconds: 350),
-                          child: filtered.isEmpty
-                              ? _buildEmptyState(isMobile, isSmallMobile)
-                              : RefreshIndicator(
-                                  onRefresh: () => usersNotifier.refresh(),
-                                  color: ChoiceLuxTheme.richGold,
-                                  backgroundColor: ChoiceLuxTheme.charcoalGray,
-                                  child: ListView.separated(
-                                    key: ValueKey(filtered.length),
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: padding * 0.5,
-                                      vertical: spacing,
-                                    ),
-                                    itemCount: filtered.length,
-                                    separatorBuilder: (_, __) => SizedBox(
-                                      height: spacing,
-                                    ),
-                                    itemBuilder: (context, index) {
-                                      final user = filtered[index];
-                                      return _buildSwipeableUserCard(
-                                        context: context,
-                                        user: user,
-                                        isMobile: isMobile,
-                                        isSmallMobile: isSmallMobile,
-                                        onTap: () =>
-                                            context.go('/users/${user.id}'),
-                                        onEdit: () => context.go(
-                                          '/users/${user.id}/edit',
-                                        ),
-                                        onToggleStatus: () =>
-                                            _toggleUserStatus(user),
-                                      );
-                                    },
-                                  ),
+                  child: users.when(
+                    data: (_) => AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 350),
+                      child: filtered.isEmpty
+                          ? _buildEmptyState(isMobile, isSmallMobile)
+                          : RefreshIndicator(
+                              onRefresh: () => usersNotifier.refresh(),
+                              color: ChoiceLuxTheme.richGold,
+                              backgroundColor: ChoiceLuxTheme.charcoalGray,
+                              child: ListView.separated(
+                                key: ValueKey(filtered.length),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: padding * 0.5,
+                                  vertical: spacing,
                                 ),
-                        ),
+                                itemCount: filtered.length,
+                                separatorBuilder: (_, __) =>
+                                    SizedBox(height: spacing),
+                                itemBuilder: (context, index) {
+                                  final user = filtered[index];
+                                  return _buildSwipeableUserCard(
+                                    context: context,
+                                    user: user,
+                                    isMobile: isMobile,
+                                    isSmallMobile: isSmallMobile,
+                                    onTap: () => context.go('/users/${user.id}'),
+                                    onEdit: () => context.go(
+                                      '/users/${user.id}/edit',
+                                    ),
+                                    onToggleStatus: () =>
+                                        _toggleUserStatus(user),
+                                  );
+                                },
+                              ),
+                            ),
+                    ),
+                    loading: () => _buildMobileLoadingState(
+                      isMobile,
+                      isSmallMobile,
+                    ),
+                    error: (err, st) => Center(
+                      child: Text(
+                        'Error loading users: $err',
+                        style: const TextStyle(color: Colors.redAccent),
+                      ),
+                    ),
+                  ),
                 ),
               ],
             ),
           ),
         ),
-    );
+      );
+    } catch (e, stackTrace) {
+      Log.e('Users build error: $e', e, stackTrace);
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        appBar: const LuxuryAppBar(
+          title: 'Users',
+          subtitle: 'ERROR',
+          showBackButton: true,
+        ),
+        body: const Center(
+          child: Text(
+            'An unexpected error occurred while rendering Users.',
+            style: TextStyle(color: Colors.redAccent),
+          ),
+        ),
+      );
+    }
   }
 
   Widget _buildResponsiveSearchAndFilters(bool isMobile, bool isSmallMobile) {

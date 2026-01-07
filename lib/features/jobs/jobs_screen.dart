@@ -59,192 +59,176 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   @override
   Widget build(BuildContext context) {
-    // Use centralized responsive system with enhanced mobile-first approach
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
-    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
+    try {
+      // Use centralized responsive system with enhanced mobile-first approach
+      final screenWidth = MediaQuery.of(context).size.width;
+      final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+      final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+      final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+      final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
 
-    final jobs = ref.watch(jobsProvider);
-    final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
+      final jobs = ref.watch(jobsProvider);
+      final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
 
-    // Load related data
-    final vehiclesState = ref.watch(vehiclesProvider);
-    final users = ref.watch(usersProvider);
-    final clientsAsync = ref.watch(clientsProvider);
-    final userProfile = ref.watch(currentUserProfileProvider);
+      // Load related data
+      final vehiclesState = ref.watch(vehiclesProvider);
+      final users = ref.watch(usersProvider);
+      final clientsAsync = ref.watch(clientsProvider);
+      final userProfile = ref.watch(currentUserProfileProvider);
 
-    // Debug information
-    Log.d('=== JOBS SCREEN DEBUG ===');
-    Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
-    Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
-    if ((jobs.value ?? []).isNotEmpty) {
-      final firstJob = (jobs.value ?? []).first;
-      Log.d(
-        'Sample job: ${firstJob.id} - ${firstJob.status} - ${firstJob.passengerName}',
+      // Debug information
+      Log.d('=== JOBS SCREEN DEBUG ===');
+      Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
+      Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
+      if ((jobs.value ?? []).isNotEmpty) {
+        final firstJob = (jobs.value ?? []).first;
+        Log.d('Sample job: ${firstJob.id} - ${firstJob.status} - ${firstJob.passengerName}');
+        Log.d('Sample job confirmation: isConfirmed=${firstJob.isConfirmed}, driverConfirmation=${firstJob.driverConfirmation}');
+      }
+
+      // Check if user can create vouchers based on role
+      final userRole = userProfile?.role?.toLowerCase();
+      final canCreateVoucher = userRole == 'administrator' ||
+          userRole == 'super_admin' ||
+          userRole == 'manager' ||
+          userRole == 'driver_manager' ||
+          userRole == 'drivermanager';
+
+      // Check if user can create invoices (same permissions as vouchers for now)
+      final canCreateInvoice = canCreateVoucher;
+
+      // Apply filters
+      List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
+      Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+
+      // Apply search filter
+      if (_searchQuery.isNotEmpty) {
+        filteredJobs = filteredJobs.where((job) {
+          final passengerName = job.passengerName?.toLowerCase() ?? '';
+          final clientName = job.clientId.toString().toLowerCase();
+          final searchLower = _searchQuery.toLowerCase();
+          return passengerName.contains(searchLower) ||
+              clientName.contains(searchLower) ||
+              job.id.toString().toLowerCase().contains(searchLower);
+        }).toList();
+      }
+
+      // Pagination
+      final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
+      final startIndex = (_currentPage - 1) * _itemsPerPage;
+      final endIndex = startIndex + _itemsPerPage;
+      final paginatedJobs = filteredJobs.sublist(
+        startIndex,
+        endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
       );
-      Log.d('Sample job confirmation: isConfirmed=${firstJob.isConfirmed}, driverConfirmation=${firstJob.driverConfirmation}');
-    }
 
-    // Check if user can create vouchers based on role
-    final userRole = userProfile?.role?.toLowerCase();
-    final canCreateVoucher =
-            userRole == 'administrator' ||
-            userRole == 'super_admin' ||
-    userRole == 'manager' ||
-    userRole == 'driver_manager' ||
-    userRole == 'drivermanager';
+      // Responsive padding - matching dashboard screen
+      final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 24.0;
+      final verticalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 8.0;
+      final sectionSpacing = isSmallMobile ? 16.0 : isMobile ? 24.0 : 12.0;
 
-    // Check if user can create invoices (same permissions as vouchers for now)
-    final canCreateInvoice = canCreateVoucher;
-
-    // Apply filters
-    List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
-    Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
-
-    // Apply search filter
-    if (_searchQuery.isNotEmpty) {
-      filteredJobs = filteredJobs.where((job) {
-        final passengerName = job.passengerName?.toLowerCase() ?? '';
-        final clientName = job.clientId
-            .toString()
-            .toLowerCase(); // Convert int to string
-        final searchLower = _searchQuery.toLowerCase();
-        return passengerName.contains(searchLower) ||
-            clientName.contains(searchLower) ||
-            job.id.toString().toLowerCase().contains(searchLower);
-      }).toList();
-    }
-
-    // Pagination
-    final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
-    final startIndex = (_currentPage - 1) * _itemsPerPage;
-    final endIndex = startIndex + _itemsPerPage;
-    final paginatedJobs = filteredJobs.sublist(
-      startIndex,
-      endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
-    );
-
-    // Responsive padding - matching dashboard screen
-    final horizontalPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 12.0
-        : 24.0;
-    final verticalPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 12.0
-        : 8.0;
-    final sectionSpacing = isSmallMobile
-        ? 16.0
-        : isMobile
-        ? 24.0
-        : 12.0;
-
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen (solid obsidian)
-        Container(
-          color: ChoiceLuxTheme.jetBlack,
-        ),
-        // Layer 2: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          backgroundColor: Colors.transparent, // CRITICAL
-          appBar: LuxuryAppBar(
-            title: 'Jobs',
-            showBackButton: true,
-            onBackPressed: () => context.go('/'),
-          ),
-          drawer: const LuxuryDrawer(),
-          body: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
+      return Stack(
+        children: [
+          Container(color: ChoiceLuxTheme.jetBlack),
+          SystemSafeScaffold(
+            backgroundColor: Colors.transparent,
+            appBar: LuxuryAppBar(
+              title: 'Jobs',
+              showBackButton: true,
+              onBackPressed: () => context.go('/'),
             ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 1200),
-                child: Column(
-                  children: [
-                    // Enhanced Filter Section with better mobile layout
-                    _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
-
-                    SizedBox(height: sectionSpacing),
-
-                    // Enhanced Search Section
-                    _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
-
-                    SizedBox(height: sectionSpacing * 0.5),
-
-                    // Results count with better mobile optimization
-                    _buildResultsCount(
-                      filteredJobs.length,
-                      isSmallMobile,
-                      isMobile,
-                      isTablet,
-                      isDesktop,
-                    ),
-
-                    SizedBox(height: sectionSpacing),
-
-                    // Enhanced Jobs list with better responsive behavior
-                    paginatedJobs.isEmpty
-                        ? _buildEmptyState(
-                            isSmallMobile,
-                            isMobile,
-                            isTablet,
-                            isDesktop,
-                          )
-                        : clientsAsync.when(
-                            data: (clients) => _buildJobsList(
-                              paginatedJobs,
-                              clients,
-                              (vehiclesState.value ?? []),
-                              (users.value ?? []),
-                              isSmallMobile,
-                              isMobile,
-                              isTablet,
-                              isDesktop,
-                              canCreateVoucher,
-                              canCreateInvoice,
-                            ),
-                            loading: () => _buildLoadingState(
-                              isSmallMobile,
-                              isMobile,
-                              isTablet,
-                              isDesktop,
-                            ),
-                            error: (error, stack) => _buildErrorState(
-                              error,
-                              isSmallMobile,
-                              isMobile,
-                              isTablet,
-                              isDesktop,
-                            ),
-                          ),
-
-                    SizedBox(height: sectionSpacing),
-
-                    // Enhanced Pagination with better mobile layout
-                    if (totalPages > 1)
-                      _buildPaginationSection(
-                        totalPages,
+            drawer: const LuxuryDrawer(),
+            body: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: Column(
+                    children: [
+                      _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
+                      SizedBox(height: sectionSpacing),
+                      _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
+                      SizedBox(height: sectionSpacing * 0.5),
+                      _buildResultsCount(
                         filteredJobs.length,
                         isSmallMobile,
                         isMobile,
                         isTablet,
                         isDesktop,
                       ),
-                  ],
+                      SizedBox(height: sectionSpacing),
+                      paginatedJobs.isEmpty
+                          ? _buildEmptyState(
+                              isSmallMobile,
+                              isMobile,
+                              isTablet,
+                              isDesktop,
+                            )
+                          : clientsAsync.when(
+                              data: (clients) => _buildJobsList(
+                                paginatedJobs,
+                                clients,
+                                (vehiclesState.value ?? []),
+                                (users.value ?? []),
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                                canCreateVoucher,
+                                canCreateInvoice,
+                              ),
+                              loading: () => _buildLoadingState(
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                              ),
+                              error: (error, stack) => _buildErrorState(
+                                error,
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                              ),
+                            ),
+                      SizedBox(height: sectionSpacing),
+                      if (totalPages > 1)
+                        _buildPaginationSection(
+                          totalPages,
+                          filteredJobs.length,
+                          isSmallMobile,
+                          isMobile,
+                          isTablet,
+                          isDesktop,
+                        ),
+                    ],
+                  ),
                 ),
               ),
             ),
           ),
+        ],
+      );
+    } catch (e, stackTrace) {
+      Log.e('Jobs build error: $e', e, stackTrace);
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        appBar: const LuxuryAppBar(
+          title: 'Jobs',
+          subtitle: 'ERROR',
+          showBackButton: true,
         ),
-      ],
-    );
+        body: const Center(
+          child: Text(
+            'An unexpected error occurred while rendering Jobs.',
+            style: TextStyle(color: Colors.redAccent),
+          ),
+        ),
+      );
+    }
   }
 
   // Enhanced Filter Section
