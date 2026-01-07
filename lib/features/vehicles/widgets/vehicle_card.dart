@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 
 class VehicleCard extends StatelessWidget {
   final Vehicle vehicle;
@@ -81,7 +81,7 @@ class VehicleCard extends StatelessWidget {
                         ),
                         child: Text(
                           'ACTIVE',
-                          style: GoogleFonts.inter(
+                          style: interSafe(
                             color: Colors.white,
                             fontSize: isMobile ? 9 : 11,
                             fontWeight: FontWeight.w600,
@@ -105,7 +105,7 @@ class VehicleCard extends StatelessWidget {
                         Expanded(
                           child: Text(
                             '${vehicle.make} ${vehicle.model}',
-                            style: GoogleFonts.outfit(
+                            style: outfitSafe(
                               fontSize: isSmallMobile ? 14.0 : (isMobile ? 16.0 : 20.0),
                               fontWeight: FontWeight.w700,
                               color: ChoiceLuxTheme.softWhite,
@@ -142,7 +142,7 @@ class VehicleCard extends StatelessWidget {
                       ),
                       child: Text(
                         vehicle.regPlate,
-                        style: GoogleFonts.inter(
+                        style: interSafe(
                           fontSize: isSmallMobile ? 11.0 : (isMobile ? 12.0 : 14.0),
                           fontWeight: FontWeight.w500,
                           color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.9),
@@ -177,7 +177,7 @@ class VehicleCard extends StatelessWidget {
                             const SizedBox(width: 4),
                             Text(
                               vehicle.branchId!,
-                              style: GoogleFonts.inter(
+                              style: interSafe(
                                 fontSize: isSmallMobile ? 10.0 : (isMobile ? 11.0 : 12.0),
                                 fontWeight: FontWeight.w500,
                                 color: ChoiceLuxTheme.richGold,

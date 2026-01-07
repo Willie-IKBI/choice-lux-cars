@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/app/theme_helpers.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 
 class DashboardCard extends StatefulWidget {
   final IconData icon;
@@ -193,7 +193,7 @@ class _DashboardCardState extends State<DashboardCard>
                             // Title - gold color to match reference images (Outfit font)
                             Text(
                               widget.title,
-                              style: GoogleFonts.outfit(
+                              style: outfitSafe(
                                 fontWeight: FontWeight.w700,
                                 color: iconColor,
                                 fontSize: isMobile ? 13.0 : 14.0,
@@ -208,7 +208,7 @@ class _DashboardCardState extends State<DashboardCard>
                               SizedBox(height: 4),
                               Text(
                                 widget.subtitle!,
-                                style: GoogleFonts.inter(
+                                style: interSafe(
                                   color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
                                   fontWeight: FontWeight.w400,
                                   fontSize: isMobile ? 10.0 : 11.0,

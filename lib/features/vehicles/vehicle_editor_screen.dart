@@ -6,7 +6,7 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:intl/intl.dart';
 
@@ -456,7 +456,7 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
             const SizedBox(width: 12),
             Text(
               title,
-              style: GoogleFonts.inter(
+              style: interSafe(
                 fontWeight: FontWeight.w600,
                 fontSize: 14,
                 color: ChoiceLuxTheme.softWhite,

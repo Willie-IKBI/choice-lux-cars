@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -115,7 +115,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   // Title and Subtitle
                                   Text(
                                     'Sign Up',
-                                    style: GoogleFonts.outfit(
+                                    style: outfitSafe(
                                       fontSize: isMobile ? 28.0 : 32.0,
                                       fontWeight: FontWeight.w700,
                                       color: ChoiceLuxTheme.softWhite,
@@ -124,7 +124,7 @@ class _SignupScreenState extends ConsumerState<SignupScreen> {
                                   const SizedBox(height: 8),
                                   Text(
                                     'Create your account',
-                                    style: GoogleFonts.inter(
+                                    style: interSafe(
                                       fontSize: isMobile ? 12.0 : 14.0,
                                       fontWeight: FontWeight.w400,
                                       color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),

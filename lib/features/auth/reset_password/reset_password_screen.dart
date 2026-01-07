@@ -2,7 +2,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -202,7 +202,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     // Title
                                     Text(
                                       'Create New Password',
-                                      style: GoogleFonts.outfit(
+                                      style: outfitSafe(
                                         fontSize: 28,
                                         fontWeight: FontWeight.w700,
                                         color: ChoiceLuxTheme.softWhite,
@@ -214,7 +214,7 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
                                     // Subtitle
                                     Text(
                                       'Please enter your new password below.',
-                                      style: GoogleFonts.inter(
+                                      style: interSafe(
                                         fontSize: 16,
                                         color: ChoiceLuxTheme.platinumSilver
                                             .withOpacity(0.8),

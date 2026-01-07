@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:choice_lux_cars/shared/typography.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
@@ -138,7 +138,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           // Title and Subtitle
           Text(
             'Forgot Password',
-            style: GoogleFonts.outfit(
+            style: outfitSafe(
               fontSize: isMobile ? 28.0 : 32.0,
               fontWeight: FontWeight.w700,
               color: ChoiceLuxTheme.softWhite,
@@ -147,7 +147,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
           const SizedBox(height: 8),
           Text(
             'Enter your email address',
-            style: GoogleFonts.inter(
+            style: interSafe(
               fontSize: isMobile ? 12.0 : 14.0,
               fontWeight: FontWeight.w400,
               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
@@ -305,7 +305,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         // Success title
         Text(
           'Email Sent',
-          style: GoogleFonts.outfit(
+          style: outfitSafe(
             fontSize: isMobile ? 28.0 : 32.0,
             fontWeight: FontWeight.w700,
             color: ChoiceLuxTheme.softWhite,
@@ -314,7 +314,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
         const SizedBox(height: 8),
         Text(
           'Check your inbox',
-          style: GoogleFonts.inter(
+          style: interSafe(
             fontSize: isMobile ? 12.0 : 14.0,
             fontWeight: FontWeight.w400,
             color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
