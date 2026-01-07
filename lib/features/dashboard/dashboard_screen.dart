@@ -28,10 +28,23 @@ class DashboardScreen extends ConsumerStatefulWidget {
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+  bool _didInit = false;
 
   @override
   void initState() {
     super.initState();
+    // Initialize notification provider and deadline service once after first frame
+    // This prevents multiple initializations on every rebuild
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_didInit) return;
+      _didInit = true;
+      try {
+        ref.read(notificationProvider.notifier).initialize();
+        _startDeadlineCheckService(ref);
+      } catch (e) {
+        Log.e('Dashboard - Error in initState postFrameCallback: $e');
+      }
+    });
   }
 
   void _startDeadlineCheckService(WidgetRef ref) {
@@ -62,16 +75,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       Log.d('Dashboard - Main build - User role: ${userProfile?.role}');
       Log.d('Dashboard - Main build - Current user: ${currentUser?.email}');
 
-      // Initialize notification provider once when dashboard loads
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        try {
-          ref.read(notificationProvider.notifier).initialize();
-          // Start deadline check service for admin/manager/driver_manager
-          _startDeadlineCheckService(ref);
-        } catch (e) {
-          Log.e('Dashboard - Error in postFrameCallback: $e');
-        }
-      });
+      // Note: Initialization moved to initState() to prevent multiple calls on rebuild
       final screenWidth = MediaQuery.of(context).size.width;
       final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
 

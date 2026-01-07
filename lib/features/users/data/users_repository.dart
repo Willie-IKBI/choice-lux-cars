@@ -72,12 +72,48 @@ class UsersRepository {
     try {
       Log.d('Updating user profile: $userId');
 
-      await _supabase.from('profiles').update(data).eq('id', userId);
+      // Whitelist allowed fields to prevent 400 errors from invalid/immutable columns
+      const allowedKeys = {
+        'display_name',
+        'role',
+        'status',
+        'branch_id',
+        'profile_image',
+        'fcm_token',
+        'fcm_token_web',
+        'driver_licence',
+        'pdp',
+      };
+
+      final cleanData = <String, dynamic>{};
+      data.forEach((key, value) {
+        if (value == null) return;
+        if (value is String && value.isEmpty) return;
+        if (allowedKeys.contains(key)) cleanData[key] = value;
+      });
+
+      if (cleanData.isEmpty) {
+        Log.d('No valid profile fields to update for user: $userId');
+        return const Result.success(null);
+      }
+
+      Log.d('Updating profile with data: $cleanData');
+
+      await _supabase.from('profiles').update(cleanData).eq('id', userId);
 
       Log.d('User profile updated successfully');
       return const Result.success(null);
     } catch (error) {
-      Log.e('Error updating user profile: $error');
+      // Enhanced error logging to help debug 400 errors
+      if (error is PostgrestException) {
+        Log.e('Error updating user profile (PostgrestException): ${error.message}');
+        Log.e('Error details: ${error.details}');
+        Log.e('Error hint: ${error.hint}');
+        Log.e('Error code: ${error.code}');
+      } else {
+        Log.e('Error updating user profile: $error');
+        Log.e('Error type: ${error.runtimeType}');
+      }
       return _mapSupabaseError(error);
     }
   }
