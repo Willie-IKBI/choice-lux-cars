@@ -483,6 +483,15 @@ final isAuthenticatedProvider = Provider<bool>((ref) {
 final currentUserProvider = Provider<User?>((ref) {
   try {
     final authState = ref.watch(authProvider);
+    // Check for error state before accessing .value to prevent exceptions
+    if (authState.hasError) {
+      Log.e('Error in authProvider: ${authState.error}');
+      return null;
+    }
+    // Check for loading state - return null while loading
+    if (authState.isLoading) {
+      return null;
+    }
     return authState.value;
   } catch (e) {
     Log.e('Error in currentUserProvider: $e');
@@ -493,6 +502,15 @@ final currentUserProvider = Provider<User?>((ref) {
 final currentUserProfileProvider = Provider<UserProfile?>((ref) {
   try {
     final profileState = ref.watch(userProfileProvider);
+    // Check for error state before accessing .value to prevent exceptions
+    if (profileState.hasError) {
+      Log.e('Error in userProfileProvider: ${profileState.error}');
+      return null;
+    }
+    // Check for loading state - return null while loading
+    if (profileState.isLoading) {
+      return null;
+    }
     return profileState.value;
   } catch (e) {
     Log.e('Error in currentUserProfileProvider: $e');

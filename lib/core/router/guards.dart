@@ -152,8 +152,10 @@ class RouterGuards {
     required bool hasError,
     required bool isPasswordRecovery,
     required String? userRole,
+    String? userStatus,
+    String? userBranchId,
   }) {
-    Log.d('Router Guard - Checking route: $currentRoute, user: ${user?.id}, isPasswordRecovery: $isPasswordRecovery, isLoading: $isLoading, hasError: $hasError');
+    Log.d('Router Guard - Checking route: $currentRoute, user: ${user?.id}, role: $userRole, status: $userStatus, branch: $userBranchId, isPasswordRecovery: $isPasswordRecovery, isLoading: $isLoading, hasError: $hasError');
     
     // Don't redirect while loading
     if (isLoading) {
@@ -202,19 +204,54 @@ class RouterGuards {
       return '/login';
     }
 
-    // User is authenticated, check role assignment
-    if (userRole == null || userRole == 'unassigned') {
+    // Check if user is admin (super_admin or administrator) - admins bypass branch/status checks
+    final roleLower = userRole?.toLowerCase();
+    final isAdmin = roleLower == 'super_admin' || roleLower == 'administrator';
+    
+    // If admin, allow access (they can manage users without branch assignment)
+    if (isAdmin) {
+      // If on auth routes or pending page, redirect to dashboard
+      if (publicRoutes.contains(currentRoute) ||
+          currentRoute == '/pending-approval') {
+        Log.d(
+          'Router Guard - Admin user on auth route, redirecting to dashboard',
+        );
+        return '/';
+      }
+      // Allow admin access to protected routes
+      Log.d('Router Guard - Admin user, allowing access');
+      return null;
+    }
+    
+    // For non-admin users, check role, status, and branch assignment
+    // IMPORTANT: Only redirect if we have a user but missing assignment data
+    // If userRole/userStatus/userBranchId are null due to error state, don't redirect
+    // This prevents redirecting users who are actually assigned but profile failed to load
+    final isUnassigned = userRole == null || userRole == 'unassigned';
+    final isNotActive = userStatus == null || userStatus != 'active';
+    final hasNoBranch = userBranchId == null || userBranchId.isEmpty;
+    
+    // Only redirect if user is authenticated AND we have confirmed they are unassigned
+    // If userRole is null but user is authenticated, it might be a loading/error state
+    // In that case, allow access to dashboard to let it handle the error gracefully
+    if (isUnassigned || isNotActive || hasNoBranch) {
+      // If we're on the dashboard and profile data is missing, allow access
+      // The dashboard will handle the error state gracefully
+      if (currentRoute == '/') {
+        Log.d('Router Guard - User data incomplete but on dashboard, allowing access to handle error gracefully');
+        return null;
+      }
       if (currentRoute == '/pending-approval') {
-        Log.d('Router Guard - User not assigned, but on pending approval route');
+        Log.d('Router Guard - User not fully assigned (role: $userRole, status: $userStatus, branch: $userBranchId), but on pending approval route');
         return null; // Allow access to pending approval route
       }
       Log.d(
-        'Router Guard - User not assigned, redirecting to pending approval',
+        'Router Guard - User not fully assigned (role: $userRole, status: $userStatus, branch: $userBranchId), redirecting to pending approval',
       );
       return '/pending-approval';
     }
 
-    // If user is assigned but on auth routes, redirect to dashboard
+    // If user is fully assigned but on auth routes, redirect to dashboard
     if (publicRoutes.contains(currentRoute) ||
         currentRoute == '/pending-approval') {
       Log.d(

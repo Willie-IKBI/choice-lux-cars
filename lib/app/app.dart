@@ -72,6 +72,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
   @override
   Widget build(BuildContext context) {
     final authState = ref.watch(authProvider);
+    final userProfileState = ref.watch(userProfileProvider);
     final userProfile = ref.watch(currentUserProfileProvider);
     final authNotifier = ref.read(authProvider.notifier);
 
@@ -89,7 +90,7 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
         darkTheme: ChoiceLuxTheme.darkTheme,
         themeMode: ThemeMode.dark,
         debugShowCheckedModeBanner: false,
-        routerConfig: _buildRouter(authState, userProfile, authNotifier),
+        routerConfig: _buildRouter(authState, userProfile, userProfileState, authNotifier),
       ),
     );
   }
@@ -97,19 +98,23 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
   GoRouter _buildRouter(
     AsyncValue authState,
     userProfile,
+    AsyncValue userProfileState,
     AuthNotifier authNotifier,
   ) {
     return GoRouter(
       initialLocation: '/login',
       redirect: (context, state) {
         // Use router guards for cleaner, more maintainable logic
+        // Pass profile error state to prevent redirects when profile fails to load
         return RouterGuards.guardRoute(
           user: authState.value,
           currentRoute: state.matchedLocation,
-          isLoading: authState.isLoading,
-          hasError: authState.hasError,
+          isLoading: authState.isLoading || userProfileState.isLoading,
+          hasError: authState.hasError || userProfileState.hasError,
           isPasswordRecovery: authNotifier.isPasswordRecovery,
           userRole: userProfile?.role,
+          userStatus: userProfile?.status,
+          userBranchId: userProfile?.branchId,
         );
       },
       routes: [

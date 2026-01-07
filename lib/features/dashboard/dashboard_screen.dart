@@ -51,146 +51,215 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currentUser = ref.watch(currentUserProvider);
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final users = ref.watch(usersProvider);
-    final jobs = ref.watch(jobsProvider);
-    
-    print('Dashboard - Main build - User profile: ${userProfile?.displayName}');
-    print('Dashboard - Main build - User role: ${userProfile?.role}');
-    print('Dashboard - Main build - Current user: ${currentUser?.email}');
+    // Wrap entire build in error handling to prevent white screen
+    try {
+      final currentUser = ref.watch(currentUserProvider);
+      final userProfile = ref.watch(currentUserProfileProvider);
+      final users = ref.watch(usersProvider);
+      final jobs = ref.watch(jobsProvider);
+      
+      Log.d('Dashboard - Main build - User profile: ${userProfile?.displayName}');
+      Log.d('Dashboard - Main build - User role: ${userProfile?.role}');
+      Log.d('Dashboard - Main build - Current user: ${currentUser?.email}');
 
-    // Initialize notification provider once when dashboard loads
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      ref.read(notificationProvider.notifier).initialize();
-      // Start deadline check service for admin/manager/driver_manager
-      _startDeadlineCheckService(ref);
-    });
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
+      // Initialize notification provider once when dashboard loads
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        try {
+          ref.read(notificationProvider.notifier).initialize();
+          // Start deadline check service for admin/manager/driver_manager
+          _startDeadlineCheckService(ref);
+        } catch (e) {
+          Log.e('Dashboard - Error in postFrameCallback: $e');
+        }
+      });
+      final screenWidth = MediaQuery.of(context).size.width;
+      final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
 
-    // Get display name from profile, fallback to email, then to 'User'
-    String userName = 'User';
-    if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
-      userName = userProfile.displayNameOrEmail;
-    } else if (currentUser?.email != null) {
-      userName = currentUser!.email!.split('@')[0];
-    }
+      // Get display name from profile, fallback to email, then to 'User'
+      String userName = 'User';
+      if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
+        userName = userProfile.displayNameOrEmail;
+      } else if (currentUser?.email != null) {
+        userName = currentUser!.email!.split('@')[0];
+      }
 
-    // Check user role
-    final userRole = userProfile?.role?.toLowerCase();
-    final isDriver = userRole == 'driver';
-    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
-    final isManager = userRole == 'manager';
-    final isDriverManager = userRole == 'driver_manager';
-    
-    // Safely get jobs list - handle AsyncValue states to prevent white screen
-    final jobsList = jobs.when(
-      data: (data) => data,
-      loading: () => <Job>[],
-      error: (error, stack) {
-        Log.e('Dashboard - Error loading jobs: $error');
-        return <Job>[];
-      },
-    );
+      // Check user role
+      final userRole = userProfile?.role?.toLowerCase();
+      final isDriver = userRole == 'driver';
+      final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+      final isManager = userRole == 'manager';
+      final isDriverManager = userRole == 'driver_manager';
+      
+      // Safely get jobs list - handle AsyncValue states to prevent white screen
+      final jobsList = jobs.when(
+        data: (data) => data,
+        loading: () => <Job>[],
+        error: (error, stack) {
+          Log.e('Dashboard - Error loading jobs: $error');
+          return <Job>[];
+        },
+      );
 
-    // Safely get users list - handle AsyncValue states to prevent white screen
-    final usersList = users.when(
-      data: (data) => data,
-      loading: () => <User>[],
-      error: (error, stack) {
-        Log.e('Dashboard - Error loading users: $error');
-        return <User>[];
-      },
-    );
+      // Safely get users list - handle AsyncValue states to prevent white screen
+      final usersList = users.when(
+        data: (data) => data,
+        loading: () => <User>[],
+        error: (error, stack) {
+          Log.e('Dashboard - Error loading users: $error');
+          return <User>[];
+        },
+      );
 
-    // Count today's jobs based on role
-    final todayJobsCount = _getTodayJobsCount(
-      jobsList,
-      userProfile,
-      isDriver,
-    );
+      // Count today's jobs based on role
+      final todayJobsCount = _getTodayJobsCount(
+        jobsList,
+        userProfile,
+        isDriver,
+      );
 
-    // Count unassigned users for admin notification
-    final unassignedUsersCount = isAdmin
-        ? usersList
-              .where((user) => user.role == null || user.role == 'unassigned')
-              .length
-        : 0;
+      // Count unassigned users for admin notification
+      final unassignedUsersCount = isAdmin
+          ? usersList
+                .where((user) => user.role == null || user.role == 'unassigned')
+                .length
+          : 0;
 
-    // Responsive padding - provide minimal padding for mobile
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
+      // Responsive padding - provide minimal padding for mobile
+      final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
 
-    final horizontalPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 12.0
-        : 24.0;
-    final verticalPadding = isSmallMobile
-        ? 8.0
-        : isMobile
-        ? 12.0
-        : 8.0; // Further reduced to 8px for desktop
-    final sectionSpacing = isSmallMobile
-        ? 16.0
-        : isMobile
-        ? 24.0
-        : 12.0; // Further reduced to 12px for desktop
+      final horizontalPadding = isSmallMobile
+          ? 8.0
+          : isMobile
+          ? 12.0
+          : 24.0;
+      final verticalPadding = isSmallMobile
+          ? 8.0
+          : isMobile
+          ? 12.0
+          : 8.0; // Further reduced to 8px for desktop
+      final sectionSpacing = isSmallMobile
+          ? 16.0
+          : isMobile
+          ? 24.0
+          : 12.0; // Further reduced to 12px for desktop
 
-    return Stack(
-      children: [
-        // Layer 1: The background that fills the entire screen (solid obsidian)
-        Container(
-          color: ChoiceLuxTheme.jetBlack,
-        ),
-        // Layer 2: The SystemSafeScaffold with proper system UI handling
-        SystemSafeScaffold(
-          scaffoldKey: _scaffoldKey,
-          backgroundColor: Colors.transparent, // CRITICAL
-          appBar: LuxuryAppBar(
-            title: 'Dashboard',
-            subtitle: 'OVERVIEW & STATISTICS',
-            showLogo: true,
-            showProfile: true,
-            onNotificationTap: _handleNotifications,
-            onMenuTap: () {
-              if (isMobile) {
-                _showMobileDrawer(context);
-              } else {
-                _scaffoldKey.currentState?.openDrawer();
-              }
-            },
-            onSignOut: () async {
-              await ref.read(authProvider.notifier).signOut();
-            },
+      return Stack(
+        children: [
+          // Layer 1: The background that fills the entire screen (solid obsidian)
+          Container(
+            color: ChoiceLuxTheme.jetBlack,
           ),
-          drawer: isMobile ? null : LuxuryDrawer(),
-          body: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: horizontalPadding,
-              vertical: verticalPadding,
+          // Layer 2: The SystemSafeScaffold with proper system UI handling
+          SystemSafeScaffold(
+            scaffoldKey: _scaffoldKey,
+            backgroundColor: Colors.transparent, // CRITICAL
+            appBar: LuxuryAppBar(
+              title: 'Dashboard',
+              subtitle: 'OVERVIEW & STATISTICS',
+              showLogo: true,
+              showProfile: true,
+              onNotificationTap: _handleNotifications,
+              onMenuTap: () {
+                if (isMobile) {
+                  _showMobileDrawer(context);
+                } else {
+                  _scaffoldKey.currentState?.openDrawer();
+                }
+              },
+              onSignOut: () async {
+                await ref.read(authProvider.notifier).signOut();
+              },
             ),
+            drawer: isMobile ? null : LuxuryDrawer(),
+            body: SingleChildScrollView(
+              padding: EdgeInsets.symmetric(
+                horizontal: horizontalPadding,
+                vertical: verticalPadding,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Welcome Section
+                  _buildWelcomeSection(context, userName),
+                  SizedBox(height: sectionSpacing),
+
+
+                  // Dashboard Cards
+                  _buildDashboardCards(
+                    context,
+                    todayJobsCount,
+                    unassignedUsersCount,
+                  ),
+                  SizedBox(height: sectionSpacing),
+                ],
+              ),
+            ),
+          ),
+        ],
+      );
+    } catch (e, stackTrace) {
+      // Catch any unhandled exceptions to prevent white screen
+      Log.e('Dashboard build error: $e', stackTrace: stackTrace);
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        appBar: LuxuryAppBar(
+          title: 'Dashboard',
+          subtitle: 'ERROR',
+          showLogo: true,
+          showProfile: false,
+        ),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Welcome Section
-                _buildWelcomeSection(context, userName),
-                SizedBox(height: sectionSpacing),
-
-
-                // Dashboard Cards
-                _buildDashboardCards(
-                  context,
-                  todayJobsCount,
-                  unassignedUsersCount,
+                Icon(
+                  Icons.error_outline,
+                  color: ChoiceLuxTheme.errorColor,
+                  size: 64,
                 ),
-                SizedBox(height: sectionSpacing),
+                const SizedBox(height: 24),
+                Text(
+                  'Error loading dashboard',
+                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                    color: ChoiceLuxTheme.softWhite,
+                    fontWeight: FontWeight.bold,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Please try refreshing the page or contact support if the problem persists.',
+                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 32),
+                ElevatedButton(
+                  onPressed: () {
+                    // Refresh the dashboard by invalidating providers
+                    ref.invalidate(usersProvider);
+                    ref.invalidate(jobsProvider);
+                    ref.invalidate(userProfileProvider);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.black,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 24,
+                      vertical: 12,
+                    ),
+                  ),
+                  child: const Text('Retry'),
+                ),
               ],
             ),
           ),
         ),
-      ],
-    );
+      );
+    }
   }
 
   // Get today's jobs count based on user role
@@ -305,18 +374,18 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     int todayJobsCount,
     int unassignedUsersCount,
   ) {
-    print('Dashboard - _buildDashboardCards called');
+    Log.d('Dashboard - _buildDashboardCards called');
     final userProfile = ref.watch(currentUserProfileProvider);
-    final users = ref.watch(usersProvider);
+    // Removed unused usersProvider watch - unassignedUsersCount is already calculated in build()
     final userRole = userProfile?.role?.toLowerCase();
     final isDriver = userRole == 'driver';
     final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
     
-    print('Dashboard - User profile: ${userProfile?.displayName}');
-    print('Dashboard - User role: $userRole');
-    print('Dashboard - isAdmin: $isAdmin, isManager: $isManager, isDriver: $isDriver');
+    Log.d('Dashboard - User profile: ${userProfile?.displayName}');
+    Log.d('Dashboard - User role: $userRole');
+    Log.d('Dashboard - isAdmin: $isAdmin, isManager: $isManager, isDriver: $isDriver');
 
     // Build dashboard items based on role
     List<DashboardItem> dashboardItems = [];
@@ -386,7 +455,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       
       // Add Insights card for admin users
       if (isAdmin) {
-        print('Dashboard - Adding Insights card for admin user');
+        Log.d('Dashboard - Adding Insights card for admin user');
         dashboardItems.add(
           DashboardItem(
             title: 'Insights',
@@ -397,7 +466,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         );
       } else {
-        print('Dashboard - NOT adding Insights card - user is not admin');
+        Log.d('Dashboard - NOT adding Insights card - user is not admin');
       }
     }
 
