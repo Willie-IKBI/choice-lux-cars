@@ -103,6 +103,8 @@ flutter:
     - assets/images/
     - assets/fonts/
     - assets/pdf_templates/
+    # Compatibility: some packages still load this via rootBundle on web.
+    - AssetManifest.json
 
   # An image asset can refer to one or more resolution-specific "variants", see
   # https://flutter.dev/to/resolution-aware-images
