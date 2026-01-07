@@ -51,21 +51,13 @@ class JobsRepository {
         return const Result.success([]);
       }
 
-      // Performance optimization: Filter out open/assigned jobs older than 3 days at database level
-      // This prevents loading stale open jobs and improves query performance
-      // Logic: Exclude jobs where (status = 'open' OR status = 'assigned') AND job_start_date < 3 days ago
-      // Since Supabase OR filters can't easily express (A AND B) OR C, we use a simpler approach:
-      // Filter to include: status NOT IN ('open', 'assigned') OR job_start_date >= 3 days ago
-      final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
-      final threeDaysAgoDate = threeDaysAgo.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
-      
-      // Build OR condition: (status not 'open' and not 'assigned') OR (job_start_date >= 3 days ago)
-      // Using Postgrest's OR syntax: any of these conditions must be true
-      query = query.or('status.neq.open,status.neq.assigned,job_start_date.gte.$threeDaysAgoDate');
+      // Note: We don't apply date filtering here in fetchJobs() because this method is used
+      // to fetch all jobs, which are then filtered by the UI. Date filtering for open/assigned
+      // jobs older than 3 days is handled in getJobsByStatus() when specifically fetching by status.
 
       final response = await query.order('created_at', ascending: false);
 
-      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole (excluding open jobs older than 3 days)');
+      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole');
       
       // Debug: Log the actual query being executed for drivers
       if (userRole == 'driver') {

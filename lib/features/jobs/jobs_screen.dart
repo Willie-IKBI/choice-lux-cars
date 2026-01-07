@@ -1007,7 +1007,27 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             .where((job) => job.status == 'open' || job.status == 'assigned')
             .toList();
         
-        // Apply date filter if selected
+        // Performance optimization: Exclude open/assigned jobs older than 3 days
+        // This improves UI performance by filtering out stale open jobs
+        final threeDaysAgo = now.subtract(const Duration(days: 3));
+        openJobs = openJobs.where((job) {
+          // Compare dates only (ignore time) for accurate day-based filtering
+          final jobDate = DateTime(
+            job.jobStartDate.year,
+            job.jobStartDate.month,
+            job.jobStartDate.day,
+          );
+          final cutoffDate = DateTime(
+            threeDaysAgo.year,
+            threeDaysAgo.month,
+            threeDaysAgo.day,
+          );
+          // Include jobs with job_start_date >= (today - 3 days)
+          // This means: include jobs from the last 3 days or future dates
+          return !jobDate.isBefore(cutoffDate);
+        }).toList();
+        
+        // Apply date filter if selected (yesterday/today/tomorrow)
         if (_openJobsDateFilter != null) {
           final dateRange = _getDateRange(_openJobsDateFilter!);
           openJobs = openJobs.where((job) {
