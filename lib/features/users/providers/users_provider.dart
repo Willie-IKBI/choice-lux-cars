@@ -37,8 +37,15 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
   }
 
   Future<void> updateUser(User user) async {
-    await _repo.updateUser(user);
-    await fetchUsers();
+    Log.d('UsersNotifier: Updating user ${user.id} with status: ${user.status}');
+    final result = await _repo.updateUser(user);
+    if (result.isSuccess) {
+      Log.d('UsersNotifier: User updated successfully, refreshing users list');
+      await fetchUsers();
+    } else {
+      Log.e('UsersNotifier: Failed to update user: ${result.error?.message}');
+      throw Exception(result.error?.message ?? 'Failed to update user');
+    }
   }
 
   Future<String> uploadProfileImage(XFile file, String userId) async {

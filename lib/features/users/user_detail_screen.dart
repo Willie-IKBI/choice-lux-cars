@@ -93,10 +93,27 @@ class UserDetailScreen extends ConsumerWidget {
                           }
                         : null,
                     onSave: (updatedUser) async {
-                      await usersNotifier.updateUser(updatedUser);
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('User updated successfully')),
-                      );
+                      try {
+                        Log.d('UserDetailScreen: Saving user with status: ${updatedUser.status}, role: ${updatedUser.role}, branch: ${updatedUser.branchId}');
+                        await usersNotifier.updateUser(updatedUser);
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('User updated successfully')),
+                          );
+                          // Navigate back to users list to see refreshed data
+                          context.go('/users');
+                        }
+                      } catch (e) {
+                        Log.e('UserDetailScreen: Error updating user: $e');
+                        if (context.mounted) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('Error updating user: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      }
                     },
                   ),
                 ),

@@ -220,9 +220,14 @@ class UsersRepository {
   /// Update user
   Future<Result<void>> updateUser(User user) async {
     try {
-      Log.d('Updating user: ${user.id}');
+      Log.d('UsersRepository: Updating user: ${user.id}');
+      Log.d('UsersRepository: User status before update: ${user.status}');
+      Log.d('UsersRepository: User role before update: ${user.role}');
+      Log.d('UsersRepository: User branch before update: ${user.branchId}');
 
       final data = user.toJson();
+      Log.d('UsersRepository: Full toJson data: $data');
+      
       // Remove id and user_email from update data
       // id is the primary key and cannot be updated
       // user_email is tied to auth system and shouldn't be updated here
@@ -245,14 +250,14 @@ class UsersRepository {
       });
       
       // Log the data being sent for debugging
-      Log.d('Updating profile with data: $cleanData');
+      Log.d('UsersRepository: Clean data being sent to Supabase: $cleanData');
       
       await _supabase
           .from('profiles')
           .update(cleanData)
           .eq('id', user.id);
 
-      Log.d('User updated successfully');
+      Log.d('UsersRepository: User updated successfully in database');
       return const Result.success(null);
     } catch (error) {
       // Enhanced error logging to help debug 400 errors
