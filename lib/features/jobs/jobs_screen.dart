@@ -68,7 +68,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
 
       final jobs = ref.watch(jobsProvider);
-      final canCreateJobs = ref.watch(jobsProvider.notifier).canCreateJobs;
+      
+      // Check if user can create jobs based on role (moved from notifier to avoid LateInitializationError)
+      final userProfileForPermissions = ref.watch(currentUserProfileProvider);
+      final userRoleForPermissions = userProfileForPermissions?.role?.toLowerCase();
+      final canCreateJobs = userRoleForPermissions == 'administrator' ||
+          userRoleForPermissions == 'super_admin' ||
+          userRoleForPermissions == 'manager' ||
+          userRoleForPermissions == 'driver_manager' ||
+          userRoleForPermissions == 'drivermanager';
 
       // Load related data
       final vehiclesState = ref.watch(vehiclesProvider);
@@ -222,10 +230,14 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           subtitle: 'ERROR',
           showBackButton: true,
         ),
-        body: const Center(
-          child: Text(
-            'An unexpected error occurred while rendering Jobs.',
-            style: TextStyle(color: Colors.redAccent),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              'Jobs build error: $e',
+              style: const TextStyle(color: Colors.redAccent),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );

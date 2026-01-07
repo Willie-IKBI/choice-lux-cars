@@ -184,10 +184,14 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           subtitle: 'ERROR',
           showBackButton: true,
         ),
-        body: const Center(
-          child: Text(
-            'An unexpected error occurred while rendering Users.',
-            style: TextStyle(color: Colors.redAccent),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Text(
+              'Users build error: $e',
+              style: const TextStyle(color: Colors.redAccent),
+              textAlign: TextAlign.center,
+            ),
           ),
         ),
       );

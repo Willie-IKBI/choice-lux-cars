@@ -33,14 +33,23 @@
   <link rel="manifest" href="manifest.json">
   <script>
     if ('serviceWorker' in navigator) {
-      window.addEventListener('load', function() {
-        var base = document.querySelector('base');
-        var baseHref = base && base.getAttribute('href') ? base.getAttribute('href') : '/';
-        var swPath = (baseHref.endsWith('/') ? baseHref : baseHref + '/') + 'firebase-messaging-sw.js';
-        navigator.serviceWorker.register(swPath).catch(function(err){
-          console.error('ServiceWorker registration failed:', err);
+      // Option A: Flutter Service Worker only.
+      // Do NOT register firebase-messaging-sw.js here (it conflicts with Flutter's SW and can break routing/assets).
+      // Cleanup: if a firebase-messaging SW was previously registered, unregister it to prevent stale control.
+      navigator.serviceWorker.getRegistrations()
+        .then(function (registrations) {
+          registrations.forEach(function (reg) {
+            var url =
+              (reg.active && reg.active.scriptURL) ||
+              (reg.installing && reg.installing.scriptURL) ||
+              (reg.waiting && reg.waiting.scriptURL) ||
+              '';
+            if (url.indexOf('firebase-messaging-sw.js') !== -1) reg.unregister();
+          });
+        })
+        .catch(function (err) {
+          console.warn('ServiceWorker cleanup failed:', err);
         });
-      });
     }
   </script>
 </head>

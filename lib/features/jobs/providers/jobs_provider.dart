@@ -8,19 +8,17 @@ import 'package:choice_lux_cars/features/notifications/services/notification_ser
 /// Notifier for managing jobs state using AsyncNotifier
 class JobsNotifier extends AsyncNotifier<List<Job>> {
   late final JobsRepository _jobsRepository;
-  late final Ref _ref;
 
   @override
   Future<List<Job>> build() async {
     _jobsRepository = ref.watch(jobsRepositoryProvider);
-    _ref = ref;
     _checkPermissions();
     return _fetchJobs();
   }
 
   /// Check if current user can create jobs
   void _checkPermissions() {
-    final userProfile = _ref.read(currentUserProfileProvider);
+    final userProfile = ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
 
     final canCreate =
@@ -38,7 +36,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Fetching jobs...');
 
-      final userProfile = _ref.read(currentUserProfileProvider);
+      final userProfile = ref.read(currentUserProfileProvider);
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
 
@@ -209,7 +207,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       }
 
       // Get user context for role-based filtering
-      final userProfile = _ref.read(currentUserProfileProvider);
+      final userProfile = ref.read(currentUserProfileProvider);
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
 
@@ -254,7 +252,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       Log.d('Getting jobs by client: $clientId');
 
       // Get user context for role-based filtering
-      final userProfile = _ref.read(currentUserProfileProvider);
+      final userProfile = ref.read(currentUserProfileProvider);
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
 
@@ -295,7 +293,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
 
   /// Check if current user can create jobs
   bool get canCreateJobs {
-    final userProfile = _ref.read(currentUserProfileProvider);
+    final userProfile = ref.read(currentUserProfileProvider);
     final userRole = userProfile?.role?.toLowerCase();
 
     return userRole == 'administrator' ||

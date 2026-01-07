@@ -20,6 +20,7 @@ file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/core/services/upload_service.da
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/core/supabase/supabase_client_provider.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/core/types/result.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/core/utils/auth_error_utils.dart
+file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/core/utils/branch_utils.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/auth/forgot_password/forgot_password_screen.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/auth/login/login_screen.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/auth/pending_approval_screen.dart
@@ -84,6 +85,7 @@ file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/services/job_assi
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/add_trip_modal.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/address_display_widget.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/gps_capture_widget.dart
+file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/job_card.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/job_list_card.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/odometer_capture_widget.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/trip_edit_modal.dart
@@ -133,6 +135,7 @@ file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/vouchers/widgets/vouch
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/main.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/screens/pdf_viewer_screen.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/services/pdf_viewer_service.dart
+file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/typography.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/utils/background_pattern_utils.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/utils/date_utils.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/shared/utils/driver_flow_utils.dart
