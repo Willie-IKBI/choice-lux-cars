@@ -865,6 +865,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Widget _buildTripSelector() {
     if (_trips.isEmpty) return const SizedBox.shrink();
     
+    // Get user role for hiding amounts
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
@@ -938,7 +942,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                             ),
                           ),
                           // Hide amount for drivers
-                          if (userProfile?.role?.toLowerCase() != 'driver') ...[
+                          if (!isDriver) ...[
                             const SizedBox(width: 4),
                             Text(
                               'R${trip.amount.toStringAsFixed(0)}',
@@ -1797,21 +1801,24 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripsContent(double totalAmount) {
+    // Get user role for hiding amounts
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
     return Column(
       children: [
         _buildDetailRow('Total Trips', '${_trips.length}', Icons.route),
-        Container(
-          margin: const EdgeInsets.only(top: 8),
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
-            borderRadius: BorderRadius.circular(8),
-            border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha:0.3)),
-          ),
-          child: Row(
-            children: [
-              // Hide total amount for drivers
-              if (userProfile?.role?.toLowerCase() != 'driver') ...[
+        if (!isDriver)
+          Container(
+            margin: const EdgeInsets.only(top: 8),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: ChoiceLuxTheme.richGold.withValues(alpha:0.3)),
+            ),
+            child: Row(
+              children: [
                 Icon(
                   Icons.attach_money,
                   color: ChoiceLuxTheme.richGold,
@@ -1827,14 +1834,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   ),
                 ),
               ],
-            ],
+            ),
           ),
-        ),
       ],
     );
   }
 
   Widget _buildTripsListContent() {
+    // Get user role for hiding amounts
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
     return Column(
       children: _trips.asMap().entries.map((entry) {
         final index = entry.key;
@@ -1869,6 +1879,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripCard(Trip trip, int index) {
+    // Get user role for hiding amounts
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -1916,7 +1930,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                   ),
                   child: Text(
                     // Hide amount for drivers
-                    userProfile?.role?.toLowerCase() == 'driver' 
+                    isDriver 
                         ? 'Trip ${index + 1}' 
                         : 'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
                     style: TextStyle(
@@ -2601,10 +2615,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // Add trip-specific information
         if (selectedTrip != null) {
           if (stepId == 'trip_complete') {
-            // Hide amount for drivers
-            if (userProfile?.role?.toLowerCase() != 'driver') {
-              stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
-            }
             stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
           }
         }
@@ -2643,10 +2653,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // Add trip-specific information
         if (selectedTrip != null) {
           if (stepId == 'trip_complete') {
-            // Hide amount for drivers
-            if (userProfile?.role?.toLowerCase() != 'driver') {
-              stepData['tripAmount'] = 'R${selectedTrip.amount.toStringAsFixed(0)}';
-            }
             stepData['tripDate'] = _formatTripDate(selectedTrip.pickupDate);
           }
         }

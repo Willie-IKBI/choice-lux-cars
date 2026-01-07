@@ -280,6 +280,10 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     final padding = ResponsiveTokens.getPadding(screenWidth);
     final spacing = ResponsiveTokens.getSpacing(screenWidth);
     
+    // Get user role for hiding amounts
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    
     return Card(
       margin: EdgeInsets.only(bottom: spacing * 2),
       child: Padding(
@@ -312,7 +316,7 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
             ),
             const SizedBox(height: 8),
             // Hide amount for drivers
-            if (userProfile?.role?.toLowerCase() != 'driver')
+            if (!isDriver)
               Text('Amount: R${trip.amount.toStringAsFixed(2)}'),
             if (trip.pickupLocation != null)
               Text('Pickup: ${trip.pickupLocation}'),
