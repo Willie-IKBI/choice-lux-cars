@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
+import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/notifications/screens/notification_list_screen.dart';
@@ -83,17 +84,36 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final isManager = userRole == 'manager';
     final isDriverManager = userRole == 'driver_manager';
     
+    // Safely get jobs list - handle AsyncValue states to prevent white screen
+    final jobsList = jobs.when(
+      data: (data) => data,
+      loading: () => <Job>[],
+      error: (error, stack) {
+        Log.e('Dashboard - Error loading jobs: $error');
+        return <Job>[];
+      },
+    );
+
+    // Safely get users list - handle AsyncValue states to prevent white screen
+    final usersList = users.when(
+      data: (data) => data,
+      loading: () => <User>[],
+      error: (error, stack) {
+        Log.e('Dashboard - Error loading users: $error');
+        return <User>[];
+      },
+    );
 
     // Count today's jobs based on role
     final todayJobsCount = _getTodayJobsCount(
-      jobs.value ?? [],
+      jobsList,
       userProfile,
       isDriver,
     );
 
     // Count unassigned users for admin notification
     final unassignedUsersCount = isAdmin
-        ? (users.value ?? [])
+        ? usersList
               .where((user) => user.role == null || user.role == 'unassigned')
               .length
         : 0;
