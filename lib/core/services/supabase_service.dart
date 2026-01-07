@@ -74,18 +74,32 @@ class SupabaseService {
     try {
       Log.d('Updating profile for user: $userId');
 
-      // Filter out null values and empty strings to avoid 400 errors
-      // Supabase REST API doesn't like empty strings for nullable fields
+      // Whitelist allowed profile fields and filter out null/empty values.
+      // Prevents 400s from immutable/unknown columns (e.g., id, email).
+      const allowedKeys = {
+        'display_name',
+        'role',
+        'status',
+        'branch_id',
+        'profile_image',
+        'fcm_token',
+        'fcm_token_web',
+      };
+
       final cleanData = <String, dynamic>{};
       data.forEach((key, value) {
-        if (value != null) {
-          if (value is String && value.isEmpty) {
-            // Skip empty strings - let database use default/null
-            return;
-          }
+        if (value == null) return;
+        if (value is String && value.isEmpty) return;
+        if (allowedKeys.contains(key)) {
           cleanData[key] = value;
         }
       });
+
+      // No-op if nothing valid to update
+      if (cleanData.isEmpty) {
+        Log.d('No valid profile fields to update for user: $userId');
+        return;
+      }
       
       Log.d('Updating profile with data: $cleanData');
 

@@ -42,6 +42,27 @@ class FCMService {
           Log.e('FCMService: Error initializing local notifications: $e');
           // Continue anyway - notifications may still work
         }
+
+        // Create Android notification channel (must exist before FCM shows notifications)
+        try {
+          const AndroidNotificationChannel channel = AndroidNotificationChannel(
+            'choice_lux_cars_channel', // MUST match channelId used in FCM payload
+            'Choice Lux Cars Notifications',
+            description:
+                'Notifications for job updates, assignments, and system alerts',
+            importance: Importance.high,
+            playSound: true,
+          );
+
+          final androidPlugin = _localNotifications
+              .resolvePlatformSpecificImplementation<
+                  AndroidFlutterLocalNotificationsPlugin>();
+
+          await androidPlugin?.createNotificationChannel(channel);
+          Log.d('FCMService: Android notification channel created');
+        } catch (e) {
+          Log.e('FCMService: Error creating notification channel: $e');
+        }
       }
 
       // Request permission
@@ -58,19 +79,17 @@ class FCMService {
 
       if (settings.authorizationStatus == AuthorizationStatus.authorized ||
           settings.authorizationStatus == AuthorizationStatus.provisional) {
-        // Get FCM token and save to user profile
+        // Get FCM token (do not persist here; centralized writer handles saving)
         _currentToken = await _messaging.getToken();
         if (_currentToken != null) {
-          await _saveFCMToken(_currentToken!);
           Log.d(
-            'FCMService: Token saved: ${_currentToken!.substring(0, 20)}...',
+            'FCMService: Token obtained: ${_currentToken!.substring(0, 20)}...',
           );
         }
 
-        // Handle token refresh
+        // Handle token refresh (do not persist here; centralized writer handles saving)
         _messaging.onTokenRefresh.listen((token) async {
           _currentToken = token;
-          await _saveFCMToken(token);
           Log.d('FCMService: Token refreshed: ${token.substring(0, 20)}...');
         });
 
@@ -110,7 +129,7 @@ class FCMService {
     });
   }
 
-  /// Save FCM token to user profile
+  /// Save FCM token to user profile (unused - centralized writer handles saving)
   static Future<void> _saveFCMToken(String token) async {
     try {
       // Get current user ID
@@ -121,9 +140,7 @@ class FCMService {
       }
 
       // Save token to user profile in Supabase (platform-specific)
-      final updateData = <String, dynamic>{
-        'fcm_token_updated_at': SATimeUtils.getCurrentSATimeISO(),
-      };
+      final updateData = <String, dynamic>{};
       
       if (kIsWeb) {
         updateData['fcm_token_web'] = token;
@@ -451,9 +468,6 @@ class FCMService {
   static Future<String?> refreshToken() async {
     try {
       _currentToken = await _messaging.getToken();
-      if (_currentToken != null) {
-        await _saveFCMToken(_currentToken!);
-      }
       return _currentToken;
     } catch (e) {
       Log.e('FCMService: Error refreshing token: $e');

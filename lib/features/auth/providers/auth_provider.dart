@@ -257,7 +257,6 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
         await _supabaseService.updateProfile(
           userId: response.user!.id,
           data: {
-            'id': response.user!.id,
             'display_name': displayName,
             'role': 'unassigned', // New users are unassigned by default
             'status': 'unassigned',
