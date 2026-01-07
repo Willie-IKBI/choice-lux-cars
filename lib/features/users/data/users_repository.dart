@@ -193,15 +193,42 @@ class UsersRepository {
       data.remove('id');
       data.remove('user_email');
       
+      // Filter out null values and empty strings to avoid 400 errors
+      // Supabase REST API doesn't like empty strings for nullable fields
+      final cleanData = <String, dynamic>{};
+      data.forEach((key, value) {
+        // Only include non-null values
+        // Convert empty strings to null for nullable fields
+        if (value != null) {
+          if (value is String && value.isEmpty) {
+            // Skip empty strings - let database use default/null
+            return;
+          }
+          cleanData[key] = value;
+        }
+      });
+      
+      // Log the data being sent for debugging
+      Log.d('Updating profile with data: $cleanData');
+      
       await _supabase
           .from('profiles')
-          .update(data)
+          .update(cleanData)
           .eq('id', user.id);
 
       Log.d('User updated successfully');
       return const Result.success(null);
     } catch (error) {
-      Log.e('Error updating user: $error');
+      // Enhanced error logging to help debug 400 errors
+      if (error is PostgrestException) {
+        Log.e('Error updating user (PostgrestException): ${error.message}');
+        Log.e('Error details: ${error.details}');
+        Log.e('Error hint: ${error.hint}');
+        Log.e('Error code: ${error.code}');
+      } else {
+        Log.e('Error updating user: $error');
+        Log.e('Error type: ${error.runtimeType}');
+      }
       return _mapSupabaseError(error);
     }
   }
