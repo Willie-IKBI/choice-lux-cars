@@ -51,9 +51,21 @@ class JobsRepository {
         return const Result.success([]);
       }
 
+      // Performance optimization: Filter out open/assigned jobs older than 3 days at database level
+      // This prevents loading stale open jobs and improves query performance
+      // Logic: Exclude jobs where (status = 'open' OR status = 'assigned') AND job_start_date < 3 days ago
+      // Since Supabase OR filters can't easily express (A AND B) OR C, we use a simpler approach:
+      // Filter to include: status NOT IN ('open', 'assigned') OR job_start_date >= 3 days ago
+      final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
+      final threeDaysAgoDate = threeDaysAgo.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+      
+      // Build OR condition: (status not 'open' and not 'assigned') OR (job_start_date >= 3 days ago)
+      // Using Postgrest's OR syntax: any of these conditions must be true
+      query = query.or('status.neq.open,status.neq.assigned,job_start_date.gte.$threeDaysAgoDate');
+
       final response = await query.order('created_at', ascending: false);
 
-      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole');
+      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole (excluding open jobs older than 3 days)');
       
       // Debug: Log the actual query being executed for drivers
       if (userRole == 'driver') {
@@ -299,6 +311,18 @@ class JobsRepository {
         // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
+      }
+
+      // Performance optimization: Filter out open/assigned jobs older than 3 days at database level
+      // Only apply this filter when fetching open or assigned status jobs
+      if (status == 'open' || status == 'assigned') {
+        final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
+        final threeDaysAgoDate = threeDaysAgo.toIso8601String().split('T')[0]; // Format as YYYY-MM-DD
+        
+        // Exclude jobs older than 3 days
+        query = query.gte('job_start_date', threeDaysAgoDate);
+        
+        Log.d('Applied date filter: excluding open/assigned jobs older than 3 days (before $threeDaysAgoDate)');
       }
 
       final response = await query.order('created_at', ascending: false);
