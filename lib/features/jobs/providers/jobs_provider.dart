@@ -12,6 +12,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   @override
   Future<List<Job>> build() async {
     _jobsRepository = ref.watch(jobsRepositoryProvider);
+    // IMPORTANT: watch profile so this provider rebuilds/refetches when user changes.
+    // Without this, jobs can remain cached from a previous session (e.g. admin -> driver).
+    ref.watch(currentUserProfileProvider);
     _checkPermissions();
     return _fetchJobs();
   }
@@ -51,7 +54,13 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       );
 
       if (result.isSuccess) {
-        final jobs = result.data!;
+        var jobs = result.data!;
+
+        // Defensive client-side enforcement: drivers must only ever see jobs allocated to them.
+        if (userRole == 'driver') {
+          jobs = jobs.where((j) => j.driverId == userId).toList();
+        }
+
         Log.d('Fetched ${jobs.length} jobs successfully for user: $userId with role: $userRole');
         return jobs;
       } else {
