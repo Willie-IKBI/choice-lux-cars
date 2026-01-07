@@ -113,14 +113,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         }).toList();
       }
 
-      // Pagination
+      // Pagination (defensive against range errors when list shrinks)
       final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
-      final startIndex = (_currentPage - 1) * _itemsPerPage;
-      final endIndex = startIndex + _itemsPerPage;
-      final paginatedJobs = filteredJobs.sublist(
-        startIndex,
-        endIndex > filteredJobs.length ? filteredJobs.length : endIndex,
-      );
+      final requestedStart = (_currentPage - 1) * _itemsPerPage;
+      final clampedStart =
+          requestedStart < 0 ? 0 : (requestedStart >= filteredJobs.length ? 0 : requestedStart);
+      final clampedEnd = (clampedStart + _itemsPerPage) > filteredJobs.length
+          ? filteredJobs.length
+          : clampedStart + _itemsPerPage;
+      final paginatedJobs = filteredJobs.sublist(clampedStart, clampedEnd);
 
       // Responsive padding - matching dashboard screen
       final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 24.0;
