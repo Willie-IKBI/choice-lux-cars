@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/core/services/preferences_service.dart';
 import 'package:choice_lux_cars/core/services/job_deadline_check_service.dart';
 import 'package:choice_lux_cars/core/utils/auth_error_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 
 // User Profile Model
 class UserProfile {
@@ -35,8 +36,7 @@ class UserProfile {
   });
 
   factory UserProfile.fromMap(Map<String, dynamic> map) {
-    // Note: profiles.branch_id is text type storing codes directly (Jhb, Cpt, Dbn)
-    // No conversion needed - just use the value as-is
+    // profiles.branch_id is bigint in DB; convert to UI code (Jhb, Cpt, Dbn)
     final branchIdFromDb = map['branch_id'];
     
     return UserProfile(
@@ -49,7 +49,8 @@ class UserProfile {
       kinNumber: map['kin_number'],
       profileImage: map['profile_image'],
       status: map['status'],
-      branchId: branchIdFromDb as String?, // Store as text code (Jhb, Cpt, Dbn) - column is text type
+      // Convert bigint -> code; if DB already returns a string for any reason, keep it
+      branchId: branchIdFromDb is String ? branchIdFromDb : BranchUtils.idToCode(branchIdFromDb),
     );
   }
 
