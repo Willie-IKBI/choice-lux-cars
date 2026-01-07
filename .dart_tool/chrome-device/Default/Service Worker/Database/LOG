@@ -1,3 +1,2 @@
-2026/01/05-15:48:18.770 28c Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.8b5f3194\flutter_tools_chrome_device.614d0c41\Default\Service Worker\Database/MANIFEST-000001
-2026/01/05-15:48:18.770 28c Recovering log #3
-2026/01/05-15:48:18.771 28c Reusing old log C:\Users\erasm\AppData\Local\Temp\flutter_tools.8b5f3194\flutter_tools_chrome_device.614d0c41\Default\Service Worker\Database/000003.log 
+2026/01/07-17:17:29.532 2810 Creating DB C:\Users\erasm\AppData\Local\Temp\flutter_tools.2c319dab\flutter_tools_chrome_device.1bce799\Default\Service Worker\Database since it was missing.
+2026/01/07-17:17:29.536 2810 Reusing MANIFEST C:\Users\erasm\AppData\Local\Temp\flutter_tools.2c319dab\flutter_tools_chrome_device.1bce799\Default\Service Worker\Database/MANIFEST-000001
