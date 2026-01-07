@@ -306,13 +306,17 @@ class _UserCardState extends State<UserCard>
   }
 
   _StatusInfo _statusInfo(User user) {
-    if (user.status?.toLowerCase() == 'active') {
+    final status = user.status?.toLowerCase();
+    if (status == 'active') {
       return _StatusInfo('ACTIVE', Colors.green, Colors.white);
-    } else if (user.status?.toLowerCase() == 'deactivated') {
-      return _StatusInfo('EXPIRED', Colors.red, Colors.white);
-    } else if (user.status?.toLowerCase() == 'expiring') {
+    } else if (status == 'deactivated') {
+      return _StatusInfo('DEACTIVATED', Colors.red, Colors.white);
+    } else if (status == 'unassigned') {
+      return _StatusInfo('UNASSIGNED', Colors.grey, Colors.white);
+    } else if (status == 'expiring') {
       return _StatusInfo('EXPIRING SOON', Colors.amber, Colors.black);
     }
+    // Handle null or unknown status values
     return _StatusInfo('UNKNOWN', Colors.grey, Colors.white);
   }
 

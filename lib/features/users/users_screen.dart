@@ -9,6 +9,7 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as a
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide User;
 
 class UsersScreen extends ConsumerStatefulWidget {
@@ -832,20 +833,57 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
       return;
     }
 
-    // Implement user status toggle functionality
-    final newStatus = user.status == 'active' ? 'deactivated' : 'active';
+    // Determine new status based on current status
+    // Handle null, unassigned, and other statuses properly
+    // Toggle logic:
+    // - If 'active' -> 'deactivated'
+    // - If 'deactivated' -> 'active'
+    // - If 'unassigned' or null -> 'deactivated' (can deactivate unassigned users)
+    // - Otherwise -> 'active'
+    final currentStatus = user.status?.toLowerCase();
+    String newStatus;
+    if (currentStatus == 'active') {
+      newStatus = 'deactivated';
+    } else if (currentStatus == 'deactivated') {
+      newStatus = 'active';
+    } else if (currentStatus == null || currentStatus == 'unassigned') {
+      // Allow deactivating unassigned users
+      newStatus = 'deactivated';
+    } else {
+      // For any other status, activate
+      newStatus = 'active';
+    }
+    
+    // Log the status change for debugging
+    Log.d('Toggling user status: ${user.id} (${user.displayName}) from "$currentStatus" to "$newStatus"');
+    
     final updatedUser = user.copyWith(status: newStatus);
     
-    // Update user through provider
-    ref.read(usersp.usersProvider.notifier).updateUser(updatedUser);
-    
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('${user.displayName} status updated to $newStatus'),
-        backgroundColor: ChoiceLuxTheme.richGold,
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
+    // Update user through provider with error handling
+    ref.read(usersp.usersProvider.notifier).updateUser(updatedUser).then((_) {
+      // Success - show success message
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${user.displayName} status updated to $newStatus'),
+            backgroundColor: ChoiceLuxTheme.richGold,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }).catchError((error) {
+      // Error - show error message
+      Log.e('Error updating user status: $error');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error updating status: $error'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    });
   }
 }
 
