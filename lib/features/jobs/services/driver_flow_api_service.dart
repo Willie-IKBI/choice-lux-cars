@@ -571,7 +571,7 @@ class DriverFlowApiService {
 
       // First try to get addresses from trips (most accurate)
       final tripsResponse = await _supabase
-          .from('trips')
+          .from('transport')
           .select('pickup_location, dropoff_location')
           .eq('job_id', jobId)
           .limit(1)

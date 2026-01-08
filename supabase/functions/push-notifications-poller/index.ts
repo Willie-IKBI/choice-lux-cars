@@ -218,7 +218,7 @@ serve(async (req) => {
     // Acquire advisory lock to prevent concurrent runs
     const lockKey = 1234567890 // Fixed key for this poller
     const { data: lockResult, error: lockError } = await supabase.rpc('pg_advisory_lock', {
-      lock_key: lockKey
+      p_lock_key: lockKey
     })
 
     const lockAcquired = !lockError
@@ -792,7 +792,7 @@ serve(async (req) => {
     } finally {
       // Release advisory lock
       await supabase.rpc('pg_advisory_unlock', {
-        lock_key: lockKey
+        p_lock_key: lockKey
       }).catch(err => {
         console.error('Error releasing lock:', err)
       })

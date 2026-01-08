@@ -93,35 +93,44 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
   Widget build(BuildContext context) {
     final tripsState = ref.watch(tripsByJobProvider(widget.jobId));
 
-    return SystemSafeScaffold(
-      backgroundColor: Colors.transparent,
-      appBar: const LuxuryAppBar(title: 'Trip Management'),
-      drawer: const LuxuryDrawer(),
-      body: tripsState.when(
-        data: (trips) => _buildTripsContent(context, trips),
-        loading: () => const Center(child: CircularProgressIndicator()),
-        error: (error, stack) => Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Text('Error: $error'),
-              ElevatedButton(
-                onPressed: () => ref.invalidate(tripsByJobProvider(widget.jobId)),
-                child: const Text('Retry'),
-              ),
-            ],
-          ),
+    return Stack(
+      children: [
+        // Layer 1: The background that fills the entire screen (solid obsidian)
+        Container(
+          color: ChoiceLuxTheme.jetBlack,
         ),
-      ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddTripModal,
-        backgroundColor: ChoiceLuxTheme.richGold,
-        foregroundColor: Colors.black,
-        child: const Icon(Icons.add),
-        tooltip: 'Add Trip',
-        elevation: 6,
-      ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        // Layer 2: The Scaffold with a transparent background
+        SystemSafeScaffold(
+          backgroundColor: Colors.transparent,
+          appBar: const LuxuryAppBar(title: 'Trip Management'),
+          drawer: const LuxuryDrawer(),
+          body: tripsState.when(
+            data: (trips) => _buildTripsContent(context, trips),
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (error, stack) => Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text('Error: $error', style: const TextStyle(color: Colors.white)),
+                  ElevatedButton(
+                    onPressed: () => ref.invalidate(tripsByJobProvider(widget.jobId)),
+                    child: const Text('Retry'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          floatingActionButton: FloatingActionButton(
+            onPressed: _showAddTripModal,
+            backgroundColor: ChoiceLuxTheme.richGold,
+            foregroundColor: Colors.black,
+            child: const Icon(Icons.add),
+            tooltip: 'Add Trip',
+            elevation: 6,
+          ),
+          floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+        ),
+      ],
     );
   }
 
@@ -177,9 +186,9 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
                         isDriver 
                             ? '${trips.length} trips'
                             : '${trips.length} trips • Total: R${totalAmount.toStringAsFixed(2)}',
-                        style: const TextStyle(
+                        style: TextStyle(
                           fontSize: 16,
-                          color: Colors.grey,
+                          color: ChoiceLuxTheme.platinumSilver,
                         ),
                       ),
                     ],
@@ -250,25 +259,35 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
               ),
             ),
           ] else ...[
-                      // Empty state
-          Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.route_outlined, size: 64, color: Colors.grey[600]),
-                const SizedBox(height: 16),
-                Text(
-                  'No trips added yet',
-                  style: TextStyle(fontSize: 18, color: Colors.grey[600]),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Add trips to get started',
-                  style: TextStyle(fontSize: 14, color: Colors.grey[500]),
-                ),
-              ],
+            // Empty state
+            Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.route_outlined,
+                    size: 64,
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'No trips added yet',
+                    style: TextStyle(
+                      fontSize: 18,
+                      color: ChoiceLuxTheme.platinumSilver,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'Add trips to get started',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
           ],
         ],
       ),
@@ -284,8 +303,16 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
     final userProfile = ref.watch(currentUserProfileProvider);
     final isDriver = userProfile?.role?.toLowerCase() == 'driver';
     
-    return Card(
+    return Container(
       margin: EdgeInsets.only(bottom: spacing * 2),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+          width: 1,
+        ),
+      ),
       child: Padding(
         padding: EdgeInsets.all(padding),
         child: Column(
@@ -299,17 +326,20 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
                     style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
+                      color: Colors.white,
                     ),
                   ),
                 ),
                 IconButton(
                   onPressed: () => _saveTrip(trip),
                   icon: const Icon(Icons.edit),
+                  color: ChoiceLuxTheme.richGold,
                   tooltip: 'Edit',
                 ),
                 IconButton(
                   onPressed: () => _deleteTrip(trip),
                   icon: const Icon(Icons.delete),
+                  color: ChoiceLuxTheme.errorColor,
                   tooltip: 'Delete',
                 ),
               ],
@@ -317,11 +347,58 @@ class _TripManagementScreenState extends ConsumerState<TripManagementScreen> {
             const SizedBox(height: 8),
             // Hide amount for drivers
             if (!isDriver)
-              Text('Amount: R${trip.amount.toStringAsFixed(2)}'),
-            if (trip.pickupLocation != null)
-              Text('Pickup: ${trip.pickupLocation}'),
-            if (trip.dropoffLocation != null)
-              Text('Dropoff: ${trip.dropoffLocation}'),
+              Text(
+                'Amount: R${trip.amount.toStringAsFixed(2)}',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.richGold,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            if (trip.pickupLocation != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Pickup: ${trip.pickupLocation}',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+            if (trip.dropoffLocation != null) ...[
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Icon(
+                    Icons.location_on,
+                    size: 16,
+                    color: ChoiceLuxTheme.platinumSilver,
+                  ),
+                  const SizedBox(width: 4),
+                  Expanded(
+                    child: Text(
+                      'Dropoff: ${trip.dropoffLocation}',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ],
           ],
         ),
       ),
