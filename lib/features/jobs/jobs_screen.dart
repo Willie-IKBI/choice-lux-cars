@@ -35,7 +35,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
-  String _dateRangeFilter = '90'; // 'yesterday', 'today', 'tomorrow', '7', '30', '90', 'all' - for closed jobs
+  String _dateRangeFilter = '90'; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
   String? _openJobsDateFilter; // 'yesterday', 'today', 'tomorrow', or null (all)
 
   @override
@@ -399,14 +399,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                     'Today',
                     'today',
                     Icons.today,
-                    isSmallMobile,
-                    isMobile,
-                  ),
-                  SizedBox(width: isSmallMobile ? 6 : 8),
-                  _buildDateRangeChip(
-                    'Tomorrow',
-                    'tomorrow',
-                    Icons.arrow_forward,
                     isSmallMobile,
                     isMobile,
                   ),
@@ -1153,11 +1145,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
         final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
         return (start, end);
-      case 'tomorrow':
-        final tomorrow = now.add(const Duration(days: 1));
-        final start = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0);
-        final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59);
-        return (start, end);
       case 'all':
         return (null, null);
       default:
@@ -1252,10 +1239,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             closed = closed.where((job) {
               final jobDate = job.updatedAt ?? job.createdAt;
               
-              // For yesterday/today/tomorrow: exact day match (compare dates only, ignore time)
+              // For yesterday/today: exact day match (compare dates only, ignore time)
               if (_dateRangeFilter == 'yesterday' || 
-                  _dateRangeFilter == 'today' || 
-                  _dateRangeFilter == 'tomorrow') {
+                  _dateRangeFilter == 'today') {
                 final jobDateOnly = DateTime(
                   jobDate.year,
                   jobDate.month,
@@ -1296,10 +1282,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               if (isCompleted) {
                 final jobDate = job.updatedAt ?? job.createdAt;
                 
-                // For yesterday/today/tomorrow: exact day match (compare dates only, ignore time)
+                // For yesterday/today: exact day match (compare dates only, ignore time)
                 if (_dateRangeFilter == 'yesterday' || 
-                    _dateRangeFilter == 'today' || 
-                    _dateRangeFilter == 'tomorrow') {
+                    _dateRangeFilter == 'today') {
                   final jobDateOnly = DateTime(
                     jobDate.year,
                     jobDate.month,

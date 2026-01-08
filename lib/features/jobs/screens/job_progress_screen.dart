@@ -28,7 +28,6 @@ import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
 import 'package:choice_lux_cars/shared/utils/date_utils.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_button.dart';
 import 'package:choice_lux_cars/shared/widgets/job_completion_dialog.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
@@ -200,6 +199,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       icon: Icons.home,
       isCompleted: false,
     ),
+    JobStep(
+      id: 'completed',
+      title: 'Job Complete',
+      description: 'Job has been completed successfully',
+      icon: Icons.done_all,
+      isCompleted: false,
+    ),
   ];
 
   @override
@@ -238,13 +244,50 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       }
 
       // Load job progress
-      final progress = await DriverFlowApiService.getJobProgress(jobIdInt);
+      var progress = await DriverFlowApiService.getJobProgress(jobIdInt);
       Log.d('=== LOADED JOB PROGRESS ===');
       Log.d('Progress data: $progress');
       
+      // If progress is null, check if job has actually started (race condition fix)
+      // Sometimes driver_flow record might not be immediately available after startJob()
       if (progress == null) {
-        // Set safe defaults when no progress found
         Log.d('No job progress found for jobId: $jobIdInt');
+        
+        // Check if job has actually started by checking job status
+        try {
+          final supabase = Supabase.instance.client;
+          final jobResponse = await supabase
+              .from('jobs')
+              .select('job_status, vehicle_collected')
+              .eq('id', jobIdInt)
+              .maybeSingle();
+          
+          if (jobResponse != null) {
+            final jobStatus = jobResponse['job_status']?.toString();
+            final vehicleCollected = jobResponse['vehicle_collected'] == true;
+            
+            // If job appears to have started (status is started/in_progress or vehicle_collected),
+            // wait a bit and retry loading progress (handles race condition)
+            if ((jobStatus == 'started' || jobStatus == 'in_progress' || vehicleCollected)) {
+              Log.d('Job appears to have started but driver_flow not found yet, waiting 300ms and retrying...');
+              await Future.delayed(const Duration(milliseconds: 300));
+              
+              // Retry loading progress once
+              final retryProgress = await DriverFlowApiService.getJobProgress(jobIdInt);
+              if (retryProgress != null) {
+                progress = retryProgress;
+                Log.d('Successfully loaded job progress on retry');
+              }
+            }
+          }
+        } catch (e) {
+          Log.e('Error checking job status when progress is null: $e');
+        }
+      }
+      
+      if (progress == null) {
+        // Still no progress after retry - set safe defaults
+        Log.d('No job progress found after retry, setting defaults');
         
         // Load trip progress and addresses even when no job progress exists
         final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
@@ -360,8 +403,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               gpsAccuracy: gpsAccuracy,
             );
 
-            // Refresh job progress in background (avoid blocking/flicker)
-            _loadJobProgress();
+            // Refresh job progress and await it to ensure UI updates correctly
+            await _loadJobProgress();
             
             if (mounted) {
               SnackBarUtils.showSuccess(context, 'Job started successfully!');
@@ -469,8 +512,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           isCompleted = _jobProgress!['job_closed_odo'] != null || _jobProgress!['job_closed_time'] != null;
           break;
         case 'completed':
-          // Job completion step is always completed when reached
-          isCompleted = true;
+          // Job completion step is completed when job_status is 'completed'
+          isCompleted = _jobProgress!['job_status'] == 'completed';
           break;
       }
 
@@ -512,6 +555,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       String newTitle = step.title;
 
       switch (step.id) {
+        case 'not_started':
+          // Update title to "Job Started" when vehicle is collected
+          if (_jobProgress != null && _jobProgress!['vehicle_collected'] == true) {
+            newTitle = 'Job Started';
+          } else {
+            newTitle = 'Job Not Started';
+          }
+          break;
         case 'pickup_arrival':
           final pickupAddress = _jobAddresses['pickup'];
           if (pickupAddress != null && pickupAddress.isNotEmpty) {
@@ -732,33 +783,39 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ],
             
             // Action button for current step
-            if (isCurrent && !isCompleted) ...[
+            // For vehicle_return step, show buttons even when completed if job not closed
+            // For other steps, only show if not completed
+            if (isCurrent && (step.id == 'vehicle_return' || !isCompleted)) ...[
               SizedBox(height: _isMobile ? 12 : 16),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _getStepAction(step.id),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: ChoiceLuxTheme.richGold,
-                    foregroundColor: Colors.black,
-                    padding: EdgeInsets.symmetric(
-                      vertical: _isMobile ? 14 : 16,
-                      horizontal: _isMobile ? 16 : 24,
+              // Use _buildActionButton for vehicle_return step to show Add Expenses/Close Job buttons
+              // Use standard action button for other steps
+              step.id == 'vehicle_return'
+                  ? _buildActionButton(step)
+                  : SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _getStepAction(step.id),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: ChoiceLuxTheme.richGold,
+                          foregroundColor: Colors.black,
+                          padding: EdgeInsets.symmetric(
+                            vertical: _isMobile ? 14 : 16,
+                            horizontal: _isMobile ? 16 : 24,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(_isMobile ? 10 : 12),
+                          ),
+                          elevation: _isMobile ? 2 : 4,
+                        ),
+                        child: Text(
+                          _getStepActionText(step.id),
+                          style: TextStyle(
+                            fontSize: _isMobile ? 14 : 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(_isMobile ? 10 : 12),
-                    ),
-                    elevation: _isMobile ? 2 : 4,
-                  ),
-                  child: Text(
-                    _getStepActionText(step.id),
-                    style: TextStyle(
-                      fontSize: _isMobile ? 14 : 16,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
             ],
           ],
         ),
@@ -1097,7 +1154,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        _loadJobProgress();
+        await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
       }
     } catch (e) {
@@ -1138,7 +1195,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       Log.d('=== PICKUP ARRIVAL COMPLETED ===');
 
       if (mounted) {
-        _loadJobProgress();
+        await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
 
         // Step completed - user must manually proceed to next step
@@ -1176,7 +1233,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        _loadJobProgress();
+        await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
 
         // Step completed - user must manually proceed to next step
@@ -1213,7 +1270,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        _loadJobProgress();
+        await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
 
         // Step completed - user must manually proceed to next step
@@ -1251,7 +1308,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        _loadJobProgress();
+        await _loadJobProgress();
         SnackBarUtils.showSuccess(context, 'Trip completed!');
 
         // Step completed - user must manually proceed to next step
@@ -1306,7 +1363,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== VEHICLE RETURN COMPLETED ===');
 
                   if (mounted) {
-                    _loadJobProgress();
+                    await _loadJobProgress();
 
                     // Close the modal using the stored context
                     if (modalContext.mounted) {
@@ -1364,7 +1421,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
 
-      _loadJobProgress();
+      await _loadJobProgress();
 
       // Refresh jobs list to update job card status
       ref.invalidate(jobsProvider);
@@ -3133,14 +3190,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     Log.d('_currentStep: $_currentStep');
     Log.d('_jobSteps length: ${_jobSteps.length}');
     
-    // Restore the proper job progress UI with background pattern
+    // Match dashboard background (solid color, no pattern)
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
+        // Layer 1: The background that fills the entire screen (solid obsidian to match dashboard)
         Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
+          color: ChoiceLuxTheme.jetBlack,
         ),
         // Layer 2: The Scaffold with a transparent background
         SystemSafeScaffold(
@@ -3152,12 +3207,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1200),
-              child: Stack(
-                children: [
-                  Positioned.fill(
-                    child: CustomPaint(painter: BackgroundPatterns.dashboard),
-                  ),
-                  _isLoading == true
+              child: _isLoading == true
                       ? const Center(
                           child: CircularProgressIndicator(
                             valueColor: AlwaysStoppedAnimation<Color>(

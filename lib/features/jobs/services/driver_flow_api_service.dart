@@ -19,26 +19,44 @@ class DriverFlowApiService {
       Log.d('=== STARTING JOB ===');
       Log.d('Job ID: $jobId');
 
-      // Get the driver for this job
+      // Get the driver and agent for this job to validate before update
       final jobResponse = await _supabase
           .from('jobs')
-          .select('driver_id, client_id')
+          .select('driver_id, client_id, agent_id, job_start_date')
           .eq('id', jobId)
           .single();
 
       final driverId = jobResponse['driver_id'];
+      final agentId = jobResponse['agent_id'];
+      final existingJobStartDate = jobResponse['job_start_date'];
+
       if (driverId == null) {
         throw Exception('No driver assigned to job $jobId');
+      }
+
+      // Validate agent_id exists (required by database NOT NULL constraint)
+      if (agentId == null) {
+        final errorMsg = 'Job $jobId cannot be started: Agent ID is missing. Please assign an agent to this job before starting it.';
+        Log.e('Validation failed: $errorMsg');
+        throw Exception(errorMsg);
+      }
+
+      // Prepare update payload - only update job_status if it's not already started
+      // Only set job_start_date if it's not already set (immutable once set)
+      final updatePayload = <String, dynamic>{
+        'job_status': 'started',
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      // Only update job_start_date if it's not already set
+      if (existingJobStartDate == null) {
+        updatePayload['job_start_date'] = SATimeUtils.getCurrentSATimeISO();
       }
 
       // Update job status to started
       await _supabase
           .from('jobs')
-          .update({
-            'job_status': 'started',
-            'job_start_date': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
+          .update(updatePayload)
           .eq('id', jobId);
 
       // Create driver_flow record
