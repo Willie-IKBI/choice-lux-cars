@@ -463,9 +463,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'vehicle_return':
-          // Vehicle return is completed if job_closed_time is set
-          // Once completed, it cannot be undone
-          isCompleted = _jobProgress!['job_closed_time'] != null;
+          // Vehicle return is completed if job_closed_odo is set (vehicle returned)
+          // This is different from job_closed_time which is also set when vehicle is returned
+          // We use job_closed_odo to check if vehicle is returned, then show Add Expenses/Close Job buttons
+          isCompleted = _jobProgress!['job_closed_odo'] != null || _jobProgress!['job_closed_time'] != null;
           break;
         case 'completed':
           // Job completion step is always completed when reached
@@ -1908,18 +1909,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         break;
 
       case 'vehicle_return':
-        // Only show button if previous step (trip_complete) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('trip_complete')) {
+        // Check if trip_complete step is completed first
+        if (!_isPreviousStepCompleted('trip_complete')) {
+          return _buildStepLockedMessage('Complete trip first');
+        }
+        
+        // Check if vehicle is already returned (job_closed_odo or job_closed_time is set)
+        final vehicleReturned = _jobProgress != null && 
+            (_jobProgress!['job_closed_odo'] != null || _jobProgress!['job_closed_time'] != null);
+        
+        // Check if job is already closed
+        final jobClosed = _jobProgress != null && 
+            _jobProgress!['job_status'] == 'completed';
+        
+        if (!vehicleReturned) {
+          // Vehicle not returned yet, show Return Vehicle button
           return _buildLuxuryButton(
             onPressed: _returnVehicle,
             icon: Icons.home_rounded,
             label: 'Return Vehicle',
             isPrimary: false,
           );
-        } else if (!_isPreviousStepCompleted('trip_complete')) {
-          return _buildStepLockedMessage('Complete trip first');
+        } else if (jobClosed) {
+          // Job is already closed, show completion message
+          return _buildStepCompletedMessage('Job completed successfully!');
         } else {
-          // Show both Add Expenses and Close Job buttons
+          // Vehicle returned but job not closed yet - show both Add Expenses and Close Job buttons
           return _isMobile 
             ? Column(
                 children: [

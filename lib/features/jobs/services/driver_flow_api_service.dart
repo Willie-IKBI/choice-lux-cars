@@ -493,23 +493,45 @@ class DriverFlowApiService {
       Log.d('=== CLOSING JOB ===');
       Log.d('Job ID: $jobId');
 
-      // Get the driver for this job
+      // Get the driver and agent for this job to validate before update
       final jobResponse = await _supabase
           .from('jobs')
-          .select('driver_id')
+          .select('driver_id, agent_id, job_status')
           .eq('id', jobId)
           .single();
 
       final driverId = jobResponse['driver_id'];
+      final agentId = jobResponse['agent_id'];
+      final currentStatus = jobResponse['job_status'];
+
+      Log.d('Current job status: $currentStatus');
+      Log.d('Agent ID: $agentId');
+      Log.d('Driver ID: $driverId');
+
+      // Validate agent_id exists (required by database NOT NULL constraint)
+      if (agentId == null) {
+        final errorMsg = 'Job $jobId cannot be closed: Agent ID is missing. Please assign an agent to this job before closing it.';
+        Log.e('Validation failed: $errorMsg');
+        throw Exception(errorMsg);
+      }
 
       // Update job status to completed
-      await _supabase
-          .from('jobs')
-          .update({
-            'job_status': 'completed',
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
-          .eq('id', jobId);
+      // Only update these two fields to avoid triggering any validation issues
+      try {
+        await _supabase
+            .from('jobs')
+            .update({
+              'job_status': 'completed',
+              'updated_at': SATimeUtils.getCurrentSATimeISO(),
+            })
+            .eq('id', jobId);
+        
+        Log.d('Job status updated to completed successfully');
+      } catch (updateError) {
+        Log.e('Error updating job status: $updateError');
+        Log.e('Update payload: {job_status: completed, updated_at: ${SATimeUtils.getCurrentSATimeISO()}}');
+        rethrow;
+      }
 
       // Update driver_flow to mark as completed
       await _supabase

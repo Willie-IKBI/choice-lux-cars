@@ -20,6 +20,7 @@ import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
 import 'package:choice_lux_cars/features/jobs/widgets/job_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -175,7 +176,17 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
       return Stack(
         children: [
-          Container(color: ChoiceLuxTheme.jetBlack),
+          // Layer 1: The background that fills the entire screen
+          Container(
+            decoration: const BoxDecoration(
+              gradient: ChoiceLuxTheme.backgroundGradient,
+            ),
+          ),
+          // Layer 2: Background pattern that covers the entire screen
+          Positioned.fill(
+            child: CustomPaint(painter: BackgroundPatterns.dashboard),
+          ),
+          // Layer 3: The SystemSafeScaffold with proper system UI handling
           SystemSafeScaffold(
             backgroundColor: Colors.transparent,
             appBar: LuxuryAppBar(
