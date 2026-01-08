@@ -66,8 +66,8 @@ class _JobCompletionDialogState extends State<JobCompletionDialog>
         if (mounted) {
           Navigator.of(context).pop();
           widget.onDismiss?.call();
-          // Navigate to jobs management
-          context.go('/jobs');
+          // Only navigate to jobs if explicitly requested (when job is fully closed)
+          // Don't auto-navigate when vehicle is returned but job not closed yet
         }
       });
     }

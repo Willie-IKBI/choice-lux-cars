@@ -383,17 +383,42 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-             // Update driver_flow table with all changes in one call
-       await _supabase
-           .from('driver_flow')
-           .update({
-             'current_step': 'trip_complete',
-             'progress_percentage': 83,
-             'transport_completed_ind': true,
-             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-             'updated_at': SATimeUtils.getCurrentSATimeISO(),
-           })
-           .eq('job_id', jobId);
+      // Update trip_progress table to mark this specific trip as completed
+      // This is required for the database trigger that validates all trips are completed before closing job
+      await _supabase
+          .from('trip_progress')
+          .update({
+            'status': 'completed',
+            'completed_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId)
+          .eq('trip_index', tripIndex);
+
+      Log.d('Trip $tripIndex marked as completed in trip_progress');
+
+      // Check if all trips are now completed
+      final allTripsResponse = await _supabase
+          .from('trip_progress')
+          .select('status')
+          .eq('job_id', jobId);
+
+      final allTrips = allTripsResponse as List<dynamic>;
+      final allTripsCompleted = allTrips.isNotEmpty && 
+          allTrips.every((trip) => trip['status'] == 'completed');
+      Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
+
+      // Update driver_flow table with all changes in one call
+      await _supabase
+          .from('driver_flow')
+          .update({
+            'current_step': 'trip_complete',
+            'progress_percentage': 83,
+            'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId);
 
       Log.d('=== TRIP COMPLETED ===');
 

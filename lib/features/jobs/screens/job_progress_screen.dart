@@ -948,15 +948,23 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     // Priority 3: Trust the database current_step if it exists and is valid
     // BUT: Only skip this if job_status is actually 'completed'
     // This ensures we respect the database current_step even when job_closed_time is set
+    // EXCEPTION: If current_step is 'trip_complete' and transport is completed, advance to vehicle_return
     else if (_jobProgress!['current_step'] != null &&
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
         _jobProgress!['current_step'].toString() != 'completed' &&
         _jobProgress!['job_status'] != 'completed') {
-      // Map database step ID to UI step ID
       final databaseStep = _jobProgress!['current_step'].toString();
-      newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
-      Log.d('Using current step from DB: $databaseStep, mapped to UI step: $newCurrentStep');
+      
+      // Special case: If trip is completed, advance to vehicle_return step
+      if (databaseStep == 'trip_complete' && _jobProgress!['transport_completed_ind'] == true) {
+        newCurrentStep = 'vehicle_return';
+        Log.d('Trip completed, advancing from trip_complete to vehicle_return');
+      } else {
+        // Map database step ID to UI step ID
+        newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
+        Log.d('Using current step from DB: $databaseStep, mapped to UI step: $newCurrentStep');
+      }
     } else {
       // Priority 4: Determine step based on completion status
       Log.d('No valid current_step in DB, using completion-based logic');
@@ -1375,11 +1383,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       // Refresh jobs list to update job card status
                       ref.invalidate(jobsProvider);
 
-                      // Show job completion dialog
-                      showJobCompletionDialog(
+                      // Don't show completion dialog here - vehicle is returned but job not closed yet
+                      // User still needs to add expenses and close job
+                      SnackBarUtils.showSuccess(
                         context,
-                        jobNumber: widget.job.jobNumber ?? 'Unknown',
-                        passengerName: widget.job.passengerName,
+                        'Vehicle returned successfully! You can now add expenses and close the job.',
                       );
                     }
                   }
@@ -1426,11 +1434,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       // Refresh jobs list to update job card status
       ref.invalidate(jobsProvider);
 
-      // Show job completion dialog
+      // Show job completion dialog and navigate to jobs screen
       showJobCompletionDialog(
         context,
         jobNumber: widget.job.jobNumber ?? 'Unknown',
         passengerName: widget.job.passengerName,
+        onDismiss: () {
+          // Navigate to jobs screen after dialog is dismissed
+          context.go('/jobs');
+        },
       );
     } catch (e) {
       SnackBarUtils.showError(context, 'Failed to close job: $e');
@@ -1971,6 +1983,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           );
         } else if (!_isPreviousStepCompleted('dropoff_arrival')) {
           return _buildStepLockedMessage('Arrive at dropoff location first');
+        } else if (step.isCompleted) {
+          // Trip is completed, show message that vehicle return is next
+          return _buildStepCompletedMessage('Trip completed! Proceed to vehicle return.');
         }
         break;
 
@@ -1990,12 +2005,46 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         
         if (!vehicleReturned) {
           // Vehicle not returned yet, show Return Vehicle button
-          return _buildLuxuryButton(
-            onPressed: _returnVehicle,
-            icon: Icons.home_rounded,
-            label: 'Return Vehicle',
-            isPrimary: false,
-          );
+          // Also allow adding expenses before returning vehicle
+          return _isMobile
+            ? Column(
+                children: [
+                  _buildLuxuryButton(
+                    onPressed: _returnVehicle,
+                    icon: Icons.home_rounded,
+                    label: 'Return Vehicle',
+                    isPrimary: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLuxuryButton(
+                    onPressed: _addExpenses,
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Add Expenses',
+                    isPrimary: false,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _returnVehicle,
+                      icon: Icons.home_rounded,
+                      label: 'Return Vehicle',
+                      isPrimary: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _addExpenses,
+                      icon: Icons.receipt_long_rounded,
+                      label: 'Add Expenses',
+                      isPrimary: false,
+                    ),
+                  ),
+                ],
+              );
         } else if (jobClosed) {
           // Job is already closed, show completion message
           return _buildStepCompletedMessage('Job completed successfully!');
@@ -3197,7 +3246,44 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         Container(
           color: ChoiceLuxTheme.jetBlack,
         ),
-        // Layer 2: The Scaffold with a transparent background
+        // Layer 2: Loading overlay when updating
+        if (_isUpdating)
+          Container(
+            color: Colors.black.withOpacity(0.7),
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.all(24),
+                decoration: BoxDecoration(
+                  color: ChoiceLuxTheme.jetBlack,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                    width: 1,
+                  ),
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        ChoiceLuxTheme.richGold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Updating...',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        // Layer 3: The Scaffold with a transparent background
         SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: PreferredSize(
@@ -3390,8 +3476,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                             ),
                           ),
                         ),
-                ],
-              ),
             ),
           ),
         ),
