@@ -1,4 +1,8 @@
 {
+  "scripts": {
+    "inject-firebase": "node scripts/inject-firebase-config.js",
+    "prebuild:web": "npm run inject-firebase"
+  },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",
     "dotenv": "^17.2.3"
