@@ -18,12 +18,21 @@ class JobsRepository {
   JobsRepository(this._supabase);
 
   /// Fetch jobs based on user role and permissions
+  /// 
+  /// [statusFilter] - Optional status filter ('open', 'in_progress', 'closed', 'all', or null)
+  /// [dateRangeDays] - Optional date range filter for completed/closed jobs (e.g., 90 for last 90 days)
+  /// [limit] - Maximum number of jobs to fetch (default: 100 for performance)
+  /// [offset] - Offset for pagination (default: 0)
   Future<Result<List<Job>>> fetchJobs({
     String? userId,
     String? userRole,
+    String? statusFilter,
+    int? dateRangeDays,
+    int limit = 100,
+    int offset = 0,
   }) async {
     try {
-      Log.d('Fetching jobs for user: $userId with role: $userRole');
+      Log.d('Fetching jobs for user: $userId with role: $userRole (limit: $limit, offset: $offset, status: $statusFilter)');
 
       // Check if userId is available for role-based filtering
       if (userId == null && userRole != 'administrator' && userRole != 'super_admin' && userRole != 'manager') {
@@ -31,12 +40,12 @@ class JobsRepository {
         return const Result.success([]);
       }
 
-      PostgrestFilterBuilder query = _supabase.from('jobs').select();
+      var query = _supabase.from('jobs').select();
 
       // Apply role-based filtering
       if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
         // Administrators and managers see all jobs
-        Log.d('User has full access - fetching all jobs');
+        Log.d('User has full access - fetching jobs with filters');
       } else if (userRole == 'driver_manager' && userId != null) {
         // Driver managers see jobs they created/assigned + jobs assigned to them
         Log.d('Driver manager - fetching created jobs and jobs assigned to them');
@@ -51,13 +60,36 @@ class JobsRepository {
         return const Result.success([]);
       }
 
-      // Note: We don't apply date filtering here in fetchJobs() because this method is used
-      // to fetch all jobs, which are then filtered by the UI. Date filtering for open/assigned
-      // jobs older than 3 days is handled in getJobsByStatus() when specifically fetching by status.
+      // Apply status filter at database level for performance
+      if (statusFilter != null && statusFilter != 'all') {
+        if (statusFilter == 'open') {
+          // Open jobs: status is 'open' or 'assigned'
+          query = query.or('job_status.eq.open,job_status.eq.assigned');
+          // Performance optimization: Exclude open/assigned jobs older than 3 days
+          final threeDaysAgo = DateTime.now().subtract(const Duration(days: 3));
+          final threeDaysAgoDate = threeDaysAgo.toIso8601String().split('T')[0];
+          query = query.gte('job_start_date', threeDaysAgoDate);
+          Log.d('Applied date filter: excluding open/assigned jobs older than 3 days (before $threeDaysAgoDate)');
+        } else if (statusFilter == 'in_progress') {
+          query = query.or('job_status.eq.in_progress,job_status.eq.started,job_status.eq.ready_to_close');
+        } else if (statusFilter == 'closed') {
+          query = query.or('job_status.eq.completed,job_status.eq.closed,job_status.eq.cancelled');
+        }
+      }
 
-      final response = await query.order('created_at', ascending: false);
+      // Apply date range filter for completed/closed jobs at database level
+      if (dateRangeDays != null && (statusFilter == 'closed' || statusFilter == 'all')) {
+        final cutoffDate = DateTime.now().subtract(Duration(days: dateRangeDays));
+        query = query.gte('updated_at', cutoffDate.toIso8601String());
+        Log.d('Applied date range filter: last $dateRangeDays days (after ${cutoffDate.toIso8601String()})');
+      }
 
-      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole');
+      // Apply pagination and ordering at database level
+      final response = await query
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit - 1);
+
+      Log.d('Fetched ${response.length} jobs for user: $userId with role: $userRole (limit: $limit, offset: $offset)');
       
       // Debug: Log the actual query being executed for drivers
       if (userRole == 'driver') {

@@ -79,11 +79,37 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           userRoleForPermissions == 'driver_manager' ||
           userRoleForPermissions == 'drivermanager';
 
-      // Load related data
+      // Load related data (non-blocking - load in parallel)
       final vehiclesState = ref.watch(vehiclesProvider);
       final users = ref.watch(usersProvider);
       final clientsAsync = ref.watch(clientsProvider);
       final userProfile = ref.watch(currentUserProfileProvider);
+
+      // Convert lists to Maps for O(1) lookups (performance optimization)
+      // This eliminates O(n) firstWhere searches for each job
+      final clientsMap = <String, Client>{};
+      final vehiclesMap = <String, Vehicle>{};
+      final usersMap = <String, User>{};
+
+      // Build Maps from AsyncValue data (non-blocking - uses cached or loading data)
+      // If data is available, build the map. If not, map stays empty and lookups return null.
+      if (clientsAsync.hasValue && clientsAsync.value != null) {
+        for (final client in clientsAsync.value!) {
+          clientsMap[client.id.toString()] = client;
+        }
+      }
+
+      if (vehiclesState.hasValue && vehiclesState.value != null) {
+        for (final vehicle in vehiclesState.value!) {
+          vehiclesMap[vehicle.id.toString()] = vehicle;
+        }
+      }
+
+      if (users.hasValue && users.value != null) {
+        for (final user in users.value!) {
+          usersMap[user.id] = user;
+        }
+      }
 
       // Debug information
       Log.d('=== JOBS SCREEN DEBUG ===');
@@ -106,9 +132,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       // Check if user can create invoices (same permissions as vouchers for now)
       final canCreateInvoice = canCreateVoucher;
 
-      // Apply filters
-      List<Job> filteredJobs = _filterJobs(jobs.value ?? []);
-      Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+      // Apply filters (only if jobs are loaded)
+      final allJobs = jobs.value ?? [];
+      List<Job> filteredJobs = allJobs;
+      
+      // Only apply filters if we have data (avoid filtering empty list during loading)
+      if (allJobs.isNotEmpty) {
+        filteredJobs = _filterJobs(allJobs);
+        Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+      }
 
       // Apply search filter
       if (_searchQuery.isNotEmpty) {
@@ -123,14 +155,18 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       }
 
       // Pagination (defensive against range errors when list shrinks)
-      final totalPages = (filteredJobs.length / _itemsPerPage).ceil();
+      final totalPages = filteredJobs.isEmpty ? 1 : (filteredJobs.length / _itemsPerPage).ceil();
       final requestedStart = (_currentPage - 1) * _itemsPerPage;
       final clampedStart =
           requestedStart < 0 ? 0 : (requestedStart >= filteredJobs.length ? 0 : requestedStart);
-      final clampedEnd = (clampedStart + _itemsPerPage) > filteredJobs.length
-          ? filteredJobs.length
-          : clampedStart + _itemsPerPage;
-      final paginatedJobs = filteredJobs.sublist(clampedStart, clampedEnd);
+      final clampedEnd = filteredJobs.isEmpty 
+          ? 0 
+          : ((clampedStart + _itemsPerPage) > filteredJobs.length
+              ? filteredJobs.length
+              : clampedStart + _itemsPerPage);
+      final paginatedJobs = filteredJobs.isEmpty 
+          ? <Job>[]
+          : filteredJobs.sublist(clampedStart, clampedEnd);
 
       // Responsive padding - matching dashboard screen
       final horizontalPadding = isSmallMobile ? 8.0 : isMobile ? 12.0 : 24.0;
@@ -170,19 +206,22 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                         isDesktop,
                       ),
                       SizedBox(height: sectionSpacing),
-                      paginatedJobs.isEmpty
-                          ? _buildEmptyState(
-                              isSmallMobile,
-                              isMobile,
-                              isTablet,
-                              isDesktop,
-                            )
-                          : clientsAsync.when(
-                              data: (clients) => _buildJobsList(
+                      // Show loading state while jobs are being fetched
+                      // Show jobs immediately when loaded, don't block on clients/vehicles/users
+                      // Related data will be looked up from Maps (O(1) access)
+                      jobs.when(
+                        data: (_) => paginatedJobs.isEmpty
+                            ? _buildEmptyState(
+                                isSmallMobile,
+                                isMobile,
+                                isTablet,
+                                isDesktop,
+                              )
+                            : _buildJobsList(
                                 paginatedJobs,
-                                clients,
-                                (vehiclesState.value ?? []),
-                                (users.value ?? []),
+                                clientsMap,
+                                vehiclesMap,
+                                usersMap,
                                 isSmallMobile,
                                 isMobile,
                                 isTablet,
@@ -190,20 +229,20 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                                 canCreateVoucher,
                                 canCreateInvoice,
                               ),
-                              loading: () => _buildLoadingState(
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                              ),
-                              error: (error, stack) => _buildErrorState(
-                                error,
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                              ),
-                            ),
+                        loading: () => _buildLoadingState(
+                          isSmallMobile,
+                          isMobile,
+                          isTablet,
+                          isDesktop,
+                        ),
+                        error: (error, stack) => _buildErrorState(
+                          error,
+                          isSmallMobile,
+                          isMobile,
+                          isTablet,
+                          isDesktop,
+                        ),
+                      ),
                       SizedBox(height: sectionSpacing),
                       if (totalPages > 1)
                         _buildPaginationSection(
@@ -622,11 +661,12 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   }
 
   // Enhanced Jobs List
+  // Performance optimization: Uses Maps for O(1) lookups instead of O(n) firstWhere
   Widget _buildJobsList(
     List<Job> jobs,
-    List<Client> clients,
-    List<Vehicle> vehicles,
-    List<User> users,
+    Map<String, Client> clientsMap,
+    Map<String, Vehicle> vehiclesMap,
+    Map<String, User> usersMap,
     bool isSmallMobile,
     bool isMobile,
     bool isTablet,
@@ -649,30 +689,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       itemBuilder: (context, index) {
         final job = jobs[index];
 
-        // Find related data
-        Client? client;
-        Vehicle? vehicle;
-        User? driver;
-
-        try {
-          client = clients.firstWhere((c) => c.id.toString() == job.clientId);
-        } catch (e) {
-          client = null;
-        }
-
-        try {
-          vehicle = vehicles.firstWhere(
-            (v) => v.id.toString() == job.vehicleId,
-          );
-        } catch (e) {
-          vehicle = null;
-        }
-
-        try {
-          driver = users.firstWhere((u) => u.id == job.driverId);
-        } catch (e) {
-          driver = null;
-        }
+        // Performance optimization: O(1) Map lookups instead of O(n) firstWhere
+        final client = job.clientId != null ? clientsMap[job.clientId] : null;
+        final vehicle = job.vehicleId != null ? vehiclesMap[job.vehicleId] : null;
+        final driver = job.driverId != null ? usersMap[job.driverId] : null;
 
         return Padding(
           padding: EdgeInsets.only(bottom: spacing),
@@ -700,8 +720,34 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     bool isTablet,
     bool isDesktop,
   ) {
-    return const Center(
-      child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(padding * 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
+            SizedBox(height: spacing * 2),
+            Text(
+              'Loading jobs...',
+              style: TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: ResponsiveTokens.getFontSize(
+                  MediaQuery.of(context).size.width,
+                  baseSize: 14.0,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -713,15 +759,57 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     bool isTablet,
     bool isDesktop,
   ) {
+    final padding = ResponsiveTokens.getPadding(
+      MediaQuery.of(context).size.width,
+    );
+    final spacing = ResponsiveTokens.getSpacing(
+      MediaQuery.of(context).size.width,
+    );
     final fontSize = ResponsiveTokens.getFontSize(
       MediaQuery.of(context).size.width,
       baseSize: 14.0,
     );
 
     return Center(
-      child: Text(
-        'Error loading clients: $error',
-        style: TextStyle(fontSize: fontSize, color: ChoiceLuxTheme.errorColor),
+      child: Padding(
+        padding: EdgeInsets.all(padding * 2),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.error_outline,
+              color: ChoiceLuxTheme.errorColor,
+              size: 48,
+            ),
+            SizedBox(height: spacing),
+            Text(
+              'Error loading jobs',
+              style: TextStyle(
+                fontSize: fontSize + 2,
+                fontWeight: FontWeight.w600,
+                color: ChoiceLuxTheme.errorColor,
+              ),
+            ),
+            SizedBox(height: spacing * 0.5),
+            Text(
+              error.toString(),
+              style: TextStyle(
+                fontSize: fontSize,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            SizedBox(height: spacing),
+            ElevatedButton(
+              onPressed: () => ref.read(jobsProvider.notifier).fetchJobs(),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.black,
+              ),
+              child: const Text('Retry'),
+            ),
+          ],
+        ),
       ),
     );
   }

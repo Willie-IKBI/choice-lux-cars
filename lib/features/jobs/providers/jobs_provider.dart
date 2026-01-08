@@ -35,6 +35,9 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   }
 
   /// Fetch all jobs from the repository
+  /// 
+  /// Performance optimization: Fetches up to 200 jobs initially to improve load time.
+  /// For super_admin/administrator/manager, this prevents loading thousands of jobs at once.
   Future<List<Job>> _fetchJobs() async {
     try {
       Log.d('Fetching jobs...');
@@ -48,9 +51,17 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         return [];
       }
 
+      // Performance optimization: For admins/managers, limit initial fetch to 200 jobs
+      // This significantly improves load time. More jobs can be loaded on demand if needed.
+      final limit = (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') 
+          ? 200 
+          : 100; // Drivers/driver_managers typically have fewer jobs
+
       final result = await _jobsRepository.fetchJobs(
         userId: userId,
         userRole: userRole,
+        limit: limit,
+        offset: 0,
       );
 
       if (result.isSuccess) {

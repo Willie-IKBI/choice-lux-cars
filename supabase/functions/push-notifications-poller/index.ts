@@ -791,11 +791,13 @@ serve(async (req) => {
 
     } finally {
       // Release advisory lock
-      await supabase.rpc('pg_advisory_unlock', {
-        p_lock_key: lockKey
-      }).catch(err => {
+      try {
+        await supabase.rpc('pg_advisory_unlock', {
+          p_lock_key: lockKey
+        })
+      } catch (err) {
         console.error('Error releasing lock:', err)
-      })
+      }
     }
 
   } catch (error) {
