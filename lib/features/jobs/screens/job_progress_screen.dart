@@ -889,10 +889,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       }
     }
     // Priority 3: Trust the database current_step if it exists and is valid
+    // BUT: Only skip this if job_status is actually 'completed'
+    // This ensures we respect the database current_step even when job_closed_time is set
     else if (_jobProgress!['current_step'] != null &&
         _jobProgress!['current_step'].toString().isNotEmpty &&
         _jobProgress!['current_step'].toString() != 'null' &&
-        _jobProgress!['current_step'].toString() != 'completed') {
+        _jobProgress!['current_step'].toString() != 'completed' &&
+        _jobProgress!['job_status'] != 'completed') {
       // Map database step ID to UI step ID
       final databaseStep = _jobProgress!['current_step'].toString();
       newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
@@ -901,9 +904,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       // Priority 4: Determine step based on completion status
       Log.d('No valid current_step in DB, using completion-based logic');
 
-      if (_jobProgress!['job_closed_time'] != null) {
+      // Check job_status instead of job_closed_time
+      // job_closed_time is set when vehicle is returned, not when job is completed
+      if (_jobProgress!['job_status'] == 'completed') {
         newCurrentStep = 'completed';
         Log.d('Job is completed');
+      } else if (_jobProgress!['job_closed_time'] != null || _jobProgress!['job_closed_odo'] != null) {
+        // Vehicle is returned but job not closed yet - stay on vehicle_return step
+        newCurrentStep = 'vehicle_return';
+        Log.d('Vehicle returned, staying on vehicle_return step (job_status: ${_jobProgress!['job_status']})');
       } else if (_jobProgress!['transport_completed_ind'] == true) {
         newCurrentStep = 'vehicle_return';
         Log.d('Transport completed, moving to vehicle return');
