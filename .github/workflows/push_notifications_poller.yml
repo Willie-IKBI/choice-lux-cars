@@ -31,6 +31,7 @@ jobs:
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$TEMP_FILE" \
             -X POST \
             -H "Content-Type: application/json" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -d '{}' \
             "$FUNCTION_URL")
