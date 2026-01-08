@@ -215,17 +215,20 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Acquire advisory lock to prevent concurrent runs
+    // Acquire advisory lock to prevent concurrent runs (non-blocking)
     const lockKey = 1234567890 // Fixed key for this poller
-    const { data: lockResult, error: lockError } = await supabase.rpc('pg_advisory_lock', {
+    const { data: lockResult, error: lockError } = await supabase.rpc('pg_try_advisory_lock', {
       p_lock_key: lockKey
     })
 
-    const lockAcquired = !lockError
-    console.log(`[${runId}] Lock acquired: ${lockAcquired ? 'yes' : 'no'}`)
+    // pg_try_advisory_lock returns true if lock acquired, false if already held
+    // It never blocks, preventing timeout errors
+    const lockAcquired = !lockError && lockResult === true
+    console.log(`[${runId}] Lock acquired: ${lockAcquired ? 'yes' : 'no'} (result: ${lockResult}, error: ${lockError?.message || 'none'})`)
 
-    if (lockError) {
+    if (lockError || !lockAcquired) {
       // If lock cannot be acquired, another instance is running
+      // This is expected behavior - exit gracefully
       console.log(`[${runId}] Advisory lock not acquired, another instance may be running. Exiting.`)
       return new Response(JSON.stringify({
         success: true,

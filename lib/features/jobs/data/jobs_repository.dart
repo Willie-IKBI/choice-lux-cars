@@ -149,18 +149,60 @@ class JobsRepository {
     try {
       Log.d('Updating job: ${job.id}');
 
-      // Get the current job to check for driver changes
+      // Validate decline_reason if status is 'declined'
+      // CHECK constraint: decline_reason must be non-empty when job_status = 'declined'
+      if (job.status == 'declined' &&
+          (job.cancelReason == null || job.cancelReason!.trim().isEmpty)) {
+        Log.e('Validation failed: decline_reason is required when job_status is declined');
+        return Result.failure(UnknownException(
+          'Decline reason is required when job status is declined',
+        ));
+      }
+
+      // Get the current job to check for driver changes and validate agent_id
       final currentJobResponse = await _supabase
           .from('jobs')
-          .select('driver_id')
+          .select('driver_id, agent_id')
           .eq('id', job.id)
           .single();
 
       final currentDriverId = currentJobResponse['driver_id']?.toString();
       final newDriverId = job.driverId;
+      final currentAgentId = currentJobResponse['agent_id']?.toString();
 
-      // Update the job
-      await _supabase.from('jobs').update(job.toJson()).eq('id', job.id);
+      // Prepare update map (excludes immutable fields like id and created_at)
+      final updateMap = job.toUpdateMap();
+      
+      // Validate agent_id: 
+      // - If updateMap includes agent_id, validate it's not null/empty
+      // - If updateMap doesn't include agent_id, ensure current job has valid agent_id
+      // Note: According to docs/data_model.md, agent_id is NOT NULL in database
+      if (updateMap.containsKey('agent_id')) {
+        final newAgentId = updateMap['agent_id'];
+        // If newAgentId is null or empty string, this would violate NOT NULL constraint
+        if (newAgentId == null || (newAgentId is String && newAgentId.isEmpty)) {
+          Log.e('Validation failed: agent_id cannot be null or empty');
+          return Result.failure(UnknownException(
+            'Agent ID cannot be null or empty',
+          ));
+        }
+      } else {
+        // agent_id not in update map - Supabase will preserve current value
+        // Validate that current job has valid agent_id
+        if (currentAgentId == null || currentAgentId.isEmpty) {
+          Log.e('Validation failed: Current job has null agent_id, cannot preserve it');
+          return Result.failure(UnknownException(
+            'Current job is missing Agent ID. Please set an Agent ID before updating.',
+          ));
+        }
+        // Current job has valid agent_id, it will be preserved - this is fine
+      }
+
+      Log.d('Update payload keys: ${updateMap.keys.toList()}');
+      Log.d('Update payload contains ${updateMap.length} fields');
+      
+      // Update the job using toUpdateMap() which excludes immutable fields
+      await _supabase.from('jobs').update(updateMap).eq('id', job.id);
 
       Log.d('Job updated successfully');
 

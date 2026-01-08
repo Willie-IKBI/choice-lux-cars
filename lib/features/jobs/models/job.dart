@@ -186,13 +186,28 @@ class Job {
 
   factory Job.fromJson(Map<String, dynamic> json) => Job.fromMap(json);
 
+  /// Helper method for safe int parsing from String
+  /// Throws FormatException if value cannot be converted to int
+  static int _parseToInt(String value, String fieldName) {
+    final parsed = int.tryParse(value);
+    if (parsed == null) {
+      throw FormatException(
+        'Invalid $fieldName: "$value" cannot be converted to integer',
+      );
+    }
+    return parsed;
+  }
+
+  /// Convert Job to map for database operations
+  /// Use toUpdateMap() for updates to exclude immutable fields
   Map<String, dynamic> toMap() {
     return {
       // Don't include id if it's empty (let database auto-generate)
       if (id != 0) 'id': id,
-      'client_id': int.tryParse(clientId) ?? clientId,
-      if (agentId != null) 'agent_id': int.tryParse(agentId!) ?? agentId,
-      'vehicle_id': int.tryParse(vehicleId) ?? vehicleId,
+      'client_id': _parseToInt(clientId, 'client_id'),
+      if (agentId != null && agentId!.isNotEmpty) 
+        'agent_id': _parseToInt(agentId!, 'agent_id'),
+      'vehicle_id': _parseToInt(vehicleId, 'vehicle_id'),
       'driver_id': driverId, // Keep as UUID string
       'job_start_date': jobStartDate.toIso8601String(),
       'order_date': orderDate.toIso8601String(),
@@ -219,6 +234,16 @@ class Job {
       'confirmed_by': confirmedBy,
       'job_number': jobNumber,
     };
+  }
+
+  /// Convert Job to map for UPDATE operations
+  /// Excludes immutable fields (id, created_at) that shouldn't be updated
+  Map<String, dynamic> toUpdateMap() {
+    final map = toMap();
+    // Remove immutable fields that shouldn't be in update payload
+    map.remove('id');
+    map.remove('created_at');
+    return map;
   }
 
   Map<String, dynamic> toJson() => toMap();

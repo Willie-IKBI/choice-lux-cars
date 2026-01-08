@@ -13,6 +13,11 @@ import 'package:choice_lux_cars/features/jobs/widgets/odometer_capture_widget.da
 import 'package:choice_lux_cars/features/jobs/widgets/vehicle_collection_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/vehicle_return_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/address_display_widget.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/add_expense_modal.dart';
+import 'package:choice_lux_cars/features/jobs/models/expense.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'dart:typed_data';
 import 'package:choice_lux_cars/features/jobs/models/job_step.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -67,22 +72,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     return ResponsiveBreakpoints.isDesktop(screenWidth) || ResponsiveBreakpoints.isLargeDesktop(screenWidth);
   }
 
-  /// Navigation and contact helper methods
-  Future<void> _openNavigation(String address) async {
-    try {
-      final encodedAddress = Uri.encodeComponent(address);
-      final url = 'https://www.google.com/maps/dir/?api=1&destination=$encodedAddress';
-      
-      if (await canLaunchUrl(Uri.parse(url))) {
-        await launchUrl(Uri.parse(url), mode: LaunchMode.externalApplication);
-      } else {
-        SnackBarUtils.showError(context, 'Could not open navigation app');
-      }
-    } catch (e) {
-      SnackBarUtils.showError(context, 'Failed to open navigation: $e');
-    }
-  }
-
+  /// Contact helper methods
   Future<void> _callPassenger() async {
     try {
       final contact = widget.job.passengerContact;
@@ -391,7 +381,25 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   void _updateStepStatus() {
     if (_jobProgress == null) {
-      Log.d('_updateStepStatus: _jobProgress is null, returning early');
+      Log.d('_updateStepStatus: _jobProgress is null, setting not_started as active');
+      // When progress is null, mark not_started as active and all others as not completed
+      bool hasChanges = false;
+      for (int i = 0; i < _jobSteps.length; i++) {
+        final step = _jobSteps[i];
+        final isNotStarted = step.id == 'not_started';
+        if (step.isCompleted != false || step.isActive != isNotStarted) {
+          hasChanges = true;
+          _jobSteps[i] = step.copyWith(
+            isCompleted: false,
+            isActive: isNotStarted,
+          );
+        }
+      }
+      if (hasChanges && mounted) {
+        setState(() {
+          // Trigger rebuild
+        });
+      }
       return;
     }
 
@@ -696,86 +704,27 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    SizedBox(height: _isMobile ? 10 : 12),
-                    // Responsive button layout
-                    _isMobile 
-                        ? Column(
-                            children: [
-                              SizedBox(
-                                width: double.infinity,
-                                child: ElevatedButton.icon(
-                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
-                                  icon: const Icon(Icons.navigation, size: 16),
-                                  label: const Text('Navigate'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ChoiceLuxTheme.richGold,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              if (widget.job.passengerContact != null && 
-                                  widget.job.passengerContact!.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                SizedBox(
-                                  width: double.infinity,
-                                  child: ElevatedButton.icon(
-                                    onPressed: _callPassenger,
-                                    icon: const Icon(Icons.phone, size: 16),
-                                    label: const Text('Call Passenger'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: ChoiceLuxTheme.successColor,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ],
-                          )
-                        : Row(
-                            children: [
-                              Expanded(
-                                child: ElevatedButton.icon(
-                                  onPressed: stepAddress != null ? () => _openNavigation(stepAddress!) : null,
-                                  icon: const Icon(Icons.navigation, size: 18),
-                                  label: const Text('Navigate'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: ChoiceLuxTheme.richGold,
-                                    foregroundColor: Colors.black,
-                                    padding: const EdgeInsets.symmetric(vertical: 12),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(8),
-                                    ),
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 12),
-                              if (widget.job.passengerContact != null && 
-                                  widget.job.passengerContact!.isNotEmpty)
-                                Expanded(
-                                  child: ElevatedButton.icon(
-                                    onPressed: _callPassenger,
-                                    icon: const Icon(Icons.phone, size: 18),
-                                    label: const Text('Call'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: ChoiceLuxTheme.successColor,
-                                      foregroundColor: Colors.white,
-                                      padding: const EdgeInsets.symmetric(vertical: 12),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
+                    // Show Call Passenger button if contact exists
+                    if (widget.job.passengerContact != null && 
+                        widget.job.passengerContact!.isNotEmpty) ...[
+                      SizedBox(height: _isMobile ? 10 : 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: _callPassenger,
+                          icon: Icon(Icons.phone, size: _isMobile ? 16 : 18),
+                          label: Text(_isMobile ? 'Call Passenger' : 'Call'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ChoiceLuxTheme.successColor,
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
                           ),
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
@@ -897,7 +846,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   void _determineCurrentStep() {
     if (_jobProgress == null) {
-      Log.d('_determineCurrentStep: _jobProgress is null, returning early');
+      Log.d('_determineCurrentStep: _jobProgress is null, setting to not_started');
+      // Set current step to not_started when progress is null
+      if (_currentStep != 'not_started') {
+        setState(() {
+          _currentStep = 'not_started';
+        });
+      }
       return;
     }
 
@@ -1417,6 +1372,115 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 
+  Future<void> _addExpenses() async {
+    if (!mounted) return;
+
+    // Get current user ID
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      SnackBarUtils.showError(context, 'User not authenticated');
+      return;
+    }
+
+    final driverId = currentUser.id;
+
+    // Show the add expense modal
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return AddExpenseModal(
+          jobId: int.parse(widget.jobId),
+          driverId: driverId,
+          onSubmit: (expense, slipBytes, slipFileName) async {
+            try {
+              setState(() => _isUpdating = true);
+
+              Log.d('=== CREATING EXPENSE ===');
+              Log.d('Job ID: ${expense.jobId}');
+              Log.d('Driver ID: ${expense.driverId}');
+              Log.d('Expense Type: ${expense.expenseType}');
+              Log.d('Amount: ${expense.amount}');
+
+              // Upload slip image to storage if provided
+              String? slipImageUrl;
+              if (slipBytes.isNotEmpty && slipFileName.isNotEmpty) {
+                try {
+                  final supabase = Supabase.instance.client;
+                  final storagePath = 'expenses/${widget.jobId}/${DateTime.now().millisecondsSinceEpoch}_$slipFileName';
+                  
+                  await supabase.storage
+                      .from('expense-slips')
+                      .uploadBinary(storagePath, slipBytes);
+
+                  final publicUrl = supabase.storage
+                      .from('expense-slips')
+                      .getPublicUrl(storagePath);
+
+                  slipImageUrl = publicUrl;
+                  Log.d('Slip uploaded: $slipImageUrl');
+                } catch (e) {
+                  Log.e('Error uploading slip: $e');
+                  // Continue with expense creation even if slip upload fails
+                }
+              }
+
+              // Create expense in database
+              final supabase = Supabase.instance.client;
+              // Convert DateTime to ISO string for database
+              final expDateISO = expense.expDate.toIso8601String();
+              final expenseData = {
+                'job_id': expense.jobId,
+                'driver_id': expense.driverId,
+                'expense_type': expense.expenseType,
+                'amount': expense.amount,
+                'exp_date': expDateISO,
+                'expense_description': expense.expenseDescription,
+                'other_description': expense.otherDescription,
+                'expense_location': expense.expenseLocation,
+                'slip_image': slipImageUrl,
+                'created_at': SATimeUtils.getCurrentSATimeISO(),
+                'updated_at': SATimeUtils.getCurrentSATimeISO(),
+              };
+
+              await supabase.from('expenses').insert(expenseData);
+
+              Log.d('=== EXPENSE CREATED SUCCESSFULLY ===');
+
+              if (mounted) {
+                SnackBarUtils.showSuccess(
+                  context,
+                  'Expense added successfully!',
+                );
+              }
+
+              // Refresh jobs list to update job card status
+              ref.invalidate(jobsProvider);
+            } catch (e) {
+              Log.e('=== ERROR CREATING EXPENSE ===');
+              Log.e('Error: $e');
+              
+              if (mounted) {
+                SnackBarUtils.showError(
+                  context,
+                  'Failed to add expense: $e',
+                );
+              }
+            } finally {
+              if (mounted) {
+                setState(() => _isUpdating = false);
+              }
+            }
+          },
+          onCancel: () {
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
+  }
+
   Future<Position> _getCurrentLocation() async {
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
     if (!serviceEnabled) {
@@ -1855,12 +1919,46 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         } else if (!_isPreviousStepCompleted('trip_complete')) {
           return _buildStepLockedMessage('Complete trip first');
         } else {
-          return _buildLuxuryButton(
-            onPressed: _closeJob,
-            icon: Icons.done_all_rounded,
-            label: 'Close Job',
-            isPrimary: true,
-          );
+          // Show both Add Expenses and Close Job buttons
+          return _isMobile 
+            ? Column(
+                children: [
+                  _buildLuxuryButton(
+                    onPressed: _addExpenses,
+                    icon: Icons.receipt_long_rounded,
+                    label: 'Add Expenses',
+                    isPrimary: false,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLuxuryButton(
+                    onPressed: _closeJob,
+                    icon: Icons.done_all_rounded,
+                    label: 'Close Job',
+                    isPrimary: true,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _addExpenses,
+                      icon: Icons.receipt_long_rounded,
+                      label: 'Add Expenses',
+                      isPrimary: false,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _closeJob,
+                      icon: Icons.done_all_rounded,
+                      label: 'Close Job',
+                      isPrimary: true,
+                    ),
+                  ),
+                ],
+              );
         }
 
       case 'completed':

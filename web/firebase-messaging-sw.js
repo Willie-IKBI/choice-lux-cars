@@ -8,12 +8,12 @@ importScripts('https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-com
 // Initialize Firebase app in the Service Worker scope
 // Placeholders are replaced by scripts/inject-firebase-config.js at build time
 firebase.initializeApp({
-  apiKey: '__FIREBASE_API_KEY__',
-  authDomain: '__FIREBASE_AUTH_DOMAIN__',
-  projectId: '__FIREBASE_PROJECT_ID__',
-  storageBucket: '__FIREBASE_STORAGE_BUCKET__',
-  messagingSenderId: '__FIREBASE_SENDER_ID__',
-  appId: '__FIREBASE_APP_ID__',
+  apiKey: 'AIzaSyDAJrWkn7DEUp8boXK9LEL7v-tIHhvV0Ac',
+  authDomain: 'choice-lux-cars-8d510.firebaseapp.com',
+  projectId: 'choice-lux-cars-8d510',
+  storageBucket: 'choice-lux-cars-8d510.appspot.com',
+  messagingSenderId: '522491134348',
+  appId: '1:522491134348:web:3ac424d68338b3ddb7d6a9',
 });
 
 // Retrieve an instance of Firebase Messaging

@@ -378,6 +378,17 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         Log.d('State updated successfully');
         Log.d('New state jobs count: ${state.value?.length ?? 0}');
 
+        // Refresh jobs list from server to ensure UI is in sync
+        // This ensures confirmed jobs appear correctly in the jobs tab
+        try {
+          Log.d('Refreshing jobs list after confirmation...');
+          await fetchJobs();
+          Log.d('Jobs list refreshed successfully');
+        } catch (refreshError) {
+          Log.e('Error refreshing jobs list after confirmation: $refreshError');
+          // Don't fail the confirmation if refresh fails - optimistic update is already applied
+        }
+
         // Fan-out notification to administrators/managers/driver_managers
         try {
           final int parsedJobId = int.tryParse(jobId) ?? 0;

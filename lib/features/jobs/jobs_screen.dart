@@ -34,7 +34,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
-  String _dateRangeFilter = '90'; // '7', '30', '90', 'all' - days for completed jobs
+  String _dateRangeFilter = '90'; // 'yesterday', 'today', 'tomorrow', '7', '30', '90', 'all' - for closed jobs
   String? _openJobsDateFilter; // 'yesterday', 'today', 'tomorrow', or null (all)
 
   @override
@@ -377,8 +377,33 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               child: Row(
                 children: [
                   _buildDateRangeChip(
+                    'Yesterday',
+                    'yesterday',
+                    Icons.arrow_back,
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
+                    'Today',
+                    'today',
+                    Icons.today,
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
+                    'Tomorrow',
+                    'tomorrow',
+                    Icons.arrow_forward,
+                    isSmallMobile,
+                    isMobile,
+                  ),
+                  SizedBox(width: isSmallMobile ? 6 : 8),
+                  _buildDateRangeChip(
                     'Last 7 Days',
                     '7',
+                    Icons.calendar_view_week,
                     isSmallMobile,
                     isMobile,
                   ),
@@ -386,6 +411,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   _buildDateRangeChip(
                     'Last 30 Days',
                     '30',
+                    Icons.calendar_view_month,
                     isSmallMobile,
                     isMobile,
                   ),
@@ -393,6 +419,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   _buildDateRangeChip(
                     'Last 90 Days',
                     '90',
+                    Icons.calendar_today,
                     isSmallMobile,
                     isMobile,
                   ),
@@ -400,6 +427,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   _buildDateRangeChip(
                     'All Time',
                     'all',
+                    Icons.all_inclusive,
                     isSmallMobile,
                     isMobile,
                   ),
@@ -906,11 +934,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   Widget _buildDateRangeChip(
     String label,
     String value,
+    IconData? icon,
     bool isSmallMobile,
     bool isMobile,
   ) {
     final isSelected = _dateRangeFilter == value;
     final fontSize = isSmallMobile ? 11.0 : 12.0;
+    final iconSize = isSmallMobile ? 12.0 : 14.0;
 
     return GestureDetector(
       onTap: () => setState(() {
@@ -934,15 +964,30 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             width: 1,
           ),
         ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color: isSelected
-                ? ChoiceLuxTheme.richGold
-                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
-            fontSize: fontSize,
-            fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-          ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            if (icon != null) ...[
+              Icon(
+                icon,
+                size: iconSize,
+                color: isSelected
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+              ),
+              SizedBox(width: isSmallMobile ? 4 : 6),
+            ],
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                fontSize: fontSize,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -1082,11 +1127,38 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     }
   }
 
+  /// Get date range for closed jobs date filter
+  /// Returns (startDateTime, endDateTime) tuple, or (null, null) for 'all'
+  (DateTime?, DateTime?) _getClosedJobsDateRange(String filter) {
+    final now = DateTime.now();
+    
+    switch (filter) {
+      case 'yesterday':
+        final yesterday = now.subtract(const Duration(days: 1));
+        final start = DateTime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0);
+        final end = DateTime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
+        return (start, end);
+      case 'today':
+        final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
+        final end = DateTime(now.year, now.month, now.day, 23, 59, 59);
+        return (start, end);
+      case 'tomorrow':
+        final tomorrow = now.add(const Duration(days: 1));
+        final start = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 0, 0, 0);
+        final end = DateTime(tomorrow.year, tomorrow.month, tomorrow.day, 23, 59, 59);
+        return (start, end);
+      case 'all':
+        return (null, null);
+      default:
+        // Numeric values: '7', '30', '90'
+        final days = int.tryParse(filter) ?? 90;
+        final cutoffDate = now.subtract(Duration(days: days));
+        return (cutoffDate, now);
+    }
+  }
+
   List<Job> _filterJobs(List<Job> jobs) {
     final now = DateTime.now();
-    final cutoffDate = _dateRangeFilter == 'all'
-        ? null
-        : now.subtract(Duration(days: int.parse(_dateRangeFilter)));
     
     switch (_currentFilter) {
       case 'open':
@@ -1152,7 +1224,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             )
             .toList();
       case 'closed':
-        // Closed jobs (completed, closed, cancelled) with date filter (default 90 days)
+        // Closed jobs (completed, closed, cancelled) with date filter
         var closed = jobs
             .where((job) =>
                 job.status == 'completed' ||
@@ -1160,26 +1232,89 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 job.status == 'cancelled')
             .toList();
         
-        if (cutoffDate != null) {
-          closed = closed.where((job) {
-            final jobDate = job.updatedAt ?? job.createdAt;
-            return jobDate.isAfter(cutoffDate);
-          }).toList();
+        // Apply date range filter
+        if (_dateRangeFilter == 'all') {
+          // No filtering needed - show all closed jobs
+        } else {
+          final dateRange = _getClosedJobsDateRange(_dateRangeFilter);
+          if (dateRange.$1 != null && dateRange.$2 != null) {
+            closed = closed.where((job) {
+              final jobDate = job.updatedAt ?? job.createdAt;
+              
+              // For yesterday/today/tomorrow: exact day match (compare dates only, ignore time)
+              if (_dateRangeFilter == 'yesterday' || 
+                  _dateRangeFilter == 'today' || 
+                  _dateRangeFilter == 'tomorrow') {
+                final jobDateOnly = DateTime(
+                  jobDate.year,
+                  jobDate.month,
+                  jobDate.day,
+                );
+                final rangeStart = DateTime(
+                  dateRange.$1!.year,
+                  dateRange.$1!.month,
+                  dateRange.$1!.day,
+                );
+                final rangeEnd = DateTime(
+                  dateRange.$2!.year,
+                  dateRange.$2!.month,
+                  dateRange.$2!.day,
+                );
+                return jobDateOnly.isAtSameMomentAs(rangeStart) ||
+                       jobDateOnly.isAtSameMomentAs(rangeEnd) ||
+                       (jobDateOnly.isAfter(rangeStart) && jobDateOnly.isBefore(rangeEnd));
+              } else {
+                // For 7/30/90 days: after cutoffDate (time-aware)
+                return jobDate.isAfter(dateRange.$1!);
+              }
+            }).toList();
+          }
         }
         return closed;
       case 'all':
-        // All jobs, but exclude completed/closed/cancelled older than 90 days
-        if (cutoffDate != null) {
-          return jobs.where((job) {
-            final isCompleted = job.status == 'completed' ||
-                job.status == 'closed' ||
-                job.status == 'cancelled';
-            if (isCompleted) {
-              final jobDate = job.updatedAt ?? job.createdAt;
-              return jobDate.isAfter(cutoffDate);
-            }
-            return true; // Include all non-completed jobs
-          }).toList();
+        // All jobs, but apply date filter to completed/closed/cancelled jobs
+        if (_dateRangeFilter == 'all') {
+          return jobs; // Show all jobs
+        } else {
+          final dateRange = _getClosedJobsDateRange(_dateRangeFilter);
+          if (dateRange.$1 != null && dateRange.$2 != null) {
+            return jobs.where((job) {
+              final isCompleted = job.status == 'completed' ||
+                  job.status == 'closed' ||
+                  job.status == 'cancelled';
+              if (isCompleted) {
+                final jobDate = job.updatedAt ?? job.createdAt;
+                
+                // For yesterday/today/tomorrow: exact day match (compare dates only, ignore time)
+                if (_dateRangeFilter == 'yesterday' || 
+                    _dateRangeFilter == 'today' || 
+                    _dateRangeFilter == 'tomorrow') {
+                  final jobDateOnly = DateTime(
+                    jobDate.year,
+                    jobDate.month,
+                    jobDate.day,
+                  );
+                  final rangeStart = DateTime(
+                    dateRange.$1!.year,
+                    dateRange.$1!.month,
+                    dateRange.$1!.day,
+                  );
+                  final rangeEnd = DateTime(
+                    dateRange.$2!.year,
+                    dateRange.$2!.month,
+                    dateRange.$2!.day,
+                  );
+                  return jobDateOnly.isAtSameMomentAs(rangeStart) ||
+                         jobDateOnly.isAtSameMomentAs(rangeEnd) ||
+                         (jobDateOnly.isAfter(rangeStart) && jobDateOnly.isBefore(rangeEnd));
+                } else {
+                  // For 7/30/90 days: after cutoffDate (time-aware)
+                  return jobDate.isAfter(dateRange.$1!);
+                }
+              }
+              return true; // Include all non-completed jobs
+            }).toList();
+          }
         }
         return jobs;
       default:
