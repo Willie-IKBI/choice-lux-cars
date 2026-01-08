@@ -27,14 +27,13 @@ jobs:
           echo "Invoking Edge Function: $FUNCTION_URL"
           
           # Capture both status code and response body in one call
-          # Note: Using anon key for Edge Functions with verify_jwt=false
-          # Service role key is not a valid JWT format for Authorization header
+          # Note: Edge Function has verify_jwt=false, so we only need apikey header
+          # Service role key works for apikey header (not Authorization header)
           TEMP_FILE=$(mktemp)
           HTTP_STATUS=$(curl -s -w "%{http_code}" -o "$TEMP_FILE" \
             -X POST \
             -H "Content-Type: application/json" \
-            -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
-            -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+            -H "apikey: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -d '{}' \
             "$FUNCTION_URL")
           
