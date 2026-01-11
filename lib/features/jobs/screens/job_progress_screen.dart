@@ -2106,14 +2106,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _passengerOnboard, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _passengerOnboard(), // Disable during processing
                     icon: Icons.person_add_rounded,
                     label: 'Passenger Onboard',
                     isPrimary: true,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _markPassengerNoShow, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _markPassengerNoShow(), // Disable during processing
                     icon: Icons.person_off_rounded,
                     label: 'Passenger No-Show',
                     isPrimary: false,
@@ -2125,7 +2125,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _passengerOnboard, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _passengerOnboard(), // Disable during processing
                       icon: Icons.person_add_rounded,
                       label: 'Passenger Onboard',
                       isPrimary: true,
@@ -2134,7 +2134,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _markPassengerNoShow, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _markPassengerNoShow(), // Disable during processing
                       icon: Icons.person_off_rounded,
                       label: 'Passenger No-Show',
                       isPrimary: false,
@@ -2165,7 +2165,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         if (!step.isCompleted &&
             _isPreviousStepCompleted('passenger_onboard')) {
           return _buildLuxuryButton(
-            onPressed: _isUpdating ? null : _arriveAtDropoff, // Disable during processing
+            onPressed: _isUpdating ? null : () => _arriveAtDropoff(), // Disable during processing
             icon: Icons.location_on_rounded,
             label: 'Arrive at Dropoff',
             isPrimary: false,
@@ -2179,7 +2179,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Only show button if previous step (dropoff_arrival) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('dropoff_arrival')) {
           return _buildLuxuryButton(
-            onPressed: _isUpdating ? null : _completeTrip, // Disable during processing
+            onPressed: _isUpdating ? null : () => _completeTrip(), // Disable during processing
             icon: Icons.check_circle_rounded,
             label: 'Complete Trip',
             isPrimary: false,
@@ -2217,14 +2217,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _returnVehicle, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _returnVehicle(), // Disable during processing
                     icon: Icons.home_rounded,
                     label: 'Return Vehicle',
                     isPrimary: true,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _addExpenses(), // Disable during processing
                     icon: Icons.receipt_long_rounded,
                     label: 'Add Expenses',
                     isPrimary: false,
@@ -2235,7 +2235,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _returnVehicle, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _returnVehicle(), // Disable during processing
                       icon: Icons.home_rounded,
                       label: 'Return Vehicle',
                       isPrimary: true,
@@ -2244,7 +2244,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _addExpenses(), // Disable during processing
                       icon: Icons.receipt_long_rounded,
                       label: 'Add Expenses',
                       isPrimary: false,
@@ -2261,14 +2261,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _addExpenses(), // Disable during processing
                     icon: Icons.receipt_long_rounded,
                     label: 'Add Expenses',
                     isPrimary: false,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _isUpdating ? null : _closeJob, // Disable during processing
+                    onPressed: _isUpdating ? null : () => _closeJob(), // Disable during processing
                     icon: Icons.done_all_rounded,
                     label: 'Close Job',
                     isPrimary: true,
@@ -2279,7 +2279,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _addExpenses(), // Disable during processing
                       icon: Icons.receipt_long_rounded,
                       label: 'Add Expenses',
                       isPrimary: false,
@@ -2288,7 +2288,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _isUpdating ? null : _closeJob, // Disable during processing
+                      onPressed: _isUpdating ? null : () => _closeJob(), // Disable during processing
                       icon: Icons.done_all_rounded,
                       label: 'Close Job',
                       isPrimary: true,
@@ -2386,7 +2386,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }
 
   Widget _buildLuxuryButton({
-    required VoidCallback onPressed,
+    VoidCallback? onPressed,
     required IconData icon,
     required String label,
     required bool isPrimary,

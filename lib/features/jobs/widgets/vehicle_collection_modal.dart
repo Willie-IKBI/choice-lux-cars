@@ -14,6 +14,7 @@ class VehicleCollectionModal extends StatefulWidget {
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
+    String? vehicleCollectedAtTimestamp,
   })
   onConfirm;
 
@@ -217,9 +218,11 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
 
   /// Compact dialog for very small screens
   Widget _buildCompactDialog(BuildContext context, double screenHeight, double screenWidth) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
+    return Stack(
+      children: [
+        Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
         width: screenWidth * 0.95,
         height: screenHeight * 0.95,
         decoration: BoxDecoration(
@@ -346,6 +349,36 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           ],
         ),
       ),
+      ),
+      // Loading overlay when processing
+      if (_isLoading)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withOpacity(0.7),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Processing...',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+    ],
     );
   }
 
@@ -364,34 +397,34 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
     return Stack(
       children: [
         Dialog(
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: 500,
-          maxHeight: screenHeight * 0.9, // Responsive height
-        ),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            gradient: ChoiceLuxTheme.cardGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-              width: 1,
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: screenHeight * 0.9, // Responsive height
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                gradient: ChoiceLuxTheme.cardGradient,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
               ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Header
+                  Container(
                 padding: const EdgeInsets.all(24),
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
@@ -452,10 +485,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                     ),
                   ],
                 ),
-              ),
+                  ),
 
-              // Content - Make scrollable
-              Expanded(
+                  // Content - Make scrollable
+                  Expanded(
                 child: SingleChildScrollView(
                   physics: const BouncingScrollPhysics(),
                   child: Padding(
@@ -476,10 +509,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                     ),
                   ),
                 ),
-              ),
+                  ),
 
-              // Action Buttons - Optimized padding
-              Container(
+                  // Action Buttons - Optimized padding
+                  Container(
                 padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
                 decoration: BoxDecoration(
                   color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
@@ -512,38 +545,39 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                   ],
                 ),
               ),
-            ],
-          ),
-        ),
-      ),
-      // Loading overlay when processing
-      if (_isLoading)
-        Positioned.fill(
-          child: Container(
-            color: Colors.black.withOpacity(0.7),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  const CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      ChoiceLuxTheme.richGold,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'Processing...',
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.softWhite,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
                 ],
               ),
             ),
           ),
         ),
+        // Loading overlay when processing
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withOpacity(0.7),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const CircularProgressIndicator(
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        ChoiceLuxTheme.richGold,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Processing...',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
     ],
     );
   }
@@ -846,7 +880,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
   }
 
   Widget _buildLuxuryButton({
-    required VoidCallback? onPressed,
+    VoidCallback? onPressed,
     required String label,
     required bool isPrimary,
     bool isCompact = false,
