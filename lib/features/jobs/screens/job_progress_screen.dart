@@ -1144,13 +1144,24 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 final modalContext = context;
 
                 try {
-                  setState(() => _isUpdating = true);
-
                   Log.d('=== STARTING JOB ===');
                   Log.d('Job ID: ${widget.jobId}');
                   Log.d('Odometer: $odometerReading');
                   Log.d('Image URL: $odometerImageUrl');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+                  // Close the modal first so loading overlay is visible
+                  if (modalContext.mounted) {
+                    Navigator.of(modalContext).pop();
+                  }
+
+                  // Wait for modal to fully close before showing loading overlay
+                  await Future.delayed(const Duration(milliseconds: 100));
+
+                  // Now set loading state - overlay will be visible since modal is closed
+                  if (mounted) {
+                    setState(() => _isUpdating = true);
+                  }
 
                   await DriverFlowApiService.startJob(
                     int.parse(widget.jobId),
@@ -1163,11 +1174,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
                   Log.d('=== JOB STARTED SUCCESSFULLY ===');
                   Log.d('Now loading job progress...');
-
-                  // Close the modal first
-                  if (modalContext.mounted) {
-                    Navigator.of(modalContext).pop();
-                  }
 
                   // Single reload with proper state management
                   if (mounted) {
@@ -1341,12 +1347,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             required double gpsAccuracy,
           }) async {
             try {
-              setState(() => _isUpdating = true);
-
               Log.d('=== MARKING PASSENGER NO-SHOW ===');
               Log.d('Job ID: ${widget.jobId}');
               Log.d('Comment: $comment');
               Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+              // The modal closes itself in its _confirmNoShow method (after calling onConfirm)
+              // Wait for modal to fully close before showing loading overlay
+              await Future.delayed(const Duration(milliseconds: 150));
+
+              // Now set loading state - overlay will be visible since modal is closed
+              if (mounted) {
+                setState(() => _isUpdating = true);
+              }
 
               await DriverFlowApiService.markPassengerNoShow(
                 int.parse(widget.jobId),
@@ -1476,12 +1489,23 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 required double gpsAccuracy,
               }) async {
                 try {
-                  setState(() => _isUpdating = true);
-
                   Log.d('=== RETURNING VEHICLE ===');
                   Log.d('Job ID: ${widget.jobId}');
                   Log.d('Odometer: $odoEndReading');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+                  // Close the modal first so loading overlay is visible
+                  if (modalContext.mounted) {
+                    Navigator.of(modalContext).pop();
+                  }
+
+                  // Wait for modal to fully close before showing loading overlay
+                  await Future.delayed(const Duration(milliseconds: 100));
+
+                  // Now set loading state - overlay will be visible since modal is closed
+                  if (mounted) {
+                    setState(() => _isUpdating = true);
+                  }
 
                   await DriverFlowApiService.returnVehicle(
                     int.parse(widget.jobId),
@@ -1495,11 +1519,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
                   if (mounted) {
                     await _loadJobProgress(skipLoadingState: true);
-
-                    // Close the modal using the stored context
-                    if (modalContext.mounted) {
-                      Navigator.of(modalContext).pop();
-                    }
 
                     // Show success message after modal is closed and widget is still mounted
                     if (mounted) {
@@ -1547,6 +1566,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }
 
   Future<void> _closeJob() async {
+    if (!mounted) return;
+
     try {
       setState(() => _isUpdating = true);
 
