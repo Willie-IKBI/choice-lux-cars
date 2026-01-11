@@ -7,11 +7,8 @@ import 'package:choice_lux_cars/features/notifications/services/notification_ser
 
 /// Notifier for managing jobs state using AsyncNotifier
 class JobsNotifier extends AsyncNotifier<List<Job>> {
-  late final JobsRepository _jobsRepository;
-
   @override
   Future<List<Job>> build() async {
-    _jobsRepository = ref.watch(jobsRepositoryProvider);
     // IMPORTANT: watch profile so this provider rebuilds/refetches when user changes.
     // Without this, jobs can remain cached from a previous session (e.g. admin -> driver).
     ref.watch(currentUserProfileProvider);
@@ -57,7 +54,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
           ? 200 
           : 100; // Drivers/driver_managers typically have fewer jobs
 
-      final result = await _jobsRepository.fetchJobs(
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.fetchJobs(
         userId: userId,
         userRole: userRole,
         limit: limit,
@@ -89,7 +87,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Creating job: ${job.passengerName}');
 
-      final result = await _jobsRepository.createJob(job);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.createJob(job);
 
       if (result.isSuccess) {
         // Refresh jobs list
@@ -111,7 +110,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Updating job: ${job.id}');
 
-      final result = await _jobsRepository.updateJob(job);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.updateJob(job);
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -136,7 +136,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Updating job status: $jobId to $status');
 
-      final result = await _jobsRepository.updateJobStatus(jobId, status);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.updateJobStatus(jobId, status);
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -165,7 +166,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Updating job payment amount: $jobId to $amount');
 
-      final result = await _jobsRepository.updateJobPaymentAmount(
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.updateJobPaymentAmount(
         jobId,
         amount,
       );
@@ -197,7 +199,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Deleting job: $jobId');
 
-      final result = await _jobsRepository.deleteJob(jobId);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.deleteJob(jobId);
 
       if (result.isSuccess) {
         // Update local state optimistically
@@ -231,7 +234,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
 
-      final result = await _jobsRepository.getJobsByStatus(
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.getJobsByStatus(
         status,
         userId: userId,
         userRole: userRole,
@@ -253,7 +257,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Getting jobs by driver: $driverId');
 
-      final result = await _jobsRepository.getJobsByDriver(driverId);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.getJobsByDriver(driverId);
       if (result.isSuccess) {
         return result.data!;
       } else {
@@ -276,7 +281,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       final userId = userProfile?.id;
       final userRole = userProfile?.role?.toLowerCase();
 
-      final result = await _jobsRepository.getJobsByClient(
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.getJobsByClient(
         clientId,
         userId: userId,
         userRole: userRole,
@@ -328,7 +334,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     try {
       Log.d('Fetching job by ID: $jobId');
 
-      final result = await _jobsRepository.fetchJobById(jobId);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.fetchJobById(jobId);
 
       if (result.isSuccess) {
         final job = result.data;
@@ -352,7 +359,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       Log.d('Current jobs count: ${state.value?.length ?? 0}');
 
       // Update only the confirmation fields, not the status
-      final result = await _jobsRepository.updateJobConfirmation(jobId);
+      final repository = ref.read(jobsRepositoryProvider);
+      final result = await repository.updateJobConfirmation(jobId);
 
       if (result.isSuccess) {
         Log.d('Database update successful');
