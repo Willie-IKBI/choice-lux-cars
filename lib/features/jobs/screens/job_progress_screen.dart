@@ -226,17 +226,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     _jobsNotifier = ref.read(jobsProvider.notifier);
   }
 
-  Future<void> _loadJobProgress() async {
+  Future<void> _loadJobProgress({bool skipLoadingState = false}) async {
     try {
       Log.d('=== _loadJobProgress STARTED ===');
       Log.d('Job ID: ${widget.jobId}');
+      Log.d('Skip loading state: $skipLoadingState');
       
       if (!mounted) {
         Log.d('Widget not mounted, returning early');
         return;
       }
       
-      setState(() => _isLoading = true);
+      // Only set _isLoading if not skipping (i.e., not during a step update)
+      // When skipLoadingState is true, _isUpdating overlay is shown instead
+      if (!skipLoadingState) {
+        setState(() => _isLoading = true);
+      }
 
       // Parse job ID once and validate
       final jobIdInt = int.tryParse(widget.jobId);
@@ -300,7 +305,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           _jobAddresses = addresses;
           _currentTripIndex = 1;
           _progressPercentage = 0;
-          _isLoading = false; // CRITICAL: Set loading to false
+          // Only set _isLoading to false if we set it to true
+          if (!skipLoadingState) {
+            _isLoading = false;
+          }
         });
         
         return;
@@ -363,7 +371,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (mounted) {
         Log.d('=== SETTING _isLoading = false ===');
         setState(() {
-          _isLoading = false;
+          // Only set _isLoading to false if we set it to true
+          if (!skipLoadingState) {
+            _isLoading = false;
+          }
         });
         Log.d('=== _loadJobProgress COMPLETED ===');
       }
@@ -375,7 +386,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     } catch (e) {
       Log.e('ERROR in _loadJobProgress: $e');
       if (mounted) {
-        setState(() => _isLoading = false);
+        setState(() {
+          // Only set _isLoading to false if we set it to true
+          if (!skipLoadingState) {
+            _isLoading = false;
+          }
+        });
         SnackBarUtils.showError(context, 'Failed to load job progress: $e');
       }
     }
@@ -405,7 +421,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             );
 
             // Refresh job progress and await it to ensure UI updates correctly
-            await _loadJobProgress();
+            await _loadJobProgress(skipLoadingState: true);
             
             if (mounted) {
               SnackBarUtils.showSuccess(context, 'Job started successfully!');
@@ -1155,7 +1171,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
                   // Single reload with proper state management
                   if (mounted) {
-                    await _loadJobProgress();
+                    await _loadJobProgress(skipLoadingState: true);
                     Log.d('=== JOB PROGRESS LOADED ===');
                     Log.d('Current step after reload: $_currentStep');
 
@@ -1210,7 +1226,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        await _loadJobProgress(skipLoadingState: true);
         SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
       }
     } catch (e) {
@@ -1251,7 +1267,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       Log.d('=== PICKUP ARRIVAL COMPLETED ===');
 
       if (mounted) {
-        await _loadJobProgress();
+        await _loadJobProgress(skipLoadingState: true);
         SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
 
         // Step completed - user must manually proceed to next step
@@ -1289,7 +1305,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        await _loadJobProgress(skipLoadingState: true);
         SnackBarUtils.showSuccess(context, 'Passenger onboard!');
 
         // Step completed - user must manually proceed to next step
@@ -1344,7 +1360,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               Log.d('=== PASSENGER NO-SHOW MARKED SUCCESSFULLY ===');
 
               if (mounted) {
-                await _loadJobProgress();
+                await _loadJobProgress(skipLoadingState: true);
                 SnackBarUtils.showSuccess(context, 'Passenger marked as no-show');
               }
             } catch (e) {
@@ -1385,7 +1401,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        await _loadJobProgress(skipLoadingState: true);
         SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
 
         // Step completed - user must manually proceed to next step
@@ -1423,7 +1439,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       );
 
       if (mounted) {
-        await _loadJobProgress();
+        await _loadJobProgress(skipLoadingState: true);
         SnackBarUtils.showSuccess(context, 'Trip completed!');
 
         // Step completed - user must manually proceed to next step
@@ -1478,7 +1494,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== VEHICLE RETURN COMPLETED ===');
 
                   if (mounted) {
-                    await _loadJobProgress();
+                    await _loadJobProgress(skipLoadingState: true);
 
                     // Close the modal using the stored context
                     if (modalContext.mounted) {
@@ -1536,7 +1552,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       await DriverFlowApiService.closeJob(int.parse(widget.jobId));
 
-      await _loadJobProgress();
+      await _loadJobProgress(skipLoadingState: true);
 
       // Refresh jobs list to update job card status
       ref.invalidate(jobsProvider);
