@@ -42,6 +42,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    // Refresh jobs when screen mounts to ensure latest data is loaded
+    // This fixes issue where jobs don't show immediately after driver is assigned
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(jobsProvider.notifier).fetchJobs();
+      }
+    });
   }
 
   @override
@@ -195,15 +202,21 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               onBackPressed: () => context.go('/'),
             ),
             drawer: const LuxuryDrawer(),
-            body: SingleChildScrollView(
-              padding: EdgeInsets.symmetric(
-                horizontal: horizontalPadding,
-                vertical: verticalPadding,
-              ),
-              child: Center(
-                child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  child: Column(
+            body: RefreshIndicator(
+              onRefresh: () async {
+                await ref.read(jobsProvider.notifier).fetchJobs();
+              },
+              color: ChoiceLuxTheme.richGold,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: horizontalPadding,
+                  vertical: verticalPadding,
+                ),
+                child: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 1200),
+                    child: Column(
                     children: [
                       _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
                       SizedBox(height: sectionSpacing),
@@ -269,6 +282,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 ),
               ),
             ),
+          ),
           ),
         ],
       );

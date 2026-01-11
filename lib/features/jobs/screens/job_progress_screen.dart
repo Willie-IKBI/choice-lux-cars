@@ -408,6 +408,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           required double gpsLat,
           required double gpsLng,
           required double gpsAccuracy,
+          String? vehicleCollectedAtTimestamp,
         }) async {
           try {
             // Start the job using the vehicle collection data
@@ -418,6 +419,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               gpsLat: gpsLat,
               gpsLng: gpsLng,
               gpsAccuracy: gpsAccuracy,
+              vehicleCollectedAtTimestamp: vehicleCollectedAtTimestamp, // Pass captured timestamp
             );
 
             // Refresh job progress and await it to ensure UI updates correctly
@@ -943,7 +945,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'pickup_arrival':
         return 'pickup_arrival';
       case 'passenger_pickup':
-        return 'passenger_pickup';
+        // Map passenger_pickup to passenger_onboard to show both buttons
+        return 'passenger_onboard';
       case 'passenger_onboard':
         return 'passenger_onboard';
       case 'en_route':
@@ -1139,6 +1142,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 required double gpsLat,
                 required double gpsLng,
                 required double gpsAccuracy,
+                String? vehicleCollectedAtTimestamp,
               }) async {
                 // Store the modal context before any async operations
                 final modalContext = context;
@@ -1170,6 +1174,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     gpsLat: gpsLat,
                     gpsLng: gpsLng,
                     gpsAccuracy: gpsAccuracy,
+                    vehicleCollectedAtTimestamp: vehicleCollectedAtTimestamp, // Pass captured timestamp
                   );
 
                   Log.d('=== JOB STARTED SUCCESSFULLY ===');
@@ -1220,6 +1225,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     if (!mounted) return;
 
     try {
+      // Show loading state during GPS capture and API call
       setState(() => _isUpdating = true);
 
       final position = await _getCurrentLocation();
@@ -1250,9 +1256,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     if (!mounted) return;
 
     try {
+      // Show loading state during GPS capture and API call
       setState(() => _isUpdating = true);
 
-      // Get current location
+      // Get current location (loading indicator already shown)
       final position = await _getCurrentLocation();
 
       Log.d('=== ARRIVING AT PICKUP ===');
@@ -2024,7 +2031,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         if (!step.isCompleted &&
             _isPreviousStepCompleted('vehicle_collection')) {
           return _buildLuxuryButton(
-            onPressed: _arriveAtPickup,
+            onPressed: _isUpdating ? null : _arriveAtPickup, // Disable during processing
             icon: Icons.location_on_rounded,
             label: 'Arrive at Pickup',
             isPrimary: false,
@@ -2099,14 +2106,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _passengerOnboard,
+                    onPressed: _isUpdating ? null : _passengerOnboard, // Disable during processing
                     icon: Icons.person_add_rounded,
                     label: 'Passenger Onboard',
                     isPrimary: true,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _markPassengerNoShow,
+                    onPressed: _isUpdating ? null : _markPassengerNoShow, // Disable during processing
                     icon: Icons.person_off_rounded,
                     label: 'Passenger No-Show',
                     isPrimary: false,
@@ -2118,7 +2125,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _passengerOnboard,
+                      onPressed: _isUpdating ? null : _passengerOnboard, // Disable during processing
                       icon: Icons.person_add_rounded,
                       label: 'Passenger Onboard',
                       isPrimary: true,
@@ -2127,7 +2134,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _markPassengerNoShow,
+                      onPressed: _isUpdating ? null : _markPassengerNoShow, // Disable during processing
                       icon: Icons.person_off_rounded,
                       label: 'Passenger No-Show',
                       isPrimary: false,
@@ -2158,7 +2165,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         if (!step.isCompleted &&
             _isPreviousStepCompleted('passenger_onboard')) {
           return _buildLuxuryButton(
-            onPressed: _arriveAtDropoff,
+            onPressed: _isUpdating ? null : _arriveAtDropoff, // Disable during processing
             icon: Icons.location_on_rounded,
             label: 'Arrive at Dropoff',
             isPrimary: false,
@@ -2172,7 +2179,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Only show button if previous step (dropoff_arrival) is completed
         if (!step.isCompleted && _isPreviousStepCompleted('dropoff_arrival')) {
           return _buildLuxuryButton(
-            onPressed: _completeTrip,
+            onPressed: _isUpdating ? null : _completeTrip, // Disable during processing
             icon: Icons.check_circle_rounded,
             label: 'Complete Trip',
             isPrimary: false,
@@ -2210,14 +2217,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _returnVehicle,
+                    onPressed: _isUpdating ? null : _returnVehicle, // Disable during processing
                     icon: Icons.home_rounded,
                     label: 'Return Vehicle',
                     isPrimary: true,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _addExpenses,
+                    onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
                     icon: Icons.receipt_long_rounded,
                     label: 'Add Expenses',
                     isPrimary: false,
@@ -2228,7 +2235,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _returnVehicle,
+                      onPressed: _isUpdating ? null : _returnVehicle, // Disable during processing
                       icon: Icons.home_rounded,
                       label: 'Return Vehicle',
                       isPrimary: true,
@@ -2237,7 +2244,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _addExpenses,
+                      onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
                       icon: Icons.receipt_long_rounded,
                       label: 'Add Expenses',
                       isPrimary: false,
@@ -2254,14 +2261,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             ? Column(
                 children: [
                   _buildLuxuryButton(
-                    onPressed: _addExpenses,
+                    onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
                     icon: Icons.receipt_long_rounded,
                     label: 'Add Expenses',
                     isPrimary: false,
                   ),
                   const SizedBox(height: 12),
                   _buildLuxuryButton(
-                    onPressed: _closeJob,
+                    onPressed: _isUpdating ? null : _closeJob, // Disable during processing
                     icon: Icons.done_all_rounded,
                     label: 'Close Job',
                     isPrimary: true,
@@ -2272,7 +2279,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 children: [
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _addExpenses,
+                      onPressed: _isUpdating ? null : _addExpenses, // Disable during processing
                       icon: Icons.receipt_long_rounded,
                       label: 'Add Expenses',
                       isPrimary: false,
@@ -2281,7 +2288,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: _buildLuxuryButton(
-                      onPressed: _closeJob,
+                      onPressed: _isUpdating ? null : _closeJob, // Disable during processing
                       icon: Icons.done_all_rounded,
                       label: 'Close Job',
                       isPrimary: true,

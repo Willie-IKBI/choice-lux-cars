@@ -5,6 +5,7 @@ import 'package:geolocator/geolocator.dart';
 import 'dart:io';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
+import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 
 class VehicleCollectionModal extends StatefulWidget {
   final Function({
@@ -154,6 +155,10 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
       return;
     }
 
+    // Capture timestamp at user action time (when button is clicked)
+    // This ensures accurate timestamp regardless of upload/API delay
+    final actionTimestamp = SATimeUtils.getCurrentSATimeISO();
+
     setState(() {
       _isLoading = true;
     });
@@ -179,13 +184,14 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         throw Exception('No image data available');
       }
 
-      // Call the confirmation callback
+      // Call the confirmation callback with captured timestamp
       widget.onConfirm(
         odometerReading: odometerReading,
         odometerImageUrl: imageUrl,
         gpsLat: _currentPosition!.latitude,
         gpsLng: _currentPosition!.longitude,
         gpsAccuracy: _currentPosition!.accuracy,
+        vehicleCollectedAtTimestamp: actionTimestamp, // Pass captured timestamp
       );
 
       Navigator.of(context).pop();
@@ -355,7 +361,9 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
       return _buildCompactDialog(context, screenHeight, screenWidth);
     }
     
-    return Dialog(
+    return Stack(
+      children: [
+        Dialog(
       backgroundColor: Colors.transparent,
       child: ConstrainedBox(
         constraints: BoxConstraints(
@@ -508,6 +516,35 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           ),
         ),
       ),
+      // Loading overlay when processing
+      if (_isLoading)
+        Positioned.fill(
+          child: Container(
+            color: Colors.black.withOpacity(0.7),
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      ChoiceLuxTheme.richGold,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Processing...',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.softWhite,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+    ],
     );
   }
 

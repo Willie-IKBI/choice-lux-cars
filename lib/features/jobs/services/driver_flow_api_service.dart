@@ -14,6 +14,7 @@ class DriverFlowApiService {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
+    String? vehicleCollectedAtTimestamp, // Optional: Use provided timestamp instead of generating new one
   }) async {
     try {
       Log.d('=== STARTING JOB ===');
@@ -59,19 +60,24 @@ class DriverFlowApiService {
           .update(updatePayload)
           .eq('id', jobId);
 
+      // Use provided timestamp or generate new one
+      // This ensures timestamp is captured at user action time, not API call time
+      final vehicleCollectedTimestamp = vehicleCollectedAtTimestamp ?? SATimeUtils.getCurrentSATimeISO();
+      final currentTime = SATimeUtils.getCurrentSATimeISO();
+
       // Create driver_flow record
       await _supabase.from('driver_flow').upsert({
         'job_id': jobId,
         'driver_user': driverId,
         'current_step': 'pickup_arrival', // Advance to next step immediately
-        'job_started_at': SATimeUtils.getCurrentSATimeISO(),
+        'job_started_at': currentTime,
         'odo_start_reading': odoStartReading,
         'pdp_start_image': pdpStartImage,
         'vehicle_collected': true,
-        'vehicle_collected_at': SATimeUtils.getCurrentSATimeISO(),
+        'vehicle_collected_at': vehicleCollectedTimestamp, // Use captured timestamp
         'progress_percentage': 17,
-        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        'last_activity_at': currentTime,
+        'updated_at': currentTime,
       }, onConflict: 'job_id');
 
       Log.d('=== JOB STARTED SUCCESSFULLY ===');
@@ -198,10 +204,12 @@ class DriverFlowApiService {
       }
 
              // Update driver_flow table with all changes in one call
+       // Set current_step to 'passenger_onboard' (not 'passenger_pickup') to ensure
+       // no-show button is visible at correct step
        await _supabase
            .from('driver_flow')
            .update({
-             'current_step': 'passenger_pickup',
+             'current_step': 'passenger_onboard', // Changed from 'passenger_pickup' to show both buttons
              'progress_percentage': 33,
              'pickup_arrive_time': SATimeUtils.getCurrentSATimeISO(),
              'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',
