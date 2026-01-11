@@ -437,9 +437,9 @@ class DriverFlowApiService {
        await _supabase
            .from('driver_flow')
            .update({
-             'current_step': 'dropoff_arrival',
+             'current_step': 'trip_complete', // Advance to next step (trip_complete)
              'progress_percentage': 67,
-             'transport_completed_ind': true,
+             // Note: transport_completed_ind is set in completeTrip(), not here
              'dropoff_arrive_at': SATimeUtils.getCurrentSATimeISO(),
              'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
              'updated_at': SATimeUtils.getCurrentSATimeISO(),
