@@ -692,7 +692,7 @@ class DriverFlowApiService {
       final allTrips = tripProgressResponse as List<dynamic>;
       
       if (allTrips.isEmpty) {
-        Log.w('Warning: No trip_progress records found for job $jobId. Job may not have any trips.');
+        Log.d('Warning: No trip_progress records found for job $jobId. Job may not have any trips.');
       } else {
         final incompleteTrips = allTrips.where((trip) => trip['status'] != 'completed').toList();
         if (incompleteTrips.isNotEmpty) {
