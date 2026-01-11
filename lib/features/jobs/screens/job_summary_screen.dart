@@ -2511,6 +2511,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         isCurrent = stepId == 'vehicle_collection';
       }
 
+      // Get fallback timestamp from last_activity_at (for historical jobs)
+      final lastActivityAt = _driverFlowData?['last_activity_at'];
+
       // Check completion status for each step
       switch (stepId) {
         case 'vehicle_collection':
@@ -2533,20 +2536,23 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                        _driverFlowData?['current_step'] == 'trip_complete' ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          completedAt = _driverFlowData?['passenger_onboard_at'];
+          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
+          completedAt = _driverFlowData?['passenger_onboard_at'] ?? lastActivityAt;
           break;
         case 'dropoff_arrival':
           isCompleted = _driverFlowData?['current_step'] == 'dropoff_arrival' ||
                        _driverFlowData?['current_step'] == 'trip_complete' ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          completedAt = _driverFlowData?['dropoff_arrive_at'];
+          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
+          completedAt = _driverFlowData?['dropoff_arrive_at'] ?? lastActivityAt;
           break;
         case 'trip_complete':
           isCompleted = _driverFlowData?['current_step'] == 'trip_complete' ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          completedAt = _driverFlowData?['trip_complete_at'];
+          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
+          completedAt = _driverFlowData?['trip_complete_at'] ?? lastActivityAt;
           break;
         case 'vehicle_return':
           isCompleted = _driverFlowData?['job_closed_time'] != null;
