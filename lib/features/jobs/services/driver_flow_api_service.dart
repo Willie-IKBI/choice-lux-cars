@@ -204,12 +204,12 @@ class DriverFlowApiService {
       }
 
              // Update driver_flow table with all changes in one call
-       // Set current_step to 'passenger_onboard' (not 'passenger_pickup') to ensure
-       // no-show button is visible at correct step
+       // Set current_step to 'passenger_pickup' (intermediate step before passenger_onboard)
+       // This creates the proper flow: pickup_arrival -> passenger_pickup -> passenger_onboard
        await _supabase
            .from('driver_flow')
            .update({
-             'current_step': 'passenger_onboard', // Changed from 'passenger_pickup' to show both buttons
+             'current_step': 'passenger_pickup', // Set to passenger_pickup to show intermediate step
              'progress_percentage': 33,
              'pickup_arrive_time': SATimeUtils.getCurrentSATimeISO(),
              'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',

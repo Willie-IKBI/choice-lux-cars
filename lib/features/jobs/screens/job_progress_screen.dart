@@ -167,7 +167,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     ),
     JobStep(
       id: 'passenger_pickup', // ADDED: Database step ID
-      title: 'Pickup Arrival',
+      title: 'Pickup Point',
       description: 'Arrived at passenger pickup location',
       icon: Icons.location_on,
       isCompleted: false,
@@ -635,7 +635,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         case 'passenger_pickup':
           final pickupAddress = _jobAddresses['pickup'];
           if (pickupAddress != null && pickupAddress.isNotEmpty) {
-            newTitle = 'Pickup Arrival';
+            newTitle = 'Pickup Point';
           }
           break;
         case 'dropoff_arrival':
@@ -884,12 +884,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             
             // Action button for current step
             // For vehicle_return step, show buttons even when completed if job not closed
+            // For passenger_pickup step, use _buildActionButton to show Passenger Onboard/No-Show buttons
             // For other steps, only show if not completed
-            if (isCurrent && (step.id == 'vehicle_return' || !isCompleted)) ...[
+            if (isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ...[
               SizedBox(height: _isMobile ? 12 : 16),
-              // Use _buildActionButton for vehicle_return step to show Add Expenses/Close Job buttons
+              // Use _buildActionButton for vehicle_return and passenger_pickup steps
               // Use standard action button for other steps
-              step.id == 'vehicle_return'
+              (step.id == 'vehicle_return' || step.id == 'passenger_pickup')
                   ? _buildActionButton(step)
                   : SizedBox(
                       width: double.infinity,
@@ -979,8 +980,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'pickup_arrival':
         return 'pickup_arrival';
       case 'passenger_pickup':
-        // Map passenger_pickup to passenger_onboard to show both buttons
-        return 'passenger_onboard';
+        // Keep passenger_pickup as passenger_pickup to show the step with buttons
+        return 'passenger_pickup';
       case 'passenger_onboard':
         return 'passenger_onboard';
       case 'en_route':
@@ -2084,59 +2085,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         break;
 
       case 'passenger_pickup':
-        // This step represents the actual arrival at pickup - no action button needed
-        // It's automatically completed when pickup_arrival is done
-        return Container(
-          padding: const EdgeInsets.all(16),
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [
-                ChoiceLuxTheme.successColor.withOpacity(0.1),
-                ChoiceLuxTheme.successColor.withOpacity(0.05),
-              ],
-            ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: ChoiceLuxTheme.successColor.withOpacity(0.3),
-              width: 1,
-            ),
-          ),
-          child: Row(
-            children: [
-              Icon(
-                Icons.check_circle_rounded,
-                color: ChoiceLuxTheme.successColor,
-                size: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Pickup Arrival Completed',
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.successColor,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                                          Text(
-                        'Successfully arrived at pickup location',
-                        style: TextStyle(
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontSize: 14,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        );
-
-      case 'passenger_onboard':
         // Check if passenger was already marked as no-show
         final isNoShow = _jobProgress != null && 
             (_jobProgress!['passenger_no_show_ind'] == true);
@@ -2144,24 +2092,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Check if pickup_arrival is completed
         final pickupArrivalCompleted = _isPreviousStepCompleted('pickup_arrival');
         
-        // Debug logging for button visibility
-        Log.d('=== PASSENGER ONBOARD BUTTON CHECK ===');
-        Log.d('step.isCompleted: ${step.isCompleted}');
-        Log.d('pickupArrivalCompleted: $pickupArrivalCompleted');
-        Log.d('isNoShow: $isNoShow');
-        Log.d('current_step from DB: ${_jobProgress?['current_step']}');
-        Log.d('pickup_arrive_time: ${_jobProgress?['pickup_arrive_time']}');
-        
-        // Only show buttons if previous step (pickup_arrival) is completed
-        // Also allow if current_step is passenger_pickup (which means we've arrived at pickup)
-        final canShowButtons = !step.isCompleted && 
-            (pickupArrivalCompleted || 
-             _jobProgress != null && 
-             (_jobProgress!['current_step'] == 'passenger_pickup' || 
-              _jobProgress!['pickup_arrive_time'] != null)) &&
-            !isNoShow;
-        
-        if (canShowButtons) {
+        // Show buttons if pickup_arrival is completed and passenger is not marked as no-show
+        if (!step.isCompleted && pickupArrivalCompleted && !isNoShow) {
           // Show both Passenger Onboard and No-Show buttons
           return _isMobile
             ? Column(
@@ -2204,8 +2136,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   ),
                 ],
               );
-        } else if (!_isPreviousStepCompleted('pickup_arrival')) {
-          return _buildStepLockedMessage('Arrive at pickup location first');
+        } else if (!pickupArrivalCompleted) {
+          return _buildStepLockedMessage('Complete arrival at pickup first');
+        } else if (isNoShow) {
+          // Passenger was marked as no-show, show message
+          return _buildStepCompletedMessage('Passenger marked as no-show');
+        }
+        break;
+
+      case 'passenger_onboard':
+        // Check if passenger was already marked as no-show
+        final isNoShow = _jobProgress != null && 
+            (_jobProgress!['passenger_no_show_ind'] == true);
+        
+        // Check if passenger_pickup step is completed (previous step)
+        final passengerPickupCompleted = _isPreviousStepCompleted('passenger_pickup');
+        
+        // Only show button if previous step (passenger_pickup) is completed
+        if (!step.isCompleted && passengerPickupCompleted && !isNoShow) {
+          return _buildLuxuryButton(
+            onPressed: _isUpdating ? null : () => _arriveAtDropoff(), // Disable during processing
+            icon: Icons.location_on_rounded,
+            label: 'Arrive at Dropoff',
+            isPrimary: false,
+          );
+        } else if (!passengerPickupCompleted) {
+          return _buildStepLockedMessage('Complete pickup point first');
         } else if (isNoShow) {
           // Passenger was marked as no-show, show message
           return _buildStepCompletedMessage('Passenger marked as no-show');
