@@ -275,14 +275,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // If job appears to have started (status is started/in_progress or vehicle_collected),
             // wait a bit and retry loading progress (handles race condition)
             if ((jobStatus == 'started' || jobStatus == 'in_progress' || vehicleCollected)) {
-              Log.d('Job appears to have started but driver_flow not found yet, waiting 300ms and retrying...');
-              await Future.delayed(const Duration(milliseconds: 300));
+              Log.d('Job appears to have started but driver_flow not found yet, retrying with multiple attempts...');
               
-              // Retry loading progress once
-              final retryProgress = await DriverFlowApiService.getJobProgress(jobIdInt);
-              if (retryProgress != null) {
-                progress = retryProgress;
-                Log.d('Successfully loaded job progress on retry');
+              // Retry up to 3 times with increasing delays
+              for (int attempt = 1; attempt <= 3; attempt++) {
+                final delayMs = 300 * attempt; // 300ms, 600ms, 900ms
+                Log.d('Retry attempt $attempt: waiting ${delayMs}ms...');
+                await Future.delayed(Duration(milliseconds: delayMs));
+                
+                final retryProgress = await DriverFlowApiService.getJobProgress(jobIdInt);
+                if (retryProgress != null) {
+                  progress = retryProgress;
+                  Log.d('Successfully loaded job progress on retry attempt $attempt');
+                  break;
+                } else {
+                  Log.d('Retry attempt $attempt failed - driver_flow still not found');
+                }
               }
             }
           }
@@ -401,7 +409,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   void _showStartJobModal() {
     showDialog(
       context: context,
-      builder: (context) => VehicleCollectionModal(
+      barrierDismissible: false,
+      builder: (BuildContext modalContext) => VehicleCollectionModal(
         onConfirm: ({
           required double odometerReading,
           required String odometerImageUrl,
@@ -411,6 +420,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           String? vehicleCollectedAtTimestamp,
         }) async {
           try {
+            // Set loading state
+            if (mounted) {
+              setState(() => _isUpdating = true);
+            }
+
             // Start the job using the vehicle collection data
             await DriverFlowApiService.startJob(
               int.parse(widget.jobId),
@@ -425,12 +439,32 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // Refresh job progress and await it to ensure UI updates correctly
             await _loadJobProgress(skipLoadingState: true);
             
+            // Close modal after everything completes
+            if (modalContext.mounted) {
+              Navigator.of(modalContext).pop();
+            }
+
+            // Wait for modal to close
+            await Future.delayed(const Duration(milliseconds: 100));
+            
             if (mounted) {
               SnackBarUtils.showSuccess(context, 'Job started successfully!');
             }
           } catch (e) {
+            // Close modal on error
+            if (modalContext.mounted) {
+              Navigator.of(modalContext).pop();
+            }
+
+            // Wait for modal to close
+            await Future.delayed(const Duration(milliseconds: 100));
+
             if (mounted) {
               SnackBarUtils.showError(context, 'Failed to start job: $e');
+            }
+          } finally {
+            if (mounted) {
+              setState(() => _isUpdating = false);
             }
           }
         },
@@ -971,9 +1005,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   void _determineCurrentStep() {
     if (_jobProgress == null) {
-      Log.d('_determineCurrentStep: _jobProgress is null, setting to not_started');
-      // Set current step to not_started when progress is null
-      if (_currentStep != 'not_started') {
+      Log.d('_determineCurrentStep: _jobProgress is null');
+      // Don't immediately default to not_started - wait for retry logic in _loadJobProgress
+      // Only set to not_started if we're not in a loading/updating state (which means retries have completed)
+      if (!_isLoading && !_isUpdating && _currentStep != 'not_started') {
+        Log.d('Retries completed, setting to not_started');
         setState(() {
           _currentStep = 'not_started';
         });
@@ -1154,15 +1190,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('Image URL: $odometerImageUrl');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                  // Close the modal first so loading overlay is visible
-                  if (modalContext.mounted) {
-                    Navigator.of(modalContext).pop();
-                  }
-
-                  // Wait for modal to fully close before showing loading overlay
-                  await Future.delayed(const Duration(milliseconds: 100));
-
-                  // Now set loading state - overlay will be visible since modal is closed
+                  // Keep modal open - loading state is shown inside modal
+                  // Set loading state for screen overlay (will be visible after modal closes)
                   if (mounted) {
                     setState(() => _isUpdating = true);
                   }
@@ -1180,28 +1209,41 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('=== JOB STARTED SUCCESSFULLY ===');
                   Log.d('Now loading job progress...');
 
-                  // Single reload with proper state management
+                  // Load job progress with retry logic for race conditions
                   if (mounted) {
                     await _loadJobProgress(skipLoadingState: true);
                     Log.d('=== JOB PROGRESS LOADED ===');
                     Log.d('Current step after reload: $_currentStep');
 
+                    // Close modal after everything completes successfully
+                    if (modalContext.mounted) {
+                      Navigator.of(modalContext).pop();
+                    }
+
+                    // Wait a moment for modal to fully close
+                    await Future.delayed(const Duration(milliseconds: 100));
+
                     // Show success message
-                    SnackBarUtils.showSuccess(
-                      context,
-                      'Job started successfully!',
-                    );
+                    if (mounted) {
+                      SnackBarUtils.showSuccess(
+                        context,
+                        'Job started successfully!',
+                      );
+                    }
                   }
                 } catch (e) {
                   Log.d('=== ERROR STARTING JOB ===');
                   Log.e('Error: $e');
 
-                  // Close the modal using the stored context
+                  // Close the modal on error
                   if (modalContext.mounted) {
                     Navigator.of(modalContext).pop();
                   }
 
-                  // Show error message after modal is closed and widget is still mounted
+                  // Wait a moment for modal to close
+                  await Future.delayed(const Duration(milliseconds: 100));
+
+                  // Show error message after modal is closed
                   if (mounted) {
                     SnackBarUtils.showError(context, 'Failed to start job: $e');
                   }
@@ -2099,8 +2141,27 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         final isNoShow = _jobProgress != null && 
             (_jobProgress!['passenger_no_show_ind'] == true);
         
+        // Check if pickup_arrival is completed
+        final pickupArrivalCompleted = _isPreviousStepCompleted('pickup_arrival');
+        
+        // Debug logging for button visibility
+        Log.d('=== PASSENGER ONBOARD BUTTON CHECK ===');
+        Log.d('step.isCompleted: ${step.isCompleted}');
+        Log.d('pickupArrivalCompleted: $pickupArrivalCompleted');
+        Log.d('isNoShow: $isNoShow');
+        Log.d('current_step from DB: ${_jobProgress?['current_step']}');
+        Log.d('pickup_arrive_time: ${_jobProgress?['pickup_arrive_time']}');
+        
         // Only show buttons if previous step (pickup_arrival) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival') && !isNoShow) {
+        // Also allow if current_step is passenger_pickup (which means we've arrived at pickup)
+        final canShowButtons = !step.isCompleted && 
+            (pickupArrivalCompleted || 
+             _jobProgress != null && 
+             (_jobProgress!['current_step'] == 'passenger_pickup' || 
+              _jobProgress!['pickup_arrive_time'] != null)) &&
+            !isNoShow;
+        
+        if (canShowButtons) {
           // Show both Passenger Onboard and No-Show buttons
           return _isMobile
             ? Column(

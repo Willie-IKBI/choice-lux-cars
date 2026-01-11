@@ -8,7 +8,7 @@ import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 
 class VehicleCollectionModal extends StatefulWidget {
-  final Function({
+  final Future<void> Function({
     required double odometerReading,
     required String odometerImageUrl,
     required double gpsLat,
@@ -186,7 +186,8 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
       }
 
       // Call the confirmation callback with captured timestamp
-      widget.onConfirm(
+      // Don't close modal here - let the callback handle closing after processing completes
+      await widget.onConfirm(
         odometerReading: odometerReading,
         odometerImageUrl: imageUrl,
         gpsLat: _currentPosition!.latitude,
@@ -195,7 +196,8 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
         vehicleCollectedAtTimestamp: actionTimestamp, // Pass captured timestamp
       );
 
-      Navigator.of(context).pop();
+      // Modal will be closed by the callback after processing completes
+      // Don't close here to avoid race conditions
     } catch (e) {
       _showErrorSnackBar('Failed to upload image: $e');
     } finally {
