@@ -71,6 +71,7 @@ file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/invoices/widgets/invoi
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/data/jobs_repository.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/data/trips_repository.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/jobs_screen.dart
+file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/models/expense.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/models/job.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/models/job_step.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/models/trip.dart
@@ -82,6 +83,7 @@ file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/screens/job_summa
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/screens/trip_management_screen.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/services/driver_flow_api_service.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/services/job_assignment_service.dart
+file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/add_expense_modal.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/add_trip_modal.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/address_display_widget.dart
 file:///C:/Dev/IKBI/projects/choice-lux-cars/lib/features/jobs/widgets/gps_capture_widget.dart

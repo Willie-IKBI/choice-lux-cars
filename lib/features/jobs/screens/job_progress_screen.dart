@@ -12,6 +12,7 @@ import 'package:choice_lux_cars/features/jobs/widgets/gps_capture_widget.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/odometer_capture_widget.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/vehicle_collection_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/vehicle_return_modal.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/passenger_no_show_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/address_display_widget.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_expense_modal.dart';
 import 'package:choice_lux_cars/features/jobs/models/expense.dart';
@@ -486,23 +487,33 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           break;
         case 'passenger_onboard':
           // Passenger onboard is completed only when we've moved beyond this step
+          // OR when passenger is marked as no-show
           // NOT when it's the current step - that's when the action button should show
-          isCompleted = _jobProgress!['current_step'] == 'dropoff_arrival' ||
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          isCompleted = isNoShow ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
                        _jobProgress!['current_step'] == 'trip_complete' ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'dropoff_arrival':
           // Dropoff arrival is completed only when we've moved beyond this step
+          // OR when passenger is marked as no-show (skip this step)
           // NOT when it's the current step - that's when the action button should show
-          isCompleted = _jobProgress!['current_step'] == 'trip_complete' ||
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          isCompleted = isNoShow ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'trip_complete':
           // Trip complete is completed only when we've moved beyond this step
+          // OR when passenger is marked as no-show (trip automatically completed)
           // NOT when it's the current step - that's when the action button should show
-          isCompleted = _jobProgress!['current_step'] == 'vehicle_return' ||
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          final transportCompleted = _jobProgress!['transport_completed_ind'] == true;
+          isCompleted = (isNoShow && transportCompleted) ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'vehicle_return':
@@ -593,6 +604,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Widget _buildEnhancedStepCard(JobStep step) {
     final isCurrent = step.id == _currentStep;
     final isCompleted = step.isCompleted;
+    
+    // Check if passenger was marked as no-show
+    final isNoShow = _jobProgress != null && 
+        (_jobProgress!['passenger_no_show_ind'] == true);
     
     // Get address for location-based steps
     String? stepAddress;
@@ -691,8 +706,41 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     ],
                   ),
                 ),
-                if (isCurrent)
+                // Show badge for no-show status
+                if (isNoShow && (step.id == 'passenger_onboard' || step.id == 'dropoff_arrival'))
                   Container(
+                    margin: const EdgeInsets.only(left: 8),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: _isMobile ? 8 : 12, 
+                      vertical: _isMobile ? 4 : 6
+                    ),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.errorColor,
+                      borderRadius: BorderRadius.circular(_isMobile ? 16 : 20),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.person_off_rounded,
+                          color: Colors.white,
+                          size: _isMobile ? 12 : 14,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'NO-SHOW',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: _isMobile ? 9 : 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                if (isCurrent && (!isNoShow || step.id != 'passenger_onboard'))
+                  Container(
+                    margin: EdgeInsets.only(left: (isNoShow && step.id == 'dropoff_arrival') ? 8 : 0),
                     padding: EdgeInsets.symmetric(
                       horizontal: _isMobile ? 8 : 12, 
                       vertical: _isMobile ? 4 : 6
@@ -1259,6 +1307,65 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         setState(() => _isUpdating = false);
       }
     }
+  }
+
+  Future<void> _markPassengerNoShow() async {
+    if (!mounted) return;
+
+    // Show the no-show modal
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return PassengerNoShowModal(
+          onConfirm: ({
+            required String comment,
+            required double gpsLat,
+            required double gpsLng,
+            required double gpsAccuracy,
+          }) async {
+            try {
+              setState(() => _isUpdating = true);
+
+              Log.d('=== MARKING PASSENGER NO-SHOW ===');
+              Log.d('Job ID: ${widget.jobId}');
+              Log.d('Comment: $comment');
+              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+
+              await DriverFlowApiService.markPassengerNoShow(
+                int.parse(widget.jobId),
+                _currentTripIndex,
+                comment: comment,
+                gpsLat: gpsLat,
+                gpsLng: gpsLng,
+                gpsAccuracy: gpsAccuracy,
+              );
+
+              Log.d('=== PASSENGER NO-SHOW MARKED SUCCESSFULLY ===');
+
+              if (mounted) {
+                await _loadJobProgress();
+                SnackBarUtils.showSuccess(context, 'Passenger marked as no-show');
+              }
+            } catch (e) {
+              if (mounted) {
+                SnackBarUtils.showError(
+                  context,
+                  'Failed to mark passenger as no-show: $e',
+                );
+              }
+            } finally {
+              if (mounted) {
+                setState(() => _isUpdating = false);
+              }
+            }
+          },
+          onCancel: () {
+            Navigator.of(context).pop();
+          },
+        );
+      },
+    );
   }
 
   Future<void> _arriveAtDropoff() async {
@@ -1944,20 +2051,72 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         );
 
       case 'passenger_onboard':
-        // Only show button if previous step (pickup_arrival) is completed
-        if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival')) {
-          return _buildLuxuryButton(
-            onPressed: _passengerOnboard,
-            icon: Icons.person_add_rounded,
-            label: 'Passenger Onboard',
-            isPrimary: false,
-          );
+        // Check if passenger was already marked as no-show
+        final isNoShow = _jobProgress != null && 
+            (_jobProgress!['passenger_no_show_ind'] == true);
+        
+        // Only show buttons if previous step (pickup_arrival) is completed
+        if (!step.isCompleted && _isPreviousStepCompleted('pickup_arrival') && !isNoShow) {
+          // Show both Passenger Onboard and No-Show buttons
+          return _isMobile
+            ? Column(
+                children: [
+                  _buildLuxuryButton(
+                    onPressed: _passengerOnboard,
+                    icon: Icons.person_add_rounded,
+                    label: 'Passenger Onboard',
+                    isPrimary: true,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildLuxuryButton(
+                    onPressed: _markPassengerNoShow,
+                    icon: Icons.person_off_rounded,
+                    label: 'Passenger No-Show',
+                    isPrimary: false,
+                    isWarning: true,
+                  ),
+                ],
+              )
+            : Row(
+                children: [
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _passengerOnboard,
+                      icon: Icons.person_add_rounded,
+                      label: 'Passenger Onboard',
+                      isPrimary: true,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildLuxuryButton(
+                      onPressed: _markPassengerNoShow,
+                      icon: Icons.person_off_rounded,
+                      label: 'Passenger No-Show',
+                      isPrimary: false,
+                      isWarning: true,
+                    ),
+                  ),
+                ],
+              );
         } else if (!_isPreviousStepCompleted('pickup_arrival')) {
           return _buildStepLockedMessage('Arrive at pickup location first');
+        } else if (isNoShow) {
+          // Passenger was marked as no-show, show message
+          return _buildStepCompletedMessage('Passenger marked as no-show');
         }
         break;
 
       case 'dropoff_arrival':
+        // Check if passenger was marked as no-show
+        final isNoShow = _jobProgress != null && 
+            (_jobProgress!['passenger_no_show_ind'] == true);
+        
+        // If no-show, skip this step
+        if (isNoShow) {
+          return _buildStepCompletedMessage('Not applicable - Passenger no-show');
+        }
+        
         // Only show button if previous step (passenger_onboard) is completed
         if (!step.isCompleted &&
             _isPreviousStepCompleted('passenger_onboard')) {
@@ -1990,8 +2149,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         break;
 
       case 'vehicle_return':
-        // Check if trip_complete step is completed first
-        if (!_isPreviousStepCompleted('trip_complete')) {
+        // Check if trip_complete step is completed first (or no-show)
+        final isNoShow = _jobProgress != null && 
+            (_jobProgress!['passenger_no_show_ind'] == true);
+        final tripCompleted = _isPreviousStepCompleted('trip_complete');
+        
+        if (!tripCompleted && !isNoShow) {
           return _buildStepLockedMessage('Complete trip first');
         }
         
@@ -2183,20 +2346,26 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     required IconData icon,
     required String label,
     required bool isPrimary,
+    bool isWarning = false,
   }) {
     if (isPrimary) {
       return Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            colors: [
-              ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
-            ],
+            colors: isWarning
+                ? [
+                    ChoiceLuxTheme.errorColor,
+                    ChoiceLuxTheme.errorColor.withOpacity(0.9),
+                  ]
+                : [
+                    ChoiceLuxTheme.richGold,
+                    ChoiceLuxTheme.richGold.withOpacity(0.9),
+                  ],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: (isWarning ? ChoiceLuxTheme.errorColor : ChoiceLuxTheme.richGold).withOpacity(0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -2204,11 +2373,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         ),
         child: ElevatedButton.icon(
           onPressed: onPressed,
-          icon: Icon(icon, color: Colors.black, size: 20),
+          icon: Icon(icon, color: isWarning ? Colors.white : Colors.black, size: 20),
           label: Text(
             label,
-            style: const TextStyle(
-              color: Colors.black,
+            style: TextStyle(
+              color: isWarning ? Colors.white : Colors.black,
               fontSize: 14,
               fontWeight: FontWeight.w600,
             ),
@@ -2226,10 +2395,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     } else {
       return Container(
         decoration: BoxDecoration(
-          color: ChoiceLuxTheme.charcoalGray,
+          color: isWarning 
+              ? ChoiceLuxTheme.errorColor.withOpacity(0.1)
+              : ChoiceLuxTheme.charcoalGray,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: isWarning
+                ? ChoiceLuxTheme.errorColor.withOpacity(0.5)
+                : ChoiceLuxTheme.richGold.withOpacity(0.3),
             width: 1,
           ),
         ),

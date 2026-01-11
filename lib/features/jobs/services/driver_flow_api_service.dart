@@ -259,12 +259,15 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-                   // Update driver_flow table with step progression
+                   // Update driver_flow table with step progression and timestamp
       await _supabase
           .from('driver_flow')
           .update({
             'current_step': 'passenger_onboard',
             'progress_percentage': 50,
+            'passenger_onboard_at': SATimeUtils.getCurrentSATimeISO(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId);
 
@@ -299,6 +302,106 @@ class DriverFlowApiService {
     }
   }
 
+  /// Mark passenger as no-show
+  static Future<void> markPassengerNoShow(
+    int jobId,
+    int tripIndex, {
+    required String comment,
+    required double gpsLat,
+    required double gpsLng,
+    double? gpsAccuracy,
+  }) async {
+    try {
+      Log.d('=== MARK PASSENGER NO-SHOW ===');
+      Log.d('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('Comment: $comment');
+
+      // Validate comment is not empty
+      if (comment.trim().isEmpty) {
+        throw Exception('Comment is required when marking passenger as no-show');
+      }
+
+      final jobResponse = await _supabase
+          .from('jobs')
+          .select('driver_id')
+          .eq('id', jobId)
+          .single();
+
+      final driverId = jobResponse['driver_id'];
+      if (driverId == null) {
+        throw Exception('No driver assigned to job $jobId');
+      }
+
+      // Validate pickup arrival is completed (driver must have arrived first)
+      final driverFlowResponse = await _supabase
+          .from('driver_flow')
+          .select('pickup_arrive_time')
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      if (driverFlowResponse == null || driverFlowResponse['pickup_arrive_time'] == null) {
+        throw Exception('Cannot mark no-show: Driver must arrive at pickup location first');
+      }
+
+      // Update trip_progress table to mark this trip as completed
+      // This ensures the database trigger validates trips correctly
+      await _supabase
+          .from('trip_progress')
+          .update({
+            'status': 'completed',
+            'completed_at': SATimeUtils.getCurrentSATimeISO(),
+            'notes': comment,
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId)
+          .eq('trip_index', tripIndex);
+
+      Log.d('Trip $tripIndex marked as completed (no-show) in trip_progress');
+
+      // Check if all trips are now completed
+      final allTripsResponse = await _supabase
+          .from('trip_progress')
+          .select('status')
+          .eq('job_id', jobId);
+
+      final allTrips = allTripsResponse as List<dynamic>;
+      final allTripsCompleted = allTrips.isNotEmpty && 
+          allTrips.every((trip) => trip['status'] == 'completed');
+      Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
+
+      // Determine next step: if all trips completed, advance to vehicle_return, otherwise trip_complete
+      final nextStep = allTripsCompleted ? 'vehicle_return' : 'trip_complete';
+      final progressPercentage = allTripsCompleted ? 100 : 83;
+
+      // Update driver_flow table with no-show information and step progression
+      await _supabase
+          .from('driver_flow')
+          .update({
+            'passenger_no_show_ind': true,
+            'passenger_no_show_comment': comment.trim(),
+            'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
+            'current_step': nextStep,
+            'progress_percentage': progressPercentage,
+            'transport_completed_ind': allTripsCompleted,
+            'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
+            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+            'updated_at': SATimeUtils.getCurrentSATimeISO(),
+          })
+          .eq('job_id', jobId);
+
+      Log.d('=== PASSENGER NO-SHOW RECORDED ===');
+      Log.d('Next step: $nextStep');
+      Log.d('All trips completed: $allTripsCompleted');
+      
+      // Force refresh of job progress data
+      await getJobProgress(jobId);
+    } catch (e) {
+      Log.e('=== ERROR MARKING PASSENGER NO-SHOW ===');
+      Log.e('Error: $e');
+      throw Exception('Failed to mark passenger as no-show: $e');
+    }
+  }
+
   /// Record arrival at dropoff location
   static Future<void> arriveAtDropoff(
     int jobId,
@@ -329,6 +432,7 @@ class DriverFlowApiService {
              'current_step': 'dropoff_arrival',
              'progress_percentage': 67,
              'transport_completed_ind': true,
+             'dropoff_arrive_at': SATimeUtils.getCurrentSATimeISO(),
              'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
              'updated_at': SATimeUtils.getCurrentSATimeISO(),
            })
@@ -415,6 +519,7 @@ class DriverFlowApiService {
             'current_step': 'trip_complete',
             'progress_percentage': 83,
             'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
+            'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
@@ -556,6 +661,47 @@ class DriverFlowApiService {
         final errorMsg = 'Job $jobId cannot be closed: Agent ID is missing. Please assign an agent to this job before closing it.';
         Log.e('Validation failed: $errorMsg');
         throw Exception(errorMsg);
+      }
+
+      // Validate vehicle has been returned (job_closed_odo should be set)
+      final driverFlowResponse = await _supabase
+          .from('driver_flow')
+          .select('job_closed_odo, transport_completed_ind')
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      if (driverFlowResponse == null) {
+        final errorMsg = 'Job $jobId cannot be closed: Driver flow record not found. Please return the vehicle first.';
+        Log.e('Validation failed: $errorMsg');
+        throw Exception(errorMsg);
+      }
+
+      final jobClosedOdo = driverFlowResponse['job_closed_odo'];
+      if (jobClosedOdo == null) {
+        final errorMsg = 'Job $jobId cannot be closed: Vehicle has not been returned. Please return the vehicle first.';
+        Log.e('Validation failed: $errorMsg');
+        throw Exception(errorMsg);
+      }
+
+      // Validate all trips are completed
+      final tripProgressResponse = await _supabase
+          .from('trip_progress')
+          .select('status')
+          .eq('job_id', jobId);
+
+      final allTrips = tripProgressResponse as List<dynamic>;
+      
+      if (allTrips.isEmpty) {
+        Log.w('Warning: No trip_progress records found for job $jobId. Job may not have any trips.');
+      } else {
+        final incompleteTrips = allTrips.where((trip) => trip['status'] != 'completed').toList();
+        if (incompleteTrips.isNotEmpty) {
+          final errorMsg = 'Job $jobId cannot be closed: Not all trips are completed. Please complete all trips before closing the job.';
+          Log.e('Validation failed: $errorMsg');
+          Log.e('Total trips: ${allTrips.length}, Incomplete trips: ${incompleteTrips.length}');
+          throw Exception(errorMsg);
+        }
+        Log.d('Trip validation passed: All ${allTrips.length} trip(s) are completed');
       }
 
       // Update job status to completed
