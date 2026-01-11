@@ -489,7 +489,7 @@ class DriverFlowApiService {
 
       // Update trip_progress table to mark this specific trip as completed
       // This is required for the database trigger that validates all trips are completed before closing job
-      await _supabase
+      final updateResponse = await _supabase
           .from('trip_progress')
           .update({
             'status': 'completed',
@@ -497,9 +497,15 @@ class DriverFlowApiService {
             'updated_at': SATimeUtils.getCurrentSATimeISO(),
           })
           .eq('job_id', jobId)
-          .eq('trip_index', tripIndex);
+          .eq('trip_index', tripIndex)
+          .select();
 
-      Log.d('Trip $tripIndex marked as completed in trip_progress');
+      if (updateResponse.isEmpty) {
+        Log.e('Error: trip_progress record not found for job $jobId, trip $tripIndex');
+        throw Exception('Trip progress record not found for trip $tripIndex. Cannot complete trip.');
+      }
+
+      Log.d('Trip $tripIndex marked as completed in trip_progress (${updateResponse.length} record(s) updated)');
 
       // Check if all trips are now completed
       final allTripsResponse = await _supabase
