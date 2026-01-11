@@ -886,37 +886,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // For vehicle_return step, show buttons even when completed if job not closed
             // For passenger_pickup step, use _buildActionButton to show Passenger Onboard/No-Show buttons
             // For other steps, only show if not completed
+            // Use _buildActionButton for ALL steps to ensure consistent loading indicators
             if (isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ...[
               SizedBox(height: _isMobile ? 12 : 16),
-              // Use _buildActionButton for vehicle_return and passenger_pickup steps
-              // Use standard action button for other steps
-              (step.id == 'vehicle_return' || step.id == 'passenger_pickup')
-                  ? _buildActionButton(step)
-                  : SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: _getStepAction(step.id),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: ChoiceLuxTheme.richGold,
-                          foregroundColor: Colors.black,
-                          padding: EdgeInsets.symmetric(
-                            vertical: _isMobile ? 14 : 16,
-                            horizontal: _isMobile ? 16 : 24,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(_isMobile ? 10 : 12),
-                          ),
-                          elevation: _isMobile ? 2 : 4,
-                        ),
-                        child: Text(
-                          _getStepActionText(step.id),
-                          style: TextStyle(
-                            fontSize: _isMobile ? 14 : 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
+              _buildActionButton(step),
             ],
           ],
         ),
@@ -1511,6 +1484,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     } catch (e) {
       if (mounted) {
         SnackBarUtils.showError(context, 'Failed to complete trip: $e');
+        // Reload progress to restore correct UI state after error
+        // This prevents the black screen issue when _loadJobProgress fails
+        try {
+          await _loadJobProgress();
+        } catch (reloadError) {
+          Log.e('Error reloading progress after trip completion error: $reloadError');
+        }
       }
     } finally {
       if (mounted) {
@@ -1946,7 +1926,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Check if job is confirmed before allowing start
         if (widget.job.isConfirmed == true) {
           return _buildLuxuryButton(
-            onPressed: _startJob,
+            onPressed: _isUpdating ? null : _startJob,
             icon: Icons.play_arrow_rounded,
             label: 'Start Job',
             isPrimary: true,
@@ -2009,7 +1989,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           // Check if job is confirmed before allowing start
           if (widget.job.isConfirmed == true) {
             return _buildLuxuryButton(
-              onPressed: _startJob,
+              onPressed: _isUpdating ? null : _startJob,
               icon: Icons.play_arrow_rounded,
               label: 'Start Job',
               isPrimary: true,
