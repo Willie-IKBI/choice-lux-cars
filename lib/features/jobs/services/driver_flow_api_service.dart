@@ -518,29 +518,59 @@ class DriverFlowApiService {
       // Check if all trips are now completed
       final allTripsResponse = await _supabase
           .from('trip_progress')
-          .select('status')
-          .eq('job_id', jobId);
+          .select('status, trip_index')
+          .eq('job_id', jobId)
+          .order('trip_index', ascending: true);
 
       final allTrips = allTripsResponse as List<dynamic>;
       final allTripsCompleted = allTrips.isNotEmpty && 
           allTrips.every((trip) => trip['status'] == 'completed');
       Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
 
-      // Determine next step: if all trips completed, advance to vehicle_return, otherwise stay on trip_complete
-      final nextStep = allTripsCompleted ? 'vehicle_return' : 'trip_complete';
-      final progressPercentage = allTripsCompleted ? 100 : 83;
+      // Determine next step and prepare update payload
+      String nextStep;
+      int progressPercentage;
+      Map<String, dynamic> updatePayload = {
+        'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
+        'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
+        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      if (allTripsCompleted) {
+        // All trips completed - advance to vehicle_return
+        nextStep = 'vehicle_return';
+        progressPercentage = 100;
+        updatePayload['current_step'] = nextStep;
+        updatePayload['progress_percentage'] = progressPercentage;
+        Log.d('All trips completed, advancing to vehicle_return');
+      } else {
+        // More trips exist - reset flow to pickup_arrival for next trip
+        // Find next incomplete trip
+        final nextIncompleteTrip = allTrips.firstWhere(
+          (trip) => trip['status'] != 'completed',
+          orElse: () => allTrips.last,
+        );
+        final nextTripIndex = nextIncompleteTrip['trip_index'] as int;
+        
+        nextStep = 'pickup_arrival';
+        progressPercentage = 17; // Reset to pickup_arrival progress
+        updatePayload['current_step'] = nextStep;
+        updatePayload['progress_percentage'] = progressPercentage;
+        // Clear trip-specific fields for the next trip (they'll be set when driver arrives at pickup)
+        updatePayload['pickup_arrive_time'] = null;
+        updatePayload['pickup_arrive_loc'] = null;
+        updatePayload['passenger_onboard_at'] = null;
+        updatePayload['dropoff_arrive_at'] = null;
+        // Keep vehicle_collected = true (don't reset this)
+        // Keep trip_complete_at (historical record)
+        Log.d('More trips exist, resetting to pickup_arrival for trip $nextTripIndex');
+      }
 
       // Update driver_flow table with all changes in one call
       await _supabase
           .from('driver_flow')
-          .update({
-            'current_step': nextStep, // Advance to vehicle_return if all trips completed, otherwise stay on trip_complete
-            'progress_percentage': progressPercentage,
-            'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
-            'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
+          .update(updatePayload)
           .eq('job_id', jobId);
 
       Log.d('=== TRIP COMPLETED ===');
@@ -887,25 +917,29 @@ class DriverFlowApiService {
   }
 
   /// Static wrapper for trip progress
+  /// Returns all trips from trip_progress table for the given job
   static Future<List<Map<String, dynamic>>> getTripProgress(int jobId) async {
     try {
       Log.d('Getting trip progress for job ID: $jobId');
       
-      // Query driver_flow table for this job instead of transport table
+      // Query trip_progress table to get all trips for this job
       final response = await _supabase
-          .from('driver_flow')
+          .from('trip_progress')
           .select()
           .eq('job_id', jobId)
-          .maybeSingle(); // Returns single row or null if not found
+          .order('trip_index', ascending: true);
       
-      if (response == null) {
-        Log.d('No driver flow record found for job $jobId');
+      if (response.isEmpty) {
+        Log.d('No trip progress records found for job $jobId');
         return [];
       }
       
-      // Return as a list with single item to maintain compatibility
-      Log.d('Found driver flow record: $response');
-      return [response];
+      Log.d('Found ${response.length} trip(s) for job $jobId');
+      for (var trip in response) {
+        Log.d('Trip ${trip['trip_index']}: status = ${trip['status']}');
+      }
+      
+      return List<Map<String, dynamic>>.from(response);
     } catch (e) {
       Log.e('Error getting trip progress: $e');
       return [];

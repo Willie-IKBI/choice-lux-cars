@@ -307,11 +307,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
         final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
         
+        // Find next incomplete trip index
+        final nextTripIndex = _findNextIncompleteTripIndex(trips);
+        
         setState(() {
           _jobProgress = null;
           _tripProgress = trips;
           _jobAddresses = addresses;
-          _currentTripIndex = 1;
+          _currentTripIndex = nextTripIndex;
           _progressPercentage = 0;
           // Only set _isLoading to false if we set it to true
           if (!skipLoadingState) {
@@ -338,13 +341,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       Log.d('=== LOADED JOB ADDRESSES ===');
       Log.d('Addresses: $addresses');
 
+      // Find next incomplete trip index
+      final nextTripIndex = _findNextIncompleteTripIndex(trips);
+      
       setState(() {
         _jobProgress = progress;
         _tripProgress = trips;
         _jobAddresses = addresses;
-        _currentTripIndex = 1; // Single transport record per job
+        _currentTripIndex = nextTripIndex;
         _progressPercentage = p['progress_percentage'] ?? 0;
       });
+      
+      Log.d('Current trip index set to: $_currentTripIndex (out of ${trips.length} total trips)');
 
       // Update step statuses
       _updateStepStatus();
@@ -742,6 +750,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      // Trip indicator (only show if multiple trips exist)
+                      if (_tripProgress != null && _tripProgress!.length > 1)
+                        Padding(
+                          padding: EdgeInsets.only(bottom: 4),
+                          child: Text(
+                            'Trip $_currentTripIndex of ${_tripProgress!.length}',
+                            style: TextStyle(
+                              fontSize: _isMobile ? 11 : 12,
+                              color: ChoiceLuxTheme.richGold,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
                       Text(
                         step.title,
                         style: TextStyle(
@@ -1494,10 +1515,27 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       if (mounted) {
         await _loadJobProgress(skipLoadingState: true);
-        SnackBarUtils.showSuccess(context, 'Trip completed!');
-
-        // Step completed - user must manually proceed to next step
-        // No automatic advancement - user controls progression
+        
+        // Check if more trips exist
+        final allTripsCompleted = _jobProgress != null && 
+            (_jobProgress!['transport_completed_ind'] == true);
+        final totalTrips = _tripProgress?.length ?? 0;
+        
+        if (allTripsCompleted) {
+          SnackBarUtils.showSuccess(
+            context, 
+            'All trips completed! Proceed to vehicle return.',
+          );
+        } else {
+          // More trips exist - show message about next trip
+          final nextTripIndex = _tripProgress != null 
+              ? _findNextIncompleteTripIndex(_tripProgress!)
+              : _currentTripIndex + 1;
+          SnackBarUtils.showSuccess(
+            context, 
+            'Trip $_currentTripIndex completed! Starting Trip $nextTripIndex...',
+          );
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -2357,6 +2395,33 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     // For other steps, check if the step is completed
     return _jobSteps[stepIndex].isCompleted;
+  }
+
+  /// Find the next incomplete trip index
+  /// Returns the trip_index of the first trip that is not completed
+  /// If all trips are completed, returns the last trip's index
+  /// If no trips exist, returns 1 as default
+  int _findNextIncompleteTripIndex(List<Map<String, dynamic>> trips) {
+    if (trips.isEmpty) {
+      Log.d('No trips found, defaulting to trip index 1');
+      return 1;
+    }
+    
+    // Find first trip with status != 'completed'
+    try {
+      final incompleteTrip = trips.firstWhere(
+        (trip) => trip['status'] != 'completed',
+        orElse: () => trips.last, // If all completed, use last trip
+      );
+      
+      final tripIndex = incompleteTrip['trip_index'] as int;
+      Log.d('Found next incomplete trip: index $tripIndex, status: ${incompleteTrip['status']}');
+      return tripIndex;
+    } catch (e) {
+      Log.e('Error finding next incomplete trip: $e');
+      // Fallback to first trip
+      return trips.first['trip_index'] as int? ?? 1;
+    }
   }
 
   /// Build a message indicating the step is locked
