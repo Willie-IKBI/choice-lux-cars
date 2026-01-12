@@ -526,12 +526,16 @@ class DriverFlowApiService {
           allTrips.every((trip) => trip['status'] == 'completed');
       Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
 
+      // Determine next step: if all trips completed, advance to vehicle_return, otherwise stay on trip_complete
+      final nextStep = allTripsCompleted ? 'vehicle_return' : 'trip_complete';
+      final progressPercentage = allTripsCompleted ? 100 : 83;
+
       // Update driver_flow table with all changes in one call
       await _supabase
           .from('driver_flow')
           .update({
-            'current_step': 'trip_complete',
-            'progress_percentage': 83,
+            'current_step': nextStep, // Advance to vehicle_return if all trips completed, otherwise stay on trip_complete
+            'progress_percentage': progressPercentage,
             'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
             'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),

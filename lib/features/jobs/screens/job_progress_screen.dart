@@ -559,12 +559,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                        _jobProgress!['current_step'] == 'completed';
           break;
         case 'trip_complete':
-          // Trip complete is completed only when we've moved beyond this step
-          // OR when passenger is marked as no-show (trip automatically completed)
-          // NOT when it's the current step - that's when the action button should show
+          // Trip complete is completed when:
+          // 1. trip_complete_at is set (trip was actually completed)
+          // 2. OR when we've moved beyond this step (current_step is vehicle_return or completed)
+          // 3. OR when passenger is marked as no-show and transport is completed
           final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
           final transportCompleted = _jobProgress!['transport_completed_ind'] == true;
-          isCompleted = (isNoShow && transportCompleted) ||
+          final tripCompleteAt = _jobProgress!['trip_complete_at'];
+          isCompleted = tripCompleteAt != null || // Trip was completed (trip_complete_at is set)
+                       (isNoShow && transportCompleted) ||
                        _jobProgress!['current_step'] == 'vehicle_return' ||
                        _jobProgress!['current_step'] == 'completed';
           break;
@@ -1033,10 +1036,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         _jobProgress!['job_status'] != 'completed') {
       final databaseStep = _jobProgress!['current_step'].toString();
       
-      // Special case: If trip is completed, advance to vehicle_return step
-      if (databaseStep == 'trip_complete' && _jobProgress!['transport_completed_ind'] == true) {
+      // Special case: If trip is completed (either all trips completed OR trip_complete_at is set), advance to vehicle_return step
+      final tripCompleteAt = _jobProgress!['trip_complete_at'];
+      final transportCompleted = _jobProgress!['transport_completed_ind'] == true;
+      
+      if (databaseStep == 'trip_complete' && (transportCompleted || tripCompleteAt != null)) {
         newCurrentStep = 'vehicle_return';
-        Log.d('Trip completed, advancing from trip_complete to vehicle_return');
+        Log.d('Trip completed, advancing from trip_complete to vehicle_return (transport_completed: $transportCompleted, trip_complete_at: $tripCompleteAt)');
       } else {
         // Map database step ID to UI step ID
         newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
@@ -1055,9 +1061,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Vehicle is returned but job not closed yet - stay on vehicle_return step
         newCurrentStep = 'vehicle_return';
         Log.d('Vehicle returned, staying on vehicle_return step (job_status: ${_jobProgress!['job_status']})');
-      } else if (_jobProgress!['transport_completed_ind'] == true) {
+      } else if (_jobProgress!['transport_completed_ind'] == true || _jobProgress!['trip_complete_at'] != null) {
+        // Transport is completed OR trip was completed (trip_complete_at is set)
         newCurrentStep = 'vehicle_return';
-        Log.d('Transport completed, moving to vehicle return');
+        Log.d('Transport completed or trip completed, moving to vehicle return (transport_completed: ${_jobProgress!['transport_completed_ind']}, trip_complete_at: ${_jobProgress!['trip_complete_at']})');
       } else if (_jobProgress!['pickup_ind'] == true) {
         newCurrentStep = 'dropoff_arrival';
         Log.d('Passenger onboard, moving to dropoff arrival');
@@ -2308,7 +2315,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     final stepIndex = _jobSteps.indexWhere((step) => step.id == stepId);
     if (stepIndex == -1) return false;
 
-    // Check if the step is completed
+    // Special case for trip_complete: Check actual completion indicators, not just step flag
+    // This ensures the flow works even if current_step hasn't advanced yet
+    if (stepId == 'trip_complete' && _jobProgress != null) {
+      final tripCompleteAt = _jobProgress!['trip_complete_at'];
+      final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+      final transportCompleted = _jobProgress!['transport_completed_ind'] == true;
+      final currentStep = _jobProgress!['current_step'];
+      
+      // Trip is completed if trip_complete_at is set, or if we've moved beyond this step
+      return tripCompleteAt != null ||
+             (isNoShow && transportCompleted) ||
+             currentStep == 'vehicle_return' ||
+             currentStep == 'completed';
+    }
+
+    // For other steps, check if the step is completed
     return _jobSteps[stepIndex].isCompleted;
   }
 
