@@ -7,7 +7,8 @@ class DriverFlowApiService {
   static final SupabaseClient _supabase = Supabase.instance.client;
 
   /// Start a job - marks the job as started and records the start time
-  static Future<void> startJob(
+  /// Returns the updated driver_flow progress data
+  static Future<Map<String, dynamic>> startJob(
     int jobId, {
     required double odoStartReading,
     required String pdpStartImage,
@@ -80,7 +81,20 @@ class DriverFlowApiService {
         'updated_at': currentTime,
       }, onConflict: 'job_id');
 
+      // Return the updated driver_flow data
+      final progressResponse = await _supabase
+          .from('driver_flow')
+          .select()
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      if (progressResponse == null) {
+        throw Exception('Failed to retrieve driver_flow data after starting job');
+      }
+
       Log.d('=== JOB STARTED SUCCESSFULLY ===');
+      
+      return progressResponse as Map<String, dynamic>;
 
       // Send notification
       try {

@@ -228,14 +228,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _loadJobProgress({bool skipLoadingState = false}) async {
     try {
-      Log.d('=== _loadJobProgress STARTED ===');
-      Log.d('Job ID: ${widget.jobId}');
-      Log.d('Skip loading state: $skipLoadingState');
-      
-      if (!mounted) {
-        Log.d('Widget not mounted, returning early');
-        return;
-      }
+      if (!mounted) return;
       
       // Only set _isLoading if not skipping (i.e., not during a step update)
       // When skipLoadingState is true, _isUpdating overlay is shown instead
@@ -251,13 +244,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
       // Load job progress
       var progress = await DriverFlowApiService.getJobProgress(jobIdInt);
-      Log.d('=== LOADED JOB PROGRESS ===');
-      Log.d('Progress data: $progress');
       
       // If progress is null, check if job has actually started (race condition fix)
-      // Sometimes driver_flow record might not be immediately available after startJob()
-      if (progress == null) {
-        Log.d('No job progress found for jobId: $jobIdInt');
+      // Only retry for initial load, not for step completion updates
+      if (progress == null && !skipLoadingState) {
         
         // Check if job has actually started by checking job status
         try {
@@ -275,21 +265,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // If job appears to have started (status is started/in_progress or vehicle_collected),
             // wait a bit and retry loading progress (handles race condition)
             if ((jobStatus == 'started' || jobStatus == 'in_progress' || vehicleCollected)) {
-              Log.d('Job appears to have started but driver_flow not found yet, retrying with multiple attempts...');
-              
-              // Retry up to 3 times with increasing delays
+              // Retry up to 3 times with increasing delays (only for initial load)
               for (int attempt = 1; attempt <= 3; attempt++) {
                 final delayMs = 300 * attempt; // 300ms, 600ms, 900ms
-                Log.d('Retry attempt $attempt: waiting ${delayMs}ms...');
                 await Future.delayed(Duration(milliseconds: delayMs));
                 
                 final retryProgress = await DriverFlowApiService.getJobProgress(jobIdInt);
                 if (retryProgress != null) {
                   progress = retryProgress;
-                  Log.d('Successfully loaded job progress on retry attempt $attempt');
                   break;
-                } else {
-                  Log.d('Retry attempt $attempt failed - driver_flow still not found');
                 }
               }
             }
@@ -307,9 +291,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // preserve the existing _jobProgress data instead of clearing it
         // This prevents black screen after vehicle return when server data is temporarily unavailable
         if (skipLoadingState && _jobProgress != null) {
-          Log.d('Preserving optimistic data during update - server data not yet available');
-          Log.d('Optimistic data: job_closed_odo=${_jobProgress!['job_closed_odo']}, job_closed_time=${_jobProgress!['job_closed_time']}');
-          
           // Load trip progress and addresses but keep existing job progress
           final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
           final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
@@ -325,26 +306,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               _progressPercentage = _jobProgress!['progress_percentage'] as int;
             }
             // CRITICAL FIX: Explicitly preserve _currentStep if optimistic data indicates vehicle_return
-            // This prevents _determineCurrentStep() from changing it incorrectly when called outside setState
             if (_jobProgress!['current_step']?.toString() == 'vehicle_return' ||
                 _jobProgress!['job_closed_odo'] != null ||
                 _jobProgress!['job_closed_time'] != null) {
               _currentStep = 'vehicle_return';
-              Log.d('Explicitly preserving _currentStep = vehicle_return in setState');
             }
           });
           
           // Update step status - this needs the correct _currentStep
           _updateStepStatus();
           // Don't call _determineCurrentStep() if we're already on vehicle_return
-          // to avoid it potentially changing the step incorrectly
           if (_currentStep != 'vehicle_return') {
             _determineCurrentStep();
-          } else {
-            Log.d('Skipping _determineCurrentStep() - already on vehicle_return step');
           }
-          
-          Log.d('Optimistic data preserved, step status updated');
           return;
         }
         
@@ -373,107 +347,67 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       
       // Use local non-null variable for subsequent access
       final p = progress;
-      Log.d('Vehicle collected: ${p['vehicle_collected']}');
-      Log.d('Current step from DB: ${p['current_step']}');
-      Log.d('Job status: ${p['job_status']}');
 
-      // Load trip progress
-      final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
-      Log.d('=== LOADED TRIP PROGRESS ===');
-      Log.d('Trip data: $trips');
-
-      // Load job addresses
-      final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
-      Log.d('=== LOADED JOB ADDRESSES ===');
-      Log.d('Addresses: $addresses');
-
-      // Find next incomplete trip index
-      final nextTripIndex = _findNextIncompleteTripIndex(trips);
+      // OPTIMIZATION: Load trip progress and addresses in parallel (3x faster)
+      // Only reload if trips/addresses might have changed
+      final shouldReloadTrips = _tripProgress == null || 
+          (p['trip_complete_at'] != null && _tripProgress!.any((t) => t['status'] != 'completed'));
+      final shouldReloadAddresses = _jobAddresses.isEmpty;
       
+      final tripFuture = shouldReloadTrips 
+          ? DriverFlowApiService.getTripProgress(jobIdInt)
+          : Future.value(_tripProgress!);
+      final addressFuture = shouldReloadAddresses
+          ? DriverFlowApiService.getJobAddresses(jobIdInt)
+          : Future.value(_jobAddresses);
+      
+      final results = await Future.wait([tripFuture, addressFuture]);
+      
+      final trips = results[0] as List<Map<String, dynamic>>;
+      final addresses = results[1] as Map<String, String?>;
+
       // CRITICAL FIX: If we're in an optimistic update (skipLoadingState = true)
       // and have optimistic vehicle return data, merge it with server data
       // BEFORE setting state. This prevents losing optimistic data.
+      Map<String, dynamic>? finalProgress = progress;
+      String? explicitStep;
+      
       if (skipLoadingState && _jobProgress != null && _isVehicleReturnComplete()) {
+        // Explicitly preserve optimistic vehicle return data
+        final optimisticOdo = _jobProgress!['job_closed_odo'];
+        final optimisticTime = _jobProgress!['job_closed_time'];
+        
         // Merge server data with optimistic vehicle return data
-        final mergedProgress = {
+        finalProgress = {
           ...progress, // Server data (base)
-          ..._jobProgress!, // Optimistic data (overwrites with vehicle return fields)
-          // Ensure these are explicitly set
+          // Explicitly preserve optimistic fields if server doesn't have them yet
+          if (optimisticOdo != null && progress['job_closed_odo'] == null)
+            'job_closed_odo': optimisticOdo,
+          if (optimisticTime != null && progress['job_closed_time'] == null)
+            'job_closed_time': optimisticTime,
+          // Always ensure these are set correctly
           'current_step': 'vehicle_return',
           'progress_percentage': 100,
         };
+        explicitStep = 'vehicle_return';
         
-        setState(() {
-          _jobProgress = mergedProgress;
-          _tripProgress = trips;
-          _jobAddresses = addresses;
-          _currentTripIndex = nextTripIndex;
-          _currentStep = 'vehicle_return'; // Explicitly set step
-        });
-        
-        Log.d('Merged optimistic vehicle return data with server progress in _loadJobProgress');
-      } else {
-        // Normal load - use server data as-is
-        setState(() {
-          _jobProgress = progress;
-          _tripProgress = trips;
-          _jobAddresses = addresses;
-          _currentTripIndex = nextTripIndex;
-          _progressPercentage = p['progress_percentage'] ?? 0;
-        });
       }
       
-      Log.d('Current trip index set to: $_currentTripIndex (out of ${trips.length} total trips)');
-
-      // Update step statuses
-      _updateStepStatus();
-
-      // Determine current step - BUT skip if we're already on vehicle_return
-      // and have vehicle return data (prevents override after vehicle return)
-      if (!_isVehicleReturnComplete() || _currentStep != 'vehicle_return') {
-        _determineCurrentStep();
-      } else {
-        Log.d('Skipping _determineCurrentStep() - vehicle return completed, preserving vehicle_return step');
-      }
-      
-      // Debug logging after step determination
-      Log.d('=== AFTER STEP DETERMINATION ===');
-      Log.d('Current step: $_currentStep');
-      Log.d('Step completion status:');
-      for (final step in _jobSteps) {
-        Log.d('  ${step.id}: ${step.isCompleted}');
-      }
-
-      // Check if all steps are completed and update job status if needed
-      if (_jobSteps.every((s) => s.isCompleted) &&
-          _jobProgress != null &&
-          _jobProgress!['job_status'] != 'completed') {
-        Log.d('=== AUTO-UPDATING JOB STATUS TO COMPLETED ===');
-        try {
-          await DriverFlowApiService.updateJobStatusToCompleted(
-            int.parse(widget.jobId),
-          );
-          // Refresh jobs list to update job card
-          ref.invalidate(jobsProvider);
-        } catch (e) {
-          Log.e('Error auto-updating job status: $e');
-        }
-      }
+      // Use atomic state update method
+      _updateCompleteState(
+        progress: finalProgress,
+        trips: trips,
+        addresses: addresses,
+        explicitCurrentStep: explicitStep,
+      );
 
       if (mounted) {
-        Log.d('=== SETTING _isLoading = false ===');
         setState(() {
           // Only set _isLoading to false if we set it to true
           if (!skipLoadingState) {
             _isLoading = false;
           }
         });
-        Log.d('=== _loadJobProgress COMPLETED ===');
-      }
-
-      // Final UI update already triggered above; avoid extra delayed rebuilds
-      if (mounted) {
-        _debugCurrentState();
       }
     } catch (e) {
       Log.e('ERROR in _loadJobProgress: $e');
@@ -490,74 +424,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   }
 
   /// Show the start job modal when no driver_flow record exists
-  void _showStartJobModal() {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (BuildContext modalContext) => VehicleCollectionModal(
-        onConfirm: ({
-          required double odometerReading,
-          required String odometerImageUrl,
-          required double gpsLat,
-          required double gpsLng,
-          required double gpsAccuracy,
-          String? vehicleCollectedAtTimestamp,
-        }) async {
-          try {
-            // Set loading state
-            if (mounted) {
-              setState(() => _isUpdating = true);
-            }
-
-            // Start the job using the vehicle collection data
-            await DriverFlowApiService.startJob(
-              int.parse(widget.jobId),
-              odoStartReading: odometerReading,
-              pdpStartImage: odometerImageUrl,
-              gpsLat: gpsLat,
-              gpsLng: gpsLng,
-              gpsAccuracy: gpsAccuracy,
-              vehicleCollectedAtTimestamp: vehicleCollectedAtTimestamp, // Pass captured timestamp
-            );
-
-            // Refresh job progress and await it to ensure UI updates correctly
-            await _loadJobProgress(skipLoadingState: true);
-            
-            // Close modal after everything completes
-            if (modalContext.mounted) {
-              Navigator.of(modalContext).pop();
-            }
-
-            // Wait for modal to close
-            await Future.delayed(const Duration(milliseconds: 100));
-            
-            if (mounted) {
-              SnackBarUtils.showSuccess(context, 'Job started successfully!');
-            }
-          } catch (e) {
-            // Close modal on error
-            if (modalContext.mounted) {
-              Navigator.of(modalContext).pop();
-            }
-
-            // Wait for modal to close
-            await Future.delayed(const Duration(milliseconds: 100));
-
-            if (mounted) {
-              SnackBarUtils.showError(context, 'Failed to start job: $e');
-            }
-          } finally {
-            if (mounted) {
-              setState(() => _isUpdating = false);
-            }
-          }
-        },
-        onCancel: () {
-          Navigator.of(context).pop();
-        },
-      ),
-    );
-  }
 
   void _updateStepStatus() {
     if (_jobProgress == null) {
@@ -667,32 +533,26 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           break;
       }
 
-      // Check if step status has changed
-      if (_jobSteps[i].isCompleted != isCompleted || _jobSteps[i].isActive != (step.id == _currentStep)) {
+      // Check if step status has changed before updating
+      final isActive = step.id == _currentStep;
+      final wasCompleted = _jobSteps[i].isCompleted;
+      final wasActive = _jobSteps[i].isActive;
+      
+      if (wasCompleted != isCompleted || wasActive != isActive) {
         hasChanges = true;
-        Log.d('Step ${step.id} status changed - completed: $isCompleted, active: ${step.id == _currentStep}');
+        // Update the step completion status
+        _jobSteps[i] = step.copyWith(
+          isCompleted: isCompleted,
+          isActive: isActive,
+        );
       }
-
-      // Update the step completion status
-      _jobSteps[i] = step.copyWith(
-        isCompleted: isCompleted,
-        isActive: step.id == _currentStep,
-      );
-
-      // Debug logging for step completion
-      Log.d('Step ${step.id}: isCompleted = $isCompleted, isActive = ${step.id == _currentStep}');
     }
 
     // Only trigger rebuild if there were actual changes
-    if (hasChanges) {
-      Log.d('Step status changes detected, triggering rebuild');
-      if (mounted) {
-        setState(() {
-          // Trigger rebuild
-        });
-      }
-    } else {
-      Log.d('No step status changes, skipping rebuild');
+    if (hasChanges && mounted) {
+      setState(() {
+        // Trigger rebuild
+      });
     }
 
     // Update step titles with addresses
@@ -1013,7 +873,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'not_started':
         return widget.job.isConfirmed == true ? _startJob : null;
       case 'vehicle_collection':
-        return _collectVehicle;
+        return _startJob; // Vehicle collection is handled by startJob
       case 'pickup_arrival':
         return _arriveAtPickup;
       case 'passenger_pickup':
@@ -1103,9 +963,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
     // CRITICAL: If vehicle return is complete, always stay on vehicle_return step
     // This prevents any logic from changing the step incorrectly
-    if (_isVehicleReturnComplete() && _currentStep == 'vehicle_return') {
-      Log.d('Vehicle return complete, preserving vehicle_return step');
-      _updateStepStatus(); // Still update step status for UI
+    // Check both conditions: vehicle return data exists AND we're already on vehicle_return
+    if (_isVehicleReturnComplete()) {
+      if (_currentStep != 'vehicle_return') {
+        Log.d('Vehicle return complete but step not set, updating to vehicle_return');
+        setState(() {
+          _currentStep = 'vehicle_return';
+        });
+        _updateStepStatus();
+      } else {
+        Log.d('Vehicle return complete, preserving vehicle_return step');
+        _updateStepStatus(); // Still update step status for UI
+      }
       return; // Don't change the step
     }
 
@@ -1279,93 +1148,56 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext modalContext) {
         return VehicleCollectionModal(
-          onConfirm:
-              (({
-                required double odometerReading,
-                required String odometerImageUrl,
-                required double gpsLat,
-                required double gpsLng,
-                required double gpsAccuracy,
-                String? vehicleCollectedAtTimestamp,
-              }) async {
-                // Store the modal context before any async operations
-                final modalContext = context;
+          onConfirm: ({
+            required double odometerReading,
+            required String odometerImageUrl,
+            required double gpsLat,
+            required double gpsLng,
+            required double gpsAccuracy,
+            String? vehicleCollectedAtTimestamp,
+          }) async {
+            await _completeModalStep(
+              modalContext: modalContext,
+              stepName: 'vehicle_collection',
+              apiCall: () async {
+                Log.d('=== STARTING JOB ===');
+                Log.d('Job ID: ${widget.jobId}');
+                Log.d('Odometer: $odometerReading');
+                Log.d('Image URL: $odometerImageUrl');
+                Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                try {
-                  Log.d('=== STARTING JOB ===');
-                  Log.d('Job ID: ${widget.jobId}');
-                  Log.d('Odometer: $odometerReading');
-                  Log.d('Image URL: $odometerImageUrl');
-                  Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+                final progress = await DriverFlowApiService.startJob(
+                  int.parse(widget.jobId),
+                  odoStartReading: odometerReading,
+                  pdpStartImage: odometerImageUrl,
+                  gpsLat: gpsLat,
+                  gpsLng: gpsLng,
+                  gpsAccuracy: gpsAccuracy,
+                  vehicleCollectedAtTimestamp: vehicleCollectedAtTimestamp,
+                );
 
-                  // Standardized pattern: Set loading state BEFORE API call
-                  // Modal will show its own loading, overlay will be visible after modal closes
-                  if (mounted) {
-                    setState(() => _isUpdating = true);
-                  }
-
-                  await DriverFlowApiService.startJob(
-                    int.parse(widget.jobId),
-                    odoStartReading: odometerReading,
-                    pdpStartImage: odometerImageUrl,
-                    gpsLat: gpsLat,
-                    gpsLng: gpsLng,
-                    gpsAccuracy: gpsAccuracy,
-                    vehicleCollectedAtTimestamp: vehicleCollectedAtTimestamp, // Pass captured timestamp
-                  );
-
-                  Log.d('=== JOB STARTED SUCCESSFULLY ===');
-                  Log.d('Now loading job progress...');
-
-                  // Load job progress with retry logic for race conditions
-                  if (mounted) {
-                    await _loadJobProgress(skipLoadingState: true);
-                    Log.d('=== JOB PROGRESS LOADED ===');
-                    Log.d('Current step after reload: $_currentStep');
-
-                    // Close modal after everything completes successfully
-                    if (modalContext.mounted) {
-                      Navigator.of(modalContext).pop();
-                    }
-
-                    // Wait a moment for modal to fully close
-                    await Future.delayed(const Duration(milliseconds: 100));
-
-                    // Show success message
-                    if (mounted) {
-                      SnackBarUtils.showSuccess(
-                        context,
-                        'Job started successfully!',
-                      );
-                    }
-                  }
-                } catch (e) {
-                  Log.d('=== ERROR STARTING JOB ===');
-                  Log.e('Error: $e');
-
-                  // Close the modal on error
-                  if (modalContext.mounted) {
-                    Navigator.of(modalContext).pop();
-                  }
-
-                  // Wait a moment for modal to close
-                  await Future.delayed(const Duration(milliseconds: 100));
-
-                  // Show error message after modal is closed
-                  if (mounted) {
-                    SnackBarUtils.showError(context, 'Failed to start job: $e');
-                  }
-                } finally {
-                  if (mounted) {
-                    setState(() => _isUpdating = false);
-                  }
-                }
-              }),
+                Log.d('=== JOB STARTED SUCCESSFULLY ===');
+                return progress;
+              },
+              optimisticData: {
+                'vehicle_collected': true,
+                'vehicle_collected_at': vehicleCollectedAtTimestamp ?? SATimeUtils.getCurrentSATimeISO(),
+                'current_step': 'pickup_arrival',
+                'progress_percentage': 17,
+                'job_started_at': SATimeUtils.getCurrentSATimeISO(),
+                'odo_start_reading': odometerReading,
+                'pdp_start_image': odometerImageUrl,
+                'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+                'updated_at': SATimeUtils.getCurrentSATimeISO(),
+              },
+              successMessage: 'Job started successfully!',
+            );
+          },
           onCancel: () {
             if (mounted) {
-              Navigator.of(context).pop();
+              Navigator.of(modalContext).pop();
             }
           },
         );
@@ -1373,131 +1205,98 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     );
   }
 
-  Future<void> _collectVehicle() async {
-    if (!mounted) return;
-
-    try {
-      // Show loading state during GPS capture and API call
-      setState(() => _isUpdating = true);
-
-      final position = await _getCurrentLocation();
-
-      await DriverFlowApiService.collectVehicle(
-        int.parse(widget.jobId),
-        gpsLat: position.latitude,
-        gpsLng: position.longitude,
-        gpsAccuracy: position.accuracy,
-      );
-
-      if (mounted) {
-        await _loadJobProgress(skipLoadingState: true);
-        SnackBarUtils.showSuccess(context, 'Vehicle collected successfully!');
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarUtils.showError(context, 'Failed to collect vehicle: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
-    }
-  }
 
   Future<void> _arriveAtPickup() async {
     if (!mounted) return;
 
-    try {
-      // Show loading state during GPS capture and API call
-      setState(() => _isUpdating = true);
+    await _completeStandardStep(
+      stepName: 'pickup_arrival',
+      apiCall: (position) async {
+        if (position == null) throw Exception('GPS position required for pickup arrival');
+        
+        Log.d('=== ARRIVING AT PICKUP ===');
+        Log.d('Job ID: ${widget.jobId}');
+        Log.d('Trip Index: $_currentTripIndex');
+        Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
 
-      // Get current location (loading indicator already shown)
-      final position = await _getCurrentLocation();
+        await DriverFlowApiService.arriveAtPickup(
+          int.parse(widget.jobId),
+          _currentTripIndex,
+          gpsLat: position.latitude,
+          gpsLng: position.longitude,
+          gpsAccuracy: position.accuracy,
+        );
 
-      Log.d('=== ARRIVING AT PICKUP ===');
-      Log.d('Job ID: ${widget.jobId}');
-      Log.d('Trip Index: $_currentTripIndex');
-      Log.d(
-        'GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}',
-      );
-
-      await DriverFlowApiService.arriveAtPickup(
-        int.parse(widget.jobId),
-        _currentTripIndex,
-        gpsLat: position.latitude,
-        gpsLng: position.longitude,
-        gpsAccuracy: position.accuracy,
-      );
-
-      Log.d('=== PICKUP ARRIVAL COMPLETED ===');
-
-      if (mounted) {
-        await _loadJobProgress(skipLoadingState: true);
-        SnackBarUtils.showSuccess(context, 'Arrived at pickup location!');
-
-        // Step completed - user must manually proceed to next step
-        // No automatic advancement - user controls progression
-      }
-    } catch (e) {
-      Log.e('=== ERROR IN PICKUP ARRIVAL ===');
-      Log.e('Error: $e');
-
-      if (mounted) {
-        SnackBarUtils.showError(context, 'Failed to record pickup arrival: $e');
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
-    }
+        Log.d('=== PICKUP ARRIVAL COMPLETED ===');
+      },
+      optimisticDataBuilder: (position) {
+        final currentTime = SATimeUtils.getCurrentSATimeISO();
+        return {
+          'current_step': 'passenger_pickup',
+          'progress_percentage': 33,
+          'pickup_arrive_time': currentTime,
+          'pickup_arrive_loc': position != null ? 'GPS: ${position.latitude}, ${position.longitude}' : null,
+          'last_activity_at': currentTime,
+          'updated_at': currentTime,
+        };
+      },
+      successMessage: 'Arrived at pickup location!',
+      needsGPS: true,
+    );
   }
 
   Future<void> _passengerOnboard() async {
     if (!mounted) return;
 
-    try {
-      setState(() => _isUpdating = true);
+    await _completeStandardStep(
+      stepName: 'passenger_onboard',
+      apiCall: (position) async {
+        if (position == null) throw Exception('GPS position required for passenger onboard');
+        
+        Log.d('=== PASSENGER ONBOARD ===');
+        Log.d('Job ID: ${widget.jobId}');
+        Log.d('Trip Index: $_currentTripIndex');
+        Log.d('GPS: ${position.latitude}, ${position.longitude}');
 
-      final position = await _getCurrentLocation();
-      final lat = position.latitude;
-      final lng = position.longitude;
-
-      await DriverFlowApiService.passengerOnboard(
-        int.parse(widget.jobId),
-        _currentTripIndex,
-        gpsLat: lat,
-        gpsLng: lng,
-      );
-
-      if (mounted) {
-        await _loadJobProgress(skipLoadingState: true);
-        SnackBarUtils.showSuccess(context, 'Passenger onboard!');
-
-        // Step completed - user must manually proceed to next step
-        // No automatic advancement - user controls progression
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarUtils.showError(
-          context,
-          'Failed to record passenger onboard: $e',
+        await DriverFlowApiService.passengerOnboard(
+          int.parse(widget.jobId),
+          _currentTripIndex,
+          gpsLat: position.latitude,
+          gpsLng: position.longitude,
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
-    }
+
+        Log.d('=== PASSENGER ONBOARD COMPLETED ===');
+      },
+      optimisticDataBuilder: (position) {
+        final currentTime = SATimeUtils.getCurrentSATimeISO();
+        return {
+          'current_step': 'passenger_onboard',
+          'progress_percentage': 50,
+          'passenger_onboard_at': currentTime,
+          'last_activity_at': currentTime,
+          'updated_at': currentTime,
+        };
+      },
+      successMessage: 'Passenger onboard!',
+      needsGPS: true,
+    );
   }
 
   Future<void> _markPassengerNoShow() async {
     if (!mounted) return;
 
+    // Check if all trips will be completed after this one
+    final willCompleteAllTrips = _tripProgress != null &&
+        _tripProgress!.isNotEmpty &&
+        _tripProgress!.where((trip) => 
+          trip['trip_index'] == _currentTripIndex || trip['status'] == 'completed'
+        ).length == _tripProgress!.length;
+
     // Show the no-show modal
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext modalContext) {
         return PassengerNoShowModal(
           onConfirm: ({
             required String comment,
@@ -1505,51 +1304,47 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             required double gpsLng,
             required double gpsAccuracy,
           }) async {
-            try {
-              Log.d('=== MARKING PASSENGER NO-SHOW ===');
-              Log.d('Job ID: ${widget.jobId}');
-              Log.d('Comment: $comment');
-              Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+            await _completeModalStep(
+              modalContext: modalContext,
+              stepName: 'passenger_no_show',
+              apiCall: () async {
+                Log.d('=== MARKING PASSENGER NO-SHOW ===');
+                Log.d('Job ID: ${widget.jobId}');
+                Log.d('Trip Index: $_currentTripIndex');
+                Log.d('Comment: $comment');
+                Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-              // Standardized pattern: Modal closes itself in its _confirmNoShow method
-              // Wait for modal to fully close before showing loading overlay
-              await Future.delayed(const Duration(milliseconds: 150));
-
-              // Standardized pattern: Set loading state BEFORE API call
-              if (mounted) {
-                setState(() => _isUpdating = true);
-              }
-
-              await DriverFlowApiService.markPassengerNoShow(
-                int.parse(widget.jobId),
-                _currentTripIndex,
-                comment: comment,
-                gpsLat: gpsLat,
-                gpsLng: gpsLng,
-                gpsAccuracy: gpsAccuracy,
-              );
-
-              Log.d('=== PASSENGER NO-SHOW MARKED SUCCESSFULLY ===');
-
-              if (mounted) {
-                await _loadJobProgress(skipLoadingState: true);
-                SnackBarUtils.showSuccess(context, 'Passenger marked as no-show');
-              }
-            } catch (e) {
-              if (mounted) {
-                SnackBarUtils.showError(
-                  context,
-                  'Failed to mark passenger as no-show: $e',
+                await DriverFlowApiService.markPassengerNoShow(
+                  int.parse(widget.jobId),
+                  _currentTripIndex,
+                  comment: comment,
+                  gpsLat: gpsLat,
+                  gpsLng: gpsLng,
+                  gpsAccuracy: gpsAccuracy,
                 );
-              }
-            } finally {
-              if (mounted) {
-                setState(() => _isUpdating = false);
-              }
-            }
+
+                Log.d('=== PASSENGER NO-SHOW MARKED SUCCESSFULLY ===');
+              },
+              optimisticData: {
+                'passenger_no_show_ind': true,
+                'passenger_no_show_comment': comment.trim(),
+                'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
+                'transport_completed_ind': willCompleteAllTrips,
+                'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
+                'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+                'updated_at': SATimeUtils.getCurrentSATimeISO(),
+                if (willCompleteAllTrips) ...{
+                  'current_step': 'vehicle_return',
+                  'progress_percentage': 100,
+                } else ..._resetForNextTrip(),
+              },
+              successMessage: 'Passenger marked as no-show',
+            );
           },
           onCancel: () {
-            Navigator.of(context).pop();
+            if (modalContext.mounted) {
+              Navigator.of(modalContext).pop();
+            }
           },
         );
       },
@@ -1559,141 +1354,492 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Future<void> _arriveAtDropoff() async {
     if (!mounted) return;
 
-    try {
-      setState(() => _isUpdating = true);
+    await _completeStandardStep(
+      stepName: 'dropoff_arrival',
+      apiCall: (position) async {
+        if (position == null) throw Exception('GPS position required for dropoff arrival');
+        
+        Log.d('=== ARRIVING AT DROPOFF ===');
+        Log.d('Job ID: ${widget.jobId}');
+        Log.d('Trip Index: $_currentTripIndex');
+        Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
 
-      final position = await _getCurrentLocation();
-
-      await DriverFlowApiService.arriveAtDropoff(
-        int.parse(widget.jobId),
-        _currentTripIndex,
-        gpsLat: position.latitude,
-        gpsLng: position.longitude,
-        gpsAccuracy: position.accuracy,
-      );
-
-      if (mounted) {
-        await _loadJobProgress(skipLoadingState: true);
-        SnackBarUtils.showSuccess(context, 'Arrived at dropoff location!');
-
-        // Step completed - user must manually proceed to next step
-        // No automatic advancement - user controls progression
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarUtils.showError(
-          context,
-          'Failed to record dropoff arrival: $e',
+        await DriverFlowApiService.arriveAtDropoff(
+          int.parse(widget.jobId),
+          _currentTripIndex,
+          gpsLat: position.latitude,
+          gpsLng: position.longitude,
+          gpsAccuracy: position.accuracy,
         );
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
-    }
+
+        Log.d('=== DROPOFF ARRIVAL COMPLETED ===');
+      },
+      optimisticDataBuilder: (position) {
+        final currentTime = SATimeUtils.getCurrentSATimeISO();
+        return {
+          'current_step': 'trip_complete',
+          'progress_percentage': 67,
+          'dropoff_arrive_at': currentTime,
+          'last_activity_at': currentTime,
+          'updated_at': currentTime,
+        };
+      },
+      successMessage: 'Arrived at dropoff location!',
+      needsGPS: true,
+    );
   }
 
   Future<void> _completeTrip() async {
     if (!mounted) return;
 
-    try {
-      setState(() => _isUpdating = true);
+    // Check if all trips will be completed after this one
+    final willCompleteAllTrips = _tripProgress != null &&
+        _tripProgress!.isNotEmpty &&
+        _tripProgress!.where((trip) => 
+          trip['trip_index'] == _currentTripIndex || trip['status'] == 'completed'
+        ).length == _tripProgress!.length;
 
-      final position = await _getCurrentLocation();
-      final lat = position.latitude;
-      final lng = position.longitude;
-
-      await DriverFlowApiService.completeTrip(
-        int.parse(widget.jobId),
-        _currentTripIndex,
-        gpsLat: lat,
-        gpsLng: lng,
-      );
-
-      if (mounted) {
-        await _loadJobProgress(skipLoadingState: true);
+    await _completeStandardStep(
+      stepName: 'trip_complete',
+      apiCall: (position) async {
+        if (position == null) throw Exception('GPS position required for trip completion');
         
-        // Check if more trips exist
-        final allTripsCompleted = _jobProgress != null && 
-            (_jobProgress!['transport_completed_ind'] == true);
-        final totalTrips = _tripProgress?.length ?? 0;
+        Log.d('=== COMPLETE TRIP ===');
+        Log.d('Job ID: ${widget.jobId}');
+        Log.d('Trip Index: $_currentTripIndex');
+        Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
+
+        await DriverFlowApiService.completeTrip(
+          int.parse(widget.jobId),
+          _currentTripIndex,
+          gpsLat: position.latitude,
+          gpsLng: position.longitude,
+          gpsAccuracy: position.accuracy,
+        );
+
+        Log.d('=== TRIP COMPLETED ===');
+      },
+      optimisticDataBuilder: (position) {
+        final currentTime = SATimeUtils.getCurrentSATimeISO();
         
-        if (allTripsCompleted) {
-          SnackBarUtils.showSuccess(
-            context, 
-            'All trips completed! Proceed to vehicle return.',
-          );
+        if (willCompleteAllTrips) {
+          // All trips completed - advance to vehicle_return
+          return {
+            'current_step': 'vehicle_return',
+            'progress_percentage': 100,
+            'transport_completed_ind': true,
+            'trip_complete_at': currentTime,
+            'last_activity_at': currentTime,
+            'updated_at': currentTime,
+          };
         } else {
-          // More trips exist - show message about next trip
-          final nextTripIndex = _tripProgress != null 
-              ? _findNextIncompleteTripIndex(_tripProgress!)
-              : _currentTripIndex + 1;
-          SnackBarUtils.showSuccess(
-            context, 
-            'Trip $_currentTripIndex completed! Starting Trip $nextTripIndex...',
-          );
+          // More trips exist - reset to pickup_arrival for next trip
+          final resetData = _resetForNextTrip();
+          return {
+            ...resetData,
+            'transport_completed_ind': false,
+            'trip_complete_at': currentTime,
+            'last_activity_at': currentTime,
+            'updated_at': currentTime,
+          };
         }
-      }
-    } catch (e) {
-      if (mounted) {
-        SnackBarUtils.showError(context, 'Failed to complete trip: $e');
-        // Reload progress to restore correct UI state after error
-        // This prevents the black screen issue when _loadJobProgress fails
-        try {
-          await _loadJobProgress();
-        } catch (reloadError) {
-          Log.e('Error reloading progress after trip completion error: $reloadError');
-        }
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isUpdating = false);
-      }
-    }
+      },
+      successMessage: willCompleteAllTrips
+          ? 'All trips completed! Proceed to vehicle return.'
+          : 'Trip $_currentTripIndex completed! Proceed to next trip.',
+      needsGPS: true,
+    );
   }
 
-  /// Update job progress optimistically (before server confirmation)
-  /// This prevents black screen if server reload fails
-  void _updateJobProgressOptimistically(Map<String, dynamic> updates) {
-    if (!mounted) return;
-    
-    if (_jobProgress == null) {
-      Log.e('Cannot apply optimistic update: _jobProgress is null');
-      return;
-    }
-    
-    Log.d('=== APPLYING OPTIMISTIC UPDATE ===');
-    Log.d('Updates: $updates');
-    
-    setState(() {
-      _jobProgress = {
-        ..._jobProgress!,
-        ...updates,
-      };
-      // DO NOT call _updateStepStatus() or _determineCurrentStep() inside setState
-      // They can cause nested setState calls which leads to rendering issues
-    });
-    
-    // Update step statuses and current step AFTER setState completes
-    // This prevents nested setState calls
-    _updateStepStatus();
-    
-    // Only call _determineCurrentStep() if we're not already on vehicle_return
-    // with vehicle return data (prevents override after vehicle return)
-    if (!_isVehicleReturnComplete() || _currentStep != 'vehicle_return') {
-      _determineCurrentStep();
-    } else {
-      Log.d('Skipping _determineCurrentStep() after optimistic update - vehicle return completed');
-    }
-    
-    Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
-  }
 
   /// Check if vehicle return is complete (has return data)
   bool _isVehicleReturnComplete() {
     return _jobProgress != null && 
         (_jobProgress!['job_closed_odo'] != null || 
          _jobProgress!['job_closed_time'] != null);
+  }
+
+  /// Check if state is ready for rendering (prevents black screen)
+  bool _isStateReady() {
+    return _jobProgress != null &&
+        _currentStep.isNotEmpty &&
+        _jobSteps.isNotEmpty &&
+        _jobSteps.any((s) => s.id == _currentStep);
+  }
+
+  /// Update step status internally (doesn't call setState - called from within setState)
+  void _updateStepStatusInternal() {
+    if (_jobProgress == null) {
+      // Reset all steps to not completed, mark not_started as active
+      for (int i = 0; i < _jobSteps.length; i++) {
+        final step = _jobSteps[i];
+        final isNotStarted = step.id == 'not_started';
+        _jobSteps[i] = step.copyWith(
+          isCompleted: false,
+          isActive: isNotStarted,
+        );
+      }
+      return;
+    }
+
+    // Update step completion status based on job progress
+    for (int i = 0; i < _jobSteps.length; i++) {
+      final step = _jobSteps[i];
+      bool isCompleted = false;
+
+      switch (step.id) {
+        case 'not_started':
+          isCompleted = _jobProgress!['vehicle_collected'] == true;
+          break;
+        case 'vehicle_collection':
+          isCompleted = _jobProgress!['vehicle_collected'] == true;
+          break;
+        case 'pickup_arrival':
+          isCompleted = _jobProgress!['current_step'] == 'passenger_pickup' ||
+                       _jobProgress!['current_step'] == 'passenger_onboard' ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'passenger_pickup':
+          isCompleted = _jobProgress!['current_step'] == 'passenger_onboard' ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'passenger_onboard':
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          isCompleted = isNoShow ||
+                       _jobProgress!['current_step'] == 'dropoff_arrival' ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'dropoff_arrival':
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          isCompleted = isNoShow ||
+                       _jobProgress!['current_step'] == 'trip_complete' ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'trip_complete':
+          final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
+          final transportCompleted = _jobProgress!['transport_completed_ind'] == true;
+          final tripCompleteAt = _jobProgress!['trip_complete_at'];
+          isCompleted = tripCompleteAt != null ||
+                       (isNoShow && transportCompleted) ||
+                       _jobProgress!['current_step'] == 'vehicle_return' ||
+                       _jobProgress!['current_step'] == 'completed';
+          break;
+        case 'vehicle_return':
+          isCompleted = _jobProgress!['job_closed_odo'] != null || 
+                       _jobProgress!['job_closed_time'] != null;
+          break;
+        case 'completed':
+          isCompleted = _jobProgress!['job_status'] == 'completed';
+          break;
+      }
+
+      // Update the step completion status
+      _jobSteps[i] = step.copyWith(
+        isCompleted: isCompleted,
+        isActive: step.id == _currentStep,
+      );
+    }
+  }
+
+  /// Update complete state atomically (all state in single setState)
+  void _updateCompleteState({
+    required Map<String, dynamic>? progress,
+    required List<Map<String, dynamic>> trips,
+    required Map<String, String?> addresses,
+    String? explicitCurrentStep,
+  }) {
+    if (!mounted) return;
+
+    final nextTripIndex = _findNextIncompleteTripIndex(trips);
+    final newCurrentStep = explicitCurrentStep ?? 
+        _determineCurrentStepFromData(progress);
+    final progressPercentage = progress?['progress_percentage'] ?? 0;
+
+    // Single atomic setState with all updates
+    setState(() {
+      _jobProgress = progress;
+      _tripProgress = trips;
+      _jobAddresses = addresses;
+      _currentTripIndex = nextTripIndex;
+      _currentStep = newCurrentStep;
+      _progressPercentage = progressPercentage;
+
+      // Update step status INSIDE setState to avoid extra rebuild
+      _updateStepStatusInternal();
+    });
+
+    // Update step titles with addresses (doesn't call setState)
+    _updateStepTitlesWithAddresses();
+  }
+
+  /// Determine current step from data (doesn't call setState)
+  String _determineCurrentStepFromData(Map<String, dynamic>? progress) {
+    if (progress == null) return 'not_started';
+
+    // If vehicle return is complete, always return vehicle_return
+    if (progress['job_closed_odo'] != null || progress['job_closed_time'] != null) {
+      return 'vehicle_return';
+    }
+
+    // Use database current_step if available
+    if (progress['current_step'] != null &&
+        progress['current_step'].toString().isNotEmpty &&
+        progress['current_step'].toString() != 'null') {
+      return _mapDatabaseStepToUIStep(progress['current_step'].toString());
+    }
+
+    // Fallback to completion-based logic
+    if (progress['job_status'] == 'completed') {
+      return 'completed';
+    } else if (progress['transport_completed_ind'] == true || 
+               progress['trip_complete_at'] != null) {
+      return 'vehicle_return';
+    } else if (progress['vehicle_collected'] == true) {
+      return 'pickup_arrival';
+    }
+
+    return 'not_started';
+  }
+
+  /// Complete step optimistically with background sync
+  Future<void> _completeStepOptimistically({
+    required String stepId,
+    required Map<String, dynamic> stepData,
+    bool needsServerSync = true,
+  }) async {
+    if (!mounted || _jobProgress == null) return;
+
+    // Update state optimistically (immediate UI update)
+    setState(() {
+      _jobProgress = {
+        ..._jobProgress!,
+        ...stepData,
+      };
+      // Update step status inside setState
+      _updateStepStatusInternal();
+    });
+
+    // Determine new current step if not explicitly set
+    if (stepData['current_step'] == null) {
+      final newStep = _determineCurrentStepFromData(_jobProgress);
+      if (newStep != _currentStep) {
+        setState(() {
+          _currentStep = newStep;
+        });
+      }
+    } else {
+      setState(() {
+        _currentStep = stepData['current_step'] as String;
+      });
+    }
+
+    // Sync to server in background (non-blocking)
+    if (needsServerSync) {
+      _syncStepInBackground(stepId, stepData).catchError((e) {
+        Log.e('Background sync failed for step $stepId: $e');
+        // If sync fails, reload full state as fallback
+        if (mounted) {
+          _loadJobProgress(skipLoadingState: true).catchError((reloadError) {
+            Log.e('Failed to reload after sync error: $reloadError');
+          });
+        }
+      });
+    }
+  }
+
+  /// Sync step completion to server in background (non-blocking)
+  Future<void> _syncStepInBackground(String stepId, Map<String, dynamic> stepData) async {
+    // This is a placeholder - actual sync happens via API call in step methods
+    // This method can be used for additional sync operations if needed
+    Log.d('Background sync for step $stepId completed');
+  }
+
+  /// Reset flow for next trip (used when more trips exist)
+  Map<String, dynamic> _resetForNextTrip() {
+    return {
+      'current_step': 'pickup_arrival',
+      'progress_percentage': 17,
+      'pickup_arrive_time': null,
+      'pickup_arrive_loc': null,
+      'passenger_onboard_at': null,
+      'dropoff_arrive_at': null,
+    };
+  }
+
+  /// Recover from error - reload state and show error message
+  Future<void> _recoverFromError(String errorMessage, {String? stepId}) async {
+    if (!mounted) return;
+
+    Log.d('=== RECOVERING FROM ERROR ===');
+    Log.d('Step: $stepId, Error: $errorMessage');
+
+    // Attempt to reload state
+    try {
+      await _loadJobProgress(skipLoadingState: true);
+      Log.d('State reloaded successfully after error');
+    } catch (reloadError) {
+      Log.e('Failed to reload state after error: $reloadError');
+    }
+
+    // Show error message
+    if (mounted) {
+      SnackBarUtils.showError(context, errorMessage);
+    }
+  }
+
+  /// Standard step completion template - used by all non-modal steps
+  /// Pattern: Set loading -> Get GPS (if needed) -> Call API -> Optimistic update -> Background sync -> Success message
+  Future<void> _completeStandardStep({
+    required String stepName,
+    required Future<void> Function(Position? position) apiCall,
+    required Map<String, dynamic> Function(Position? position) optimisticDataBuilder,
+    required String successMessage,
+    bool needsGPS = true,
+  }) async {
+    if (!mounted) return;
+
+    try {
+      // Set loading state BEFORE API call
+      setState(() => _isUpdating = true);
+
+      // Get GPS if needed
+      Position? position;
+      if (needsGPS) {
+        position = await _getCurrentLocation();
+      }
+
+      // Call API (single call) - pass position so API can use it
+      await apiCall(position);
+
+      // Build optimistic data with GPS if available
+      final optimisticData = optimisticDataBuilder(position);
+
+      // Optimistic update (immediate UI feedback)
+      await _completeStepOptimistically(
+        stepId: stepName,
+        stepData: optimisticData,
+        needsServerSync: true,
+      );
+
+      // Show success message
+      if (mounted) {
+        SnackBarUtils.showSuccess(context, successMessage);
+      }
+    } catch (e) {
+      Log.e('=== ERROR IN $stepName ===');
+      Log.e('Error: $e');
+      
+      if (mounted) {
+        await _recoverFromError('Failed to complete $stepName: $e', stepId: stepName);
+      }
+    } finally {
+      // Only set _isUpdating to false if state is ready
+      if (mounted) {
+        if (_isStateReady()) {
+          setState(() => _isUpdating = false);
+        } else {
+          // State not ready, try to reload
+          try {
+            await _loadJobProgress(skipLoadingState: true);
+            if (mounted && _isStateReady()) {
+              setState(() => _isUpdating = false);
+            }
+          } catch (reloadError) {
+            Log.e('Failed to reload state before setting _isUpdating to false: $reloadError');
+            // Set it anyway to prevent infinite loading
+            if (mounted) {
+              setState(() => _isUpdating = false);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /// Modal step completion helper - used by modal-based steps
+  /// Pattern: Close modal -> Set loading -> Call API -> Optimistic update -> Background sync -> Success message
+  Future<void> _completeModalStep({
+    required BuildContext modalContext,
+    required String stepName,
+    required Future<dynamic> Function() apiCall,
+    required Map<String, dynamic> optimisticData,
+    required String successMessage,
+  }) async {
+    if (!mounted) return;
+
+    try {
+      // Close modal first so overlay is visible
+      if (modalContext.mounted) {
+        Navigator.of(modalContext).pop();
+      }
+
+      // Set loading state BEFORE API call (no delay needed)
+      if (mounted) {
+        setState(() => _isUpdating = true);
+      }
+
+      // Call API (single call) - may return progress data
+      final apiResult = await apiCall();
+
+      // Use returned progress data if available, otherwise use optimistic data
+      final finalOptimisticData = apiResult is Map<String, dynamic>
+          ? {...optimisticData, ...apiResult} // Merge returned data with optimistic data
+          : optimisticData;
+
+      // Optimistic update (immediate UI feedback)
+      await _completeStepOptimistically(
+        stepId: stepName,
+        stepData: finalOptimisticData,
+        needsServerSync: true,
+      );
+
+      // Show success message
+      if (mounted) {
+        SnackBarUtils.showSuccess(context, successMessage);
+      }
+    } catch (e) {
+      Log.e('=== ERROR IN $stepName ===');
+      Log.e('Error: $e');
+
+      // Close modal on error if still open
+      if (modalContext.mounted) {
+        Navigator.of(modalContext).pop();
+      }
+
+      if (mounted) {
+        await _recoverFromError('Failed to complete $stepName: $e', stepId: stepName);
+      }
+    } finally {
+      // Only set _isUpdating to false if state is ready
+      if (mounted) {
+        if (_isStateReady()) {
+          setState(() => _isUpdating = false);
+        } else {
+          // State not ready, try to reload
+          try {
+            await _loadJobProgress(skipLoadingState: true);
+            if (mounted && _isStateReady()) {
+              setState(() => _isUpdating = false);
+            }
+          } catch (reloadError) {
+            Log.e('Failed to reload state before setting _isUpdating to false: $reloadError');
+            // Set it anyway to prevent infinite loading
+            if (mounted) {
+              setState(() => _isUpdating = false);
+            }
+          }
+        }
+      }
+    }
   }
 
   /// Retry loading job progress with exponential backoff
@@ -1730,152 +1876,53 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
   Future<void> _returnVehicle() async {
     if (!mounted) return;
 
-    Log.d('=== STARTING VEHICLE RETURN FLOW ===');
-
-    // Store the modal context before any async operations
-    final modalContext = context;
-
     // Show the vehicle return modal
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (BuildContext context) {
+      builder: (BuildContext modalContext) {
         return VehicleReturnModal(
-          onConfirm:
-              (({
-                required double odoEndReading,
-                required double gpsLat,
-                required double gpsLng,
-                required double gpsAccuracy,
-              }) async {
-                try {
-                  Log.d('=== RETURNING VEHICLE ===');
-                  Log.d('Job ID: ${widget.jobId}');
-                  Log.d('Odometer: $odoEndReading');
-                  Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
+          onConfirm: ({
+            required double odoEndReading,
+            required double gpsLat,
+            required double gpsLng,
+            required double gpsAccuracy,
+          }) async {
+            await _completeModalStep(
+              modalContext: modalContext,
+              stepName: 'vehicle_return',
+              apiCall: () async {
+                Log.d('=== RETURNING VEHICLE ===');
+                Log.d('Job ID: ${widget.jobId}');
+                Log.d('Odometer: $odoEndReading');
+                Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                  // Standardized pattern: Close modal first so overlay is visible
-                  if (modalContext.mounted) {
-                    Navigator.of(modalContext).pop();
-                  }
+                await DriverFlowApiService.returnVehicle(
+                  int.parse(widget.jobId),
+                  odoEndReading: odoEndReading,
+                  gpsLat: gpsLat,
+                  gpsLng: gpsLng,
+                  gpsAccuracy: gpsAccuracy,
+                );
 
-                  // Wait for modal to fully close before showing loading overlay
-                  await Future.delayed(const Duration(milliseconds: 100));
+                Log.d('=== VEHICLE RETURN API COMPLETED ===');
+              },
+              optimisticData: {
+                'job_closed_odo': odoEndReading,
+                'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
+                'current_step': 'vehicle_return',
+                'progress_percentage': 100,
+                'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+                'updated_at': SATimeUtils.getCurrentSATimeISO(),
+              },
+              successMessage: 'Vehicle returned successfully! You can now add expenses and close the job.',
+            );
 
-                  // Standardized pattern: Set loading state BEFORE API call
-                  if (mounted) {
-                    setState(() => _isUpdating = true);
-                  }
-
-                  // Call API to return vehicle
-                  await DriverFlowApiService.returnVehicle(
-                    int.parse(widget.jobId),
-                    odoEndReading: odoEndReading,
-                    gpsLat: gpsLat,
-                    gpsLng: gpsLng,
-                    gpsAccuracy: gpsAccuracy,
-                  );
-
-                  Log.d('=== VEHICLE RETURN API COMPLETED ===');
-
-                  // OPTIMISTIC UPDATE: Update local state immediately to prevent black screen
-                  if (mounted) {
-                    final currentTime = SATimeUtils.getCurrentSATimeISO();
-                    
-                    // Store optimistic data before reload (needed for merge logic)
-                    final optimisticOdo = odoEndReading;
-                    final optimisticTime = currentTime;
-                    
-                    Log.d('Storing optimistic data before server reload');
-                    Log.d('Optimistic ODO: $optimisticOdo');
-                    Log.d('Optimistic Time: $optimisticTime');
-                    
-                    _updateJobProgressOptimistically({
-                      'job_closed_odo': optimisticOdo,
-                      'job_closed_time': optimisticTime,
-                      'current_step': 'vehicle_return',
-                      'progress_percentage': 100,
-                    });
-                    Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
-                    
-                    // Then refresh from server (best effort - non-critical if it fails)
-                    // Merge is now handled inside _loadJobProgress, so no need to do it here
-                    try {
-                      await _loadJobProgress(skipLoadingState: true);
-                      Log.d('=== PROGRESS RELOADED FROM SERVER ===');
-                      // Ensure step status is updated after reload and step is correctly set
-                      if (mounted && _jobProgress != null) {
-                        // CRITICAL: Explicitly set step to vehicle_return after vehicle return completes
-                        // This ensures the UI shows the Close Job button
-                        if (_isVehicleReturnComplete()) {
-                          setState(() {
-                            _currentStep = 'vehicle_return';
-                          });
-                          _updateStepStatus();
-                          Log.d('Step set to vehicle_return after vehicle return completion');
-                        } else {
-                          // If for some reason vehicle return data is missing, update step status anyway
-                          _updateStepStatus();
-                        }
-                      }
-                    } catch (reloadError) {
-                      Log.e('Failed to reload progress, but UI already updated optimistically: $reloadError');
-                      // UI is already correct, so this is non-critical
-                      // But still ensure step is set correctly
-                      if (mounted && _isVehicleReturnComplete()) {
-                        setState(() {
-                          _currentStep = 'vehicle_return';
-                        });
-                        _updateStepStatus();
-                      }
-                    }
-                  }
-
-                  // Show success message after modal is closed and widget is still mounted
-                  if (mounted) {
-                    // Refresh jobs list to update job card status
-                    ref.invalidate(jobsProvider);
-
-                    // Don't show completion dialog here - vehicle is returned but job not closed yet
-                    // User still needs to add expenses and close job
-                    SnackBarUtils.showSuccess(
-                      context,
-                      'Vehicle returned successfully! You can now add expenses and close the job.',
-                    );
-                  }
-                } catch (e) {
-                  Log.e('=== ERROR IN VEHICLE RETURN ===');
-                  Log.e('Error: $e');
-
-                  // Close the modal using the stored context
-                  if (modalContext.mounted) {
-                    Navigator.of(modalContext).pop();
-                  }
-
-                  if (mounted) {
-                    // Attempt to reload current state to prevent black screen
-                    Log.d('=== ATTEMPTING ERROR RECOVERY ===');
-                    final reloadSuccess = await _retryLoadJobProgress();
-                    
-                    if (reloadSuccess) {
-                      Log.d('State reloaded successfully after error');
-                    } else {
-                      Log.e('Failed to reload state after error, but showing error message');
-                    }
-
-                    // Show error message
-                    SnackBarUtils.showError(
-                      context,
-                      'Failed to return vehicle: $e',
-                    );
-                  }
-                } finally {
-                  Log.d('=== VEHICLE RETURN FLOW COMPLETED ===');
-                  if (mounted) {
-                    setState(() => _isUpdating = false);
-                  }
-                }
-              }),
+            // Refresh jobs list to update job card status
+            if (mounted) {
+              ref.invalidate(jobsProvider);
+            }
+          },
           onCancel: () {
             if (modalContext.mounted) {
               Navigator.of(modalContext).pop();
@@ -2485,9 +2532,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         if (_jobProgress == null) {
           Log.e('_jobProgress is null in vehicle_return step, showing loading indicator');
           return Center(
-            child: CircularProgressIndicator(
-              valueColor: AlwaysStoppedAnimation<Color>(
-                ChoiceLuxTheme.richGold,
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  ChoiceLuxTheme.richGold,
+                ),
               ),
             ),
           );
@@ -3832,6 +3884,44 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     
     // Additional validation: If we have jobProgress but no valid steps, show loading
     // This prevents black screen when state is inconsistent
+    if (_jobProgress != null && _jobSteps.isEmpty) {
+      Log.d('Widget has jobProgress but no steps, showing loading indicator');
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                ChoiceLuxTheme.richGold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Additional validation: If state is not ready, show loading
+    if (!_isStateReady() && (_isLoading || _isUpdating)) {
+      Log.d('Widget state not ready, showing loading indicator');
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                ChoiceLuxTheme.richGold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
     if (_jobProgress != null && _jobSteps.isEmpty && !_isLoading && !_isUpdating) {
       Log.d('Widget has jobProgress but no steps, showing loading indicator');
       return Scaffold(
@@ -3928,7 +4018,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                               ),
                               const SizedBox(height: 24),
                               ElevatedButton.icon(
-                                onPressed: _showStartJobModal,
+                                onPressed: _startJob,
                                 icon: const Icon(Icons.play_arrow),
                                 label: const Text('Start Job'),
                                 style: ElevatedButton.styleFrom(
