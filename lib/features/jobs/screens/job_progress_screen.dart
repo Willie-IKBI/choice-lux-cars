@@ -1632,14 +1632,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         ..._jobProgress!,
         ...updates,
       };
-      
-      // Update step statuses and current step INSIDE setState
-      // This ensures all state changes happen in a single rebuild
-      _updateStepStatus();
-      _determineCurrentStep();
-      
-      Log.d('Step statuses and current step updated inside setState');
+      // DO NOT call _updateStepStatus() or _determineCurrentStep() inside setState
+      // They can cause nested setState calls which leads to rendering issues
     });
+    
+    // Update step statuses and current step AFTER setState completes
+    // This prevents nested setState calls
+    _updateStepStatus();
+    _determineCurrentStep();
     
     Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
   }
@@ -1777,9 +1777,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                               'progress_percentage': 100,
                             };
                             _currentStep = 'vehicle_return'; // CRITICAL: Restore step explicitly
-                            _updateStepStatus();
-                            _determineCurrentStep();
+                            // DO NOT call _updateStepStatus() or _determineCurrentStep() inside setState
+                            // They can cause nested setState calls which leads to rendering issues
                           });
+                          
+                          // Update step status and verify step AFTER setState completes
+                          // This prevents nested setState calls
+                          _updateStepStatus();
+                          // Don't call _determineCurrentStep() if we're already on vehicle_return
+                          // to avoid it potentially changing the step incorrectly
+                          if (_currentStep != 'vehicle_return') {
+                            _determineCurrentStep();
+                          }
                           
                           Log.d('Optimistic data and step restored after server reload');
                         } else {
