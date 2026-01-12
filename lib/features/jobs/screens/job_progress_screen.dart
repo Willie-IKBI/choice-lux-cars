@@ -672,6 +672,15 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     final isNoShow = _jobProgress != null && 
         (_jobProgress!['passenger_no_show_ind'] == true);
     
+    // Check if vehicle_return button should be shown even if not current step
+    // This is a fallback to ensure button shows when all trips are completed
+    final shouldShowVehicleReturnButton = step.id == 'vehicle_return' &&
+        _jobProgress != null &&
+        (_jobProgress!['transport_completed_ind'] == true) &&
+        (_jobProgress!['job_closed_odo'] == null && _jobProgress!['job_closed_time'] == null) &&
+        (_isPreviousStepCompleted('trip_complete') || 
+         _jobProgress!['trip_complete_at'] != null);
+    
     // Get address for location-based steps
     String? stepAddress;
     if (step.id == 'pickup_arrival' || step.id == 'passenger_pickup') {
@@ -911,16 +920,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // For passenger_pickup step, use _buildActionButton to show Passenger Onboard/No-Show buttons
             // For other steps, only show if not completed
             // Use _buildActionButton for ALL steps to ensure consistent loading indicators
-            
-            // Check if vehicle_return button should be shown even if not current step
-            // This is a fallback to ensure button shows when all trips are completed
-            final shouldShowVehicleReturnButton = step.id == 'vehicle_return' &&
-                _jobProgress != null &&
-                (_jobProgress!['transport_completed_ind'] == true) &&
-                (_jobProgress!['job_closed_odo'] == null && _jobProgress!['job_closed_time'] == null) &&
-                (_isPreviousStepCompleted('trip_complete') || 
-                 _jobProgress!['trip_complete_at'] != null);
-            
             if ((isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ||
                 shouldShowVehicleReturnButton) ...[
               SizedBox(height: _isMobile ? 12 : 16),
@@ -1569,8 +1568,68 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
   }
 
+  /// Update job progress optimistically (before server confirmation)
+  /// This prevents black screen if server reload fails
+  void _updateJobProgressOptimistically(Map<String, dynamic> updates) {
+    if (!mounted) return;
+    
+    if (_jobProgress == null) {
+      Log.w('Cannot apply optimistic update: _jobProgress is null');
+      return;
+    }
+    
+    Log.d('=== APPLYING OPTIMISTIC UPDATE ===');
+    Log.d('Updates: $updates');
+    
+    setState(() {
+      _jobProgress = {
+        ..._jobProgress!,
+        ...updates,
+      };
+    });
+    
+    // Update step statuses and current step after optimistic update
+    _updateStepStatus();
+    _determineCurrentStep();
+    
+    Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
+  }
+
+  /// Retry loading job progress with exponential backoff
+  /// Returns true if successful, false if all attempts fail
+  Future<bool> _retryLoadJobProgress({int maxAttempts = 3}) async {
+    if (!mounted) return false;
+    
+    Log.d('=== STARTING RETRY LOAD JOB PROGRESS ===');
+    Log.d('Max attempts: $maxAttempts');
+    
+    for (int attempt = 1; attempt <= maxAttempts; attempt++) {
+      try {
+        final delayMs = 300 * attempt; // 300ms, 600ms, 900ms
+        Log.d('Retry attempt $attempt: waiting ${delayMs}ms...');
+        await Future.delayed(Duration(milliseconds: delayMs));
+        
+        if (!mounted) return false;
+        
+        await _loadJobProgress(skipLoadingState: true);
+        Log.d('Successfully reloaded progress on retry attempt $attempt');
+        return true;
+      } catch (retryError) {
+        Log.e('Retry attempt $attempt failed: $retryError');
+        if (attempt == maxAttempts) {
+          Log.e('All retry attempts failed');
+          return false;
+        }
+      }
+    }
+    
+    return false;
+  }
+
   Future<void> _returnVehicle() async {
     if (!mounted) return;
+
+    Log.d('=== STARTING VEHICLE RETURN FLOW ===');
 
     // Store the modal context before any async operations
     final modalContext = context;
@@ -1607,6 +1666,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     setState(() => _isUpdating = true);
                   }
 
+                  // Call API to return vehicle
                   await DriverFlowApiService.returnVehicle(
                     int.parse(widget.jobId),
                     odoEndReading: odoEndReading,
@@ -1615,23 +1675,42 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     gpsAccuracy: gpsAccuracy,
                   );
 
-                  Log.d('=== VEHICLE RETURN COMPLETED ===');
+                  Log.d('=== VEHICLE RETURN API COMPLETED ===');
 
+                  // OPTIMISTIC UPDATE: Update local state immediately to prevent black screen
                   if (mounted) {
-                    await _loadJobProgress(skipLoadingState: true);
+                    final currentTime = SATimeUtils.getCurrentSATimeISO();
+                    _updateJobProgressOptimistically({
+                      'job_closed_odo': odoEndReading,
+                      'job_closed_time': currentTime,
+                      'current_step': 'vehicle_return',
+                      'progress_percentage': 100,
+                    });
+                    Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
+                  }
 
-                    // Show success message after modal is closed and widget is still mounted
-                    if (mounted) {
-                      // Refresh jobs list to update job card status
-                      ref.invalidate(jobsProvider);
-
-                      // Don't show completion dialog here - vehicle is returned but job not closed yet
-                      // User still needs to add expenses and close job
-                      SnackBarUtils.showSuccess(
-                        context,
-                        'Vehicle returned successfully! You can now add expenses and close the job.',
-                      );
+                  // Then refresh from server (best effort - non-critical if it fails)
+                  if (mounted) {
+                    try {
+                      await _loadJobProgress(skipLoadingState: true);
+                      Log.d('=== PROGRESS RELOADED FROM SERVER ===');
+                    } catch (reloadError) {
+                      Log.w('Failed to reload progress, but UI already updated optimistically: $reloadError');
+                      // UI is already correct, so this is non-critical
                     }
+                  }
+
+                  // Show success message after modal is closed and widget is still mounted
+                  if (mounted) {
+                    // Refresh jobs list to update job card status
+                    ref.invalidate(jobsProvider);
+
+                    // Don't show completion dialog here - vehicle is returned but job not closed yet
+                    // User still needs to add expenses and close job
+                    SnackBarUtils.showSuccess(
+                      context,
+                      'Vehicle returned successfully! You can now add expenses and close the job.',
+                    );
                   }
                 } catch (e) {
                   Log.e('=== ERROR IN VEHICLE RETURN ===');
@@ -1642,14 +1721,25 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     Navigator.of(modalContext).pop();
                   }
 
-                  // Show error message after modal is closed and widget is still mounted
                   if (mounted) {
+                    // Attempt to reload current state to prevent black screen
+                    Log.d('=== ATTEMPTING ERROR RECOVERY ===');
+                    final reloadSuccess = await _retryLoadJobProgress();
+                    
+                    if (reloadSuccess) {
+                      Log.d('State reloaded successfully after error');
+                    } else {
+                      Log.w('Failed to reload state after error, but showing error message');
+                    }
+
+                    // Show error message
                     SnackBarUtils.showError(
                       context,
                       'Failed to return vehicle: $e',
                     );
                   }
                 } finally {
+                  Log.d('=== VEHICLE RETURN FLOW COMPLETED ===');
                   if (mounted) {
                     setState(() => _isUpdating = false);
                   }
@@ -2260,14 +2350,24 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         break;
 
       case 'vehicle_return':
+        // NULL SAFETY: If _jobProgress is null, show loading indicator
+        if (_jobProgress == null) {
+          Log.w('_jobProgress is null in vehicle_return step, showing loading indicator');
+          return Center(
+            child: CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation<Color>(
+                ChoiceLuxTheme.richGold,
+              ),
+            ),
+          );
+        }
+        
         // Check if trip_complete step is completed first (or no-show)
-        final isNoShow = _jobProgress != null && 
-            (_jobProgress!['passenger_no_show_ind'] == true);
+        final isNoShow = _jobProgress!['passenger_no_show_ind'] == true;
         final tripCompleted = _isPreviousStepCompleted('trip_complete');
         
         // CRITICAL: Check if ALL trips are completed before allowing vehicle return
-        final allTripsCompleted = _jobProgress != null && 
-            (_jobProgress!['transport_completed_ind'] == true);
+        final allTripsCompleted = _jobProgress!['transport_completed_ind'] == true;
         
         if (!tripCompleted && !isNoShow) {
           return _buildStepLockedMessage('Complete trip first');
@@ -2279,12 +2379,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         }
         
         // Check if vehicle is already returned (job_closed_odo or job_closed_time is set)
-        final vehicleReturned = _jobProgress != null && 
-            (_jobProgress!['job_closed_odo'] != null || _jobProgress!['job_closed_time'] != null);
+        final vehicleReturned = _jobProgress!['job_closed_odo'] != null || 
+            _jobProgress!['job_closed_time'] != null;
         
         // Check if job is already closed
-        final jobClosed = _jobProgress != null && 
-            _jobProgress!['job_status'] == 'completed';
+        final jobClosed = _jobProgress!['job_status'] == 'completed';
         
         if (!vehicleReturned) {
           // Only show button if all trips are completed (or no-show)
@@ -3578,6 +3677,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     Log.d('_jobProgress: $_jobProgress');
     Log.d('_currentStep: $_currentStep');
     Log.d('_jobSteps length: ${_jobSteps.length}');
+    
+    // STATE VALIDATION: Prevent black screen if widget is in invalid state
+    // If we're loading and have no data, show loading indicator instead of empty screen
+    if (_isLoading && _jobProgress == null && _tripProgress == null) {
+      Log.d('Widget in loading state with no data, showing loading indicator');
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: Center(
+          child: CircularProgressIndicator(
+            valueColor: AlwaysStoppedAnimation<Color>(
+              ChoiceLuxTheme.richGold,
+            ),
+          ),
+        ),
+      );
+    }
     
     // Match dashboard background (solid color, no pattern)
     return Stack(
