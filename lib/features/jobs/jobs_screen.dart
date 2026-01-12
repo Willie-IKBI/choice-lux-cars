@@ -37,6 +37,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   final int _itemsPerPage = 12;
   String _dateRangeFilter = '90'; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
   String? _openJobsDateFilter; // 'yesterday', 'today', 'tomorrow', or null (all)
+  String? _lastRoute; // Track last route to avoid unnecessary refreshes
 
   @override
   void initState() {
@@ -49,6 +50,24 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         ref.read(jobsProvider.notifier).fetchJobs();
       }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Refresh jobs when navigating back to /jobs route
+    // This ensures fresh data when returning from job creation or other screens
+    final currentRoute = GoRouterState.of(context).matchedLocation;
+    if (currentRoute == '/jobs' && _lastRoute != '/jobs') {
+      // Only refresh if we're coming from a different route
+      Log.d('Navigated to /jobs route, refreshing jobs list...');
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          ref.read(jobsProvider.notifier).fetchJobs();
+        }
+      });
+    }
+    _lastRoute = currentRoute;
   }
 
   @override

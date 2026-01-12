@@ -1326,6 +1326,39 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         ),
                       ),
                     ),
+                    // Show no-show badge if step is marked as no-show
+                    if (step['isNoShow'] == true) ...[
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.errorColor,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.person_off_rounded,
+                              color: Colors.white,
+                              size: 12,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              'NO-SHOW',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     if (isCurrent) ...[
                       const SizedBox(width: 8),
                       Container(
@@ -1634,28 +1667,78 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     margin: const EdgeInsets.only(top: 8),
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.successColor.withValues(alpha:0.1),
+                      color: step['isNoShow'] == true
+                          ? ChoiceLuxTheme.errorColor.withValues(alpha:0.1)
+                          : ChoiceLuxTheme.successColor.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(6),
                       border: Border.all(
-                        color: ChoiceLuxTheme.successColor.withValues(alpha:0.3),
+                        color: step['isNoShow'] == true
+                            ? ChoiceLuxTheme.errorColor.withValues(alpha:0.3)
+                            : ChoiceLuxTheme.successColor.withValues(alpha:0.3),
                       ),
                     ),
-                    child: Row(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: ChoiceLuxTheme.successColor,
-                          size: 16,
+                        Row(
+                          children: [
+                            Icon(
+                              step['isNoShow'] == true
+                                  ? Icons.person_off_rounded
+                                  : Icons.check_circle,
+                              color: step['isNoShow'] == true
+                                  ? ChoiceLuxTheme.errorColor
+                                  : ChoiceLuxTheme.successColor,
+                              size: 16,
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(
+                                step['isNoShow'] == true
+                                    ? 'No-show on: ${_formatDateTime(step['completedAt'])}'
+                                    : 'Completed on: ${_formatDateTime(step['completedAt'])}',
+                                style: TextStyle(
+                                  fontSize: 12, 
+                                  color: step['isNoShow'] == true
+                                      ? ChoiceLuxTheme.errorColor
+                                      : ChoiceLuxTheme.successColor,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Completed on: ${_formatDateTime(step['completedAt'])}',
-                          style: TextStyle(
-                            fontSize: 12, 
-                            color: ChoiceLuxTheme.successColor,
-                            fontWeight: FontWeight.w500,
+                        if (step['noShowComment'] != null && step['noShowComment'].toString().isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: ChoiceLuxTheme.errorColor.withValues(alpha:0.05),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Icon(
+                                  Icons.comment_outlined,
+                                  size: 14,
+                                  color: ChoiceLuxTheme.errorColor,
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    step['noShowComment'],
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      color: ChoiceLuxTheme.errorColor.withValues(alpha:0.9),
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
-                        ),
+                        ],
                       ],
                     ),
                   ),
@@ -2422,7 +2505,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   String _formatPassengerCount(dynamic count) {
-    final intCount = int.tryParse(count.toString()) ?? 0;
+    // Handle both double and int values properly
+    // pasCount is a double (e.g., 1.0, 2.0), so we need to convert it directly
+    final intCount = count is num 
+        ? count.toInt() 
+        : (int.tryParse(count.toString()) ?? 0);
     return '$intCount Passenger${intCount == 1 ? '' : 's'}';
   }
 
@@ -2456,6 +2543,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     final progressPercentage = _driverFlowData?['progress_percentage'] ?? 0.0;
 
     // Define all possible steps in order
+    // Job completion step - shown when job_status is completed
     final allSteps = [
       'vehicle_collection',
       'pickup_arrival',
@@ -2463,6 +2551,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       'dropoff_arrival',
       'trip_complete',
       'vehicle_return',
+      'completed', // Job completion step
     ];
 
     // Get current step from driver flow data
@@ -2494,6 +2583,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
     // Process each step
     for (final stepId in allSteps) {
+      // Skip 'completed' step if job is not actually completed
+      if (stepId == 'completed' && _job?.status != 'completed' && _driverFlowData?['current_step'] != 'completed') {
+        continue;
+      }
+      
       final stepTitle = DriverFlowUtils.getStepTitle(stepId);
       final stepDescription = DriverFlowUtils.getStepDescription(stepId);
       final stepIcon = DriverFlowUtils.getStepIcon(stepId);
@@ -2514,6 +2608,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       // Get fallback timestamp from last_activity_at (for historical jobs)
       final lastActivityAt = _driverFlowData?['last_activity_at'];
 
+      // Check for passenger no-show at start of step processing
+      final isNoShow = _driverFlowData?['passenger_no_show_ind'] == true;
+      final noShowAt = _driverFlowData?['passenger_no_show_at'];
+      final noShowComment = _driverFlowData?['passenger_no_show_comment'];
+      Log.d('No-show check: isNoShow=$isNoShow, noShowAt=$noShowAt');
+
       // Check completion status for each step
       switch (stepId) {
         case 'vehicle_collection':
@@ -2531,21 +2631,25 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           completedAt = _driverFlowData?['pickup_arrive_time'];
           break;
         case 'passenger_onboard':
-          isCompleted = _driverFlowData?['current_step'] == 'passenger_onboard' ||
+          // Passenger onboard is completed when passenger boarded OR when marked as no-show
+          isCompleted = isNoShow ||
+                       _driverFlowData?['current_step'] == 'passenger_onboard' ||
                        _driverFlowData?['current_step'] == 'dropoff_arrival' ||
                        _driverFlowData?['current_step'] == 'trip_complete' ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
-          completedAt = _driverFlowData?['passenger_onboard_at'] ?? lastActivityAt;
+          // If no-show, use no-show timestamp, otherwise use passenger_onboard_at
+          completedAt = isNoShow ? noShowAt : (_driverFlowData?['passenger_onboard_at'] ?? lastActivityAt);
           break;
         case 'dropoff_arrival':
-          isCompleted = _driverFlowData?['current_step'] == 'dropoff_arrival' ||
+          // Dropoff arrival is completed when arrived at dropoff OR when passenger is no-show (skip this step)
+          isCompleted = isNoShow ||
+                       _driverFlowData?['current_step'] == 'dropoff_arrival' ||
                        _driverFlowData?['current_step'] == 'trip_complete' ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
-          completedAt = _driverFlowData?['dropoff_arrive_at'] ?? lastActivityAt;
+          // If no-show, use no-show timestamp, otherwise use dropoff_arrive_at
+          completedAt = isNoShow ? noShowAt : (_driverFlowData?['dropoff_arrive_at'] ?? lastActivityAt);
           break;
         case 'trip_complete':
           // Trip complete is completed only when we've moved beyond this step
@@ -2562,6 +2666,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           isCompleted = _driverFlowData?['job_closed_time'] != null;
           completedAt = _driverFlowData?['job_closed_time'];
           break;
+        case 'completed':
+          // Job completion step is completed when job_status is 'completed'
+          isCompleted = _job?.status == 'completed' || _driverFlowData?['current_step'] == 'completed';
+          // Use job updated_at timestamp (when job_status was set to completed)
+          completedAt = _job?.updatedAt?.toIso8601String() ?? _driverFlowData?['last_activity_at'];
+          Log.d('Job completed check: status=${_job?.status}, current_step=${_driverFlowData?['current_step']}, completedAt=$completedAt');
+          break;
       }
 
       // Add step to timeline with appropriate styling
@@ -2569,11 +2680,16 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // Completed step
         final stepData = {
           'title': stepTitle,
-          'description': stepDescription,
+          'description': (stepId == 'passenger_onboard' || stepId == 'dropoff_arrival') && isNoShow
+              ? 'Not applicable - Passenger no-show'
+              : stepDescription,
           'completedAt': completedAt,
           'icon': stepIcon,
           'color': ChoiceLuxTheme.successColor,
           'status': 'completed',
+          'isNoShow': (stepId == 'passenger_onboard' || stepId == 'dropoff_arrival') && isNoShow,
+          if ((stepId == 'passenger_onboard' || stepId == 'dropoff_arrival') && isNoShow && noShowComment != null)
+            'noShowComment': noShowComment,
         };
 
         // Add odometer info for vehicle steps

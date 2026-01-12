@@ -91,9 +91,16 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       final result = await repository.createJob(job);
 
       if (result.isSuccess) {
-        // Refresh jobs list
+        // Refresh jobs list and wait for it to complete
+        // This ensures the dashboard has fresh data when user navigates back
         ref.invalidateSelf();
-        Log.d('Job created successfully');
+        Log.d('Job created successfully, refreshing jobs list...');
+        
+        // Wait for the provider to rebuild with fresh data
+        // This ensures the dashboard shows the new job immediately
+        await refreshJobs();
+        
+        Log.d('Jobs list refreshed after job creation');
         return result.data;
       } else {
         Log.e('Error creating job: ${result.error!.message}');

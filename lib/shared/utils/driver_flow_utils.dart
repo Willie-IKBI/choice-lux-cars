@@ -213,6 +213,8 @@ class DriverFlowUtils {
         return 'Trip has been completed';
       case 'vehicle_return':
         return 'Return vehicle and record final odometer';
+      case 'completed':
+        return 'Job has been completed and closed';
       default:
         return 'Unknown step';
     }
@@ -233,6 +235,8 @@ class DriverFlowUtils {
         return 'Trip Complete';
       case 'vehicle_return':
         return 'Vehicle Return';
+      case 'completed':
+        return 'Job Complete';
       default:
         return 'Unknown Step';
     }
@@ -271,6 +275,8 @@ class DriverFlowUtils {
         return Icons.check_circle;
       case 'vehicle_return':
         return Icons.home;
+      case 'completed':
+        return Icons.done_all_rounded;
       default:
         return Icons.info;
     }

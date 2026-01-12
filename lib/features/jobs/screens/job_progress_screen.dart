@@ -1586,11 +1586,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         ..._jobProgress!,
         ...updates,
       };
+      
+      // Update step statuses and current step INSIDE setState
+      // This ensures all state changes happen in a single rebuild
+      _updateStepStatus();
+      _determineCurrentStep();
+      
+      Log.d('Step statuses and current step updated inside setState');
     });
-    
-    // Update step statuses and current step after optimistic update
-    _updateStepStatus();
-    _determineCurrentStep();
     
     Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
   }
@@ -1680,20 +1683,57 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   // OPTIMISTIC UPDATE: Update local state immediately to prevent black screen
                   if (mounted) {
                     final currentTime = SATimeUtils.getCurrentSATimeISO();
+                    
+                    // Store optimistic data before reload (needed for merge logic)
+                    final optimisticOdo = odoEndReading;
+                    final optimisticTime = currentTime;
+                    
+                    Log.d('Storing optimistic data before server reload');
+                    Log.d('Optimistic ODO: $optimisticOdo');
+                    Log.d('Optimistic Time: $optimisticTime');
+                    
                     _updateJobProgressOptimistically({
-                      'job_closed_odo': odoEndReading,
-                      'job_closed_time': currentTime,
+                      'job_closed_odo': optimisticOdo,
+                      'job_closed_time': optimisticTime,
                       'current_step': 'vehicle_return',
                       'progress_percentage': 100,
                     });
                     Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
-                  }
-
-                  // Then refresh from server (best effort - non-critical if it fails)
-                  if (mounted) {
+                    
+                    // Then refresh from server (best effort - non-critical if it fails)
+                    // BUT: Merge optimistic data with server data instead of replacing
                     try {
                       await _loadJobProgress(skipLoadingState: true);
                       Log.d('=== PROGRESS RELOADED FROM SERVER ===');
+                      
+                      // After reload, ensure optimistic data is preserved if server hasn't updated yet
+                      if (mounted && _jobProgress != null) {
+                        final serverOdo = _jobProgress!['job_closed_odo'];
+                        final serverTime = _jobProgress!['job_closed_time'];
+                        
+                        // If server doesn't have the data yet, restore optimistic data
+                        if (serverOdo == null || serverTime == null) {
+                          Log.d('Server data missing, restoring optimistic update');
+                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime');
+                          
+                          setState(() {
+                            _jobProgress = {
+                              ..._jobProgress!,
+                              'job_closed_odo': optimisticOdo,
+                              'job_closed_time': optimisticTime,
+                              'current_step': 'vehicle_return',
+                              'progress_percentage': 100,
+                            };
+                            _updateStepStatus();
+                            _determineCurrentStep();
+                          });
+                          
+                          Log.d('Optimistic data restored after server reload');
+                        } else {
+                          Log.d('Server data present, using server data');
+                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime');
+                        }
+                      }
                     } catch (reloadError) {
                       Log.e('Failed to reload progress, but UI already updated optimistically: $reloadError');
                       // UI is already correct, so this is non-critical
