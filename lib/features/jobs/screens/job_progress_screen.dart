@@ -303,6 +303,38 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         // Still no progress after retry - set safe defaults
         Log.d('No job progress found after retry, setting defaults');
         
+        // CRITICAL FIX: If we're in the middle of an optimistic update (skipLoadingState = true),
+        // preserve the existing _jobProgress data instead of clearing it
+        // This prevents black screen after vehicle return when server data is temporarily unavailable
+        if (skipLoadingState && _jobProgress != null) {
+          Log.d('Preserving optimistic data during update - server data not yet available');
+          Log.d('Optimistic data: job_closed_odo=${_jobProgress!['job_closed_odo']}, job_closed_time=${_jobProgress!['job_closed_time']}');
+          
+          // Load trip progress and addresses but keep existing job progress
+          final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
+          final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
+          final nextTripIndex = _findNextIncompleteTripIndex(trips);
+          
+          setState(() {
+            // Keep _jobProgress as-is (preserve optimistic update)
+            _tripProgress = trips;
+            _jobAddresses = addresses;
+            _currentTripIndex = nextTripIndex;
+            // Don't reset progress percentage if we have optimistic data
+            if (_progressPercentage == 0 && _jobProgress!['progress_percentage'] != null) {
+              _progressPercentage = _jobProgress!['progress_percentage'] as int;
+            }
+          });
+          
+          // Still update step status and determine current step to ensure UI is correct
+          _updateStepStatus();
+          _determineCurrentStep();
+          
+          Log.d('Optimistic data preserved, step status updated');
+          return;
+        }
+        
+        // Only clear _jobProgress if this is a fresh load (not an optimistic update)
         // Load trip progress and addresses even when no job progress exists
         final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
         final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
