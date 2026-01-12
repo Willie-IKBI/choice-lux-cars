@@ -1739,14 +1739,20 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       Log.d('=== PROGRESS RELOADED FROM SERVER ===');
                       
                       // After reload, ensure optimistic data is preserved if server hasn't updated yet
+                      // OR if server has odo/time but wrong current_step (replication delay issue)
                       if (mounted && _jobProgress != null) {
                         final serverOdo = _jobProgress!['job_closed_odo'];
                         final serverTime = _jobProgress!['job_closed_time'];
+                        final serverStep = _jobProgress!['current_step']?.toString();
                         
-                        // If server doesn't have the data yet, restore optimistic data
-                        if (serverOdo == null || serverTime == null) {
-                          Log.d('Server data missing, restoring optimistic update');
-                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime');
+                        // If server doesn't have the data yet, OR if server has odo/time but wrong step,
+                        // restore optimistic data and step
+                        final needsRestore = (serverOdo == null || serverTime == null) ||
+                            ((serverOdo != null || serverTime != null) && serverStep != 'vehicle_return');
+                        
+                        if (needsRestore) {
+                          Log.d('Server data incomplete or step mismatch, restoring optimistic update');
+                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime, Server Step: $serverStep');
                           
                           setState(() {
                             _jobProgress = {
@@ -1756,14 +1762,22 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                               'current_step': 'vehicle_return',
                               'progress_percentage': 100,
                             };
+                            _currentStep = 'vehicle_return'; // CRITICAL: Restore step explicitly
                             _updateStepStatus();
                             _determineCurrentStep();
                           });
                           
-                          Log.d('Optimistic data restored after server reload');
+                          Log.d('Optimistic data and step restored after server reload');
                         } else {
-                          Log.d('Server data present, using server data');
-                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime');
+                          Log.d('Server data present and correct, using server data');
+                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime, Server Step: $serverStep');
+                          // Ensure _currentStep matches server data
+                          if (_currentStep != 'vehicle_return' && serverStep == 'vehicle_return') {
+                            setState(() {
+                              _currentStep = 'vehicle_return';
+                              _updateStepStatus();
+                            });
+                          }
                         }
                       }
                     } catch (reloadError) {
