@@ -390,13 +390,38 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       // Find next incomplete trip index
       final nextTripIndex = _findNextIncompleteTripIndex(trips);
       
-      setState(() {
-        _jobProgress = progress;
-        _tripProgress = trips;
-        _jobAddresses = addresses;
-        _currentTripIndex = nextTripIndex;
-        _progressPercentage = p['progress_percentage'] ?? 0;
-      });
+      // CRITICAL FIX: If we're in an optimistic update (skipLoadingState = true)
+      // and have optimistic vehicle return data, merge it with server data
+      // BEFORE setting state. This prevents losing optimistic data.
+      if (skipLoadingState && _jobProgress != null && _isVehicleReturnComplete()) {
+        // Merge server data with optimistic vehicle return data
+        final mergedProgress = {
+          ...progress, // Server data (base)
+          ..._jobProgress!, // Optimistic data (overwrites with vehicle return fields)
+          // Ensure these are explicitly set
+          'current_step': 'vehicle_return',
+          'progress_percentage': 100,
+        };
+        
+        setState(() {
+          _jobProgress = mergedProgress;
+          _tripProgress = trips;
+          _jobAddresses = addresses;
+          _currentTripIndex = nextTripIndex;
+          _currentStep = 'vehicle_return'; // Explicitly set step
+        });
+        
+        Log.d('Merged optimistic vehicle return data with server progress in _loadJobProgress');
+      } else {
+        // Normal load - use server data as-is
+        setState(() {
+          _jobProgress = progress;
+          _tripProgress = trips;
+          _jobAddresses = addresses;
+          _currentTripIndex = nextTripIndex;
+          _progressPercentage = p['progress_percentage'] ?? 0;
+        });
+      }
       
       Log.d('Current trip index set to: $_currentTripIndex (out of ${trips.length} total trips)');
 
@@ -1774,62 +1799,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
                     
                     // Then refresh from server (best effort - non-critical if it fails)
-                    // BUT: Merge optimistic data with server data instead of replacing
+                    // Merge is now handled inside _loadJobProgress, so no need to do it here
                     try {
                       await _loadJobProgress(skipLoadingState: true);
                       Log.d('=== PROGRESS RELOADED FROM SERVER ===');
-                      
-                      // After reload, ensure optimistic data is preserved if server hasn't updated yet
-                      // OR if server has odo/time but wrong current_step (replication delay issue)
+                      // Ensure step status is updated after reload
                       if (mounted && _jobProgress != null) {
-                        final serverOdo = _jobProgress!['job_closed_odo'];
-                        final serverTime = _jobProgress!['job_closed_time'];
-                        final serverStep = _jobProgress!['current_step']?.toString();
-                        
-                        // If server doesn't have the data yet, OR if server has odo/time but wrong step,
-                        // restore optimistic data and step
-                        final needsRestore = (serverOdo == null || serverTime == null) ||
-                            ((serverOdo != null || serverTime != null) && serverStep != 'vehicle_return');
-                        
-                        if (needsRestore) {
-                          Log.d('Server data incomplete or step mismatch, restoring optimistic update');
-                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime, Server Step: $serverStep');
-                          
+                        _updateStepStatus();
+                        // Ensure _currentStep is correct (should already be set by _loadJobProgress merge)
+                        if (_currentStep != 'vehicle_return' && _isVehicleReturnComplete()) {
                           setState(() {
-                            _jobProgress = {
-                              ..._jobProgress!,
-                              'job_closed_odo': optimisticOdo,
-                              'job_closed_time': optimisticTime,
-                              'current_step': 'vehicle_return',
-                              'progress_percentage': 100,
-                            };
-                            _currentStep = 'vehicle_return'; // CRITICAL: Restore step explicitly
-                            // DO NOT call _updateStepStatus() or _determineCurrentStep() inside setState
-                            // They can cause nested setState calls which leads to rendering issues
+                            _currentStep = 'vehicle_return';
                           });
-                          
-                          // Update step status and verify step AFTER setState completes
-                          // This prevents nested setState calls
                           _updateStepStatus();
-                          // Don't call _determineCurrentStep() if we're already on vehicle_return
-                          // to avoid it potentially changing the step incorrectly
-                          if (_currentStep != 'vehicle_return') {
-                            _determineCurrentStep();
-                          }
-                          
-                          Log.d('Optimistic data and step restored after server reload');
-                        } else {
-                          Log.d('Server data present and correct, using server data');
-                          Log.d('Server ODO: $serverOdo, Server Time: $serverTime, Server Step: $serverStep');
-                          // Ensure _currentStep matches server data
-                          if (_currentStep != 'vehicle_return' && serverStep == 'vehicle_return') {
-                            setState(() {
-                              _currentStep = 'vehicle_return';
-                              // DO NOT call _updateStepStatus() inside setState
-                            });
-                            // Call after setState completes
-                            _updateStepStatus();
-                          }
                         }
                       }
                     } catch (reloadError) {
