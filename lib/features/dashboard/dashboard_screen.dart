@@ -284,8 +284,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     }).toList();
 
     if (isDriver) {
-      // For drivers, only count their assigned jobs
-      return todayJobs.where((job) => job.driverId == userProfile?.id).length;
+      // For drivers, only count their assigned jobs that are actionable
+      // (open, assigned, or in_progress - NOT closed/completed/cancelled)
+      return todayJobs.where((job) {
+        final isAssignedToDriver = job.driverId == userProfile?.id;
+        final isActionable = job.status == 'open' || 
+                            job.status == 'assigned' || 
+                            job.status == 'in_progress' ||
+                            job.status == 'started' ||
+                            job.status == 'ready_to_close';
+        return isAssignedToDriver && isActionable;
+      }).length;
     } else {
       // For admin/manager/driver_manager, count all jobs
       return todayJobs.length;
