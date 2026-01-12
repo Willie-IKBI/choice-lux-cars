@@ -324,11 +324,25 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             if (_progressPercentage == 0 && _jobProgress!['progress_percentage'] != null) {
               _progressPercentage = _jobProgress!['progress_percentage'] as int;
             }
+            // CRITICAL FIX: Explicitly preserve _currentStep if optimistic data indicates vehicle_return
+            // This prevents _determineCurrentStep() from changing it incorrectly when called outside setState
+            if (_jobProgress!['current_step']?.toString() == 'vehicle_return' ||
+                _jobProgress!['job_closed_odo'] != null ||
+                _jobProgress!['job_closed_time'] != null) {
+              _currentStep = 'vehicle_return';
+              Log.d('Explicitly preserving _currentStep = vehicle_return in setState');
+            }
           });
           
-          // Still update step status and determine current step to ensure UI is correct
+          // Update step status - this needs the correct _currentStep
           _updateStepStatus();
-          _determineCurrentStep();
+          // Don't call _determineCurrentStep() if we're already on vehicle_return
+          // to avoid it potentially changing the step incorrectly
+          if (_currentStep != 'vehicle_return') {
+            _determineCurrentStep();
+          } else {
+            Log.d('Skipping _determineCurrentStep() - already on vehicle_return step');
+          }
           
           Log.d('Optimistic data preserved, step status updated');
           return;
