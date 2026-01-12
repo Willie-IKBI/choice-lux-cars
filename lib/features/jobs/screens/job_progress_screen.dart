@@ -911,7 +911,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // For passenger_pickup step, use _buildActionButton to show Passenger Onboard/No-Show buttons
             // For other steps, only show if not completed
             // Use _buildActionButton for ALL steps to ensure consistent loading indicators
-            if (isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ...[
+            
+            // Check if vehicle_return button should be shown even if not current step
+            // This is a fallback to ensure button shows when all trips are completed
+            final shouldShowVehicleReturnButton = step.id == 'vehicle_return' &&
+                _jobProgress != null &&
+                (_jobProgress!['transport_completed_ind'] == true) &&
+                (_jobProgress!['job_closed_odo'] == null && _jobProgress!['job_closed_time'] == null) &&
+                (_isPreviousStepCompleted('trip_complete') || 
+                 _jobProgress!['trip_complete_at'] != null);
+            
+            if ((isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ||
+                shouldShowVehicleReturnButton) ...[
               SizedBox(height: _isMobile ? 12 : 16),
               _buildActionButton(step),
             ],
@@ -1113,6 +1124,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     }
 
     Log.d('Final current step: $newCurrentStep');
+    Log.d('Transport completed: ${_jobProgress!['transport_completed_ind']}');
+    Log.d('Trip complete at: ${_jobProgress!['trip_complete_at']}');
+    Log.d('Current step from DB: ${_jobProgress!['current_step']}');
 
     // Update the current step if it changed
     if (_currentStep != newCurrentStep) {
