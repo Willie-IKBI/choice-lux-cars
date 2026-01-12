@@ -1043,6 +1043,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       if (databaseStep == 'trip_complete' && (transportCompleted || tripCompleteAt != null)) {
         newCurrentStep = 'vehicle_return';
         Log.d('Trip completed, advancing from trip_complete to vehicle_return (transport_completed: $transportCompleted, trip_complete_at: $tripCompleteAt)');
+      } else if (databaseStep == 'vehicle_return') {
+        // If vehicle is returned, stay on vehicle_return (user can still add expenses and close job)
+        // Only advance to completed if job_status is actually 'completed'
+        final vehicleReturned = _jobProgress!['job_closed_odo'] != null || _jobProgress!['job_closed_time'] != null;
+        if (vehicleReturned && _jobProgress!['job_status'] == 'completed') {
+          newCurrentStep = 'completed';
+          Log.d('Vehicle returned and job completed, advancing to completed step');
+        } else {
+          newCurrentStep = 'vehicle_return';
+          Log.d('Vehicle returned, staying on vehicle_return step');
+        }
       } else {
         // Map database step ID to UI step ID
         newCurrentStep = _mapDatabaseStepToUIStep(databaseStep);
@@ -2202,8 +2213,17 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             (_jobProgress!['passenger_no_show_ind'] == true);
         final tripCompleted = _isPreviousStepCompleted('trip_complete');
         
+        // CRITICAL: Check if ALL trips are completed before allowing vehicle return
+        final allTripsCompleted = _jobProgress != null && 
+            (_jobProgress!['transport_completed_ind'] == true);
+        
         if (!tripCompleted && !isNoShow) {
           return _buildStepLockedMessage('Complete trip first');
+        }
+        
+        // If trip is completed but not all trips are completed, show message
+        if (tripCompleted && !allTripsCompleted && !isNoShow) {
+          return _buildStepLockedMessage('Complete all trips before returning vehicle');
         }
         
         // Check if vehicle is already returned (job_closed_odo or job_closed_time is set)
@@ -2215,6 +2235,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             _jobProgress!['job_status'] == 'completed';
         
         if (!vehicleReturned) {
+          // Only show button if all trips are completed (or no-show)
+          if (!allTripsCompleted && !isNoShow) {
+            return _buildStepLockedMessage('Complete all trips before returning vehicle');
+          }
+          
           // Vehicle not returned yet, show Return Vehicle button
           // Also allow adding expenses before returning vehicle
           return _isMobile
