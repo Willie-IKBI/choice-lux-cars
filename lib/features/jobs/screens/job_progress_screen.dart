@@ -1574,7 +1574,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     if (!mounted) return;
     
     if (_jobProgress == null) {
-      Log.w('Cannot apply optimistic update: _jobProgress is null');
+      Log.e('Cannot apply optimistic update: _jobProgress is null');
       return;
     }
     
@@ -1695,7 +1695,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                       await _loadJobProgress(skipLoadingState: true);
                       Log.d('=== PROGRESS RELOADED FROM SERVER ===');
                     } catch (reloadError) {
-                      Log.w('Failed to reload progress, but UI already updated optimistically: $reloadError');
+                      Log.e('Failed to reload progress, but UI already updated optimistically: $reloadError');
                       // UI is already correct, so this is non-critical
                     }
                   }
@@ -1729,7 +1729,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     if (reloadSuccess) {
                       Log.d('State reloaded successfully after error');
                     } else {
-                      Log.w('Failed to reload state after error, but showing error message');
+                      Log.e('Failed to reload state after error, but showing error message');
                     }
 
                     // Show error message
@@ -2352,7 +2352,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'vehicle_return':
         // NULL SAFETY: If _jobProgress is null, show loading indicator
         if (_jobProgress == null) {
-          Log.w('_jobProgress is null in vehicle_return step, showing loading indicator');
+          Log.e('_jobProgress is null in vehicle_return step, showing loading indicator');
           return Center(
             child: CircularProgressIndicator(
               valueColor: AlwaysStoppedAnimation<Color>(
