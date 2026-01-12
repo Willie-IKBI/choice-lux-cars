@@ -1263,6 +1263,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 job.status == 'cancelled')
             .toList();
         
+        // CRITICAL: For drivers, ensure only jobs assigned to them are shown
+        // This is a defensive check in addition to repository-level filtering
+        final userProfile = ref.read(currentUserProfileProvider);
+        final userRole = userProfile?.role?.toLowerCase();
+        final userId = userProfile?.id;
+        if (userRole == 'driver' && userId != null) {
+          closed = closed.where((job) => job.driverId == userId).toList();
+        }
+        
         // Apply date range filter
         if (_dateRangeFilter == 'all') {
           // No filtering needed - show all closed jobs
@@ -1303,12 +1312,21 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         return closed;
       case 'all':
         // All jobs, but apply date filter to completed/closed/cancelled jobs
+        // CRITICAL: For drivers, ensure only jobs assigned to them are shown
+        var allJobs = jobs;
+        final userProfileForAll = ref.read(currentUserProfileProvider);
+        final userRoleForAll = userProfileForAll?.role?.toLowerCase();
+        final userIdForAll = userProfileForAll?.id;
+        if (userRoleForAll == 'driver' && userIdForAll != null) {
+          allJobs = allJobs.where((job) => job.driverId == userIdForAll).toList();
+        }
+        
         if (_dateRangeFilter == 'all') {
-          return jobs; // Show all jobs
+          return allJobs; // Show all jobs
         } else {
           final dateRange = _getClosedJobsDateRange(_dateRangeFilter);
           if (dateRange.$1 != null && dateRange.$2 != null) {
-            return jobs.where((job) {
+            return allJobs.where((job) {
               final isCompleted = job.status == 'completed' ||
                   job.status == 'closed' ||
                   job.status == 'cancelled';
@@ -1345,7 +1363,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             }).toList();
           }
         }
-        return jobs;
+        return allJobs;
       default:
         return jobs;
     }
