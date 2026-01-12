@@ -377,24 +377,53 @@ class DriverFlowApiService {
           allTrips.every((trip) => trip['status'] == 'completed');
       Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
 
-      // Determine next step: if all trips completed, advance to vehicle_return, otherwise trip_complete
-      final nextStep = allTripsCompleted ? 'vehicle_return' : 'trip_complete';
-      final progressPercentage = allTripsCompleted ? 100 : 83;
+      // Determine next step and prepare update payload (consistent with completeTrip logic)
+      String nextStep;
+      int progressPercentage;
+      Map<String, dynamic> updatePayload = {
+        'passenger_no_show_ind': true,
+        'passenger_no_show_comment': comment.trim(),
+        'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
+        'transport_completed_ind': allTripsCompleted,
+        'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
+        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
 
-      // Update driver_flow table with no-show information and step progression
+      if (allTripsCompleted) {
+        // All trips completed - advance to vehicle_return
+        nextStep = 'vehicle_return';
+        progressPercentage = 100;
+        updatePayload['current_step'] = nextStep;
+        updatePayload['progress_percentage'] = progressPercentage;
+        Log.d('All trips completed (no-show), advancing to vehicle_return');
+      } else {
+        // More trips exist - reset flow to pickup_arrival for next trip (consistent with completeTrip)
+        // Find next incomplete trip
+        final nextIncompleteTrip = allTrips.firstWhere(
+          (trip) => trip['status'] != 'completed',
+          orElse: () => allTrips.last,
+        );
+        final nextTripIndex = nextIncompleteTrip['trip_index'] as int;
+        
+        nextStep = 'pickup_arrival';
+        progressPercentage = 17; // Reset to pickup_arrival progress
+        updatePayload['current_step'] = nextStep;
+        updatePayload['progress_percentage'] = progressPercentage;
+        // Clear trip-specific fields for the next trip (they'll be set when driver arrives at pickup)
+        updatePayload['pickup_arrive_time'] = null;
+        updatePayload['pickup_arrive_loc'] = null;
+        updatePayload['passenger_onboard_at'] = null;
+        updatePayload['dropoff_arrive_at'] = null;
+        // Keep vehicle_collected = true (don't reset this)
+        // Keep trip_complete_at (historical record)
+        Log.d('More trips exist (no-show), resetting to pickup_arrival for trip $nextTripIndex');
+      }
+
+      // Update driver_flow table with all changes in one call
       await _supabase
           .from('driver_flow')
-          .update({
-            'passenger_no_show_ind': true,
-            'passenger_no_show_comment': comment.trim(),
-            'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
-            'current_step': nextStep,
-            'progress_percentage': progressPercentage,
-            'transport_completed_ind': allTripsCompleted,
-            'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
+          .update(updatePayload)
           .eq('job_id', jobId);
 
       Log.d('=== PASSENGER NO-SHOW RECORDED ===');

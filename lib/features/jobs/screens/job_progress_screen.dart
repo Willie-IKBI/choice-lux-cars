@@ -1300,8 +1300,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('Image URL: $odometerImageUrl');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                  // Keep modal open - loading state is shown inside modal
-                  // Set loading state for screen overlay (will be visible after modal closes)
+                  // Standardized pattern: Set loading state BEFORE API call
+                  // Modal will show its own loading, overlay will be visible after modal closes
                   if (mounted) {
                     setState(() => _isUpdating = true);
                   }
@@ -1511,11 +1511,11 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               Log.d('Comment: $comment');
               Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-              // The modal closes itself in its _confirmNoShow method (after calling onConfirm)
+              // Standardized pattern: Modal closes itself in its _confirmNoShow method
               // Wait for modal to fully close before showing loading overlay
               await Future.delayed(const Duration(milliseconds: 150));
 
-              // Now set loading state - overlay will be visible since modal is closed
+              // Standardized pattern: Set loading state BEFORE API call
               if (mounted) {
                 setState(() => _isUpdating = true);
               }
@@ -1754,7 +1754,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   Log.d('Odometer: $odoEndReading');
                   Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                  // Close the modal first so loading overlay is visible
+                  // Standardized pattern: Close modal first so overlay is visible
                   if (modalContext.mounted) {
                     Navigator.of(modalContext).pop();
                   }
@@ -1762,7 +1762,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                   // Wait for modal to fully close before showing loading overlay
                   await Future.delayed(const Duration(milliseconds: 100));
 
-                  // Now set loading state - overlay will be visible since modal is closed
+                  // Standardized pattern: Set loading state BEFORE API call
                   if (mounted) {
                     setState(() => _isUpdating = true);
                   }
@@ -1803,20 +1803,31 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                     try {
                       await _loadJobProgress(skipLoadingState: true);
                       Log.d('=== PROGRESS RELOADED FROM SERVER ===');
-                      // Ensure step status is updated after reload
+                      // Ensure step status is updated after reload and step is correctly set
                       if (mounted && _jobProgress != null) {
-                        _updateStepStatus();
-                        // Ensure _currentStep is correct (should already be set by _loadJobProgress merge)
-                        if (_currentStep != 'vehicle_return' && _isVehicleReturnComplete()) {
+                        // CRITICAL: Explicitly set step to vehicle_return after vehicle return completes
+                        // This ensures the UI shows the Close Job button
+                        if (_isVehicleReturnComplete()) {
                           setState(() {
                             _currentStep = 'vehicle_return';
                           });
+                          _updateStepStatus();
+                          Log.d('Step set to vehicle_return after vehicle return completion');
+                        } else {
+                          // If for some reason vehicle return data is missing, update step status anyway
                           _updateStepStatus();
                         }
                       }
                     } catch (reloadError) {
                       Log.e('Failed to reload progress, but UI already updated optimistically: $reloadError');
                       // UI is already correct, so this is non-critical
+                      // But still ensure step is set correctly
+                      if (mounted && _isVehicleReturnComplete()) {
+                        setState(() {
+                          _currentStep = 'vehicle_return';
+                        });
+                        _updateStepStatus();
+                      }
                     }
                   }
 
@@ -3805,9 +3816,35 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       return Scaffold(
         backgroundColor: ChoiceLuxTheme.jetBlack,
         body: Center(
-          child: CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(
-              ChoiceLuxTheme.richGold,
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                ChoiceLuxTheme.richGold,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+    
+    // Additional validation: If we have jobProgress but no valid steps, show loading
+    // This prevents black screen when state is inconsistent
+    if (_jobProgress != null && _jobSteps.isEmpty && !_isLoading && !_isUpdating) {
+      Log.d('Widget has jobProgress but no steps, showing loading indicator');
+      return Scaffold(
+        backgroundColor: ChoiceLuxTheme.jetBlack,
+        body: Center(
+          child: SizedBox(
+            width: 20,
+            height: 20,
+            child: CircularProgressIndicator(
+              strokeWidth: 2,
+              valueColor: AlwaysStoppedAnimation<Color>(
+                ChoiceLuxTheme.richGold,
+              ),
             ),
           ),
         ),
@@ -3822,38 +3859,19 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           color: ChoiceLuxTheme.jetBlack,
         ),
         // Layer 2: Loading overlay when updating
+        // Standardized to match action button loading style (20x20, strokeWidth: 2, no text)
         if (_isUpdating)
           Container(
             color: Colors.black.withOpacity(0.7),
-            child: Center(
-              child: Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.jetBlack,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                    width: 1,
+            child: const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    ChoiceLuxTheme.richGold,
                   ),
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    const CircularProgressIndicator(
-                      valueColor: AlwaysStoppedAnimation<Color>(
-                        ChoiceLuxTheme.richGold,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Updating...',
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.softWhite,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ],
                 ),
               ),
             ),
@@ -3870,9 +3888,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               constraints: const BoxConstraints(maxWidth: 1200),
               child: (_isLoading == true || (_isUpdating && _jobProgress == null))
                       ? const Center(
-                          child: CircularProgressIndicator(
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              ChoiceLuxTheme.richGold,
+                          child: SizedBox(
+                            width: 20,
+                            height: 20,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              valueColor: AlwaysStoppedAnimation<Color>(
+                                ChoiceLuxTheme.richGold,
+                              ),
                             ),
                           ),
                         )
