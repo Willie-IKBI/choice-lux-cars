@@ -403,8 +403,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       // Update step statuses
       _updateStepStatus();
 
-      // Determine current step
-      _determineCurrentStep();
+      // Determine current step - BUT skip if we're already on vehicle_return
+      // and have vehicle return data (prevents override after vehicle return)
+      if (!_isVehicleReturnComplete() || _currentStep != 'vehicle_return') {
+        _determineCurrentStep();
+      } else {
+        Log.d('Skipping _determineCurrentStep() - vehicle return completed, preserving vehicle_return step');
+      }
       
       // Debug logging after step determination
       Log.d('=== AFTER STEP DETERMINATION ===');
@@ -1071,6 +1076,14 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       return;
     }
 
+    // CRITICAL: If vehicle return is complete, always stay on vehicle_return step
+    // This prevents any logic from changing the step incorrectly
+    if (_isVehicleReturnComplete() && _currentStep == 'vehicle_return') {
+      Log.d('Vehicle return complete, preserving vehicle_return step');
+      _updateStepStatus(); // Still update step status for UI
+      return; // Don't change the step
+    }
+
     // Debug logging
     Log.d('=== DETERMINING CURRENT STEP ===');
     Log.d('Vehicle collected: ${_jobProgress!['vehicle_collected']}');
@@ -1639,9 +1652,23 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     // Update step statuses and current step AFTER setState completes
     // This prevents nested setState calls
     _updateStepStatus();
-    _determineCurrentStep();
+    
+    // Only call _determineCurrentStep() if we're not already on vehicle_return
+    // with vehicle return data (prevents override after vehicle return)
+    if (!_isVehicleReturnComplete() || _currentStep != 'vehicle_return') {
+      _determineCurrentStep();
+    } else {
+      Log.d('Skipping _determineCurrentStep() after optimistic update - vehicle return completed');
+    }
     
     Log.d('=== OPTIMISTIC UPDATE APPLIED ===');
+  }
+
+  /// Check if vehicle return is complete (has return data)
+  bool _isVehicleReturnComplete() {
+    return _jobProgress != null && 
+        (_jobProgress!['job_closed_odo'] != null || 
+         _jobProgress!['job_closed_time'] != null);
   }
 
   /// Retry loading job progress with exponential backoff
@@ -1798,8 +1825,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                           if (_currentStep != 'vehicle_return' && serverStep == 'vehicle_return') {
                             setState(() {
                               _currentStep = 'vehicle_return';
-                              _updateStepStatus();
+                              // DO NOT call _updateStepStatus() inside setState
                             });
+                            // Call after setState completes
+                            _updateStepStatus();
                           }
                         }
                       }
@@ -3788,9 +3817,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     Log.d('_jobSteps length: ${_jobSteps.length}');
     
     // STATE VALIDATION: Prevent black screen if widget is in invalid state
-    // If we're loading and have no data, show loading indicator instead of empty screen
-    if (_isLoading && _jobProgress == null && _tripProgress == null) {
-      Log.d('Widget in loading state with no data, showing loading indicator');
+    // If we're loading/updating and have no data, show loading indicator instead of empty screen
+    if ((_isLoading || _isUpdating) && _jobProgress == null && _tripProgress == null) {
+      Log.d('Widget in loading/updating state with no data, showing loading indicator');
       return Scaffold(
         backgroundColor: ChoiceLuxTheme.jetBlack,
         body: Center(
@@ -3857,7 +3886,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           body: Center(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 1200),
-              child: _isLoading == true
+              child: (_isLoading == true || (_isUpdating && _jobProgress == null))
                       ? const Center(
                           child: CircularProgressIndicator(
                             valueColor: AlwaysStoppedAnimation<Color>(
