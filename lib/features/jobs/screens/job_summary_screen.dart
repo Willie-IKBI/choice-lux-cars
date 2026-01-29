@@ -2810,8 +2810,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           isCompleted = transportCompleted ||
                        _driverFlowData?['current_step'] == 'vehicle_return' ||
                        _driverFlowData?['current_step'] == 'completed';
-          // Try dedicated timestamp first, fallback to last_activity_at for historical jobs
-          completedAt = _driverFlowData?['trip_complete_at'] ?? lastActivityAt;
+          // Only show completion time when trip was actually completed (driver dropped off);
+          // do NOT fall back to last_activity_at (often job start time)
+          completedAt = _driverFlowData?['trip_complete_at'];
           break;
         case 'vehicle_return':
           isCompleted = _driverFlowData?['job_closed_time'] != null;
