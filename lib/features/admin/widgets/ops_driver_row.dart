@@ -110,7 +110,7 @@ class OpsDriverRow extends StatelessWidget {
               ],
               TextButton.icon(
                 onPressed: driver.activeJobId != null
-                    ? () => context.go('/jobs/${driver.activeJobId}/summary')
+                    ? () => context.push('/jobs/${driver.activeJobId}/summary?from=operations')
                     : null,
                 icon: Icon(Icons.arrow_forward_ios, size: 12, color: ChoiceLuxTheme.platinumSilver),
                 label: Text('View', style: TextStyle(fontSize: 13)),
@@ -143,7 +143,7 @@ class OpsDriverRow extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: driver.activeJobId != null
-            ? () => context.go('/jobs/${driver.activeJobId}/summary')
+            ? () => context.push('/jobs/${driver.activeJobId}/summary?from=operations')
             : null,
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: spacing * 1.25, horizontal: spacing * 1.5),
@@ -179,44 +179,55 @@ class OpsDriverRow extends StatelessWidget {
                   textAlign: TextAlign.center,
                 ),
               ),
+              // Active job + actions in one cell so text and icons stay grouped; icons in fixed-width area
               Expanded(
                 flex: 2,
-                child: Text(
-                  activeSummary,
-                  style: textStyle.copyWith(color: ChoiceLuxTheme.grey, fontSize: 12),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (isAdmin && driver.phoneNumber != null && driver.phoneNumber!.isNotEmpty) ...[
-                    IconButton(
-                      icon: Icon(Icons.phone, size: 18, color: ChoiceLuxTheme.richGold),
-                      onPressed: onCall,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(minWidth: 32, minHeight: 32),
-                      style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        activeSummary,
+                        style: textStyle.copyWith(color: ChoiceLuxTheme.grey, fontSize: 12),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
-                    IconButton(
-                      icon: Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
-                      onPressed: onWhatsApp,
-                      padding: EdgeInsets.zero,
-                      constraints: BoxConstraints(minWidth: 32, minHeight: 32),
-                      style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                    SizedBox(width: spacing),
+                    SizedBox(
+                      width: 100,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          if (isAdmin && driver.phoneNumber != null && driver.phoneNumber!.isNotEmpty) ...[
+                            IconButton(
+                              icon: Icon(Icons.phone, size: 18, color: ChoiceLuxTheme.richGold),
+                              onPressed: onCall,
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                              style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            ),
+                            IconButton(
+                              icon: Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
+                              onPressed: onWhatsApp,
+                              padding: EdgeInsets.zero,
+                              constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                              style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                            ),
+                          ],
+                          IconButton(
+                            icon: Icon(Icons.arrow_forward_ios, size: 12, color: ChoiceLuxTheme.platinumSilver),
+                            onPressed: driver.activeJobId != null
+                                ? () => context.push('/jobs/${driver.activeJobId}/summary?from=operations')
+                                : null,
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                            style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          ),
+                        ],
+                      ),
                     ),
                   ],
-                  IconButton(
-                    icon: Icon(Icons.arrow_forward_ios, size: 12, color: ChoiceLuxTheme.platinumSilver),
-                    onPressed: driver.activeJobId != null
-                        ? () => context.go('/jobs/${driver.activeJobId}/summary')
-                        : null,
-                    padding: EdgeInsets.zero,
-                    constraints: BoxConstraints(minWidth: 32, minHeight: 32),
-                    style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
-                  ),
-                ],
+                ),
               ),
             ],
           ),

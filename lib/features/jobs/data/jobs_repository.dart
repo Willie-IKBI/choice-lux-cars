@@ -258,9 +258,9 @@ class JobsRepository {
     try {
       Log.d('Updating job status: $jobId to $status');
 
-      // Prepare update data
+      // Prepare update data (jobs table column is job_status, not status)
       final updateData = <String, dynamic>{
-        'status': status,
+        'job_status': status,
         'updated_at': SATimeUtils.getCurrentSATimeISO(),
       };
 

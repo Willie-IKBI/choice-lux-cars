@@ -846,7 +846,13 @@ class DriverFlowApiService {
       if (msg.contains('Driver flow record not found')) {
         throw Exception('Please return the vehicle first.');
       }
-      throw Exception(msg.length > 80 ? 'Failed to close job. Check logs.' : msg);
+      // DB trigger raises "Cannot close job: not all trips are completed" (lowercase)
+      if (msg.toLowerCase().contains('not all trips')) {
+        throw Exception('Please complete all trips before closing.');
+      }
+      // Show real error up to 250 chars so user sees the reason; avoid huge stack traces
+      final userMsg = msg.length > 250 ? '${msg.substring(0, 250)}…' : msg;
+      throw Exception(userMsg);
     }
   }
 

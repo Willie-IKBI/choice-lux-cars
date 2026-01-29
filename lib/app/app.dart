@@ -257,7 +257,8 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           name: 'job_summary',
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
-            return JobSummaryScreen(jobId: jobId);
+            final fromRoute = state.uri.queryParameters['from'];
+            return JobSummaryScreen(jobId: jobId, fromRoute: fromRoute);
           },
         ),
         GoRoute(

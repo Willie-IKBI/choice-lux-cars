@@ -35,8 +35,10 @@ extension StringExtension on String {
 
 class JobSummaryScreen extends ConsumerStatefulWidget {
   final String jobId;
+  /// When 'operations', back navigation returns to Operations Dashboard instead of Jobs list.
+  final String? fromRoute;
 
-  const JobSummaryScreen({super.key, required this.jobId});
+  const JobSummaryScreen({super.key, required this.jobId, this.fromRoute});
 
   @override
   ConsumerState<JobSummaryScreen> createState() => _JobSummaryScreenState();
@@ -278,7 +280,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => context.go('/jobs'),
+          onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
         ),
         body: Center(
           child: Column(
@@ -313,7 +315,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => context.go('/jobs'),
+          onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
         ),
         body: const Center(child: Text('Job not found')),
       );
@@ -336,7 +338,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           appBar: LuxuryAppBar(
             title: 'Job Summary',
             showBackButton: true,
-            onBackPressed: () => context.go('/jobs'),
+            onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
           ),
           body: isDesktop
               ? _buildDesktopLayout(totalAmount)
@@ -2136,7 +2138,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     } catch (e) {
       Log.e('Admin close job failed: $e');
       final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : e.toString();
-      if (mounted) SnackBarUtils.showError(context, msg.length > 100 ? 'Failed to close job.' : msg);
+      if (mounted) {
+        final displayMsg = msg.length > 200 ? '${msg.substring(0, 200)}…' : msg;
+        SnackBarUtils.showError(context, displayMsg);
+      }
     } finally {
       if (mounted) setState(() => _isClosingJob = false);
     }
@@ -2164,9 +2169,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => context.go('/jobs'),
+                onPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
                 icon: const Icon(Icons.list),
-                label: const Text('Back to Jobs'),
+                label: Text(widget.fromRoute == 'operations' ? 'Back to Operations' : 'Back to Jobs'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,
                   foregroundColor: Colors.white,
@@ -2332,9 +2337,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => context.go('/jobs'),
+            onPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
             icon: const Icon(Icons.list),
-            label: const Text('Back to Jobs'),
+            label: Text(widget.fromRoute == 'operations' ? 'Back to Operations' : 'Back to Jobs'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.grey,
               foregroundColor: Colors.white,
@@ -2527,9 +2532,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         return;
       }
 
-      Log.d('Navigating to /jobs...');
-      // Navigate back to jobs management after confirmation
-      context.go('/jobs');
+      Log.d('Navigating back after confirmation...');
+      // Navigate back to origin (operations dashboard or jobs list)
+      context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs');
       Log.d('Navigation completed');
     } catch (e) {
       Log.e('Error in _confirmJob: $e');

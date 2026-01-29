@@ -473,7 +473,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
                         closing: _closingJobId == item.jobId,
                         onAssign: () => _showAssignDriverDialog(item),
                         onClose: item.requiresClose ? () => _closeAlertJob(item) : null,
-                        onView: () => context.go('/jobs/${item.jobId}/summary'),
+                        onView: () => context.push('/jobs/${item.jobId}/summary?from=operations'),
                       ),
                     )
                     .toList(),
@@ -558,8 +558,16 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
           Expanded(flex: 1, child: Text('Jobs today', style: textStyle, textAlign: TextAlign.center)),
           Expanded(flex: 1, child: Center(child: Text('State', style: textStyle))),
           Expanded(flex: 1, child: Text('Long wait', style: textStyle, textAlign: TextAlign.center)),
-          Expanded(flex: 2, child: Text('Active job', style: textStyle)),
-          SizedBox(width: 100), // actions column
+          Expanded(
+            flex: 2,
+            child: Row(
+              children: [
+                Expanded(child: Text('Active job', style: textStyle)),
+                SizedBox(width: spacing),
+                SizedBox(width: 100), // align with row actions column
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -1954,16 +1954,118 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     if (_isUpdating) return;
 
     final jobId = widget.jobId;
+    final userProfile = ref.read(currentUserProfileProvider);
+    final role = userProfile?.role?.toLowerCase();
+    final isAdminClose = role == 'administrator' || role == 'super_admin';
+
+    // Admin/super_admin: use admin close path (skips vehicle/trip conditions, sets closed_by_admin_ind for exception reporting)
+    if (isAdminClose && userProfile?.id != null) {
+      await _closeJobAsAdmin(jobId, userProfile!.id!);
+      return;
+    }
+
+    // Driver/normal: use standard close (vehicle returned, all trips completed)
+    await _closeJobAsDriver(jobId);
+  }
+
+  /// Admin/super_admin close: requires comment, excludes vehicle/trip conditions, marks job for exception reporting.
+  Future<void> _closeJobAsAdmin(String jobId, String closedByUserId) async {
+    if (!mounted || _isUpdating) return;
+    final commentController = TextEditingController();
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Close job (admin)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Closing as admin will mark the job completed without requiring vehicle return or all trips completed. A comment is required for exception reporting.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                decoration: const InputDecoration(
+                  labelText: 'Comment (required)',
+                  hintText: 'e.g. Closed by admin – vehicle returned off-app',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (commentController.text.trim().isEmpty) {
+                  SnackBarUtils.showError(ctx, 'Please enter a comment.');
+                  return;
+                }
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text('Close job'),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed != true || !mounted) return;
+
     final t0 = DateTime.now().millisecondsSinceEpoch;
-    Log.d('_closeJob: tapped jobId=$jobId current_step=${_jobProgress?['current_step']}');
+    Log.d('_closeJobAsAdmin: jobId=$jobId closedBy=$closedByUserId');
+    try {
+      setState(() => _isUpdating = true);
+      await DriverFlowApiService.closeJobByAdmin(
+        int.parse(jobId),
+        closedByUserId: closedByUserId,
+        comment: commentController.text.trim(),
+      );
+      if (!mounted) return;
+      await _loadJobProgress(skipLoadingState: true);
+      if (!mounted) return;
+      ref.invalidate(jobsProvider);
+      if (!mounted) return;
+      showJobCompletionDialog(
+        context,
+        jobNumber: widget.job.jobNumber ?? 'Unknown',
+        passengerName: widget.job.passengerName,
+        onDismiss: () {
+          if (mounted) context.go('/jobs');
+        },
+      );
+      Log.d('_closeJobAsAdmin: total ${DateTime.now().millisecondsSinceEpoch - t0}ms');
+    } catch (e) {
+      Log.e('_closeJobAsAdmin: error jobId=$jobId: $e');
+      final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : e.toString();
+      if (mounted) {
+        final displayMsg = msg.length > 200 ? '${msg.substring(0, 200)}…' : msg;
+        SnackBarUtils.showError(context, displayMsg);
+      }
+    } finally {
+      if (mounted) setState(() => _isUpdating = false);
+    }
+  }
+
+  /// Driver/normal close: requires vehicle returned and all trips completed.
+  Future<void> _closeJobAsDriver(String jobId) async {
+    if (!mounted || _isUpdating) return;
+    final t0 = DateTime.now().millisecondsSinceEpoch;
+    Log.d('_closeJobAsDriver: jobId=$jobId current_step=${_jobProgress?['current_step']}');
 
     try {
-      if (!mounted) return;
       setState(() => _isUpdating = true);
 
       final progress = await DriverFlowApiService.closeJob(int.parse(jobId));
       final t1 = DateTime.now().millisecondsSinceEpoch;
-      Log.d('_closeJob: closeJob API took ${t1 - t0}ms');
+      Log.d('_closeJobAsDriver: closeJob API took ${t1 - t0}ms');
 
       if (!mounted) return;
       if (progress != null) {
@@ -1989,12 +2091,13 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           if (mounted) context.go('/jobs');
         },
       );
-      Log.d('_closeJob: total to dialog ${DateTime.now().millisecondsSinceEpoch - t0}ms');
+      Log.d('_closeJobAsDriver: total to dialog ${DateTime.now().millisecondsSinceEpoch - t0}ms');
     } catch (e) {
-      Log.e('_closeJob: error jobId=$jobId: $e');
+      Log.e('_closeJobAsDriver: error jobId=$jobId: $e');
       final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : e.toString();
       if (mounted) {
-        SnackBarUtils.showError(context, msg.length > 100 ? 'Failed to close job. Please try again.' : msg);
+        final displayMsg = msg.length > 200 ? '${msg.substring(0, 200)}…' : msg;
+        SnackBarUtils.showError(context, displayMsg);
       }
     } finally {
       if (mounted) {

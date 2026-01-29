@@ -35,7 +35,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   int _currentPage = 1;
   final int _itemsPerPage = 12;
   String _dateRangeFilter = '90'; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
-  String? _openJobsDateFilter; // 'yesterday', 'today', 'tomorrow', or null (all)
+  String? _openJobsDateFilter = 'today'; // 'yesterday', 'today', 'tomorrow', or null (all). Default: today.
   String? _lastRoute; // Track last route to avoid unnecessary refreshes
 
   @override
@@ -1307,7 +1307,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         }
         return closed;
       case 'all':
-        // All jobs, but apply date filter to completed/closed/cancelled jobs
+        // All jobs: apply date filter to BOTH completed (by updatedAt) and non-completed (by job_start_date)
         // CRITICAL: For drivers, ensure only jobs assigned to them are shown
         var allJobs = jobs;
         final userProfileForAll = ref.read(currentUserProfileProvider);
@@ -1323,42 +1323,29 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           final dateRange = _getClosedJobsDateRange(_dateRangeFilter);
           if (dateRange.$1 != null && dateRange.$2 != null) {
             return allJobs.where((job) {
+              // Use job_start_date for all jobs when filter is yesterday/today so
+              // "Today" = jobs that start today, not jobs updated today (avoids inflated count).
+              final startDate = DateTime(job.jobStartDate.year, job.jobStartDate.month, job.jobStartDate.day);
+              if (_dateRangeFilter == 'yesterday' || _dateRangeFilter == 'today') {
+                final rangeStart = DateTime(dateRange.$1!.year, dateRange.$1!.month, dateRange.$1!.day);
+                final rangeEnd = DateTime(dateRange.$2!.year, dateRange.$2!.month, dateRange.$2!.day);
+                if (_dateRangeFilter == 'yesterday') {
+                  return !startDate.isBefore(rangeStart) && startDate.isBefore(rangeEnd);
+                }
+                return startDate.isAtSameMomentAs(rangeStart) ||
+                       startDate.isAtSameMomentAs(rangeEnd) ||
+                       (startDate.isAfter(rangeStart) && startDate.isBefore(rangeEnd));
+              }
+              // For 7/30/90 days: completed by updatedAt, non-completed by job_start_date
               final isCompleted = job.status == 'completed' ||
                   job.status == 'closed' ||
                   job.status == 'cancelled';
               if (isCompleted) {
                 final jobDate = job.updatedAt ?? job.createdAt;
-                
-                // For yesterday/today: exact day match (compare dates only, ignore time)
-                if (_dateRangeFilter == 'yesterday' || 
-                    _dateRangeFilter == 'today') {
-                  final jobDateOnly = DateTime(
-                    jobDate.year,
-                    jobDate.month,
-                    jobDate.day,
-                  );
-                  final rangeStart = DateTime(
-                    dateRange.$1!.year,
-                    dateRange.$1!.month,
-                    dateRange.$1!.day,
-                  );
-                  final rangeEnd = DateTime(
-                    dateRange.$2!.year,
-                    dateRange.$2!.month,
-                    dateRange.$2!.day,
-                  );
-                  if (_dateRangeFilter == 'yesterday') {
-                    return !jobDateOnly.isBefore(rangeStart) && jobDateOnly.isBefore(rangeEnd);
-                  }
-                  return jobDateOnly.isAtSameMomentAs(rangeStart) ||
-                         jobDateOnly.isAtSameMomentAs(rangeEnd) ||
-                         (jobDateOnly.isAfter(rangeStart) && jobDateOnly.isBefore(rangeEnd));
-                } else {
-                  // For 7/30/90 days: after cutoffDate (time-aware)
-                  return jobDate.isAfter(dateRange.$1!);
-                }
+                return jobDate.isAfter(dateRange.$1!);
               }
-              return true; // Include all non-completed jobs
+              final cutoffDateOnly = DateTime(dateRange.$1!.year, dateRange.$1!.month, dateRange.$1!.day);
+              return !startDate.isBefore(cutoffDateOnly);
             }).toList();
           }
         }
