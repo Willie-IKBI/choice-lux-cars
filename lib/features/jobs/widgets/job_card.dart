@@ -26,6 +26,8 @@ class JobCard extends ConsumerStatefulWidget {
   final bool isDesktop;
   final bool canCreateVoucher;
   final bool canCreateInvoice;
+  /// When set (e.g. 'operations'), job summary back button goes to that route.
+  final String? fromRoute;
 
   const JobCard({
     super.key,
@@ -39,6 +41,7 @@ class JobCard extends ConsumerStatefulWidget {
     required this.isDesktop,
     this.canCreateVoucher = false,
     this.canCreateInvoice = false,
+    this.fromRoute,
   });
 
   @override
@@ -145,7 +148,11 @@ class _JobCardState extends ConsumerState<JobCard>
                       ),
                       clipBehavior: Clip.antiAlias,
                       child: InkWell(
-                        onTap: () => context.go('/jobs/${currentJob.id}/summary'),
+                        onTap: () {
+                          final path = '/jobs/${currentJob.id}/summary';
+                          final query = widget.fromRoute != null ? '?from=${Uri.encodeComponent(widget.fromRoute!)}' : '';
+                          context.go('$path$query');
+                        },
                         splashColor: ChoiceLuxTheme.richGold.withOpacity(0.1),
                         highlightColor: ChoiceLuxTheme.richGold.withOpacity(
                           0.05,

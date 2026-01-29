@@ -4,12 +4,14 @@ import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 /// Compact KPI tile for Operations Dashboard: icon in circle, value, label.
 /// [isProblem] applies subtle red tint border/gradient for the Problem tile.
+/// [onTap] when set makes the tile clickable (e.g. navigate to job list).
 class OpsKpiTile extends StatelessWidget {
   final String label;
   final String value;
   final IconData icon;
   final Color iconColor;
   final bool isProblem;
+  final VoidCallback? onTap;
 
   const OpsKpiTile({
     super.key,
@@ -18,6 +20,7 @@ class OpsKpiTile extends StatelessWidget {
     required this.icon,
     required this.iconColor,
     this.isProblem = false,
+    this.onTap,
   });
 
   @override
@@ -27,7 +30,7 @@ class OpsKpiTile extends StatelessWidget {
     final radius = ResponsiveTokens.getCornerRadius(width);
     final padding = ResponsiveTokens.getPadding(width);
 
-    return Container(
+    Widget content = Container(
       padding: EdgeInsets.all(padding),
       decoration: BoxDecoration(
         color: isProblem
@@ -90,5 +93,17 @@ class OpsKpiTile extends StatelessWidget {
         ],
       ),
     );
+
+    if (onTap != null) {
+      return Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(radius),
+          child: content,
+        ),
+      );
+    }
+    return content;
   }
 }

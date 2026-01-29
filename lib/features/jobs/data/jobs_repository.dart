@@ -107,6 +107,25 @@ class JobsRepository {
     }
   }
 
+  /// Fetch full job rows by IDs (e.g. for operations dashboard list by category).
+  Future<Result<List<Job>>> fetchJobsByIds(List<int> ids) async {
+    if (ids.isEmpty) return const Result.success([]);
+    try {
+      final response = await _supabase
+          .from('jobs')
+          .select()
+          .inFilter('id', ids)
+          .order('created_at', ascending: false);
+      final jobs = (response as List<dynamic>)
+          .map<Job>((json) => Job.fromJson(json as Map<String, dynamic>))
+          .toList();
+      return Result.success(jobs);
+    } catch (error) {
+      Log.e('Error fetching jobs by IDs: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Create a new job
   Future<Result<Map<String, dynamic>>> createJob(Job job) async {
     try {

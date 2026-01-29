@@ -41,6 +41,7 @@ import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_scr
 import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/admin/screens/operations_dashboard_route.dart';
+import 'package:choice_lux_cars/features/admin/screens/operations_jobs_list_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
@@ -245,7 +246,16 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
         GoRoute(
           path: '/jobs',
           name: 'jobs',
-          builder: (context, state) => const JobsScreen(),
+          builder: (context, state) {
+            final fromRoute = state.uri.queryParameters['from'];
+            final filter = state.uri.queryParameters['filter'];
+            final dateFilter = state.uri.queryParameters['dateFilter'];
+            return JobsScreen(
+              fromRoute: fromRoute,
+              initialFilter: filter,
+              initialDateFilter: dateFilter,
+            );
+          },
         ),
         GoRoute(
           path: '/jobs/create',
@@ -374,6 +384,17 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/admin/operations',
           name: 'admin_operations',
           builder: (context, state) => const OperationsDashboardRoute(),
+          routes: [
+            GoRoute(
+              path: 'jobs',
+              name: 'admin_operations_jobs',
+              builder: (context, state) {
+                final category = state.uri.queryParameters['category'] ?? 'total';
+                final title = state.uri.queryParameters['title'] ?? 'Jobs';
+                return OperationsJobsListScreen(category: category, title: title);
+              },
+            ),
+          ],
         ),
         GoRoute(
           path: '/insights/client-statement',

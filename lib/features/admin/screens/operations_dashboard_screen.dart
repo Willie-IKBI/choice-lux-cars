@@ -302,7 +302,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
                               children: [
                                 _buildPageHeader(width, padding, spacing, isDesktop),
                                 SizedBox(height: _sectionSpacing),
-                                _buildKpiSection(width, padding, spacing),
+                                _buildKpiSection(context, width, padding, spacing),
                                 SizedBox(height: _sectionSpacing),
                                 _buildAlertsSection(width, padding, spacing, isAdmin, isMobile),
                                 SizedBox(height: _sectionSpacing),
@@ -374,7 +374,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
     );
   }
 
-  Widget _buildKpiSection(double width, double padding, double spacing) {
+  Widget _buildKpiSection(BuildContext context, double width, double padding, double spacing) {
     final crossAxisCount = _OpsBreakpoints.isMobile(width)
         ? 2
         : _OpsBreakpoints.isTablet(width)
@@ -387,6 +387,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
         icon: Icons.assignment_outlined,
         iconColor: ChoiceLuxTheme.infoColor,
         isProblem: false,
+        onTap: () => context.push(Uri(path: '/admin/operations/jobs', queryParameters: {'category': 'total', 'title': 'Total'}).toString()),
       ),
       OpsKpiTile(
         label: 'Completed',
@@ -394,6 +395,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
         icon: Icons.check_circle_outline,
         iconColor: ChoiceLuxTheme.successColor,
         isProblem: false,
+        onTap: () => context.push(Uri(path: '/admin/operations/jobs', queryParameters: {'category': 'completed', 'title': 'Completed'}).toString()),
       ),
       OpsKpiTile(
         label: 'In progress',
@@ -401,6 +403,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
         icon: Icons.hourglass_empty,
         iconColor: ChoiceLuxTheme.orange,
         isProblem: false,
+        onTap: () => context.push(Uri(path: '/admin/operations/jobs', queryParameters: {'category': 'in_progress', 'title': 'In progress'}).toString()),
       ),
       OpsKpiTile(
         label: 'Waiting / Arrived',
@@ -408,6 +411,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
         icon: Icons.location_on_outlined,
         iconColor: ChoiceLuxTheme.richGold,
         isProblem: false,
+        onTap: () => context.push(Uri(path: '/admin/operations/jobs', queryParameters: {'category': 'waiting_arrived', 'title': 'Waiting / Arrived'}).toString()),
       ),
       OpsKpiTile(
         label: 'Problem',
@@ -415,6 +419,7 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
         icon: Icons.warning_amber_outlined,
         iconColor: ChoiceLuxTheme.errorColor,
         isProblem: true,
+        onTap: () => context.push(Uri(path: '/admin/operations/jobs', queryParameters: {'category': 'problem', 'title': 'Problem'}).toString()),
       ),
     ];
     return GridView.count(

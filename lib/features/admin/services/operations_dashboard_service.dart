@@ -165,6 +165,107 @@ class OperationsDashboardService {
     );
   }
 
+  /// Returns today's job IDs for the given category (same classification as KPI cards).
+  /// [category] one of: total, completed, in_progress, waiting_arrived, problem.
+  static Future<List<int>> getTodayJobIdsByCategory(String category) async {
+    final summary = await getTodaySummary();
+    final now = DateTime.now();
+    final todayStart = DateTime(now.year, now.month, now.day);
+    final todayEnd = todayStart.add(const Duration(days: 1));
+    final todayStartStr = todayStart.toIso8601String();
+    final todayEndStr = todayEnd.toIso8601String();
+
+    final jobsResponse = await _supabase
+        .from('jobs')
+        .select('id, job_status, driver_id, agent_id, job_start_date')
+        .gte('job_start_date', todayStartStr)
+        .lt('job_start_date', todayEndStr);
+
+    final jobs = jobsResponse as List<dynamic>;
+    if (jobs.isEmpty) return [];
+
+    final jobIds = jobs.map<int>((j) => j['id'] as int).toList();
+    final flowResponse = await _supabase
+        .from('driver_flow')
+        .select('job_id, current_step, last_activity_at')
+        .inFilter('job_id', jobIds);
+
+    final flowList = flowResponse as List<dynamic>;
+    final flowByJobId = <int, Map<String, dynamic>>{
+      for (final row in flowList) row['job_id'] as int: row as Map<String, dynamic>,
+    };
+
+    const completedStatus = 'completed';
+    const inProgressStatuses = ['started', 'in_progress', 'ready_to_close'];
+    const waitingSteps = ['pickup_arrival', 'passenger_pickup', 'dropoff_arrival'];
+    const terminalSteps = ['vehicle_return', 'completed', 'job_closed'];
+    const problemStaleMinutes = 120;
+    final cutoff = now.subtract(const Duration(minutes: problemStaleMinutes));
+
+    final completedIds = <int>[];
+    final problemIds = <int>[];
+    final waitingArrivedIds = <int>[];
+    final inProgressIds = <int>[];
+
+    for (final job in jobs) {
+      final jobMap = job as Map<String, dynamic>;
+      final jobId = jobMap['id'] as int;
+      final status = (jobMap['job_status']?.toString() ?? '').toLowerCase();
+      final df = flowByJobId[jobId];
+      final currentStep = (df?['current_step']?.toString() ?? '').toLowerCase();
+      final lastActivityStr = df?['last_activity_at']?.toString();
+      final lastActivityAt = lastActivityStr != null ? DateTime.tryParse(lastActivityStr) : null;
+
+      if (status == completedStatus) {
+        completedIds.add(jobId);
+        continue;
+      }
+
+      final driverId = jobMap['driver_id']?.toString();
+      final agentId = jobMap['agent_id']?.toString();
+      final hasDriver = driverId != null && driverId.isNotEmpty;
+      final hasAgent = agentId != null && agentId.isNotEmpty;
+
+      if (!hasDriver || !hasAgent) {
+        problemIds.add(jobId);
+        continue;
+      }
+
+      final lastActivityOld = lastActivityAt != null && lastActivityAt.isBefore(cutoff);
+      final stuckOnVehicleReturn = currentStep == 'vehicle_return';
+      if (lastActivityOld || stuckOnVehicleReturn) {
+        problemIds.add(jobId);
+        continue;
+      }
+
+      if (waitingSteps.contains(currentStep)) {
+        waitingArrivedIds.add(jobId);
+        continue;
+      }
+
+      final hasActiveStatus = inProgressStatuses.contains(status);
+      final hasActiveStep = df != null && !terminalSteps.contains(currentStep);
+      if (hasActiveStatus || hasActiveStep) {
+        inProgressIds.add(jobId);
+      }
+    }
+
+    switch (category) {
+      case 'total':
+        return jobIds;
+      case 'completed':
+        return completedIds;
+      case 'in_progress':
+        return inProgressIds;
+      case 'waiting_arrived':
+        return waitingArrivedIds;
+      case 'problem':
+        return problemIds;
+      default:
+        return jobIds;
+    }
+  }
+
   static Future<List<OpsDriverWorkloadItem>> _buildDriverWorkload(
     List<Map<String, dynamic>> jobs,
     Map<int, Map<String, dynamic>> flowByJobId,

@@ -22,7 +22,19 @@ import 'package:choice_lux_cars/features/jobs/widgets/job_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
-  const JobsScreen({super.key});
+  /// When set (e.g. 'operations'), back button navigates to that route instead of home.
+  final String? fromRoute;
+  /// Initial main filter: open, in_progress, closed, all.
+  final String? initialFilter;
+  /// Initial date filter for closed/all: today, yesterday, 7, 30, 90, all.
+  final String? initialDateFilter;
+
+  const JobsScreen({
+    super.key,
+    this.fromRoute,
+    this.initialFilter,
+    this.initialDateFilter,
+  });
 
   @override
   ConsumerState<JobsScreen> createState() => _JobsScreenState();
@@ -30,17 +42,22 @@ class JobsScreen extends ConsumerStatefulWidget {
 
 class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
-  String _currentFilter = 'open'; // open, in_progress, closed, all
+  late String _currentFilter; // open, in_progress, closed, all
   String _searchQuery = '';
   int _currentPage = 1;
   final int _itemsPerPage = 12;
-  String _dateRangeFilter = '90'; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
+  late String _dateRangeFilter; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
   String? _openJobsDateFilter = 'today'; // 'yesterday', 'today', 'tomorrow', or null (all). Default: today.
   String? _lastRoute; // Track last route to avoid unnecessary refreshes
 
   @override
   void initState() {
     super.initState();
+    _currentFilter = widget.initialFilter ?? 'open';
+    _dateRangeFilter = widget.initialDateFilter ?? '90';
+    if (widget.initialFilter == 'open' || widget.initialFilter == 'all') {
+      _openJobsDateFilter = widget.initialDateFilter ?? 'today';
+    }
     WidgetsBinding.instance.addObserver(this);
     // Refresh jobs when screen mounts to ensure latest data is loaded
     // This fixes issue where jobs don't show immediately after driver is assigned
@@ -208,7 +225,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             appBar: LuxuryAppBar(
               title: 'Jobs',
               showBackButton: true,
-              onBackPressed: () => context.go('/'),
+              onBackPressed: () {
+                if (widget.fromRoute == 'operations') {
+                  context.go('/admin/operations');
+                } else {
+                  context.go('/');
+                }
+              },
             ),
             drawer: const LuxuryDrawer(),
             body: RefreshIndicator(
