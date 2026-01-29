@@ -239,11 +239,17 @@ Tracks each driver's activity in a job.
 | confirmed_at     | timestamp| Confirmation timestamp               |
 | confirmed_by     | uuid     | FK to `auth.users(id)`               |
 | job_number       | text     | Unique job number                    |
+| closed_by        | uuid     | FK to `profiles.id` – user who closed the job (set when completed) |
+| closed_at        | timestamptz | When the job was closed             |
+| closed_by_admin_ind | boolean | True when closed by administrator/super_admin (overrides trip/vehicle checks); used for reporting |
+| admin_close_comment | text  | Mandatory comment when closed by admin (`closed_by_admin_ind = true`) |
 
 **Constraints:**
 - `jobs_pkey` - Primary key on `id`
 - `order_details_client_id_fkey` - Foreign key to `clients(id)`
 - `jobs_confirmed_by_fkey` - Foreign key to `auth.users(id)`
+- `jobs_closed_by_fkey` - Foreign key to `profiles(id)` for `closed_by`
+- `check_admin_close_comment_required` - When `closed_by_admin_ind` is true, `admin_close_comment` must be non-empty
 - Unique constraint on `job_number`
 
 ---

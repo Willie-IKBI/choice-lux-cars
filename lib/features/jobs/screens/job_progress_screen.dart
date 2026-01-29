@@ -391,6 +391,34 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         };
         explicitStep = 'vehicle_return';
         
+      } else if (skipLoadingState && _jobProgress != null &&
+          _jobProgress!['passenger_onboard_at'] != null &&
+          progress['passenger_onboard_at'] == null) {
+        // Preserve passenger_onboard_at if server returned null (e.g. stale refetch)
+        finalProgress = {
+          ...progress,
+          'passenger_onboard_at': _jobProgress!['passenger_onboard_at'],
+        };
+      } else if (skipLoadingState && _jobProgress != null &&
+          _jobProgress!['trip_complete_at'] != null &&
+          progress['trip_complete_at'] == null) {
+        // Preserve trip_complete_at if server returned null (e.g. stale refetch)
+        finalProgress = {
+          ...progress,
+          'trip_complete_at': _jobProgress!['trip_complete_at'],
+        };
+      } else if (skipLoadingState && _jobProgress != null &&
+          _jobProgress!['passenger_no_show_ind'] == true &&
+          progress['passenger_no_show_ind'] != true) {
+        // Preserve no-show state if server returned stale (e.g. refetch)
+        finalProgress = {
+          ...progress,
+          'passenger_no_show_ind': _jobProgress!['passenger_no_show_ind'],
+          if (_jobProgress!['passenger_no_show_at'] != null)
+            'passenger_no_show_at': _jobProgress!['passenger_no_show_at'],
+          if (_jobProgress!['passenger_no_show_comment'] != null)
+            'passenger_no_show_comment': _jobProgress!['passenger_no_show_comment'],
+        };
       }
       
       // Use atomic state update method
@@ -1252,20 +1280,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       stepName: 'passenger_onboard',
       apiCall: (position) async {
         if (position == null) throw Exception('GPS position required for passenger onboard');
-        
         Log.d('=== PASSENGER ONBOARD ===');
         Log.d('Job ID: ${widget.jobId}');
         Log.d('Trip Index: $_currentTripIndex');
         Log.d('GPS: ${position.latitude}, ${position.longitude}');
-
-        await DriverFlowApiService.passengerOnboard(
+        final progress = await DriverFlowApiService.passengerOnboard(
           int.parse(widget.jobId),
           _currentTripIndex,
           gpsLat: position.latitude,
           gpsLng: position.longitude,
         );
-
         Log.d('=== PASSENGER ONBOARD COMPLETED ===');
+        return progress;
       },
       optimisticDataBuilder: (position) {
         final currentTime = SATimeUtils.getCurrentSATimeISO();
@@ -1284,13 +1310,6 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _markPassengerNoShow() async {
     if (!mounted) return;
-
-    // Check if all trips will be completed after this one
-    final willCompleteAllTrips = _tripProgress != null &&
-        _tripProgress!.isNotEmpty &&
-        _tripProgress!.where((trip) => 
-          trip['trip_index'] == _currentTripIndex || trip['status'] == 'completed'
-        ).length == _tripProgress!.length;
 
     // Show the no-show modal
     showDialog(
@@ -1314,7 +1333,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 Log.d('Comment: $comment');
                 Log.d('GPS: $gpsLat, $gpsLng, $gpsAccuracy');
 
-                await DriverFlowApiService.markPassengerNoShow(
+                final progress = await DriverFlowApiService.markPassengerNoShow(
                   int.parse(widget.jobId),
                   _currentTripIndex,
                   comment: comment,
@@ -1324,19 +1343,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 );
 
                 Log.d('=== PASSENGER NO-SHOW MARKED SUCCESSFULLY ===');
+                return progress;
               },
               optimisticData: {
                 'passenger_no_show_ind': true,
                 'passenger_no_show_comment': comment.trim(),
                 'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
-                'transport_completed_ind': willCompleteAllTrips,
+                'transport_completed_ind': true,
                 'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
                 'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
                 'updated_at': SATimeUtils.getCurrentSATimeISO(),
-                if (willCompleteAllTrips) ...{
-                  'current_step': 'vehicle_return',
-                  'progress_percentage': 100,
-                } else ..._resetForNextTrip(),
+                'current_step': 'vehicle_return',
+                'progress_percentage': 100,
               },
               successMessage: 'Passenger marked as no-show',
             );
@@ -1409,7 +1427,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         Log.d('Trip Index: $_currentTripIndex');
         Log.d('GPS: ${position.latitude}, ${position.longitude}, ${position.accuracy}');
 
-        await DriverFlowApiService.completeTrip(
+        final progress = await DriverFlowApiService.completeTrip(
           int.parse(widget.jobId),
           _currentTripIndex,
           gpsLat: position.latitude,
@@ -1418,6 +1436,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         );
 
         Log.d('=== TRIP COMPLETED ===');
+        return progress;
       },
       optimisticDataBuilder: (position) {
         final currentTime = SATimeUtils.getCurrentSATimeISO();
@@ -1698,9 +1717,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   /// Standard step completion template - used by all non-modal steps
   /// Pattern: Set loading -> Get GPS (if needed) -> Call API -> Optimistic update -> Background sync -> Success message
+  /// If apiCall returns Map<String, dynamic>, that is used as stepData (e.g. server row for passenger_onboard).
   Future<void> _completeStandardStep({
     required String stepName,
-    required Future<void> Function(Position? position) apiCall,
+    required Future<dynamic> Function(Position? position) apiCall,
     required Map<String, dynamic> Function(Position? position) optimisticDataBuilder,
     required String successMessage,
     bool needsGPS = true,
@@ -1717,16 +1737,12 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         position = await _getCurrentLocation();
       }
 
-      // Call API (single call) - pass position so API can use it
-      await apiCall(position);
+      final result = await apiCall(position);
+      final stepData = result is Map<String, dynamic> ? result : optimisticDataBuilder(position);
 
-      // Build optimistic data with GPS if available
-      final optimisticData = optimisticDataBuilder(position);
-
-      // Optimistic update (immediate UI feedback)
       await _completeStepOptimistically(
         stepId: stepName,
-        stepData: optimisticData,
+        stepData: stepData,
         needsServerSync: true,
       );
 
@@ -1935,31 +1951,55 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
 
   Future<void> _closeJob() async {
     if (!mounted) return;
+    if (_isUpdating) return;
+
+    final jobId = widget.jobId;
+    final t0 = DateTime.now().millisecondsSinceEpoch;
+    Log.d('_closeJob: tapped jobId=$jobId current_step=${_jobProgress?['current_step']}');
 
     try {
+      if (!mounted) return;
       setState(() => _isUpdating = true);
 
-      await DriverFlowApiService.closeJob(int.parse(widget.jobId));
+      final progress = await DriverFlowApiService.closeJob(int.parse(jobId));
+      final t1 = DateTime.now().millisecondsSinceEpoch;
+      Log.d('_closeJob: closeJob API took ${t1 - t0}ms');
 
-      await _loadJobProgress(skipLoadingState: true);
+      if (!mounted) return;
+      if (progress != null) {
+        setState(() {
+          _jobProgress = progress;
+          _currentStep = 'completed';
+          _progressPercentage = 100;
+          _updateStepStatusInternal();
+        });
+      } else {
+        await _loadJobProgress(skipLoadingState: true);
+      }
 
-      // Refresh jobs list to update job card status
+      if (!mounted) return;
       ref.invalidate(jobsProvider);
 
-      // Show job completion dialog and navigate to jobs screen
+      if (!mounted) return;
       showJobCompletionDialog(
         context,
         jobNumber: widget.job.jobNumber ?? 'Unknown',
         passengerName: widget.job.passengerName,
         onDismiss: () {
-          // Navigate to jobs screen after dialog is dismissed
-          context.go('/jobs');
+          if (mounted) context.go('/jobs');
         },
       );
+      Log.d('_closeJob: total to dialog ${DateTime.now().millisecondsSinceEpoch - t0}ms');
     } catch (e) {
-      SnackBarUtils.showError(context, 'Failed to close job: $e');
+      Log.e('_closeJob: error jobId=$jobId: $e');
+      final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : e.toString();
+      if (mounted) {
+        SnackBarUtils.showError(context, msg.length > 100 ? 'Failed to close job. Please try again.' : msg);
+      }
     } finally {
-      setState(() => _isUpdating = false);
+      if (mounted) {
+        setState(() => _isUpdating = false);
+      }
     }
   }
 

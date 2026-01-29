@@ -20,7 +20,6 @@ import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
 import 'package:choice_lux_cars/features/jobs/widgets/job_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   const JobsScreen({super.key});
@@ -202,17 +201,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
       return Stack(
         children: [
-          // Layer 1: The background that fills the entire screen
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          // Layer 2: Background pattern that covers the entire screen
-          Positioned.fill(
-            child: CustomPaint(painter: BackgroundPatterns.dashboard),
-          ),
-          // Layer 3: The SystemSafeScaffold with proper system UI handling
+          // Layer 1: Solid background (match dashboard)
+          Container(color: ChoiceLuxTheme.jetBlack),
           SystemSafeScaffold(
             backgroundColor: Colors.transparent,
             appBar: LuxuryAppBar(
@@ -1144,7 +1134,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       case 'yesterday':
         final yesterday = now.subtract(const Duration(days: 1));
         final start = DateTime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0);
-        final end = DateTime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
+        final end = DateTime(now.year, now.month, now.day, 0, 0, 0); // today 00:00:00 (exclusive)
         return (start, end);
       case 'today':
         final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
@@ -1172,7 +1162,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       case 'yesterday':
         final yesterday = now.subtract(const Duration(days: 1));
         final start = DateTime(yesterday.year, yesterday.month, yesterday.day, 0, 0, 0);
-        final end = DateTime(yesterday.year, yesterday.month, yesterday.day, 23, 59, 59);
+        final end = DateTime(now.year, now.month, now.day, 0, 0, 0); // today 00:00:00 (exclusive)
         return (start, end);
       case 'today':
         final start = DateTime(now.year, now.month, now.day, 0, 0, 0);
@@ -1239,6 +1229,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               dateRange.$2.month,
               dateRange.$2.day,
             );
+            if (_openJobsDateFilter == 'yesterday') {
+              return !jobDate.isBefore(rangeStart) && jobDate.isBefore(rangeEnd);
+            }
             return jobDate.isAtSameMomentAs(rangeStart) ||
                    jobDate.isAtSameMomentAs(rangeEnd) ||
                    (jobDate.isAfter(rangeStart) && jobDate.isBefore(rangeEnd));
@@ -1299,6 +1292,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                   dateRange.$2!.month,
                   dateRange.$2!.day,
                 );
+                if (_dateRangeFilter == 'yesterday') {
+                  return !jobDateOnly.isBefore(rangeStart) && jobDateOnly.isBefore(rangeEnd);
+                }
                 return jobDateOnly.isAtSameMomentAs(rangeStart) ||
                        jobDateOnly.isAtSameMomentAs(rangeEnd) ||
                        (jobDateOnly.isAfter(rangeStart) && jobDateOnly.isBefore(rangeEnd));
@@ -1351,6 +1347,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                     dateRange.$2!.month,
                     dateRange.$2!.day,
                   );
+                  if (_dateRangeFilter == 'yesterday') {
+                    return !jobDateOnly.isBefore(rangeStart) && jobDateOnly.isBefore(rangeEnd);
+                  }
                   return jobDateOnly.isAtSameMomentAs(rangeStart) ||
                          jobDateOnly.isAtSameMomentAs(rangeEnd) ||
                          (jobDateOnly.isAfter(rangeStart) && jobDateOnly.isBefore(rangeEnd));

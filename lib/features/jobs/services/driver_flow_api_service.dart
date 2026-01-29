@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
@@ -258,8 +259,8 @@ class DriverFlowApiService {
     }
   }
 
-  /// Record passenger onboard
-  static Future<void> passengerOnboard(
+  /// Record passenger onboard. Returns updated driver_flow row for UI sync.
+  static Future<Map<String, dynamic>?> passengerOnboard(
     int jobId,
     int tripIndex, {
     required double gpsLat,
@@ -281,42 +282,31 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-                   // Update driver_flow table with step progression and timestamp
+      // Read-before for logging (defensive)
+      final beforeRow = await _supabase
+          .from('driver_flow')
+          .select('passenger_onboard_at')
+          .eq('job_id', jobId)
+          .maybeSingle();
+      final oldValue = beforeRow?['passenger_onboard_at']?.toString();
+      final newValue = SATimeUtils.getCurrentSATimeISO();
+      final payload = {
+        'current_step': 'passenger_onboard',
+        'progress_percentage': 50,
+        'passenger_onboard_at': newValue,
+        'last_activity_at': newValue,
+        'updated_at': newValue,
+      };
+      Log.d('passenger_onboard_at: old=$oldValue new=$newValue payloadKeys=${payload.keys.join(",")}');
+
       await _supabase
           .from('driver_flow')
-          .update({
-            'current_step': 'passenger_onboard',
-            'progress_percentage': 50,
-            'passenger_onboard_at': SATimeUtils.getCurrentSATimeISO(),
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
+          .update(payload)
           .eq('job_id', jobId);
 
-      Log.d('=== PASSENGER ONBOARD RECORDED ===');
-      
-      // Force refresh of job progress data
-      await getJobProgress(jobId);
-
-      // Send notification - TEMPORARILY DISABLED FOR TESTING
-      /*
-      try {
-        final driverResponse = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', driverId)
-            .single();
-
-        await NotificationService.sendStepCompletionNotification(
-          jobId: jobId,
-          stepName: 'passenger_onboard',
-          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
-          jobNumber: 'JOB-$jobId',
-        );
-      } catch (e) {
-        Log.e('Warning: Could not send step completion notification: $e');
-      }
-      */
+      final progress = await getJobProgress(jobId);
+      Log.d('passenger_onboard persisted: ${progress?['passenger_onboard_at']}');
+      return progress;
     } catch (e) {
       Log.e('=== ERROR RECORDING PASSENGER ONBOARD ===');
       Log.e('Error: $e');
@@ -324,8 +314,8 @@ class DriverFlowApiService {
     }
   }
 
-  /// Mark passenger as no-show
-  static Future<void> markPassengerNoShow(
+  /// Mark passenger as no-show. Returns updated driver_flow row for UI sync.
+  static Future<Map<String, dynamic>?> markPassengerNoShow(
     int jobId,
     int tripIndex, {
     required String comment,
@@ -380,72 +370,33 @@ class DriverFlowApiService {
 
       Log.d('Trip $tripIndex marked as completed (no-show) in trip_progress');
 
-      // Check if all trips are now completed
-      final allTripsResponse = await _supabase
-          .from('trip_progress')
-          .select('status')
-          .eq('job_id', jobId);
-
-      final allTrips = allTripsResponse as List<dynamic>;
-      final allTripsCompleted = allTrips.isNotEmpty && 
-          allTrips.every((trip) => trip['status'] == 'completed');
-      Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
-
-      // Determine next step and prepare update payload (consistent with completeTrip logic)
-      String nextStep;
-      int progressPercentage;
-      Map<String, dynamic> updatePayload = {
+      // No-show: always advance to vehicle_return (trips not relevant; driver must still return vehicle)
+      const nextStep = 'vehicle_return';
+      const progressPercentage = 100;
+      final newValue = SATimeUtils.getCurrentSATimeISO();
+      final updatePayload = {
         'passenger_no_show_ind': true,
         'passenger_no_show_comment': comment.trim(),
-        'passenger_no_show_at': SATimeUtils.getCurrentSATimeISO(),
-        'transport_completed_ind': allTripsCompleted,
-        'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
-        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        'passenger_no_show_at': newValue,
+        'transport_completed_ind': true,
+        'trip_complete_at': newValue,
+        'current_step': nextStep,
+        'progress_percentage': progressPercentage,
+        'last_activity_at': newValue,
+        'updated_at': newValue,
       };
+      Log.d('no-show payloadKeys=${updatePayload.keys.join(",")}');
 
-      if (allTripsCompleted) {
-        // All trips completed - advance to vehicle_return
-        nextStep = 'vehicle_return';
-        progressPercentage = 100;
-        updatePayload['current_step'] = nextStep;
-        updatePayload['progress_percentage'] = progressPercentage;
-        Log.d('All trips completed (no-show), advancing to vehicle_return');
-      } else {
-        // More trips exist - reset flow to pickup_arrival for next trip (consistent with completeTrip)
-        // Find next incomplete trip
-        final nextIncompleteTrip = allTrips.firstWhere(
-          (trip) => trip['status'] != 'completed',
-          orElse: () => allTrips.last,
-        );
-        final nextTripIndex = nextIncompleteTrip['trip_index'] as int;
-        
-        nextStep = 'pickup_arrival';
-        progressPercentage = 17; // Reset to pickup_arrival progress
-        updatePayload['current_step'] = nextStep;
-        updatePayload['progress_percentage'] = progressPercentage;
-        // Clear trip-specific fields for the next trip (they'll be set when driver arrives at pickup)
-        updatePayload['pickup_arrive_time'] = null;
-        updatePayload['pickup_arrive_loc'] = null;
-        updatePayload['passenger_onboard_at'] = null;
-        updatePayload['dropoff_arrive_at'] = null;
-        // Keep vehicle_collected = true (don't reset this)
-        // Keep trip_complete_at (historical record)
-        Log.d('More trips exist (no-show), resetting to pickup_arrival for trip $nextTripIndex');
-      }
-
-      // Update driver_flow table with all changes in one call
       await _supabase
           .from('driver_flow')
           .update(updatePayload)
           .eq('job_id', jobId);
 
+      final progress = await getJobProgress(jobId);
+      Log.d('no-show persisted: passenger_no_show_at=${progress?['passenger_no_show_at']}');
       Log.d('=== PASSENGER NO-SHOW RECORDED ===');
       Log.d('Next step: $nextStep');
-      Log.d('All trips completed: $allTripsCompleted');
-      
-      // Force refresh of job progress data
-      await getJobProgress(jobId);
+      return progress;
     } catch (e) {
       Log.e('=== ERROR MARKING PASSENGER NO-SHOW ===');
       Log.e('Error: $e');
@@ -515,8 +466,8 @@ class DriverFlowApiService {
     }
   }
 
-  /// Complete a trip
-  static Future<void> completeTrip(
+  /// Complete a trip. Returns updated driver_flow row for UI sync.
+  static Future<Map<String, dynamic>?> completeTrip(
     int jobId,
     int tripIndex, {
     required double gpsLat,
@@ -570,14 +521,23 @@ class DriverFlowApiService {
           allTrips.every((trip) => trip['status'] == 'completed');
       Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
 
+      // Read-before for logging (defensive)
+      final beforeRow = await _supabase
+          .from('driver_flow')
+          .select('trip_complete_at')
+          .eq('job_id', jobId)
+          .maybeSingle();
+      final oldValue = beforeRow?['trip_complete_at']?.toString();
+      final newValue = SATimeUtils.getCurrentSATimeISO();
+
       // Determine next step and prepare update payload
       String nextStep;
       int progressPercentage;
       Map<String, dynamic> updatePayload = {
         'transport_completed_ind': allTripsCompleted, // Only set to true if all trips are completed
-        'trip_complete_at': SATimeUtils.getCurrentSATimeISO(),
-        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+        'trip_complete_at': newValue,
+        'last_activity_at': newValue,
+        'updated_at': newValue,
       };
 
       if (allTripsCompleted) {
@@ -610,12 +570,16 @@ class DriverFlowApiService {
         Log.d('More trips exist, resetting to pickup_arrival for trip $nextTripIndex');
       }
 
+      Log.d('trip_complete_at: old=$oldValue new=$newValue payloadKeys=${updatePayload.keys.join(",")}');
+
       // Update driver_flow table with all changes in one call
       await _supabase
           .from('driver_flow')
           .update(updatePayload)
           .eq('job_id', jobId);
 
+      final progress = await getJobProgress(jobId);
+      Log.d('trip_complete_at persisted: ${progress?['trip_complete_at']}');
       Log.d('=== TRIP COMPLETED ===');
 
       // Send notification
@@ -635,6 +599,7 @@ class DriverFlowApiService {
       } catch (e) {
         Log.e('Warning: Could not send step completion notification: $e');
       }
+      return progress;
     } catch (e) {
       Log.e('=== ERROR COMPLETING TRIP ===');
       Log.e('Error: $e');
@@ -726,46 +691,52 @@ class DriverFlowApiService {
     }
   }
 
-  /// Close a job
-  static Future<void> closeJob(int jobId) async {
+  /// Close a job. Returns updated driver_flow-like map for UI sync. [closedByUserId] = admin audit.
+  static Future<Map<String, dynamic>?> closeJob(int jobId, {String? closedByUserId}) async {
+    final t0 = DateTime.now().millisecondsSinceEpoch;
     try {
       Log.d('=== CLOSING JOB ===');
       Log.d('Job ID: $jobId');
+      if (closedByUserId != null) {
+        Log.d('Admin close: closedBy=$closedByUserId jobId=$jobId');
+      }
 
-      // Get the driver and agent for this job to validate before update
-      final jobResponse = await _supabase
+      // Parallel fetch: job + driver_flow (only needed columns)
+      final jobFuture = _supabase
           .from('jobs')
-          .select('driver_id, agent_id, job_status')
+          .select('job_status, agent_id, driver_id')
           .eq('id', jobId)
           .single();
+      final driverFlowFuture = _supabase
+          .from('driver_flow')
+          .select('job_closed_odo, job_closed_time, transport_completed_ind, passenger_no_show_ind, current_step')
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      final results = await Future.wait([jobFuture, driverFlowFuture]);
+      final jobResponse = results[0] as Map<String, dynamic>;
+      final driverFlowResponse = results[1] as Map<String, dynamic>?;
+      final t1 = DateTime.now().millisecondsSinceEpoch;
+      Log.d('closeJob: fetch job+driver_flow took ${t1 - t0}ms');
 
       final driverId = jobResponse['driver_id'];
       final agentId = jobResponse['agent_id'];
       final currentStatus = jobResponse['job_status'];
+      Log.d('closeJob: job_status=$currentStatus agent_id=$agentId driver_id=$driverId');
 
-      Log.d('Current job status: $currentStatus');
-      Log.d('Agent ID: $agentId');
-      Log.d('Driver ID: $driverId');
-
-      // Validate agent_id exists (required by database NOT NULL constraint)
       if (agentId == null) {
         final errorMsg = 'Job $jobId cannot be closed: Agent ID is missing. Please assign an agent to this job before closing it.';
         Log.e('Validation failed: $errorMsg');
         throw Exception(errorMsg);
       }
 
-      // Validate vehicle has been returned (job_closed_odo should be set)
-      final driverFlowResponse = await _supabase
-          .from('driver_flow')
-          .select('job_closed_odo, transport_completed_ind')
-          .eq('job_id', jobId)
-          .maybeSingle();
-
       if (driverFlowResponse == null) {
         final errorMsg = 'Job $jobId cannot be closed: Driver flow record not found. Please return the vehicle first.';
         Log.e('Validation failed: $errorMsg');
         throw Exception(errorMsg);
       }
+
+      Log.d('closeJob: current_step=${driverFlowResponse['current_step']} job_closed_odo=${driverFlowResponse['job_closed_odo']} passenger_no_show_ind=${driverFlowResponse['passenger_no_show_ind']}');
 
       final jobClosedOdo = driverFlowResponse['job_closed_odo'];
       if (jobClosedOdo == null) {
@@ -774,94 +745,173 @@ class DriverFlowApiService {
         throw Exception(errorMsg);
       }
 
-      // Validate all trips are completed
-      final tripProgressResponse = await _supabase
-          .from('trip_progress')
-          .select('status')
-          .eq('job_id', jobId);
-
-      final allTrips = tripProgressResponse as List<dynamic>;
-      
-      if (allTrips.isEmpty) {
-        Log.d('Warning: No trip_progress records found for job $jobId. Job may not have any trips.');
-      } else {
-        final incompleteTrips = allTrips.where((trip) => trip['status'] != 'completed').toList();
-        if (incompleteTrips.isNotEmpty) {
-          final errorMsg = 'Job $jobId cannot be closed: Not all trips are completed. Please complete all trips before closing the job.';
-          Log.e('Validation failed: $errorMsg');
-          Log.e('Total trips: ${allTrips.length}, Incomplete trips: ${incompleteTrips.length}');
-          throw Exception(errorMsg);
+      final isNoShow = driverFlowResponse['passenger_no_show_ind'] == true;
+      if (!isNoShow) {
+        final tripProgressResponse = await _supabase
+            .from('trip_progress')
+            .select('status')
+            .eq('job_id', jobId);
+        final allTrips = tripProgressResponse as List<dynamic>;
+        final t2 = DateTime.now().millisecondsSinceEpoch;
+        Log.d('closeJob: trip_progress check took ${t2 - t1}ms');
+        if (allTrips.isNotEmpty) {
+          final incompleteTrips = allTrips.where((trip) => trip['status'] != 'completed').toList();
+          if (incompleteTrips.isNotEmpty) {
+            final errorMsg = 'Job $jobId cannot be closed: Not all trips are completed. Please complete all trips before closing the job.';
+            Log.e('Validation failed: $errorMsg');
+            throw Exception(errorMsg);
+          }
         }
-        Log.d('Trip validation passed: All ${allTrips.length} trip(s) are completed');
+      } else {
+        Log.d('No-show path: skipping trip completion requirement');
       }
 
-      // Update job status to completed
-      // Only update these two fields to avoid triggering any validation issues
-      try {
-        await _supabase
-            .from('jobs')
-            .update({
-              'job_status': 'completed',
-              'updated_at': SATimeUtils.getCurrentSATimeISO(),
-            })
-            .eq('id', jobId);
-        
-        Log.d('Job status updated to completed successfully');
-      } catch (updateError) {
-        Log.e('Error updating job status: $updateError');
-        Log.e('Update payload: {job_status: completed, updated_at: ${SATimeUtils.getCurrentSATimeISO()}}');
-        rethrow;
-      }
+      final updatePayload = {
+        'job_status': 'completed',
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+      await _supabase.from('jobs').update(updatePayload).eq('id', jobId);
 
-      // Update driver_flow to mark as completed
+      final nowIso = SATimeUtils.getCurrentSATimeISO();
+      final driverFlowPayload = {
+        'current_step': 'completed',
+        'progress_percentage': 100,
+        'last_activity_at': nowIso,
+        'updated_at': nowIso,
+      };
       await _supabase
           .from('driver_flow')
-          .update({
-            'current_step': 'completed',
-            'progress_percentage': 100,
-            'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-            'updated_at': SATimeUtils.getCurrentSATimeISO(),
-          })
+          .update(driverFlowPayload)
           .eq('job_id', jobId);
 
-      Log.d('Job closed successfully');
+      final t3 = DateTime.now().millisecondsSinceEpoch;
+      Log.d('closeJob: updates took ${t3 - t1}ms');
+
+      // Return merged progress for UI (skip extra getJobProgress round-trip)
+      final progress = {
+        ...driverFlowResponse,
+        ...driverFlowPayload,
+        'job_status': 'completed',
+      };
+      Log.d('closeJob: total ${t3 - t0}ms');
       Log.d('=== JOB CLOSED ===');
 
-      // Send job completion notification
-      try {
-        final jobDetailsResponse = await _supabase
-            .from('jobs')
-            .select('passenger_name, job_number, client_id')
-            .eq('id', jobId)
-            .single();
+      // Fire notification in background so we don't block UI
+      unawaited(Future(() async {
+        try {
+          final jobDetailsResponse = await _supabase
+              .from('jobs')
+              .select('passenger_name, job_number, client_id')
+              .eq('id', jobId)
+              .single();
+          final driverResponse = await _supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', driverId)
+              .single();
+          final clientResponse = await _supabase
+              .from('clients')
+              .select('company_name')
+              .eq('id', jobDetailsResponse['client_id'])
+              .single();
+          await NotificationService.sendJobCompletionNotification(
+            jobId: jobId,
+            driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+            clientName: clientResponse['company_name'] ?? 'Unknown Client',
+            passengerName: jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
+            jobNumber: 'JOB-$jobId',
+          );
+        } catch (e) {
+          Log.e('Warning: Could not send job completion notification: $e');
+        }
+      }));
 
-        final driverResponse = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', driverId)
-            .single();
-
-        final clientResponse = await _supabase
-            .from('clients')
-            .select('company_name')
-            .eq('id', jobDetailsResponse['client_id'])
-            .single();
-
-        await NotificationService.sendJobCompletionNotification(
-          jobId: jobId,
-          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
-          clientName: clientResponse['company_name'] ?? 'Unknown Client',
-          passengerName:
-              jobDetailsResponse['passenger_name'] ?? 'Unknown Passenger',
-          jobNumber: 'JOB-$jobId',
-        );
-      } catch (e) {
-        Log.e('Warning: Could not send job completion notification: $e');
-      }
+      return progress;
     } catch (e) {
       Log.e('=== ERROR CLOSING JOB ===');
       Log.e('Error: $e');
-      throw Exception('Failed to close job: $e');
+      final msg = e.toString();
+      if (msg.contains('Agent ID is missing') || msg.contains('agent_id')) {
+        throw Exception('Please assign an agent to this job before closing.');
+      }
+      if (msg.contains('Vehicle has not been returned') || msg.contains('job_closed_odo')) {
+        throw Exception('Please return the vehicle first.');
+      }
+      if (msg.contains('Not all trips are completed')) {
+        throw Exception('Please complete all trips before closing.');
+      }
+      if (msg.contains('RLS') || msg.contains('policy') || msg.contains('permission') || msg.contains('denied')) {
+        throw Exception("You don't have permission to close this job.");
+      }
+      if (msg.contains('Driver flow record not found')) {
+        throw Exception('Please return the vehicle first.');
+      }
+      throw Exception(msg.length > 80 ? 'Failed to close job. Check logs.' : msg);
+    }
+  }
+
+  /// Close job by administrator/super_admin regardless of trip/vehicle status.
+  /// Requires non-empty comment. Sets closed_by_admin_ind for reporting.
+  /// Does not change existing closeJob() used by driver/normal flow.
+  static Future<Map<String, dynamic>?> closeJobByAdmin(
+    int jobId, {
+    required String closedByUserId,
+    required String comment,
+  }) async {
+    final trimmedComment = comment.trim();
+    if (trimmedComment.isEmpty) {
+      throw Exception('A comment is required when closing a job as admin.');
+    }
+    try {
+      Log.d('=== ADMIN CLOSE JOB === jobId=$jobId closedBy=$closedByUserId');
+
+      final nowIso = SATimeUtils.getCurrentSATimeISO();
+
+      // 1. Update jobs: completed + admin close fields (trigger skips trip check when closed_by_admin_ind = true)
+      await _supabase.from('jobs').update({
+        'job_status': 'completed',
+        'closed_by': closedByUserId,
+        'closed_at': nowIso,
+        'closed_by_admin_ind': true,
+        'admin_close_comment': trimmedComment,
+        'updated_at': nowIso,
+      }).eq('id', jobId);
+
+      // 2. If driver_flow exists, mark completed
+      final driverFlowRow = await _supabase
+          .from('driver_flow')
+          .select('id, job_closed_time, job_closed_odo')
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      if (driverFlowRow != null) {
+        final payload = <String, dynamic>{
+          'current_step': 'completed',
+          'progress_percentage': 100,
+          'last_activity_at': nowIso,
+          'updated_at': nowIso,
+        };
+        if (driverFlowRow['job_closed_time'] == null) {
+          payload['job_closed_time'] = nowIso;
+        }
+        await _supabase.from('driver_flow').update(payload).eq('job_id', jobId);
+      }
+
+      // 3. Mark all trips for this job as completed
+      await _supabase.from('trip_progress').update({
+        'status': 'completed',
+        'updated_at': nowIso,
+      }).eq('job_id', jobId);
+
+      Log.d('Admin close job completed: $jobId');
+      return {
+        'job_status': 'completed',
+        'current_step': 'completed',
+        'progress_percentage': 100,
+      };
+    } catch (e) {
+      Log.e('Admin close job failed: $e');
+      rethrow;
     }
   }
 

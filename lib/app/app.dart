@@ -40,6 +40,7 @@ import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
+import 'package:choice_lux_cars/features/admin/screens/operations_dashboard_route.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
@@ -367,6 +368,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/insights',
           name: 'insights',
           builder: (context, state) => const InsightsScreen(),
+        ),
+        GoRoute(
+          path: '/admin/operations',
+          name: 'admin_operations',
+          builder: (context, state) => const OperationsDashboardRoute(),
         ),
         GoRoute(
           path: '/insights/client-statement',

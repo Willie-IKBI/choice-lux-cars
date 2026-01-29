@@ -32,9 +32,7 @@ class EditClientScreen extends ConsumerWidget {
                 final screenWidth = MediaQuery.of(context).size.width;
                 final spacing = ResponsiveTokens.getSpacing(screenWidth);
                 return Container(
-                  decoration: const BoxDecoration(
-                    gradient: ChoiceLuxTheme.backgroundGradient,
-                  ),
+                  color: ChoiceLuxTheme.jetBlack,
                   child: Center(
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -66,9 +64,7 @@ class EditClientScreen extends ConsumerWidget {
       },
       loading: () => Scaffold(
         body: Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
+          color: ChoiceLuxTheme.jetBlack,
           child: const SafeArea(
             child: Center(
               child: CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
@@ -82,9 +78,7 @@ class EditClientScreen extends ConsumerWidget {
             final screenWidth = MediaQuery.of(context).size.width;
             final spacing = ResponsiveTokens.getSpacing(screenWidth);
             return Container(
-              decoration: const BoxDecoration(
-                gradient: ChoiceLuxTheme.backgroundGradient,
-              ),
+              color: ChoiceLuxTheme.jetBlack,
               child: SafeArea(
                 child: Center(
                   child: Column(

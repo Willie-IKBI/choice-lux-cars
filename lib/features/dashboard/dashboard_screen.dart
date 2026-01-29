@@ -478,6 +478,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             color: const Color(0xFFFFA726), // Orange/Gold
           ),
         );
+        dashboardItems.add(
+          DashboardItem(
+            title: 'Operations Dashboard',
+            subtitle: 'Live workload + problem jobs',
+            icon: Icons.dashboard_outlined,
+            route: '/admin/operations',
+            color: const Color(0xFF5C6BC0), // Indigo
+          ),
+        );
       } else {
         Log.d('Dashboard - NOT adding Insights card - user is not admin');
       }

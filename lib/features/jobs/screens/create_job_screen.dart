@@ -12,7 +12,6 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
@@ -428,15 +427,9 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
 
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: The Scaffold with a transparent background
+        Container(color: ChoiceLuxTheme.jetBlack),
         SystemSafeScaffold(
-          backgroundColor: Colors.transparent, // CRITICAL
+          backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: widget.jobId != null ? 'Edit Job' : 'Create New Job',
             showBackButton: true,
@@ -444,12 +437,7 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                 ? context.go('/jobs/${widget.jobId}/summary')
                 : context.go('/jobs'),
           ),
-          body: Stack( // The body is now just the content stack
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
-              ),
-              Consumer(
+          body: Consumer(
                 builder: (context, ref, child) {
                   final clientsAsync = ref.watch(clientsProvider);
                   final vehiclesState = ref.watch(vehiclesProvider);
@@ -724,8 +712,6 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
                   );
                 },
               ),
-            ],
-          ),
         ),
       ],
     );

@@ -45,6 +45,7 @@ class JobSummaryScreen extends ConsumerStatefulWidget {
 class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   bool _isLoading = true;
   bool _isConfirming = false; // Prevent duplicate confirmation calls
+  bool _isClosingJob = false; // Admin close job in progress
   String? _errorMessage;
   Job? _job;
   List<Trip> _trips = []; // Changed from List<Trip> to List<dynamic>
@@ -2060,6 +2061,87 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
 
+  /// Show dialog for admin close: mandatory comment, then close via closeJobByAdmin.
+  Future<void> _showAdminCloseJobDialog() async {
+    if (_job == null || _isClosingJob || !mounted) return;
+    final commentController = TextEditingController();
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (ctx) {
+        return AlertDialog(
+          title: const Text('Close job (admin)'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Closing this job will mark it and all trips as completed. A comment is required for reporting.',
+                style: TextStyle(fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: commentController,
+                decoration: const InputDecoration(
+                  labelText: 'Comment (required)',
+                  hintText: 'e.g. Closed by admin – vehicle returned off-app',
+                  border: OutlineInputBorder(),
+                ),
+                maxLines: 3,
+                autofocus: true,
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              onPressed: () {
+                if (commentController.text.trim().isEmpty) {
+                  SnackBarUtils.showError(ctx, 'Please enter a comment.');
+                  return;
+                }
+                Navigator.of(ctx).pop(true);
+              },
+              child: const Text('Close job'),
+            ),
+          ],
+        );
+      },
+    );
+    if (result == true && mounted) {
+      await _adminCloseJobWithComment(commentController.text.trim());
+    }
+  }
+
+  /// Admin-only: close job via closeJobByAdmin (any status; requires comment).
+  Future<void> _adminCloseJobWithComment(String comment) async {
+    if (_job == null || _isClosingJob || !mounted) return;
+    final currentUser = ref.read(currentUserProfileProvider);
+    if (currentUser?.id == null) return;
+    setState(() => _isClosingJob = true);
+    try {
+      Log.d('Admin closing job: userId=${currentUser?.id} jobId=${widget.jobId}');
+      await DriverFlowApiService.closeJobByAdmin(
+        int.parse(widget.jobId),
+        closedByUserId: currentUser!.id!,
+        comment: comment,
+      );
+      if (!mounted) return;
+      ref.invalidate(jobsProvider);
+      await _loadJobData();
+      if (!mounted) return;
+      SnackBarUtils.showSuccess(context, 'Job closed successfully.');
+    } catch (e) {
+      Log.e('Admin close job failed: $e');
+      final msg = e is Exception ? e.toString().replaceFirst('Exception: ', '') : e.toString();
+      if (mounted) SnackBarUtils.showError(context, msg.length > 100 ? 'Failed to close job.' : msg);
+    } finally {
+      if (mounted) setState(() => _isClosingJob = false);
+    }
+  }
+
   Widget _buildActionButtons() {
     final currentUser = ref.read(currentUserProfileProvider);
     final isAssignedDriver = _job?.driverId == currentUser?.id;
@@ -2070,6 +2152,11 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         currentUser?.role?.toLowerCase() == 'administrator' ||
         currentUser?.role?.toLowerCase() == 'super_admin' ||
         currentUser?.role?.toLowerCase() == 'manager';
+    final isAdminRole = canEdit; // administrator, super_admin, manager
+    final canCloseJob = currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'super_admin';
+    final jobNotCompleted = _job?.status != null && _job!.status != 'completed';
+    final canAdminClose = canCloseJob && jobNotCompleted;
 
     return Column(
       children: [
@@ -2090,6 +2177,33 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 ),
               ),
             ),
+            if (canAdminClose) ...[
+              const SizedBox(width: 16),
+              Expanded(
+                child: ElevatedButton.icon(
+                  onPressed: _isClosingJob ? null : _showAdminCloseJobDialog,
+                  icon: _isClosingJob
+                      ? const SizedBox(
+                          width: 16,
+                          height: 16,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                          ),
+                        )
+                      : const Icon(Icons.done_all),
+                  label: Text(_isClosingJob ? 'Closing...' : 'Close / Complete job'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: ChoiceLuxTheme.richGold,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ),
+            ],
             if (needsConfirmation) ...[
               const SizedBox(width: 16),
               Expanded(
@@ -2208,6 +2322,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         currentUser?.role?.toLowerCase() == 'administrator' ||
         currentUser?.role?.toLowerCase() == 'super_admin' ||
         currentUser?.role?.toLowerCase() == 'manager';
+    final canCloseJob = currentUser?.role?.toLowerCase() == 'administrator' ||
+        currentUser?.role?.toLowerCase() == 'super_admin';
+    final jobNotCompleted = _job?.status != null && _job!.status != 'completed';
+    final canAdminClose = canCloseJob && jobNotCompleted;
 
     return Column(
       children: [
@@ -2227,6 +2345,34 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ),
         ),
+        if (canAdminClose) ...[
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton.icon(
+              onPressed: _isClosingJob ? null : _showAdminCloseJobDialog,
+              icon: _isClosingJob
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                      ),
+                    )
+                  : const Icon(Icons.done_all),
+              label: Text(_isClosingJob ? 'Closing...' : 'Close / Complete job'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: ChoiceLuxTheme.richGold,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+            ),
+          ),
+        ],
         if (needsConfirmation) ...[
           const SizedBox(height: 12),
           SizedBox(

@@ -241,7 +241,7 @@ class _PassengerNoShowModalState extends State<PassengerNoShowModal> {
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'This will skip passenger collection and dropoff steps. The trip will be marked as completed.',
+                                "Mark passenger as no-show? You'll still need to return the vehicle to close the job.",
                                 style: TextStyle(
                                   color: ChoiceLuxTheme.platinumSilver,
                                   fontSize: 14,

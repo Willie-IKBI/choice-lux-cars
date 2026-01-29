@@ -5,7 +5,6 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'providers/quotes_provider.dart';
 import 'widgets/quote_card.dart';
 import 'models/quote.dart';
@@ -92,17 +91,8 @@ class _QuotesScreenState extends ConsumerState<QuotesScreen> {
           constraints: const BoxConstraints(maxWidth: 1200),
           child: Stack(
             children: [
-              // Background gradient
               Positioned.fill(
-                child: Container(
-                  decoration: const BoxDecoration(
-                    gradient: ChoiceLuxTheme.backgroundGradient,
-                  ),
-                ),
-              ),
-              // Background pattern overlay
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
+                child: Container(color: ChoiceLuxTheme.jetBlack),
               ),
               // Content
               SafeArea(

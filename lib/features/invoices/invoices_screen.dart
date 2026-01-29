@@ -4,7 +4,6 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class InvoicesScreen extends StatelessWidget {
   const InvoicesScreen({super.key});
@@ -13,17 +12,7 @@ class InvoicesScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: Background pattern that covers the entire screen
-        Positioned.fill(
-          child: CustomPaint(painter: BackgroundPatterns.dashboard),
-        ),
-        // Layer 3: The SystemSafeScaffold with proper system UI handling
+        Container(color: ChoiceLuxTheme.jetBlack),
         SystemSafeScaffold(
           backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(

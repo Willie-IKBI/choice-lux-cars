@@ -5,7 +5,6 @@ import 'package:flutter_pdfview/flutter_pdfview.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 
@@ -99,18 +98,7 @@ class _PdfViewerScreenState extends State<PdfViewerScreen> {
       ),
       body: Stack(
         children: [
-          // Background gradient
-          Container(
-            decoration: const BoxDecoration(
-              gradient: ChoiceLuxTheme.backgroundGradient,
-            ),
-          ),
-          // Background pattern
-          CustomPaint(
-            painter: BackgroundPatterns.dashboard,
-            size: Size.infinite,
-          ),
-          // Main content
+          Container(color: ChoiceLuxTheme.jetBlack),
           SafeArea(
             child: _buildContent(),
           ),

@@ -13,7 +13,6 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
-import 'package:choice_lux_cars/shared/utils/background_pattern_utils.dart';
 
 class CreateQuoteScreen extends ConsumerStatefulWidget {
   final String? quoteId; // null for create, non-null for edit
@@ -265,15 +264,9 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
 
     return Stack(
       children: [
-        // Layer 1: The background that fills the entire screen
-        Container(
-          decoration: const BoxDecoration(
-            gradient: ChoiceLuxTheme.backgroundGradient,
-          ),
-        ),
-        // Layer 2: The SystemSafeScaffold with a transparent background
+        Container(color: ChoiceLuxTheme.jetBlack),
         SystemSafeScaffold(
-          backgroundColor: Colors.transparent, // CRITICAL
+          backgroundColor: Colors.transparent,
           appBar: LuxuryAppBar(
             title: widget.quoteId != null ? 'Edit Quote' : 'Create New Quote',
             showBackButton: true,
@@ -281,13 +274,8 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                 ? context.go('/quotes/${widget.quoteId}/summary')
                 : context.go('/quotes'),
           ),
-          body: Stack( // The body is now just the content stack
-            children: [
-              Positioned.fill(
-                child: CustomPaint(painter: BackgroundPatterns.dashboard),
-              ),
-              Consumer(
-                builder: (context, ref, child) {
+          body: Consumer(
+            builder: (context, ref, child) {
                   final clientsAsync = ref.watch(clientsProvider);
                   final vehiclesState = ref.watch(vehiclesProvider);
                   final users = ref.watch(usersProvider);
@@ -317,8 +305,6 @@ class _CreateQuoteScreenState extends ConsumerState<CreateQuoteScreen> {
                   );
                 },
               ),
-            ],
-          ),
         ),
       ],
     );

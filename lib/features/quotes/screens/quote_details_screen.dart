@@ -227,9 +227,7 @@ class _QuoteDetailsScreenState extends ConsumerState<QuoteDetailsScreen> {
         ],
       ),
       body: Container(
-        decoration: const BoxDecoration(
-          gradient: ChoiceLuxTheme.backgroundGradient,
-        ),
+        color: ChoiceLuxTheme.jetBlack,
         child: SafeArea(
           child: Center(
             child: ConstrainedBox(
