@@ -464,31 +464,8 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
       ),
       child: Row(
         children: [
-          // Enhanced Avatar with Gold Ring
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              gradient: LinearGradient(
-                colors: [
-                  ChoiceLuxTheme.richGold,
-                  ChoiceLuxTheme.richGold.withOpacity(0.7),
-                ],
-              ),
-            ),
-            child: CircleAvatar(
-              radius: 28,
-              backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-              child: Text(
-                displayName.substring(0, 1).toUpperCase(),
-                style: TextStyle(
-                  color: ChoiceLuxTheme.richGold,
-                  fontWeight: FontWeight.w700,
-                  fontSize: 20,
-                ),
-              ),
-            ),
-          ),
+          // Enhanced Avatar with Gold Ring: profile image or initial
+          _buildProfileAvatarWithRing(displayName, userProfile, radius: 28, fontSize: 20),
           const SizedBox(width: 16),
           Expanded(
             child: Column(
@@ -611,33 +588,10 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           ),
           const SizedBox(height: 24),
 
-          // User Info with Enhanced Avatar
+          // User Info with Enhanced Avatar: profile image or initial
           Row(
             children: [
-              Container(
-                padding: const EdgeInsets.all(2),
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: LinearGradient(
-                    colors: [
-                      ChoiceLuxTheme.richGold,
-                      ChoiceLuxTheme.richGold.withOpacity(0.7),
-                    ],
-                  ),
-                ),
-                child: CircleAvatar(
-                  radius: 24,
-                  backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                  child: Text(
-                    displayName.substring(0, 1).toUpperCase(),
-                    style: TextStyle(
-                      color: ChoiceLuxTheme.richGold,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 18,
-                    ),
-                  ),
-                ),
-              ),
+              _buildProfileAvatarWithRing(displayName, userProfile, radius: 24, fontSize: 18),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
@@ -1140,6 +1094,46 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
           ],
         );
       },
+    );
+  }
+
+  /// Avatar with gold ring: profile image if available, else initial letter.
+  Widget _buildProfileAvatarWithRing(
+    String displayName,
+    dynamic userProfile, {
+    required double radius,
+    required double fontSize,
+  }) {
+    final url = userProfile?.profileImage?.toString().trim();
+    final hasImage = url != null && url.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            ChoiceLuxTheme.richGold,
+            ChoiceLuxTheme.richGold.withOpacity(0.7),
+          ],
+        ),
+      ),
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
+        backgroundImage: hasImage ? NetworkImage(url) : null,
+        child: hasImage
+            ? null
+            : Text(
+                displayName.isNotEmpty
+                    ? displayName.substring(0, 1).toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.richGold,
+                  fontWeight: FontWeight.w700,
+                  fontSize: fontSize,
+                ),
+              ),
+      ),
     );
   }
 }

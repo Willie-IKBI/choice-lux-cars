@@ -526,50 +526,84 @@ class _OperationsDashboardScreenState extends ConsumerState<OperationsDashboardS
                           )
                           .toList(),
                     )
-                  : Column(
-                      children: [
-                        _buildDriverTableHeader(width, spacing),
-                        ..._summary!.drivers.map(
-                          (d) => OpsDriverRow(
-                            driver: d,
-                            isAdmin: isAdmin,
-                            isMobile: false,
-                            onCall: d.phoneNumber != null ? () => _launchCall(d.phoneNumber!) : null,
-                            onWhatsApp: d.phoneNumber != null ? () => _launchWhatsApp(d.phoneNumber!) : null,
+                  : Padding(
+                      padding: EdgeInsets.symmetric(horizontal: spacing * 1.5),
+                      child: Table(
+                        columnWidths: const {
+                          0: FlexColumnWidth(2),
+                          1: FlexColumnWidth(1),
+                          2: FlexColumnWidth(1),
+                          3: FlexColumnWidth(1),
+                          4: FlexColumnWidth(2),
+                        },
+                        children: [
+                          _buildDriverTableHeaderRow(spacing),
+                          ..._summary!.drivers.map(
+                            (d) => OpsDriverRow(
+                              driver: d,
+                              isAdmin: isAdmin,
+                              isMobile: false,
+                              onCall: d.phoneNumber != null ? () => _launchCall(d.phoneNumber!) : null,
+                              onWhatsApp: d.phoneNumber != null ? () => _launchWhatsApp(d.phoneNumber!) : null,
+                            ).buildTableRow(context),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
             ),
     );
   }
 
-  Widget _buildDriverTableHeader(double width, double spacing) {
+  TableRow _buildDriverTableHeaderRow(double spacing) {
     final textStyle = TextStyle(
       color: ChoiceLuxTheme.platinumSilver.withOpacity(0.8),
       fontSize: 12,
       fontWeight: FontWeight.w600,
     );
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: spacing * 0.75, horizontal: spacing * 1.5),
-      child: Row(
-        children: [
-          Expanded(flex: 2, child: Text('Driver', style: textStyle)),
-          Expanded(flex: 1, child: Text('Jobs today', style: textStyle, textAlign: TextAlign.center)),
-          Expanded(flex: 1, child: Center(child: Text('State', style: textStyle))),
-          Expanded(flex: 1, child: Text('Long wait', style: textStyle, textAlign: TextAlign.center)),
-          Expanded(
-            flex: 2,
+    return TableRow(
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing * 0.75),
+            child: Text('Driver', style: textStyle),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing * 0.75),
+            child: Text('Jobs today', style: textStyle, textAlign: TextAlign.center),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing * 0.75),
+            child: Center(child: Text('State', style: textStyle)),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing * 0.75),
+            child: Text('Long wait', style: textStyle, textAlign: TextAlign.center),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: Padding(
+            padding: EdgeInsets.symmetric(vertical: spacing * 0.75),
             child: Row(
               children: [
                 Expanded(child: Text('Active job', style: textStyle)),
                 SizedBox(width: spacing),
-                SizedBox(width: 100), // align with row actions column
+                SizedBox(width: 100),
               ],
             ),
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 

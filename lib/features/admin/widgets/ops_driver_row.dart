@@ -27,6 +27,134 @@ class OpsDriverRow extends StatelessWidget {
     return isMobile ? _buildCard(context) : _buildTableRow(context);
   }
 
+  /// Returns a [TableRow] for use inside [Table] so all driver rows share the same column widths.
+  TableRow buildTableRow(BuildContext context) {
+    final width = MediaQuery.of(context).size.width;
+    final spacing = ResponsiveTokens.getSpacing(width);
+    final stateColor = _stateColor(driver.state);
+    final stateLabel = _stateLabel(driver.state);
+    final activeSummary = driver.activeJobId != null
+        ? (driver.activeStep != null && driver.activeStep!.isNotEmpty
+            ? 'Job #${driver.activeJobId} · ${driver.activeStep}'
+            : 'Job #${driver.activeJobId}')
+        : '—';
+    final textStyle = TextStyle(color: ChoiceLuxTheme.platinumSilver, fontSize: 13);
+    final onTap = driver.activeJobId != null
+        ? () => context.push('/jobs/${driver.activeJobId}/summary?from=operations')
+        : null;
+
+    return TableRow(
+      children: [
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: spacing * 1.25),
+              child: Text(
+                driver.driverName,
+                style: textStyle.copyWith(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                ),
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: spacing * 1.25),
+              child: Text('${driver.jobsToday}', style: textStyle, textAlign: TextAlign.center),
+            ),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: spacing * 1.25),
+              child: Center(child: _stateChip(stateLabel, stateColor)),
+            ),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: spacing * 1.25),
+              child: Text(
+                driver.longWaitJobs > 0 ? '${driver.longWaitJobs}' : '—',
+                style: textStyle.copyWith(
+                  color: driver.longWaitJobs > 0 ? ChoiceLuxTheme.errorColor : null,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        ),
+        TableCell(
+          verticalAlignment: TableCellVerticalAlignment.middle,
+          child: InkWell(
+            onTap: onTap,
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: spacing * 1.25),
+              child: Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      activeSummary,
+                      style: textStyle.copyWith(color: ChoiceLuxTheme.grey, fontSize: 12),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  SizedBox(width: spacing),
+                  SizedBox(
+                    width: 100,
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        if (isAdmin && driver.phoneNumber != null && driver.phoneNumber!.isNotEmpty) ...[
+                          IconButton(
+                            icon: Icon(Icons.phone, size: 18, color: ChoiceLuxTheme.richGold),
+                            onPressed: onCall,
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                            style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          ),
+                          IconButton(
+                            icon: Icon(Icons.chat, size: 18, color: Color(0xFF25D366)),
+                            onPressed: onWhatsApp,
+                            padding: EdgeInsets.zero,
+                            constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                            style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                          ),
+                        ],
+                        IconButton(
+                          icon: Icon(Icons.arrow_forward_ios, size: 12, color: ChoiceLuxTheme.platinumSilver),
+                          onPressed: onTap,
+                          padding: EdgeInsets.zero,
+                          constraints: BoxConstraints(minWidth: 32, minHeight: 32),
+                          style: IconButton.styleFrom(tapTargetSize: MaterialTapTargetSize.shrinkWrap),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
   Widget _buildCard(BuildContext context) {
     final width = MediaQuery.of(context).size.width;
     final spacing = ResponsiveTokens.getSpacing(width);

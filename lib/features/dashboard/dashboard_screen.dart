@@ -79,14 +79,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       final screenWidth = MediaQuery.of(context).size.width;
       final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
 
-      // Get display name from profile, fallback to email, then to 'User'
-      String userName = 'User';
-      if (userProfile != null && userProfile.displayNameOrEmail != 'User') {
-        userName = userProfile.displayNameOrEmail;
-      } else if (currentUser?.email != null) {
-        userName = currentUser!.email!.split('@')[0];
-      }
-
       // Check user role
       final userRole = userProfile?.role?.toLowerCase();
       final isDriver = userRole == 'driver';
@@ -183,11 +175,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Welcome Section
-                  _buildWelcomeSection(context, userName),
-                  SizedBox(height: sectionSpacing),
-
-
                   // Dashboard Cards
                   _buildDashboardCards(
                     context,
@@ -307,78 +294,6 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => LuxuryDrawer(),
-    );
-  }
-
-  Widget _buildWelcomeSection(BuildContext context, String userName) {
-    // Get time-based greeting
-    final hour = DateTime.now().hour;
-    String timeGreeting;
-    if (hour < 12) {
-      timeGreeting = 'Good Morning';
-    } else if (hour < 17) {
-      timeGreeting = 'Good Afternoon';
-    } else {
-      timeGreeting = 'Good Evening';
-    }
-
-    // Responsive sizing for mobile
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-
-    final titleSize = isSmallMobile
-        ? 24.0
-        : isMobile
-        ? 28.0
-        : 32.0;
-    final subtitleSize = isSmallMobile
-        ? 14.0
-        : isMobile
-        ? 16.0
-        : 16.0;
-    final lineHeight = 2.0;
-    final lineWidth = isSmallMobile
-        ? 60.0
-        : isMobile
-        ? 80.0
-        : 100.0;
-
-    return Padding(
-      padding: EdgeInsets.symmetric(
-        horizontal: isMobile ? 24.0 : 0.0,
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            '$timeGreeting, $userName',
-            style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-              color: ChoiceLuxTheme.softWhite,
-              fontWeight: FontWeight.w700,
-              fontSize: titleSize,
-            ),
-          ),
-          SizedBox(height: 8),
-          Text(
-            "Here's what's happening in your fleet today.",
-            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
-              fontWeight: FontWeight.w400,
-              fontSize: subtitleSize,
-            ),
-          ),
-          SizedBox(height: 12),
-          Container(
-            height: lineHeight,
-            width: lineWidth,
-            decoration: BoxDecoration(
-              color: ChoiceLuxTheme.richGold,
-              borderRadius: BorderRadius.circular(1),
-            ),
-          ),
-        ],
-      ),
     );
   }
 

@@ -347,30 +347,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
-                // Enhanced Avatar with Gold Ring
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
-                      ],
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    radius: 18,
-                    backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-                    child: Text(
-                      displayName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.richGold,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
+                // Enhanced Avatar with Gold Ring: profile image or initial
+                _buildProfileAvatarWithRing(
+                  displayName,
+                  userProfile,
+                  radius: 18,
+                  fontSize: 16,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -483,28 +465,8 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             ],
           ),
           const SizedBox(width: 12),
-          // Circular avatar on the right
-          Container(
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              border: Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
-                width: 1.5,
-              ),
-            ),
-            child: CircleAvatar(
-              radius: 18,
-              backgroundColor: ChoiceLuxTheme.charcoalGray,
-              child: Text(
-                displayName.substring(0, 1).toUpperCase(),
-                style: TextStyle(
-                  color: ChoiceLuxTheme.softWhite,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 16,
-                ),
-              ),
-            ),
-          ),
+          // Circular avatar: profile image if available, else initial
+          _buildProfileAvatar(displayName, userProfile, radius: 18, fontSize: 16),
         ],
       ),
       itemBuilder: (context) => [
@@ -515,30 +477,12 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
             padding: const EdgeInsets.symmetric(vertical: 12),
             child: Row(
               children: [
-                // Enhanced Avatar with Gold Ring
-                Container(
-                  padding: const EdgeInsets.all(2),
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [
-                        ChoiceLuxTheme.richGold,
-                        ChoiceLuxTheme.richGold.withOpacity(0.7),
-                      ],
-                    ),
-                  ),
-                  child: CircleAvatar(
-                    radius: 22,
-                    backgroundColor: ChoiceLuxTheme.richGold.withOpacity(0.2),
-                    child: Text(
-                      displayName.substring(0, 1).toUpperCase(),
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.richGold,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 18,
-                      ),
-                    ),
-                  ),
+                // Enhanced Avatar with Gold Ring: profile image or initial
+                _buildProfileAvatarWithRing(
+                  displayName,
+                  userProfile,
+                  radius: 22,
+                  fontSize: 18,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -713,6 +657,83 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     if (shouldLogout == true) {
       onSignOut?.call();
     }
+  }
+
+  /// Avatar: profile image if available, else initial letter.
+  Widget _buildProfileAvatar(
+    String displayName,
+    dynamic userProfile, {
+    required double radius,
+    required double fontSize,
+  }) {
+    final url = userProfile?.profileImage?.toString().trim();
+    final hasImage = url != null && url.isNotEmpty;
+    return Container(
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.3),
+          width: 1.5,
+        ),
+      ),
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: ChoiceLuxTheme.charcoalGray,
+        backgroundImage: hasImage ? NetworkImage(url) : null,
+        child: hasImage
+            ? null
+            : Text(
+                displayName.isNotEmpty
+                    ? displayName.substring(0, 1).toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.softWhite,
+                  fontWeight: FontWeight.w600,
+                  fontSize: fontSize,
+                ),
+              ),
+      ),
+    );
+  }
+
+  /// Avatar with gold ring: profile image if available, else initial letter.
+  Widget _buildProfileAvatarWithRing(
+    String displayName,
+    dynamic userProfile, {
+    required double radius,
+    required double fontSize,
+  }) {
+    final url = userProfile?.profileImage?.toString().trim();
+    final hasImage = url != null && url.isNotEmpty;
+    return Container(
+      padding: const EdgeInsets.all(2),
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        gradient: LinearGradient(
+          colors: [
+            ChoiceLuxTheme.richGold,
+            ChoiceLuxTheme.richGold.withValues(alpha: 0.7),
+          ],
+        ),
+      ),
+      child: CircleAvatar(
+        radius: radius,
+        backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+        backgroundImage: hasImage ? NetworkImage(url) : null,
+        child: hasImage
+            ? null
+            : Text(
+                displayName.isNotEmpty
+                    ? displayName.substring(0, 1).toUpperCase()
+                    : '?',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.richGold,
+                  fontWeight: FontWeight.w700,
+                  fontSize: fontSize,
+                ),
+              ),
+      ),
+    );
   }
 
   @override
