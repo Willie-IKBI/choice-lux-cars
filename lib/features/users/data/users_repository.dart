@@ -234,13 +234,34 @@ class UsersRepository {
       data.remove('id');
       data.remove('user_email');
       
+      // Enforce branch_id constraint based on role:
+      // - Administrators/super_admins must have branch_id = NULL
+      // - Other roles must have branch_id IS NOT NULL
+      final role = user.role;
+      final isAdminRole = role == 'administrator' || role == 'super_admin';
+      
+      if (isAdminRole) {
+        // Administrators must have branch_id = NULL
+        data['branch_id'] = null;
+        Log.d('UsersRepository: Setting branch_id to NULL for admin role');
+      } else if (role != null && role != 'unassigned') {
+        // Other roles must have branch_id NOT NULL
+        // If branch_id is null/empty, keep existing value or require it
+        if (user.branchId == null || user.branchId!.isEmpty) {
+          Log.w('UsersRepository: Warning - non-admin role requires branch_id, but it is null/empty');
+          // Don't update branch_id if it's missing - let the constraint error show
+        }
+      }
+      
       // Filter out null values and empty strings to avoid 400 errors
       // Supabase REST API doesn't like empty strings for nullable fields
+      // Exception: branch_id must be explicitly set to null for admins
       final cleanData = <String, dynamic>{};
       data.forEach((key, value) {
-        // Only include non-null values
-        // Convert empty strings to null for nullable fields
-        if (value != null) {
+        if (key == 'branch_id' && isAdminRole) {
+          // Explicitly set branch_id to null for admins (required by constraint)
+          cleanData[key] = null;
+        } else if (value != null) {
           if (value is String && value.isEmpty) {
             // Skip empty strings - let database use default/null
             return;

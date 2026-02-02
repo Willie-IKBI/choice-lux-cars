@@ -480,8 +480,22 @@ class _UserFormState extends State<UserForm> {
                           ),
                         )
                         .toList(),
-                    onChanged: (val) => setState(() => role = val),
-                    onSaved: (val) => role = val,
+                    onChanged: (val) {
+                      setState(() {
+                        role = val;
+                        // Administrators must have branch_id = NULL per database constraint
+                        if (val == 'administrator' || val == 'super_admin') {
+                          branchId = null;
+                        }
+                      });
+                    },
+                    onSaved: (val) {
+                      role = val;
+                      // Administrators must have branch_id = NULL per database constraint
+                      if (val == 'administrator' || val == 'super_admin') {
+                        branchId = null;
+                      }
+                    },
                   )
                 : TextFormField(
                     initialValue: roles
@@ -575,8 +589,17 @@ class _UserFormState extends State<UserForm> {
                         child: Text('Durban (Dbn)'),
                       ),
                     ],
-                    onChanged: (val) => setState(() => branchId = val),
-                    onSaved: (val) => branchId = val,
+                    onChanged: (role == 'administrator' || role == 'super_admin')
+                        ? null // Disable for admin roles (branch_id must be NULL)
+                        : (val) => setState(() => branchId = val),
+                    onSaved: (val) {
+                      // Administrators must have branch_id = NULL per database constraint
+                      if (role == 'administrator' || role == 'super_admin') {
+                        branchId = null;
+                      } else {
+                        branchId = val;
+                      }
+                    },
                   )
                 : TextFormField(
                     initialValue: branchId ?? 'Not assigned',
