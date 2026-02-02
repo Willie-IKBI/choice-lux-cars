@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 
 /// Service for Supabase initialization and session management
 ///
@@ -189,8 +190,27 @@ class SupabaseService {
   Future<void> resetPassword({required String email}) async {
     try {
       Log.d('Resetting password for: $email');
-      await supabase.auth.resetPasswordForEmail(email);
-      Log.d('Password reset email sent successfully');
+      
+      // Determine redirect URL based on platform
+      String redirectTo;
+      if (kIsWeb) {
+        // For web, use the current origin + /reset-password
+        // This works for both localhost and production
+        final uri = Uri.base;
+        redirectTo = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/reset-password';
+        Log.d('Using web redirect URL: $redirectTo');
+      } else {
+        // For mobile (Android/iOS), use deep link
+        // Format: com.choiceluxcars.app://reset-password
+        redirectTo = 'com.choiceluxcars.app://reset-password';
+        Log.d('Using mobile deep link: $redirectTo');
+      }
+      
+      await supabase.auth.resetPasswordForEmail(
+        email,
+        redirectTo: redirectTo,
+      );
+      Log.d('Password reset email sent successfully with redirect: $redirectTo');
     } catch (error) {
       Log.e('Error resetting password: $error');
       rethrow;
