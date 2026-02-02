@@ -261,22 +261,40 @@ class UsersRepository {
         }
       });
       
-      // Ensure branch_id is set to null for admin roles (even if it wasn't in the original data)
-      if (isAdminRole && !cleanData.containsKey('branch_id')) {
-        cleanData['branch_id'] = null;
-        Log.d('UsersRepository: Adding branch_id = NULL for admin role');
+      // Handle branch_id separately for admin roles
+      // Supabase REST API may not properly handle null in the update payload
+      // So we need to update branch_id separately
+      final needsBranchIdNull = isAdminRole;
+      final branchIdInCleanData = cleanData.containsKey('branch_id');
+      
+      // Remove branch_id from cleanData if we need to handle it separately
+      if (needsBranchIdNull && branchIdInCleanData) {
+        cleanData.remove('branch_id');
+        Log.d('UsersRepository: Removed branch_id from cleanData to handle separately');
       }
       
       // Log the data being sent for debugging
       Log.d('UsersRepository: Clean data being sent to Supabase: $cleanData');
-      Log.d('UsersRepository: branch_id value: ${cleanData['branch_id']}');
-      Log.d('UsersRepository: branch_id type: ${cleanData['branch_id'].runtimeType}');
       
-      // Perform the update - Supabase should accept null values in the update map
-      await _supabase
-          .from('profiles')
-          .update(cleanData)
-          .eq('id', user.id);
+      // First, update all fields except branch_id (if needed)
+      if (cleanData.isNotEmpty) {
+        await _supabase
+            .from('profiles')
+            .update(cleanData)
+            .eq('id', user.id);
+        Log.d('UsersRepository: Updated profile fields (excluding branch_id)');
+      }
+      
+      // Then, separately update branch_id to null for admin roles
+      // This ensures the null value is properly handled
+      if (needsBranchIdNull) {
+        Log.d('UsersRepository: Setting branch_id to NULL in separate update');
+        await _supabase
+            .from('profiles')
+            .update({'branch_id': null})
+            .eq('id', user.id);
+        Log.d('UsersRepository: Successfully set branch_id to NULL');
+      }
 
       Log.d('UsersRepository: User updated successfully in database');
       return const Result.success(null);
