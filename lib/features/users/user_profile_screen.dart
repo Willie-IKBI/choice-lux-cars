@@ -103,6 +103,9 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
             data: {'profile_image': url},
           );
 
+          // Refresh the user profile provider so app bar and other components see the update
+          await ref.read(userProfileProvider.notifier).refreshProfile();
+
           setState(() {
             _profileImage = url;
             _isUploading = false;

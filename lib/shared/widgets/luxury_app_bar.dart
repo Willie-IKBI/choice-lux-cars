@@ -679,7 +679,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: CircleAvatar(
         radius: radius,
         backgroundColor: ChoiceLuxTheme.charcoalGray,
-        backgroundImage: hasImage ? NetworkImage(url) : null,
+        backgroundImage: hasImage
+            ? NetworkImage(url)
+            : null,
+        onBackgroundImageError: hasImage
+            ? (exception, stackTrace) {
+                Log.e('Error loading profile image: $exception');
+              }
+            : null,
         child: hasImage
             ? null
             : Text(
@@ -719,7 +726,14 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
       child: CircleAvatar(
         radius: radius,
         backgroundColor: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-        backgroundImage: hasImage ? NetworkImage(url) : null,
+        backgroundImage: hasImage
+            ? NetworkImage(url)
+            : null,
+        onBackgroundImageError: hasImage
+            ? (exception, stackTrace) {
+                Log.e('Error loading profile image: $exception');
+              }
+            : null,
         child: hasImage
             ? null
             : Text(

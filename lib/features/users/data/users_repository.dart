@@ -240,28 +240,19 @@ class UsersRepository {
       final role = user.role;
       final isAdminRole = role == 'administrator' || role == 'super_admin';
       
-      if (isAdminRole) {
-        // Administrators must have branch_id = NULL
-        data['branch_id'] = null;
-        Log.d('UsersRepository: Setting branch_id to NULL for admin role');
-      } else if (role != null && role != 'unassigned') {
-        // Other roles must have branch_id NOT NULL
-        // If branch_id is null/empty, keep existing value or require it
-        if (user.branchId == null || user.branchId!.isEmpty) {
-          Log.w('UsersRepository: Warning - non-admin role requires branch_id, but it is null/empty');
-          // Don't update branch_id if it's missing - let the constraint error show
-        }
-      }
-      
       // Filter out null values and empty strings to avoid 400 errors
-      // Supabase REST API doesn't like empty strings for nullable fields
-      // Exception: branch_id must be explicitly set to null for admins
+      // Exception: branch_id must be explicitly set to null for admin roles
       final cleanData = <String, dynamic>{};
       data.forEach((key, value) {
+        // Special handling for branch_id when role is admin
         if (key == 'branch_id' && isAdminRole) {
-          // Explicitly set branch_id to null for admins (required by constraint)
+          // Force branch_id to null for admin roles (required by constraint)
           cleanData[key] = null;
-        } else if (value != null) {
+          Log.d('UsersRepository: Setting branch_id to NULL for admin role');
+          return;
+        }
+        
+        if (value != null) {
           if (value is String && value.isEmpty) {
             // Skip empty strings - let database use default/null
             return;
@@ -270,9 +261,18 @@ class UsersRepository {
         }
       });
       
+      // Ensure branch_id is set to null for admin roles (even if it wasn't in the original data)
+      if (isAdminRole && !cleanData.containsKey('branch_id')) {
+        cleanData['branch_id'] = null;
+        Log.d('UsersRepository: Adding branch_id = NULL for admin role');
+      }
+      
       // Log the data being sent for debugging
       Log.d('UsersRepository: Clean data being sent to Supabase: $cleanData');
+      Log.d('UsersRepository: branch_id value: ${cleanData['branch_id']}');
+      Log.d('UsersRepository: branch_id type: ${cleanData['branch_id'].runtimeType}');
       
+      // Perform the update - Supabase should accept null values in the update map
       await _supabase
           .from('profiles')
           .update(cleanData)
