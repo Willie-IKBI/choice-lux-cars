@@ -191,7 +191,7 @@ payload: jsonEncode(data) // Use JSON string for proper parsing
 2. **Deploy to production:**
    - Edge Function already deployed ✅
    - Build and deploy new APK
-   - Deploy web app to Firebase
+   - Deploy web app to Vercel
 
 3. **Monitor:**
    - Check Edge Function logs
