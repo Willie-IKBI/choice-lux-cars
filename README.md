@@ -215,17 +215,21 @@ flutter build apk --release
 flutter build web --release
 ```
 
-### Deploy to Firebase Hosting
+### Deploy to Vercel
+The web app is deployed to [Vercel](https://vercel.com). Connect your repository in the Vercel dashboard; builds use the `vercel.json` configuration (Flutter SDK install, Firebase config injection, and SPA rewrites).
+
 ```bash
-firebase deploy --only hosting
+# Or deploy manually with Vercel CLI (after building locally)
+npm run prebuild:web && flutter build web --release
+vercel deploy --prebuilt build/web --prod
 ```
 
 ### Live Demo
-- **Web App**: https://choice-lux-cars-8d510.web.app
+- **Web App**: Deployed via Vercel (URL available in your Vercel project dashboard)
 - **GitHub Repository**: https://github.com/Willie-IKBI/choice-lux-cars
 
 ### Automatic Deployment
-The app is automatically deployed to Firebase Hosting when changes are pushed to the `master` branch. Pull requests also get preview deployments.
+The app is automatically deployed to Vercel when changes are pushed to the connected branch. Pull requests get preview deployments.
 
 ## 🤝 Contributing
 

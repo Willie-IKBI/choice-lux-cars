@@ -1,0 +1,9 @@
+{
+  "buildCommand": "node scripts/inject-firebase-config.js && flutter/bin/flutter build web --release",
+  "outputDirectory": "build/web",
+  "installCommand": "if [ -d flutter ]; then cd flutter && git pull && cd ..; else git clone https://github.com/flutter/flutter.git; fi && flutter/bin/flutter doctor && flutter/bin/flutter config --enable-web",
+  "framework": null,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

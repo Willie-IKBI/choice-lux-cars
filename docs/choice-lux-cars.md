@@ -288,7 +288,7 @@ lib/
 
 - `flutter_test`
 - GitHub Actions or Codemagic for CI
-- Firebase Hosting (web build)
+- Vercel (web build)
 - Supabase CLI for migrations and edge functions
 
 ---

@@ -82,10 +82,9 @@
    flutter build web --release
    ```
 
-3. **Deploy to Firebase Hosting (Web)**
-   ```bash
-   firebase deploy --only hosting
-   ```
+3. **Deploy to Vercel (Web)**
+   - Connect your repository in the [Vercel dashboard](https://vercel.com); the `vercel.json` config handles the build
+   - Or deploy manually: `vercel deploy --prebuilt build/web --prod` (after running `flutter build web --release`)
 
 ## 🧪 **Testing Checklist**
 

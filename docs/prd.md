@@ -28,7 +28,7 @@ Choice Lux Cars is a digital platform built to streamline operations for a luxur
 ### 🔹 Tools
 - Cursor / VS Code
 - GitHub (Version Control)
-- Firebase Hosting (Web Deployment)
+- Vercel (Web Deployment)
 - Supabase CLI (Schema Migrations & Edge Functions)
 
 ---
@@ -168,7 +168,7 @@ lib/
 - PDF generation and delivery flow (quotes, invoices, vouchers)
 - Push notification integration
 - Supabase secure backend (Auth, DB, Storage)
-- Firebase Hosting deployment (web)
+- Vercel deployment (web)
 - GitHub project with version control
 - Migration of all critical FlutterFlow logic into Riverpod
 
