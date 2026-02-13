@@ -74,7 +74,8 @@ dependencies:
   app_links: ^6.4.0
   
   # Typography
-  google_fonts: ^6.3.3
+  # Pinned to 6.3.2: 6.3.3 requires Dart 3.9+, Vercel uses 3.8.1
+  google_fonts: 6.3.2
 
 dev_dependencies:
   flutter_test:
