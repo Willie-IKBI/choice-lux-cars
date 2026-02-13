@@ -208,6 +208,6 @@ class _OperationsJobsListScreenState extends ConsumerState<OperationsJobsListScr
 
   bool _canCreateVoucher(String? role) {
     final r = role?.toLowerCase();
-    return r == 'administrator' || r == 'super_admin' || r == 'manager' || r == 'driver_manager' || r == 'drivermanager';
+    return r == 'administrator' || r == 'super_admin' || r == 'manager' || r == 'driver_manager';
   }
 }

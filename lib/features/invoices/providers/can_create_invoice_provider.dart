@@ -20,7 +20,6 @@ final canCreateInvoiceProvider = FutureProvider<bool>((ref) async {
       'super_admin',
       'manager',
       'driver_manager',
-      'drivermanager',
     ];
     return allowedRoles.contains(userRole?.toLowerCase());
   } catch (e) {

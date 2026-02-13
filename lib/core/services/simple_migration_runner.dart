@@ -75,7 +75,7 @@ class SimpleMigrationRunner {
     try {
       // Check if columns exist
       await _supabase
-          .from('notifications')
+          .from('app_notifications')
           .select('notification_type')
           .limit(1);
 
@@ -132,9 +132,9 @@ class SimpleMigrationRunner {
 
       Log.d('✅ transport table accessible');
 
-      // Test 4: Check if we can connect to notifications
+      // Test 4: Check if we can connect to app_notifications
       final notificationsResult = await _supabase
-          .from('notifications')
+          .from('app_notifications')
           .select('id')
           .limit(1);
 

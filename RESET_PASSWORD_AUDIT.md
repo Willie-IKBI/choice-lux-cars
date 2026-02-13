@@ -65,7 +65,7 @@ await supabase.auth.resetPasswordForEmail(
 - Should point to reset password page for password recovery flows
 
 **Fix Required**:
-- Set Site URL to your production domain (e.g., `https://choice-lux-cars-8d510.web.app`)
+- Set Site URL to your production domain (e.g., `https://choice-lux-cars-app.vercel.app`)
 - Add `/reset-password` to allowed redirect URLs
 
 ### Tertiary Issue: Web URL Handling
@@ -139,10 +139,10 @@ Future<void> resetPassword({required String email}) async {
 
 **Required Actions**:
 1. Go to: **Authentication → URL Configuration**
-2. Set **Site URL** to: `https://choice-lux-cars-8d510.web.app` (or your production URL)
+2. Set **Site URL** to: `https://choice-lux-cars-app.vercel.app` (or your production URL)
 3. Add to **Redirect URLs**:
-   - `https://choice-lux-cars-8d510.web.app/reset-password`
-   - `https://choice-lux-cars-8d510.web.app/**` (wildcard for all paths)
+   - `https://choice-lux-cars-app.vercel.app/reset-password`
+   - `https://choice-lux-cars-app.vercel.app/**` (wildcard for all paths)
    - For local dev: `http://localhost:*/reset-password`
 
 **Note**: The Site URL is the **default redirect** when no `redirectTo` is specified. Since we're fixing Issue 1, this becomes less critical but should still be configured correctly.
@@ -267,7 +267,7 @@ com.choice.lux.cars://reset-password
 ## Questions for Clarification
 
 1. **What is your production web URL?**
-   - Current: `https://choice-lux-cars-8d510.web.app`?
+   - Current: `https://choice-lux-cars-app.vercel.app`?
    - Should we use this or a custom domain?
 
 2. **Do you have a mobile app (Android/iOS)?**

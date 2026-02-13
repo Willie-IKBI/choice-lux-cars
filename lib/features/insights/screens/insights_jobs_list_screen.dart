@@ -170,8 +170,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
         userRole == 'administrator' ||
         userRole == 'super_admin' ||
         userRole == 'manager' ||
-        userRole == 'driver_manager' ||
-        userRole == 'drivermanager';
+        userRole == 'driver_manager';
     final canCreateInvoice = canCreateVoucher;
 
     return SystemSafeScaffold(

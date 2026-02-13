@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -44,6 +47,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     with WidgetsBindingObserver {
   late String _currentFilter; // open, in_progress, closed, all
   String _searchQuery = '';
+  Timer? _searchDebounceTimer;
+  final TextEditingController _searchController = TextEditingController();
   int _currentPage = 1;
   final int _itemsPerPage = 12;
   late String _dateRangeFilter; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
@@ -76,7 +81,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     final currentRoute = GoRouterState.of(context).matchedLocation;
     if (currentRoute == '/jobs' && _lastRoute != '/jobs') {
       // Only refresh if we're coming from a different route
-      Log.d('Navigated to /jobs route, refreshing jobs list...');
+      if (kDebugMode) Log.d('Navigated to /jobs route, refreshing jobs list...');
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           ref.read(jobsProvider.notifier).fetchJobs();
@@ -88,6 +93,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   @override
   void dispose() {
+    _searchDebounceTimer?.cancel();
+    _searchController.dispose();
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
   }
@@ -119,8 +126,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       final canCreateJobs = userRoleForPermissions == 'administrator' ||
           userRoleForPermissions == 'super_admin' ||
           userRoleForPermissions == 'manager' ||
-          userRoleForPermissions == 'driver_manager' ||
-          userRoleForPermissions == 'drivermanager';
+          userRoleForPermissions == 'driver_manager';
 
       // Load related data (non-blocking - load in parallel)
       final vehiclesState = ref.watch(vehiclesProvider);
@@ -154,14 +160,15 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         }
       }
 
-      // Debug information
-      Log.d('=== JOBS SCREEN DEBUG ===');
-      Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
-      Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
-      if ((jobs.value ?? []).isNotEmpty) {
-        final firstJob = (jobs.value ?? []).first;
-        Log.d('Sample job: ${firstJob.id} - ${firstJob.status} - ${firstJob.passengerName}');
-        Log.d('Sample job confirmation: isConfirmed=${firstJob.isConfirmed}, driverConfirmation=${firstJob.driverConfirmation}');
+      if (kDebugMode) {
+        Log.d('=== JOBS SCREEN DEBUG ===');
+        Log.d('Current user: ${userProfile?.id} (${userProfile?.role})');
+        Log.d('Total jobs in provider: ${(jobs.value ?? []).length}');
+        if ((jobs.value ?? []).isNotEmpty) {
+          final firstJob = (jobs.value ?? []).first;
+          Log.d('Sample job: ${firstJob.id} - ${firstJob.status} - ${firstJob.passengerName}');
+          Log.d('Sample job confirmation: isConfirmed=${firstJob.isConfirmed}, driverConfirmation=${firstJob.driverConfirmation}');
+        }
       }
 
       // Check if user can create vouchers based on role
@@ -169,8 +176,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       final canCreateVoucher = userRole == 'administrator' ||
           userRole == 'super_admin' ||
           userRole == 'manager' ||
-          userRole == 'driver_manager' ||
-          userRole == 'drivermanager';
+          userRole == 'driver_manager';
 
       // Check if user can create invoices (same permissions as vouchers for now)
       final canCreateInvoice = canCreateVoucher;
@@ -182,17 +188,21 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       // Only apply filters if we have data (avoid filtering empty list during loading)
       if (allJobs.isNotEmpty) {
         filteredJobs = _filterJobs(allJobs);
-        Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
+        if (kDebugMode) Log.d('Filtered jobs: ${filteredJobs.length} (filter: $_currentFilter)');
       }
 
       // Apply search filter
       if (_searchQuery.isNotEmpty) {
+        final searchLower = _searchQuery.toLowerCase();
         filteredJobs = filteredJobs.where((job) {
           final passengerName = job.passengerName?.toLowerCase() ?? '';
-          final clientName = job.clientId.toString().toLowerCase();
-          final searchLower = _searchQuery.toLowerCase();
+          final client = clientsMap[job.clientId];
+          final clientSearchText = [
+            client?.companyName,
+            client?.contactPerson,
+          ].whereType<String>().join(' ').toLowerCase();
           return passengerName.contains(searchLower) ||
-              clientName.contains(searchLower) ||
+              clientSearchText.contains(searchLower) ||
               job.id.toString().toLowerCase().contains(searchLower);
         }).toList();
       }
@@ -234,87 +244,100 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               },
             ),
             drawer: const LuxuryDrawer(),
-            body: RefreshIndicator(
-              onRefresh: () async {
-                await ref.read(jobsProvider.notifier).fetchJobs();
-              },
-              color: ChoiceLuxTheme.richGold,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: EdgeInsets.symmetric(
-                  horizontal: horizontalPadding,
-                  vertical: verticalPadding,
-                ),
-                child: Center(
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 1200),
-                    child: Column(
-                    children: [
-                      _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
-                      SizedBox(height: sectionSpacing),
-                      _buildSearchSection(isSmallMobile, isMobile, isTablet, isDesktop, canCreateJobs),
-                      SizedBox(height: sectionSpacing * 0.5),
-                      _buildResultsCount(
-                        filteredJobs.length,
-                        isSmallMobile,
-                        isMobile,
-                        isTablet,
-                        isDesktop,
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      // Show loading state while jobs are being fetched
-                      // Show jobs immediately when loaded, don't block on clients/vehicles/users
-                      // Related data will be looked up from Maps (O(1) access)
-                      jobs.when(
-                        data: (_) => paginatedJobs.isEmpty
-                            ? _buildEmptyState(
+            body: SafeArea(
+              child: Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      await ref.read(jobsProvider.notifier).fetchJobs();
+                    },
+                    color: ChoiceLuxTheme.richGold,
+                    child: CustomScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      slivers: [
+                        SliverPadding(
+                          padding: EdgeInsets.symmetric(
+                            horizontal: horizontalPadding,
+                            vertical: verticalPadding,
+                          ),
+                          sliver: SliverToBoxAdapter(
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _buildFilterSection(isSmallMobile, isMobile, isTablet, isDesktop),
+                                SizedBox(height: sectionSpacing),
+                                _buildSearchSection(isSmallMobile, isMobile, canCreateJobs),
+                                SizedBox(height: sectionSpacing * 0.5),
+                                _buildResultsCount(
+                                  filteredJobs.length,
+                                  isSmallMobile,
+                                  isMobile,
+                                ),
+                                SizedBox(height: sectionSpacing),
+                              ],
+                            ),
+                          ),
+                        ),
+                        jobs.when(
+                          data: (_) {
+                            if (paginatedJobs.isEmpty) {
+                              return SliverFillRemaining(
+                                hasScrollBody: false,
+                                child: Center(
+                                  child: _buildEmptyState(isSmallMobile, isMobile),
+                                ),
+                              );
+                            }
+                            return _buildJobsListSliver(
+                              paginatedJobs,
+                              clientsMap,
+                              vehiclesMap,
+                              usersMap,
+                              isSmallMobile,
+                              isMobile,
+                              isTablet,
+                              isDesktop,
+                              canCreateVoucher,
+                              canCreateInvoice,
+                            );
+                          },
+                          loading: () => SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: _buildLoadingState(isSmallMobile, isMobile),
+                            ),
+                          ),
+                          error: (error, stack) => SliverFillRemaining(
+                            hasScrollBody: false,
+                            child: Center(
+                              child: _buildErrorState(
+                                error,
                                 isSmallMobile,
                                 isMobile,
-                                isTablet,
-                                isDesktop,
-                              )
-                            : _buildJobsList(
-                                paginatedJobs,
-                                clientsMap,
-                                vehiclesMap,
-                                usersMap,
-                                isSmallMobile,
-                                isMobile,
-                                isTablet,
-                                isDesktop,
-                                canCreateVoucher,
-                                canCreateInvoice,
                               ),
-                        loading: () => _buildLoadingState(
-                          isSmallMobile,
-                          isMobile,
-                          isTablet,
-                          isDesktop,
+                            ),
+                          ),
                         ),
-                        error: (error, stack) => _buildErrorState(
-                          error,
-                          isSmallMobile,
-                          isMobile,
-                          isTablet,
-                          isDesktop,
+                        SliverToBoxAdapter(
+                          child: SizedBox(height: sectionSpacing),
                         ),
-                      ),
-                      SizedBox(height: sectionSpacing),
-                      if (totalPages > 1)
-                        _buildPaginationSection(
-                          totalPages,
-                          filteredJobs.length,
-                          isSmallMobile,
-                          isMobile,
-                          isTablet,
-                          isDesktop,
-                        ),
-                    ],
+                        if (totalPages > 1)
+                          SliverToBoxAdapter(
+                            child: _buildPaginationSection(
+                              totalPages,
+                              filteredJobs.length,
+                              isSmallMobile,
+                              isMobile,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
           ),
         ],
       );
@@ -493,8 +516,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   Widget _buildSearchSection(
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
     bool canCreateJobs,
   ) {
     final padding = ResponsiveTokens.getPadding(
@@ -513,7 +534,18 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         children: [
           Expanded(
             child: TextField(
-              onChanged: (value) => setState(() => _searchQuery = value),
+              controller: _searchController,
+              onChanged: (value) {
+                _searchDebounceTimer?.cancel();
+                _searchDebounceTimer = Timer(const Duration(milliseconds: 300), () {
+                  if (mounted) {
+                    setState(() {
+                      _searchQuery = value;
+                      _currentPage = 1;
+                    });
+                  }
+                });
+              },
               decoration: InputDecoration(
                 hintText: isSmallMobile
                     ? 'Search jobs...'
@@ -601,7 +633,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
                 borderRadius: BorderRadius.circular(4),
               ),
               child: Text(
-                'Filtered: $_currentFilter',
+                _searchQuery.isNotEmpty
+                    ? '$_currentFilter • Searching'
+                    : 'Filtered: $_currentFilter',
                 style: TextStyle(
                   fontSize: ResponsiveTokens.getFontSize(
                     MediaQuery.of(context).size.width,
@@ -622,8 +656,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     int count,
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
   ) {
     // Build filter label for open jobs date filter
     String? filterLabel;
@@ -673,8 +705,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   Widget _buildEmptyState(
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
   ) {
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
@@ -692,6 +722,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
     return Center(
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Container(
@@ -705,6 +736,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               ),
             ),
             child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Icon(
                   Icons.work_outline,
@@ -737,9 +769,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     );
   }
 
-  // Enhanced Jobs List
-  // Performance optimization: Uses Maps for O(1) lookups instead of O(n) firstWhere
-  Widget _buildJobsList(
+  /// Sliver list of job cards for CustomScrollView
+  Widget _buildJobsListSliver(
     List<Job> jobs,
     Map<String, Client> clientsMap,
     Map<String, Vehicle> vehiclesMap,
@@ -758,35 +789,47 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       MediaQuery.of(context).size.width,
     );
 
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
+    return SliverPadding(
       padding: EdgeInsets.symmetric(horizontal: padding, vertical: spacing),
-      itemCount: jobs.length,
-      itemBuilder: (context, index) {
-        final job = jobs[index];
+      sliver: SliverList(
+        delegate: SliverChildBuilderDelegate(
+          (context, index) {
+            final job = jobs[index];
+            final client = clientsMap[job.clientId];
+            final vehicle = vehiclesMap[job.vehicleId];
+            final driver = usersMap[job.driverId];
+            if (kDebugMode) {
+              Log.d('Jobs sliver itemBuilder -> index=$index jobId=${job.id} status=${job.status}');
+            }
 
-        // Performance optimization: O(1) Map lookups instead of O(n) firstWhere
-        final client = job.clientId != null ? clientsMap[job.clientId] : null;
-        final vehicle = job.vehicleId != null ? vehiclesMap[job.vehicleId] : null;
-        final driver = job.driverId != null ? usersMap[job.driverId] : null;
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: spacing),
-          child: JobCard(
-            job: job,
-            client: client,
-            vehicle: vehicle,
-            driver: driver,
-            isSmallMobile: isSmallMobile,
-            isMobile: isMobile,
-            isTablet: isTablet,
-            isDesktop: isDesktop,
-            canCreateVoucher: canCreateVoucher,
-            canCreateInvoice: canCreateInvoice,
-          ),
-        );
-      },
+            return Padding(
+              padding: EdgeInsets.only(bottom: spacing),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // Lightweight marker to confirm sliver child insertion before card paint.
+                  const SizedBox(height: 1),
+                  JobCard(
+                    job: job,
+                    client: client,
+                    vehicle: vehicle,
+                    driver: driver,
+                    isSmallMobile: isSmallMobile,
+                    isMobile: isMobile,
+                    isTablet: isTablet,
+                    isDesktop: isDesktop,
+                    canCreateVoucher: canCreateVoucher,
+                    canCreateInvoice: canCreateInvoice,
+                    fromRoute: widget.fromRoute,
+                  ),
+                ],
+              ),
+            );
+          },
+          childCount: jobs.length,
+        ),
+      ),
     );
   }
 
@@ -794,8 +837,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   Widget _buildLoadingState(
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
   ) {
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
@@ -808,6 +849,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       child: Padding(
         padding: EdgeInsets.all(padding * 2),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const CircularProgressIndicator(color: ChoiceLuxTheme.richGold),
@@ -833,8 +875,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     Object error,
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
   ) {
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
@@ -851,9 +891,10 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       child: Padding(
         padding: EdgeInsets.all(padding * 2),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.error_outline,
               color: ChoiceLuxTheme.errorColor,
               size: 48,
@@ -897,8 +938,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     int totalItems,
     bool isSmallMobile,
     bool isMobile,
-    bool isTablet,
-    bool isDesktop,
   ) {
     final padding = ResponsiveTokens.getPadding(
       MediaQuery.of(context).size.width,
@@ -935,8 +974,9 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
       onTap: () => setState(() {
         _currentFilter = filter;
         _currentPage = 1; // Reset to first page when filter changes
-        // Reset open jobs date filter when switching away from open jobs
-        if (filter != 'open') {
+        if (filter == 'open') {
+          _openJobsDateFilter ??= 'today';
+        } else {
           _openJobsDateFilter = null;
         }
       }),
@@ -1044,10 +1084,6 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   // Open Jobs Date Filter Section
   Widget _buildOpenJobsDateFilter(bool isSmallMobile, bool isMobile) {
-    final spacing = ResponsiveTokens.getSpacing(
-      MediaQuery.of(context).size.width,
-    );
-
     return SingleChildScrollView(
       scrollDirection: Axis.horizontal,
       child: Row(
@@ -1378,7 +1414,4 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
     }
   }
 
-  void _manualRefresh() {
-    ref.read(jobsProvider.notifier).fetchJobs();
-  }
 }

@@ -191,6 +191,7 @@ class RouterGuards {
       '/login',
       '/signup',
       '/forgot-password',
+      '/verify-otp',
       '/reset-password',
     ];
 
@@ -198,6 +199,11 @@ class RouterGuards {
     if (!isAuthenticated(user)) {
       if (publicRoutes.contains(currentRoute)) {
         Log.d('Router Guard - Not authenticated, but on public route: $currentRoute');
+        // Special handling for reset-password: allow access even without session
+        // The ResetPasswordScreen will check for session and handle recovery token
+        if (currentRoute == '/reset-password') {
+          Log.d('Router Guard - Allowing access to reset-password to process recovery token');
+        }
         return null; // Allow access to public routes
       }
       Log.d('Router Guard - Not authenticated, redirecting to login');
@@ -266,6 +272,20 @@ class RouterGuards {
         Log.d('Router Guard - Settings route requires super_admin, redirecting to dashboard');
         return '/';
       }
+    }
+
+    // Check for admin-only routes (job-summaries, insights, operations)
+    final adminOnlyRoutes = [
+      '/job-summaries',
+      '/insights',
+      '/insights/jobs',
+      '/admin/operations',
+    ];
+    final isAdminOnlyRoute = adminOnlyRoutes.any((r) =>
+        currentRoute == r || currentRoute.startsWith('$r/'));
+    if (isAdminOnlyRoute && !isAdmin) {
+      Log.d('Router Guard - $currentRoute requires admin, redirecting to dashboard');
+      return '/';
     }
 
     // Allow access to protected routes

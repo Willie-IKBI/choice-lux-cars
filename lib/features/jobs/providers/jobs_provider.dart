@@ -25,8 +25,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         userRole == 'administrator' ||
         userRole == 'super_admin' ||
         userRole == 'manager' ||
-        userRole == 'driver_manager' ||
-        userRole == 'drivermanager';
+        userRole == 'driver_manager';
 
     // Note: canCreateJobs is now handled in the UI layer based on user role
   }
@@ -316,13 +315,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
   }
 
   /// Convenience alias for old call sites
-  Future<void> fetchJobs() async => refreshJobs?.call() ?? _refreshCompat();
-
-  Future<void> _refreshCompat() async {
-    // Fallback refresh if refreshJobs() does not exist yet
-    state = const AsyncLoading();
-    state = await AsyncValue.guard(() async => await build());
-  }
+  Future<void> fetchJobs() async => refreshJobs();
 
   /// Check if current user can create jobs
   bool get canCreateJobs {
@@ -332,8 +325,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
     return userRole == 'administrator' ||
         userRole == 'super_admin' ||
         userRole == 'manager' ||
-        userRole == 'driver_manager' ||
-        userRole == 'drivermanager';
+        userRole == 'driver_manager';
   }
 
   /// Fetch a single job by ID

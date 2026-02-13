@@ -42,10 +42,6 @@ class AgentsRepository {
       Log.d('Creating agent: ${agent.agentName}');
 
       final agentData = agent.toJson();
-      // Ensure client_id is properly handled
-      if (agentData['client_id'] == null) {
-        agentData['client_id'] = agent.clientKey;
-      }
 
       final response = await _supabase
           .from('agents')

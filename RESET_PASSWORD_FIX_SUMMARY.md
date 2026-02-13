@@ -54,14 +54,14 @@ Future<void> resetPassword({required String email}) async {
 
 ### Step 1: Configure Site URL
 1. Go to: **Supabase Dashboard** → **Authentication** → **URL Configuration**
-2. Set **Site URL** to: `https://choice-lux-cars-8d510.web.app`
+2. Set **Site URL** to: `https://choice-lux-cars-app.vercel.app`
 
 ### Step 2: Add Redirect URLs
 Add the following URLs to the **Redirect URLs** list:
 
 **For Web**:
-- `https://choice-lux-cars-8d510.web.app/reset-password`
-- `https://choice-lux-cars-8d510.web.app/**` (wildcard for all paths)
+- `https://choice-lux-cars-app.vercel.app/reset-password`
+- `https://choice-lux-cars-app.vercel.app/**` (wildcard for all paths)
 - For local development: `http://localhost:*/reset-password`
 
 **For Mobile (Android)**:
@@ -75,7 +75,7 @@ Add the following URLs to the **Redirect URLs** list:
 
 ### Web Flow:
 1. User clicks "Forgot Password" and enters email
-2. `resetPassword()` is called with `redirectTo: 'https://choice-lux-cars-8d510.web.app/reset-password'`
+2. `resetPassword()` is called with `redirectTo: 'https://choice-lux-cars-app.vercel.app/reset-password'`
 3. Supabase sends email with link pointing to reset password page
 4. User clicks link → Redirected to `/reset-password` (not `/login`)
 5. Supabase SDK automatically processes the token from URL fragment

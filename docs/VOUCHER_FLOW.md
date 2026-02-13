@@ -665,7 +665,7 @@ abstract class VoucherRepository {
 The voucher system allows the following user roles to create vouchers:
 - **Administrator** (`administrator` or `admin`)
 - **Manager** (`manager`)
-- **Driver Manager** (`driver_manager` or `drivermanager`)
+- **Driver Manager** (`driver_manager`)
 
 The system handles role variations automatically to ensure compatibility with different role naming conventions in the database.
 

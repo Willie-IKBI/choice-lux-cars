@@ -300,12 +300,32 @@ class AuthNotifier extends StateNotifier<AsyncValue<User?>> {
   Future<bool> resetPassword({required String email}) async {
     try {
       await _supabaseService.resetPassword(email: email);
-      // Set password recovery flag when reset is requested
-      setPasswordRecovery(true);
-      Log.d('Password recovery requested for: $email');
+      // Don't set password recovery flag here - it will be set after OTP verification
+      Log.d('Password reset OTP email sent for: $email');
       return true;
     } catch (error) {
       Log.e('Reset password error: $error');
+      final authError = AuthErrorUtils.toAuthError(error);
+      _setErrorState(authError.message);
+      return false;
+    }
+  }
+
+  Future<bool> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      await _supabaseService.verifyPasswordResetOtp(
+        email: email,
+        otp: otp,
+      );
+      // Set password recovery flag after successful OTP verification
+      setPasswordRecovery(true);
+      Log.d('Password reset OTP verified successfully for: $email');
+      return true;
+    } catch (error) {
+      Log.e('Verify password reset OTP error: $error');
       final authError = AuthErrorUtils.toAuthError(error);
       _setErrorState(authError.message);
       return false;

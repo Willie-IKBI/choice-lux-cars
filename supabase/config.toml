@@ -105,12 +105,12 @@ file_size_limit = "50MiB"
 enabled = true
 # The base URL of your website. Used as an allow-list for redirects and for constructing URLs used
 # in emails.
-site_url = "https://choice-lux-cars-8d510.web.app"
+site_url = "https://choice-lux-cars-app.vercel.app"
 # A list of *exact* URLs that auth providers are permitted to redirect to post authentication.
 additional_redirect_urls = [
   "https://127.0.0.1:3000",
-  "https://choice-lux-cars-8d510.web.app",
-  "https://choice-lux-cars-8d510.web.app/reset-password",
+  "https://choice-lux-cars-app.vercel.app",
+  "https://choice-lux-cars-app.vercel.app/reset-password",
   "https://choice-lux-cars.flutterflow.app",
   "https://choice-lux-cars.flutterflow.app/reset-password"
 ]

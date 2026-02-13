@@ -21,6 +21,7 @@ import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'dart:typed_data';
 import 'package:choice_lux_cars/features/jobs/models/job_step.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
+import 'package:choice_lux_cars/features/jobs/providers/expenses_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
@@ -2168,7 +2169,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 'job_id': expense.jobId,
                 'driver_id': expense.driverId,
                 'expense_type': expense.expenseType,
-                'amount': expense.amount,
+                'exp_amount': expense.amount,
                 'exp_date': expDateISO,
                 'expense_description': expense.expenseDescription,
                 'other_description': expense.otherDescription,
@@ -2189,8 +2190,9 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                 );
               }
 
-              // Refresh jobs list to update job card status
+              // Refresh jobs list and expenses for this job
               ref.invalidate(jobsProvider);
+              ref.invalidate(expensesForJobProvider(int.parse(widget.jobId)));
             } catch (e) {
               Log.e('=== ERROR CREATING EXPENSE ===');
               Log.e('Error: $e');

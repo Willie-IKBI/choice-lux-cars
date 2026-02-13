@@ -221,17 +221,30 @@ class DriverFlowApiService {
              // Update driver_flow table with all changes in one call
        // Set current_step to 'passenger_pickup' (intermediate step before passenger_onboard)
        // This creates the proper flow: pickup_arrival -> passenger_pickup -> passenger_onboard
+       final pickupArriveTime = SATimeUtils.getCurrentSATimeISO();
        await _supabase
            .from('driver_flow')
            .update({
              'current_step': 'passenger_pickup', // Set to passenger_pickup to show intermediate step
              'progress_percentage': 33,
-             'pickup_arrive_time': SATimeUtils.getCurrentSATimeISO(),
+             'pickup_arrive_time': pickupArriveTime,
              'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',
-             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+             'last_activity_at': pickupArriveTime,
+             'updated_at': pickupArriveTime,
            })
            .eq('job_id', jobId);
+
+      // Update trip_progress with GPS coordinates for Route Map
+      await _supabase
+          .from('trip_progress')
+          .update({
+            'pickup_gps_lat': gpsLat,
+            'pickup_gps_lng': gpsLng,
+            'pickup_arrived_at': pickupArriveTime,
+            'updated_at': pickupArriveTime,
+          })
+          .eq('job_id', jobId)
+          .eq('trip_index', tripIndex);
 
       Log.d('=== ARRIVAL AT PICKUP RECORDED ===');
 
@@ -428,17 +441,30 @@ class DriverFlowApiService {
       }
 
              // Update driver_flow table with all changes in one call
+       final dropoffArriveTime = SATimeUtils.getCurrentSATimeISO();
        await _supabase
            .from('driver_flow')
            .update({
              'current_step': 'trip_complete', // Advance to next step (trip_complete)
              'progress_percentage': 67,
              // Note: transport_completed_ind is set in completeTrip(), not here
-             'dropoff_arrive_at': SATimeUtils.getCurrentSATimeISO(),
-             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-             'updated_at': SATimeUtils.getCurrentSATimeISO(),
+             'dropoff_arrive_at': dropoffArriveTime,
+             'last_activity_at': dropoffArriveTime,
+             'updated_at': dropoffArriveTime,
            })
            .eq('job_id', jobId);
+
+      // Update trip_progress with GPS coordinates for Route Map
+      await _supabase
+          .from('trip_progress')
+          .update({
+            'dropoff_gps_lat': gpsLat,
+            'dropoff_gps_lng': gpsLng,
+            'dropoff_arrived_at': dropoffArriveTime,
+            'updated_at': dropoffArriveTime,
+          })
+          .eq('job_id', jobId)
+          .eq('trip_index', tripIndex);
 
       Log.d('=== ARRIVAL AT DROPOFF RECORDED ===');
 

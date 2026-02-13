@@ -24,6 +24,24 @@ class StatusColorUtils {
     }
   }
 
+  /// Get accent bar color for job card (premium UI)
+  /// OPEN/ASSIGNED: gold, IN_PROGRESS: blue, COMPLETED: green, CANCELLED: muted red
+  static Color getJobCardAccentColor(JobStatus status) {
+    switch (status) {
+      case JobStatus.open:
+      case JobStatus.assigned:
+        return ChoiceLuxTheme.richGold;
+      case JobStatus.started:
+      case JobStatus.inProgress:
+      case JobStatus.readyToClose:
+        return ChoiceLuxTheme.infoColor;
+      case JobStatus.completed:
+        return ChoiceLuxTheme.successColor;
+      case JobStatus.cancelled:
+        return ChoiceLuxTheme.errorColor.withValues(alpha: 0.7);
+    }
+  }
+
   /// Get color for general status strings
   static Color getGeneralStatusColor(String status) {
     switch (status.toLowerCase()) {

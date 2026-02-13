@@ -21,6 +21,9 @@ import 'package:choice_lux_cars/features/clients/data/clients_repository.dart';
 import 'package:choice_lux_cars/features/vehicles/data/vehicles_repository.dart';
 import 'package:choice_lux_cars/features/users/data/users_repository.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
+import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons.dart';
+import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/job_stops_map_widget.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 
 extension StringExtension on String {
@@ -62,6 +65,28 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   
   // Trip timeline state
   int _selectedTripIndex = 0;
+
+  String get _backRoute {
+    switch (widget.fromRoute) {
+      case 'operations':
+        return '/admin/operations';
+      case 'job-summaries':
+        return '/job-summaries';
+      default:
+        return '/jobs';
+    }
+  }
+
+  String get _backLabel {
+    switch (widget.fromRoute) {
+      case 'operations':
+        return 'Back to Operations';
+      case 'job-summaries':
+        return 'Back to Job Summaries';
+      default:
+        return 'Back to Jobs';
+    }
+  }
 
   // Mobile accordion state
   final Map<String, bool> _expandedSections = {
@@ -280,7 +305,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
+          onBackPressed: () => context.go(_backRoute),
         ),
         body: Center(
           child: Column(
@@ -315,7 +340,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         appBar: LuxuryAppBar(
           title: 'Job Summary',
           showBackButton: true,
-          onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
+          onBackPressed: () => context.go(_backRoute),
         ),
         body: const Center(child: Text('Job not found')),
       );
@@ -338,7 +363,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           appBar: LuxuryAppBar(
             title: 'Job Summary',
             showBackButton: true,
-            onBackPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
+            onBackPressed: () => context.go(_backRoute),
           ),
           body: isDesktop
               ? _buildDesktopLayout(totalAmount)
@@ -377,6 +402,8 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                 _buildPaymentCard(),
                 const SizedBox(height: 24),
                 _buildStepTimelineCard(),
+                const SizedBox(height: 24),
+                _buildRouteMapCard(),
                 if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
                   const SizedBox(height: 24),
                   _buildNotesCard(),
@@ -448,6 +475,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             'stepTimeline',
             _buildStepTimelineContent(),
             Icons.timeline,
+          ),
+          const SizedBox(height: 16),
+          _buildAccordionSection(
+            'Route Map',
+            'routeMap',
+            JobStopsMapWidget(jobId: widget.jobId),
+            Icons.map,
           ),
           if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
@@ -971,6 +1005,26 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
 
+  Widget _buildRouteMapCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Route Map', Icons.map),
+            const SizedBox(height: 16),
+            JobStopsMapWidget(jobId: widget.jobId),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildStepTimelineCard() {
     return Container(
       decoration: BoxDecoration(
@@ -1168,28 +1222,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                                     ChoiceLuxTheme.infoColor,
                                   ),
                                 ),
-                                if (_driverFlowData!['odo_start_reading'] != null) ...[
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _buildMetricItem(
-                                      'Start KM',
-                                      '${_driverFlowData!['odo_start_reading'].toStringAsFixed(1)}',
-                                      Icons.speed,
-                                      Colors.green,
-                                    ),
-                                  ),
-                                ],
-                                if (_driverFlowData!['job_closed_odo'] != null) ...[
-                                  const SizedBox(width: 16),
-                                  Expanded(
-                                    child: _buildMetricItem(
-                                      'End KM',
-                                      '${_driverFlowData!['job_closed_odo'].toStringAsFixed(1)}',
-                                      Icons.speed,
-                                      Colors.orange,
-                                    ),
-                                  ),
-                                ],
                                 if (_driverFlowData!['odo_start_reading'] != null && 
                                     _driverFlowData!['job_closed_odo'] != null) ...[
                                   const SizedBox(width: 16),
@@ -1202,6 +1234,21 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                                     ),
                                   ),
                                 ],
+                                ...() {
+                                  final duration = _computeTotalDuration();
+                                  if (duration == null) return <Widget>[];
+                                  return [
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: _buildMetricItem(
+                                        'Total Trip Duration',
+                                        duration,
+                                        Icons.timer_outlined,
+                                        Colors.teal,
+                                      ),
+                                    ),
+                                  ];
+                                }(),
                               ],
                             ),
                             // Current Step Status
@@ -1598,29 +1645,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                         fontSize: 12,
                         fontWeight: FontWeight.w600,
                         color: Colors.orange[300],
-                      ),
-                    ),
-                  ),
-                if (step['totalDistance'] != null)
-                  Container(
-                    margin: const EdgeInsets.only(top: 4),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 4,
-                    ),
-                    decoration: BoxDecoration(
-                      color: ChoiceLuxTheme.richGold.withValues(alpha:0.1),
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: ChoiceLuxTheme.richGold.withValues(alpha:0.3),
-                      ),
-                    ),
-                    child: Text(
-                      step['totalDistance']!,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: ChoiceLuxTheme.richGold,
                       ),
                     ),
                   ),
@@ -2169,9 +2193,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           children: [
             Expanded(
               child: ElevatedButton.icon(
-                onPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
+                onPressed: () => context.go(_backRoute),
                 icon: const Icon(Icons.list),
-                label: Text(widget.fromRoute == 'operations' ? 'Back to Operations' : 'Back to Jobs'),
+                label: Text(_backLabel),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.grey,
                   foregroundColor: Colors.white,
@@ -2313,6 +2337,33 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ],
           ),
         ],
+        // Invoice & Voucher (admin/super_admin/manager)
+        if (canEdit || canAdminClose) ...[
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              if (canEdit || canAdminClose)
+                Expanded(
+                  child: VoucherActionButtons(
+                    jobId: widget.jobId,
+                    voucherPdfUrl: _job?.voucherPdf,
+                    voucherData: null,
+                    canCreateVoucher: true,
+                  ),
+                ),
+              if (canEdit || canAdminClose) const SizedBox(width: 12),
+              if (canEdit || canAdminClose)
+                Expanded(
+                  child: InvoiceActionButtons(
+                    jobId: widget.jobId,
+                    invoicePdfUrl: _job?.invoicePdf,
+                    invoiceData: null,
+                    canCreateInvoice: true,
+                  ),
+                ),
+            ],
+          ),
+        ],
       ],
     );
   }
@@ -2337,9 +2388,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs'),
+            onPressed: () => context.go(_backRoute),
             icon: const Icon(Icons.list),
-            label: Text(widget.fromRoute == 'operations' ? 'Back to Operations' : 'Back to Jobs'),
+            label: Text(_backLabel),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.grey,
               foregroundColor: Colors.white,
@@ -2479,6 +2530,23 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             ),
           ),
         ],
+        // Invoice & Voucher (admin/super_admin/manager)
+        if (canEdit || canAdminClose) ...[
+          const SizedBox(height: 12),
+          VoucherActionButtons(
+            jobId: widget.jobId,
+            voucherPdfUrl: _job?.voucherPdf,
+            voucherData: null,
+            canCreateVoucher: true,
+          ),
+          const SizedBox(height: 8),
+          InvoiceActionButtons(
+            jobId: widget.jobId,
+            invoicePdfUrl: _job?.invoicePdf,
+            invoiceData: null,
+            canCreateInvoice: true,
+          ),
+        ],
       ],
     );
   }
@@ -2534,7 +2602,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
       Log.d('Navigating back after confirmation...');
       // Navigate back to origin (operations dashboard or jobs list)
-      context.go(widget.fromRoute == 'operations' ? '/admin/operations' : '/jobs');
+      context.go(_backRoute);
       Log.d('Navigation completed');
     } catch (e) {
       Log.e('Error in _confirmJob: $e');
@@ -2684,13 +2752,87 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     return '${date.day}/${date.month}/${date.year} at ${date.hour.toString().padLeft(2, '0')}:${date.minute.toString().padLeft(2, '0')}';
   }
 
+  /// Parses a timestamp from driver_flow (String, DateTime, or numeric ms).
+  DateTime? _parseTimestamp(dynamic value) {
+    if (value == null) return null;
+    if (value is DateTime) return value;
+    try {
+      if (value is num) {
+        final ms = value.toInt();
+        return DateTime.fromMillisecondsSinceEpoch(ms > 9999999999 ? ms : ms * 1000);
+      }
+      final s = value.toString().trim();
+      if (s.isEmpty) return null;
+      return DateTime.parse(s);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Computes total trip duration from first completed step to final completion.
+  /// Returns display string or null to hide the duration tile.
+  /// startTime: vehicle_collected_at > vehicle_time > job_started_at > earliest completed step
+  /// endTime: job_closed_time > job.updatedAt (when completed) > last_activity_at > latest completed step
+  String? _computeTotalDuration() {
+    final df = _driverFlowData;
+    if (df == null) return null;
+
+    final vehicleCollectedAt = _parseTimestamp(df['vehicle_collected_at']) ??
+        _parseTimestamp(df['vehicle_time']); // Legacy column fallback
+    final jobStartedAt = _parseTimestamp(df['job_started_at']);
+    final pickupArriveTime = _parseTimestamp(df['pickup_arrive_time']);
+    final passengerOnboardAt = _parseTimestamp(df['passenger_onboard_at']);
+    final dropoffArriveAt = _parseTimestamp(df['dropoff_arrive_at']);
+    final tripCompleteAt = _parseTimestamp(df['trip_complete_at']);
+    final jobClosedTime = _parseTimestamp(df['job_closed_time']);
+    final lastActivityAt = _parseTimestamp(df['last_activity_at']);
+    final jobUpdatedAt = _job?.updatedAt;
+
+    final completedStepTimes = [
+      vehicleCollectedAt,
+      pickupArriveTime,
+      passengerOnboardAt,
+      dropoffArriveAt,
+      tripCompleteAt,
+    ].whereType<DateTime>().toList();
+
+    DateTime? startTime = vehicleCollectedAt ??
+        jobStartedAt ??
+        (completedStepTimes.isEmpty ? null : completedStepTimes.reduce((a, b) => a.isBefore(b) ? a : b));
+
+    DateTime? endTime = jobClosedTime;
+    if (endTime == null && _job?.status == 'completed' && jobUpdatedAt != null) {
+      endTime = jobUpdatedAt;
+    }
+    if (endTime == null && lastActivityAt != null) {
+      endTime = lastActivityAt;
+    }
+    if (endTime == null && completedStepTimes.isNotEmpty) {
+      endTime = completedStepTimes.reduce((a, b) => a.isAfter(b) ? a : b);
+    }
+
+    if (startTime == null && endTime == null) return null;
+    if (startTime != null && endTime == null) return 'In progress';
+    if (startTime == null && endTime != null) return null;
+
+    final duration = endTime!.difference(startTime!);
+    if (duration.isNegative) return '—';
+
+    final hours = duration.inHours;
+    final minutes = duration.inMinutes.remainder(60);
+    if (hours > 0) {
+      return '${hours}h ${minutes}m';
+    } else {
+      return '${minutes}m';
+    }
+  }
+
   Future<List<Map<String, dynamic>>> _getStepTimeline() async {
     final steps = <Map<String, dynamic>>[];
 
     // Get odometer readings
     final startOdo = _driverFlowData?['odo_start_reading'] ?? 0.0;
     final endOdo = _driverFlowData?['job_closed_odo'] ?? 0.0;
-    final totalKm = endOdo - startOdo;
     final progressPercentage = _driverFlowData?['progress_percentage'] ?? 0.0;
 
     // Define all possible steps in order
@@ -2849,11 +2991,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           stepData['startOdometer'] = 'Start: ${startOdo.toStringAsFixed(1)} km';
         } else if (stepId == 'vehicle_return' && endOdo > 0) {
           stepData['endOdometer'] = 'End: ${endOdo.toStringAsFixed(1)} km';
-          // Also show total distance if we have both readings
-          if (startOdo > 0 && endOdo > startOdo) {
-            final totalKm = endOdo - startOdo;
-            stepData['totalDistance'] = 'Total: ${totalKm.toStringAsFixed(1)} km';
-          }
         }
 
         steps.add(stepData);
@@ -2937,20 +3074,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
         steps.add(stepData);
       }
-    }
-
-    // Add total kilometers traveled if we have both odometer readings
-    if (startOdo > 0 && endOdo > 0 && totalKm > 0) {
-      steps.add({
-        'title': 'Total Distance Traveled',
-        'description': 'Total kilometers covered during this job',
-        'completedAt': null,
-        'icon': Icons.speed,
-        'color': Colors.indigo,
-        'odometer': 'Total: ${totalKm.toStringAsFixed(1)} km',
-        'status': 'completed',
-        'isTotal': true,
-      });
     }
 
     return steps;

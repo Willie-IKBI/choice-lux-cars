@@ -176,7 +176,6 @@ class VoucherController extends StateNotifier<VoucherControllerState> {
       'super_admin',
       'manager',
       'driver_manager',
-      'drivermanager',
     ];
     return allowedRoles.contains(userRole.toLowerCase());
   }
@@ -236,7 +235,6 @@ final canCreateVoucherProvider = FutureProvider<bool>((ref) async {
       'super_admin',
       'manager',
       'driver_manager',
-      'drivermanager',
     ];
     return allowedRoles.contains(userRole?.toLowerCase());
   } catch (e) {

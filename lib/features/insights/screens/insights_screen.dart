@@ -6,6 +6,7 @@ import 'package:choice_lux_cars/features/insights/screens/driver_insights_tab.da
 import 'package:choice_lux_cars/features/insights/screens/vehicle_insights_tab.dart';
 import 'package:choice_lux_cars/features/insights/screens/client_insights_tab.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
+import 'package:choice_lux_cars/features/insights/presentation/widgets/premium_command_tabs.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_drawer.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
@@ -22,23 +23,45 @@ class InsightsScreen extends ConsumerStatefulWidget {
   ConsumerState<InsightsScreen> createState() => _InsightsScreenState();
 }
 
-class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTickerProviderStateMixin {
+class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   TimePeriod _selectedPeriod = TimePeriod.thisMonth;
   LocationFilter _selectedLocation = LocationFilter.all;
-  late TabController _tabController;
+  int _selectedTabIndex = 0;
   bool _showFilters = false; // Filters hidden by default
 
-  @override
-  void initState() {
-    super.initState();
-    _tabController = TabController(length: 5, vsync: this);
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
-  }
+  // Premium tab items
+  static const List<PremiumTabItem> _tabItems = [
+    PremiumTabItem(
+      label: 'Jobs',
+      iconOutlined: Icons.work_outlined,
+      iconFilled: Icons.work,
+      semanticLabel: 'Jobs insights tab',
+    ),
+    PremiumTabItem(
+      label: 'Financial',
+      iconOutlined: Icons.attach_money_outlined,
+      iconFilled: Icons.attach_money,
+      semanticLabel: 'Financial insights tab',
+    ),
+    PremiumTabItem(
+      label: 'Drivers',
+      iconOutlined: Icons.person_outline,
+      iconFilled: Icons.person,
+      semanticLabel: 'Drivers insights tab',
+    ),
+    PremiumTabItem(
+      label: 'Vehicles',
+      iconOutlined: Icons.directions_car_outlined,
+      iconFilled: Icons.directions_car,
+      semanticLabel: 'Vehicles insights tab',
+    ),
+    PremiumTabItem(
+      label: 'Clients',
+      iconOutlined: Icons.business_outlined,
+      iconFilled: Icons.business,
+      semanticLabel: 'Clients insights tab',
+    ),
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -90,162 +113,77 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
           constraints: const BoxConstraints(maxWidth: 1400),
           child: Column(
             children: [
-              // Filter Toggle Button + Collapsible Filter Bar
-              Container(
-                margin: EdgeInsets.only(
-                  left: padding,
-                  right: padding,
-                  top: isMobile ? 4 : 8,
-                  bottom: 2,
+              // Premium Command Tabs Navigation with integrated Filters
+              Padding(
+                padding: EdgeInsets.symmetric(
+                  horizontal: padding,
+                  vertical: isMobile ? 8 : 12,
                 ),
-                child: Column(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Filter Toggle Button
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        GestureDetector(
-                          onTap: () {
-                            setState(() {
-                              _showFilters = !_showFilters;
-                            });
-                          },
-                          child: Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: isMobile ? 10 : 12,
-                              vertical: isMobile ? 6 : 8,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _showFilters 
-                                  ? ChoiceLuxTheme.richGold.withOpacity(0.2)
-                                  : Colors.white.withOpacity(0.05),
-                              borderRadius: BorderRadius.circular(6),
-                              border: Border.all(
-                                color: _showFilters
-                                    ? ChoiceLuxTheme.richGold.withOpacity(0.5)
-                                    : Colors.white.withOpacity(0.1),
-                                width: 1,
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.filter_list,
-                                  size: isMobile ? 16 : 18,
-                                  color: _showFilters
-                                      ? ChoiceLuxTheme.richGold
-                                      : ChoiceLuxTheme.platinumSilver,
-                                ),
-                                SizedBox(width: isMobile ? 4 : 6),
-                                Text(
-                                  'Filters',
-                                  style: TextStyle(
-                                    fontSize: isMobile ? 12 : 13,
-                                    fontWeight: FontWeight.w600,
-                                    color: _showFilters
-                                        ? ChoiceLuxTheme.richGold
-                                        : ChoiceLuxTheme.platinumSilver,
-                                  ),
-                                ),
-                                SizedBox(width: isMobile ? 4 : 6),
-                                Icon(
-                                  _showFilters ? Icons.expand_less : Icons.expand_more,
-                                  size: isMobile ? 16 : 18,
-                                  color: _showFilters
-                                      ? ChoiceLuxTheme.richGold
-                                      : ChoiceLuxTheme.platinumSilver,
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
+                    // Tabs - takes available space
+                    Expanded(
+                      child: PremiumCommandTabs(
+                        items: _tabItems,
+                        selectedIndex: _selectedTabIndex,
+                        onChanged: (index) {
+                          setState(() {
+                            _selectedTabIndex = index;
+                          });
+                        },
+                        scrollableOnMobile: true,
+                        maxWidth: null, // Let it expand within the Row
+                      ),
                     ),
-                    // Collapsible Filter Bar
-                    AnimatedSize(
-                      duration: const Duration(milliseconds: 200),
-                      curve: Curves.easeInOut,
-                      child: _showFilters
-                          ? Container(
-                              margin: EdgeInsets.only(top: isMobile ? 6 : 8),
-                              padding: EdgeInsets.symmetric(
-                                horizontal: isMobile ? 10 : 12,
-                                vertical: isMobile ? 8 : 10,
-                              ),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.03),
-                                borderRadius: BorderRadius.circular(6),
-                                border: Border.all(
-                                  color: Colors.white.withOpacity(0.08),
-                                  width: 1,
-                                ),
-                              ),
-                              child: _buildCompactFilterBar(isMobile, isSmallMobile),
-                            )
-                          : const SizedBox.shrink(),
-                    ),
+                    // Filters Button - aligned to the right, same height as tabs
+                    SizedBox(width: isMobile ? 8 : 12),
+                    _buildFiltersButton(context, screenWidth, isMobile, isSmallMobile),
                   ],
                 ),
               ),
               
-              // Ultra-Compact Tab bar - Icon-only on mobile
-              Container(
-                margin: EdgeInsets.symmetric(
-                  horizontal: padding,
-                  vertical: isMobile ? 2 : 4,
-                ),
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.charcoalGray,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-                    width: 1,
-                  ),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(isMobile ? 2 : 4),
-                  child: TabBar(
-                    controller: _tabController,
-                    isScrollable: true,
-                    indicator: BoxDecoration(
-                      color: ChoiceLuxTheme.richGold,
-                      borderRadius: BorderRadius.circular(6),
-                    ),
-                    indicatorPadding: EdgeInsets.all(2),
-                    dividerColor: Colors.transparent,
-                    labelColor: Colors.black,
-                    unselectedLabelColor: ChoiceLuxTheme.platinumSilver,
-                    labelStyle: TextStyle(
-                      fontSize: isMobile ? 11 : 13,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: 0.2,
-                    ),
-                    unselectedLabelStyle: TextStyle(
-                      fontSize: isMobile ? 11 : 13,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.1,
-                    ),
-                    labelPadding: EdgeInsets.symmetric(
-                      horizontal: isMobile ? 8 : 14,
-                      vertical: isMobile ? 6 : 8,
-                    ),
-                    tabAlignment: TabAlignment.start,
-                    tabs: [
-                      _buildTab(Icons.work, 'Jobs', isMobile),
-                      _buildTab(Icons.attach_money, 'Financial', isMobile),
-                      _buildTab(Icons.person, 'Drivers', isMobile),
-                      _buildTab(Icons.directions_car, 'Vehicles', isMobile),
-                      _buildTab(Icons.business, 'Clients', isMobile),
-                    ],
-                  ),
+              // Collapsible Filter Bar - below tabs and filters
+              Padding(
+                padding: EdgeInsets.symmetric(horizontal: padding),
+                child: AnimatedSize(
+                  duration: const Duration(milliseconds: 200),
+                  curve: Curves.easeInOut,
+                  child: _showFilters
+                      ? Container(
+                          margin: EdgeInsets.only(
+                            top: isMobile ? 8 : 12,
+                            bottom: isMobile ? 8 : 12,
+                          ),
+                          padding: EdgeInsets.symmetric(
+                            horizontal: isMobile ? 12 : 16,
+                            vertical: isMobile ? 10 : 12,
+                          ),
+                          decoration: BoxDecoration(
+                            color: ChoiceLuxTheme.charcoalGray.withOpacity(0.6),
+                            borderRadius: BorderRadius.circular(ResponsiveTokens.getCornerRadius(screenWidth)),
+                            border: Border.all(
+                              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.12),
+                              width: 1,
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.1),
+                                blurRadius: 8,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                          ),
+                          child: _buildCompactFilterBar(isMobile, isSmallMobile),
+                        )
+                      : const SizedBox.shrink(),
                 ),
               ),
           
-              // Tab content
+              // Tab content - Using IndexedStack for better performance
               Expanded(
-                child: TabBarView(
-                  controller: _tabController,
+                child: IndexedStack(
+                  index: _selectedTabIndex,
                   children: [
                     JobsInsightsTab(
                       selectedPeriod: _selectedPeriod,
@@ -277,30 +215,86 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> with SingleTick
     );
   }
 
-  Widget _buildTab(IconData icon, String text, bool isMobile) {
-    return Tab(
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: isMobile ? 2 : 4),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              icon,
-              size: isMobile ? 18 : 20,
+
+  Widget _buildFiltersButton(
+    BuildContext context,
+    double screenWidth,
+    bool isMobile,
+    bool isSmallMobile,
+  ) {
+    final radius = ResponsiveTokens.getCornerRadius(screenWidth);
+    
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          setState(() {
+            _showFilters = !_showFilters;
+          });
+        },
+        borderRadius: BorderRadius.circular(radius * 0.75),
+        child: Container(
+          padding: EdgeInsets.symmetric(
+            horizontal: isMobile ? 12 : 16,
+            vertical: isMobile ? 10 : 12,
+          ),
+          decoration: BoxDecoration(
+            color: _showFilters 
+                ? ChoiceLuxTheme.richGold.withOpacity(0.15)
+                : ChoiceLuxTheme.charcoalGray.withOpacity(0.6),
+            borderRadius: BorderRadius.circular(radius * 1.5), // Match tabs container
+            border: Border.all(
+              color: _showFilters
+                  ? ChoiceLuxTheme.richGold.withOpacity(0.4)
+                  : ChoiceLuxTheme.platinumSilver.withOpacity(0.12),
+              width: 1,
             ),
-            // Show text only on desktop, icon-only on mobile
-            if (!isMobile) ...[
-              SizedBox(width: 6),
-              Flexible(
-                child: Text(
-                  text,
-                  overflow: TextOverflow.ellipsis,
-                  maxLines: 1,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.15),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+              if (_showFilters)
+                BoxShadow(
+                  color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+            ],
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.filter_list_outlined,
+                size: isMobile ? 20 : 22,
+                color: _showFilters
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver,
+              ),
+              SizedBox(width: isMobile ? 6 : 8),
+              Text(
+                'Filters',
+                style: TextStyle(
+                  fontSize: isMobile ? 13 : 14,
+                  fontWeight: FontWeight.w600,
+                  letterSpacing: 0.2,
+                  color: _showFilters
+                      ? ChoiceLuxTheme.richGold
+                      : ChoiceLuxTheme.platinumSilver,
                 ),
               ),
+              SizedBox(width: isMobile ? 6 : 8),
+              Icon(
+                _showFilters ? Icons.expand_less : Icons.expand_more,
+                size: isMobile ? 18 : 20,
+                color: _showFilters
+                    ? ChoiceLuxTheme.richGold
+                    : ChoiceLuxTheme.platinumSilver,
+              ),
             ],
-          ],
+          ),
         ),
       ),
     );

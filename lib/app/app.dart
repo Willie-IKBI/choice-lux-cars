@@ -7,6 +7,7 @@ import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/auth/login/login_screen.dart';
 import 'package:choice_lux_cars/features/auth/signup/signup_screen.dart';
 import 'package:choice_lux_cars/features/auth/forgot_password/forgot_password_screen.dart';
+import 'package:choice_lux_cars/features/auth/verify_otp/verify_otp_screen.dart';
 import 'package:choice_lux_cars/features/auth/reset_password/reset_password_screen.dart';
 import 'package:choice_lux_cars/features/auth/pending_approval_screen.dart';
 import 'package:choice_lux_cars/features/dashboard/dashboard_screen.dart';
@@ -42,9 +43,14 @@ import 'package:choice_lux_cars/features/insights/screens/client_statement_scree
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/admin/screens/operations_dashboard_route.dart';
 import 'package:choice_lux_cars/features/admin/screens/operations_jobs_list_screen.dart';
+import 'package:choice_lux_cars/features/jobs/screens/job_summaries_screen.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
+import 'package:choice_lux_cars/core/services/deep_link_service.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:app_links/app_links.dart';
 
 class ChoiceLuxCarsApp extends ConsumerStatefulWidget {
   const ChoiceLuxCarsApp({super.key});
@@ -69,6 +75,58 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
     );
     // Initialize FCM service
     FCMService.initialize(ref);
+    
+    // Initialize deep link handling (mobile only)
+    // Web uses URL fragments which are handled automatically by Supabase SDK
+    if (!kIsWeb) {
+      _initializeDeepLinkHandling();
+    }
+  }
+
+  /// Initialize deep link handling for mobile platforms
+  /// 
+  /// This listens for deep links when the app is running and also checks
+  /// for initial deep links when the app opens from a terminated state.
+  /// Only runs on mobile - web is handled automatically by Supabase SDK.
+  void _initializeDeepLinkHandling() {
+    try {
+      // Use dynamic import to avoid issues if app_links is not available
+      // This is safe because we only call this on mobile where app_links is available
+      _setupAppLinks();
+    } catch (e) {
+      Log.e('Failed to initialize deep link handling: $e');
+      // Don't crash the app if deep link setup fails
+    }
+  }
+
+  /// Setup app_links listener for deep links
+  /// 
+  /// Only runs on mobile - web deep links are handled automatically by Supabase SDK
+  void _setupAppLinks() async {
+    if (kIsWeb) {
+      // Skip on web - Supabase SDK handles URL fragments automatically
+      return;
+    }
+
+    try {
+      final appLinks = AppLinks();
+
+      // Listen for deep links when app is running
+      appLinks.uriLinkStream.listen((uri) {
+        Log.d('Deep link received while app running: $uri');
+        DeepLinkService.handleDeepLink(uri);
+      });
+
+      // Check for initial deep link (when app opens from terminated state)
+      final initialLink = await appLinks.getInitialLink();
+      if (initialLink != null) {
+        Log.d('Initial deep link detected: $initialLink');
+        DeepLinkService.handleDeepLink(initialLink);
+      }
+    } catch (e) {
+      Log.e('Error setting up app links: $e');
+      // Don't crash the app if app_links fails
+    }
   }
 
   @override
@@ -135,6 +193,18 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/forgot-password',
           name: 'forgot_password',
           builder: (context, state) => const ForgotPasswordScreen(),
+        ),
+        GoRoute(
+          path: '/verify-otp',
+          name: 'verify_otp',
+          builder: (context, state) {
+            final email = state.uri.queryParameters['email'] ?? '';
+            if (email.isEmpty) {
+              // If no email provided, redirect to forgot password
+              return const ForgotPasswordScreen();
+            }
+            return VerifyOtpScreen(email: email);
+          },
         ),
         GoRoute(
           path: '/reset-password',
@@ -374,6 +444,11 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           path: '/settings',
           name: 'settings',
           builder: (context, state) => const NotificationPreferencesScreen(),
+        ),
+        GoRoute(
+          path: '/job-summaries',
+          name: 'job_summaries',
+          builder: (context, state) => const JobSummariesScreen(),
         ),
         GoRoute(
           path: '/insights',

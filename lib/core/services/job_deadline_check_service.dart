@@ -16,10 +16,10 @@ class JobDeadlineCheckService {
   bool _isRunning = false;
 
   /// Start the periodic check (every 10 minutes)
-  /// Only runs for admin, manager, or driver_manager roles
-  void start({String? userRole}) {
+    /// Only runs for admin, manager, or driver_manager roles
+    void start({String? userRole}) {
     // Only run for roles that should receive these notifications
-    final allowedRoles = ['administrator', 'manager', 'driver_manager'];
+    final allowedRoles = ['administrator', 'super_admin', 'manager', 'driver_manager'];
     if (userRole == null || !allowedRoles.contains(userRole.toLowerCase())) {
       Log.d('JobDeadlineCheckService: Skipping start - user role: $userRole');
       return;

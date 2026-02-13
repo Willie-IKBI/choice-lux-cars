@@ -381,9 +381,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         ),
       ];
       
-      // Add Insights card for admin users
+      // Add Insights and Operations cards for admin users
       if (isAdmin) {
-        Log.d('Dashboard - Adding Insights card for admin user');
+        Log.d('Dashboard - Adding Insights and Operations cards for admin user');
         dashboardItems.add(
           DashboardItem(
             title: 'Insights',
@@ -400,6 +400,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             icon: Icons.dashboard_outlined,
             route: '/admin/operations',
             color: const Color(0xFF5C6BC0), // Indigo
+          ),
+        );
+        dashboardItems.add(
+          DashboardItem(
+            title: 'Job Summaries',
+            subtitle: 'Search and view job details',
+            icon: Icons.summarize,
+            route: '/job-summaries',
+            color: const Color(0xFF26A69A), // Teal
           ),
         );
       } else {

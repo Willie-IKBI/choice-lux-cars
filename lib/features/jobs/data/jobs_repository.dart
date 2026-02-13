@@ -333,7 +333,7 @@ class JobsRepository {
 
       await _supabase
           .from('jobs')
-          .update({'payment_amount': amount})
+          .update({'amount': amount})
           .eq('id', jobId);
 
       Log.d('Job payment amount updated successfully');
@@ -377,7 +377,7 @@ class JobsRepository {
       PostgrestFilterBuilder query = _supabase
           .from('jobs')
           .select()
-          .eq('status', status);
+          .eq('job_status', status);
 
       // Apply role-based filtering based on confirmed requirements
       if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
@@ -769,6 +769,73 @@ class JobsRepository {
       });
     } catch (error) {
       Log.e('Error fetching jobs with insights filters: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Search jobs for Job Summaries screen (admin only)
+  /// Supports job number, date range, status, and location filters
+  Future<Result<Map<String, dynamic>>> searchJobsForSummaries({
+    String? jobNumber,
+    DateTime? startDate,
+    DateTime? endDate,
+    String? status,
+    String? location,
+    int limit = 20,
+    int offset = 0,
+  }) async {
+    try {
+      Log.d('Searching jobs for summaries: jobNumber=$jobNumber, start=$startDate, end=$endDate, status=$status, location=$location');
+
+      var query = _supabase.from('jobs').select();
+
+      if (jobNumber != null && jobNumber.trim().isNotEmpty) {
+        query = query.ilike('job_number', '%${jobNumber.trim()}%');
+      }
+
+      if (startDate != null) {
+        final startStr = startDate.toIso8601String().split('T')[0];
+        query = query.gte('job_start_date', startStr);
+      }
+      if (endDate != null) {
+        final endStr = endDate.toIso8601String().split('T')[0];
+        query = query.lte('job_start_date', endStr);
+      }
+
+      if (status != null && status != 'all') {
+        if (status == 'completed') {
+          query = query.eq('job_status', 'completed');
+        } else if (status == 'open') {
+          query = query.not('job_status', 'in', '(completed,cancelled)');
+        } else if (status == 'cancelled') {
+          query = query.eq('job_status', 'cancelled');
+        }
+      }
+
+      if (location != null && location.isNotEmpty) {
+        query = query.eq('location', location);
+      }
+
+      // Fetch limit+1 to determine if there are more pages
+      final response = await query
+          .order('job_start_date', ascending: false)
+          .order('created_at', ascending: false)
+          .range(offset, offset + limit);
+
+      final allFetched = (response as List<dynamic>)
+          .map<Job>((json) => Job.fromJson(json as Map<String, dynamic>))
+          .toList();
+      final hasMore = allFetched.length > limit;
+      final jobs = hasMore ? allFetched.sublist(0, limit) : allFetched;
+
+      Log.d('Search returned ${jobs.length} jobs (hasMore: $hasMore)');
+      return Result.success({
+        'jobs': jobs,
+        'total': offset + jobs.length + (hasMore ? 1 : 0),
+        'hasMore': hasMore,
+      });
+    } catch (error) {
+      Log.e('Error searching jobs for summaries: $error');
       return _mapSupabaseError(error);
     }
   }

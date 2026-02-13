@@ -1,5 +1,6 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/shared/typography.dart';
@@ -37,9 +38,25 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
 
   void _checkResetSession() async {
     // Check if user has a valid session for password reset
+    // On web: Supabase SDK automatically processes URL fragments (#access_token=...&type=recovery)
+    // On mobile: Session is created after OTP verification via verifyPasswordResetOtp
     try {
-      final session =
-          await SupabaseService.instance.supabase.auth.currentSession;
+      // Wait a moment for Supabase SDK to process URL fragment (if on web)
+      if (kIsWeb) {
+        Log.d('Reset Password Screen - Waiting for Supabase to process URL fragment...');
+        await Future.delayed(const Duration(milliseconds: 1000));
+      }
+      
+      // Check for session - Supabase SDK should have processed the recovery token by now
+      var session = SupabaseService.instance.supabase.auth.currentSession;
+      
+      // If no session yet, wait a bit more (Supabase might still be processing on web)
+      if (session == null && kIsWeb) {
+        Log.d('Reset Password Screen - No session yet, waiting a bit more...');
+        await Future.delayed(const Duration(milliseconds: 500));
+        session = SupabaseService.instance.supabase.auth.currentSession;
+      }
+      
       Log.d(
         'Reset Password Screen - Session check: ${session != null ? 'Valid session' : 'No session'}',
       );
@@ -51,8 +68,10 @@ class _ResetPasswordScreenState extends ConsumerState<ResetPasswordScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: const Text(
-                'Invalid or expired reset link. Please request a new password reset.',
+              content: Text(
+                kIsWeb
+                    ? 'Invalid or expired reset link. Please request a new password reset.'
+                    : 'Invalid or expired session. Please verify your code again.',
               ),
               backgroundColor: ChoiceLuxTheme.errorColor,
             ),

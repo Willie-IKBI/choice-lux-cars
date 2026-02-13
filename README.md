@@ -225,7 +225,7 @@ vercel deploy --prebuilt build/web --prod
 ```
 
 ### Live Demo
-- **Web App**: Deployed via Vercel (URL available in your Vercel project dashboard)
+- **Web App**: https://choice-lux-cars-app.vercel.app
 - **GitHub Repository**: https://github.com/Willie-IKBI/choice-lux-cars
 
 ### Automatic Deployment

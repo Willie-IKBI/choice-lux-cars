@@ -187,32 +187,62 @@ class SupabaseService {
   }
 
   /// Reset password
+  /// For mobile: Uses OTP-based flow (no redirectTo)
+  /// For web: Uses link-based flow (with redirectTo)
   Future<void> resetPassword({required String email}) async {
     try {
       Log.d('Resetting password for: $email');
       
-      // Determine redirect URL based on platform
-      String redirectTo;
       if (kIsWeb) {
-        // For web, use the current origin + /reset-password
-        // This works for both localhost and production
+        // For web, use link-based flow with redirect URL
         final uri = Uri.base;
-        redirectTo = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/reset-password';
+        final redirectTo = '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}/reset-password';
         Log.d('Using web redirect URL: $redirectTo');
+        
+        await supabase.auth.resetPasswordForEmail(
+          email,
+          redirectTo: redirectTo,
+        );
+        Log.d('Password reset email sent successfully with redirect: $redirectTo');
       } else {
-        // For mobile (Android/iOS), use deep link
-        // Format: com.choiceluxcars.app://reset-password
-        redirectTo = 'com.choiceluxcars.app://reset-password';
-        Log.d('Using mobile deep link: $redirectTo');
+        // For mobile (Android/iOS), use OTP-based flow (no redirectTo)
+        // This will send an email with a 6-digit code instead of a link
+        // The email template must be configured to show {{ .Token }} instead of {{ .ConfirmationURL }}
+        await supabase.auth.resetPasswordForEmail(
+          email,
+          // No redirectTo for mobile - OTP will be sent instead
+        );
+        Log.d('Password reset OTP email sent successfully (mobile)');
       }
-      
-      await supabase.auth.resetPasswordForEmail(
-        email,
-        redirectTo: redirectTo,
-      );
-      Log.d('Password reset email sent successfully with redirect: $redirectTo');
     } catch (error) {
       Log.e('Error resetting password: $error');
+      rethrow;
+    }
+  }
+
+  /// Verify OTP for password reset
+  /// This creates a recovery session that allows the user to reset their password
+  Future<void> verifyPasswordResetOtp({
+    required String email,
+    required String otp,
+  }) async {
+    try {
+      Log.d('Verifying password reset OTP for: $email');
+      
+      // Use verifyOTP method (capital letters) for Supabase Flutter SDK
+      final response = await supabase.auth.verifyOTP(
+        email: email,
+        token: otp,
+        type: OtpType.recovery,
+      );
+      
+      if (response.session != null) {
+        Log.d('Password reset OTP verified successfully - recovery session created');
+      } else {
+        throw Exception('Failed to create recovery session');
+      }
+    } catch (error) {
+      Log.e('Error verifying password reset OTP: $error');
       rethrow;
     }
   }

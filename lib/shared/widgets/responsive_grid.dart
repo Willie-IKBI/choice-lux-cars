@@ -63,6 +63,27 @@ class ResponsiveTokens {
     if (ResponsiveBreakpoints.isDesktop(width)) return baseSize + 1;
     return baseSize + 2; // Large desktop
   }
+
+  /// Job card premium design tokens
+  static double getJobCardRadius(double width) {
+    if (ResponsiveBreakpoints.isSmallMobile(width)) return 12.0;
+    if (ResponsiveBreakpoints.isMobile(width)) return 14.0;
+    return 16.0;
+  }
+
+  static double getJobCardPadding(double width) {
+    if (ResponsiveBreakpoints.isSmallMobile(width)) return 16.0;
+    if (ResponsiveBreakpoints.isMobile(width)) return 18.0;
+    if (ResponsiveBreakpoints.isTablet(width)) return 20.0;
+    return 24.0;
+  }
+
+  static const double jobCardBorderOpacity = 0.06;
+  static const double jobCardBorderOpacityHover = 0.10;
+  static const double jobCardShadowBlur = 10.0;
+  static const double jobCardShadowBlurHover = 14.0;
+  static const double jobCardShadowOpacity = 0.15;
+  static const double jobCardAccentBarWidth = 3.0;
 }
 
 /// Enhanced responsive grid with proper overflow handling
@@ -211,4 +232,7 @@ extension ResponsiveExtension on BuildContext {
 
   double responsiveFontSize(double baseSize) =>
       ResponsiveTokens.getFontSize(screenWidth, baseSize: baseSize);
+
+  double get jobCardRadius => ResponsiveTokens.getJobCardRadius(screenWidth);
+  double get jobCardPadding => ResponsiveTokens.getJobCardPadding(screenWidth);
 }

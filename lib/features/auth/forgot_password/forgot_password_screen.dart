@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'dart:ui';
@@ -41,9 +42,19 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       });
 
       if (success) {
-        setState(() {
-          _emailSent = true;
-        });
+        // For mobile, navigate to OTP verification screen
+        // For web, show success message (link-based flow)
+        if (mounted) {
+          if (kIsWeb) {
+            // For web, show success message (link-based flow)
+            setState(() {
+              _emailSent = true;
+            });
+          } else {
+            // For mobile, navigate to OTP verification screen
+            context.go('/verify-otp?email=${Uri.encodeComponent(_emailController.text.trim())}');
+          }
+        }
       } else {
         // Error handling is done in the provider
         if (mounted) {
