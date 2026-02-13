@@ -13,6 +13,8 @@ class InvoiceActionButtons extends ConsumerStatefulWidget {
   final String? invoicePdfUrl;
   final InvoiceData? invoiceData;
   final bool canCreateInvoice;
+  /// When true, renders a single outline/ghost button (for JobCard premium layout).
+  final bool compact;
 
   const InvoiceActionButtons({
     super.key,
@@ -20,6 +22,7 @@ class InvoiceActionButtons extends ConsumerStatefulWidget {
     this.invoicePdfUrl,
     this.invoiceData,
     required this.canCreateInvoice,
+    this.compact = false,
   });
 
   @override
@@ -40,15 +43,10 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
     final currentJob = jobsAsync.when(
       data: (jobs) {
         try {
-          final job = jobs.firstWhere(
+          return jobs.firstWhere(
             (job) => job.id.toString() == widget.jobId,
           );
-          // Debug: Print job data to see if invoice PDF is updated
-          print('Job ${widget.jobId} invoice PDF: ${job.invoicePdf}');
-          return job;
         } catch (e) {
-          // Job not found in current data, return null
-          print('Job ${widget.jobId} not found in jobs list');
           return null;
         }
       },
@@ -58,13 +56,13 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
 
     // Use the most up-to-date invoice PDF URL from the job data
     final currentInvoicePdfUrl = currentJob?.invoicePdf ?? widget.invoicePdfUrl;
-    print('Current invoice PDF URL for job ${widget.jobId}: $currentInvoicePdfUrl');
 
     return InvoiceActionBar(
       jobId: widget.jobId,
       invoicePdfUrl: currentInvoicePdfUrl,
       invoiceData: widget.invoiceData,
       canCreateInvoice: widget.canCreateInvoice,
+      compact: widget.compact,
       invoiceState: invoiceState,
       isCreatingInvoice: _isCreatingInvoice,
       onCreateInvoice: _createInvoice,
@@ -84,8 +82,6 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
           .read(invoiceControllerProvider.notifier)
           .createInvoice(jobId: widget.jobId);
 
-      // Force refresh jobs data to show updated invoice status
-      print('Invoice created - refreshing jobs data...');
       await ref.read(jobsProvider.notifier).refreshJobs();
       
       // Force widget rebuild by invalidating the jobs provider
@@ -93,8 +89,6 @@ class _InvoiceActionButtonsState extends ConsumerState<InvoiceActionButtons> {
       
       // Add a small delay to ensure the database update has propagated
       await Future.delayed(const Duration(milliseconds: 500));
-      
-      print('Invoice refresh completed for job ${widget.jobId}');
 
       if (mounted) {
         setState(() {
@@ -252,6 +246,7 @@ class InvoiceActionBar extends StatefulWidget {
   final String? invoicePdfUrl;
   final InvoiceData? invoiceData;
   final bool canCreateInvoice;
+  final bool compact;
   final InvoiceControllerState invoiceState;
   final bool isCreatingInvoice;
   final VoidCallback onCreateInvoice;
@@ -265,6 +260,7 @@ class InvoiceActionBar extends StatefulWidget {
     this.invoicePdfUrl,
     this.invoiceData,
     required this.canCreateInvoice,
+    this.compact = false,
     required this.invoiceState,
     required this.isCreatingInvoice,
     required this.onCreateInvoice,
@@ -281,11 +277,11 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
   @override
   Widget build(BuildContext context) {
     final hasInvoice = widget.invoicePdfUrl != null && widget.invoicePdfUrl!.isNotEmpty;
-    print('InvoiceActionBar - Job ${widget.jobId} - hasInvoice: $hasInvoice - invoicePdfUrl: ${widget.invoicePdfUrl}');
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isTight = constraints.maxWidth < 200;
+        final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 400.0;
+        final isTight = maxWidth < 200;
         final horizontalGap = isTight ? 4.0 : 8.0;
         final verticalGap = 4.0;
 
@@ -293,18 +289,19 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Invoice section header
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Invoice',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 12,
+            // Invoice section header (hidden in compact mode)
+            if (!widget.compact)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Invoice',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-            ),
 
             // Progressive invoice button flow
             if (!widget.canCreateInvoice) ...[
@@ -316,7 +313,7 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
                 isTight,
                 horizontalGap,
                 verticalGap,
-                constraints.maxWidth,
+                maxWidth,
                 hasInvoice,
               ),
 
@@ -324,10 +321,40 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
             if (widget.invoiceState.isLoading) _buildLoadingIndicator(context),
 
             // Error message
-            if (widget.invoiceState.hasError) _buildErrorMessage(context),
+            if (widget.invoiceState.hasError)
+              (widget.compact
+                  ? _buildCompactErrorIndicator(context)
+                  : _buildErrorMessage(context)),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCompactErrorIndicator(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 12, color: Colors.red[700]),
+            const SizedBox(width: 6),
+            Text(
+              'Invoice action failed',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: Colors.red[700]),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -339,30 +366,21 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
     double maxWidth,
     bool hasInvoice,
   ) {
-    print('_buildProgressiveInvoiceFlow - Job ${widget.jobId} - hasInvoice: $hasInvoice - isCreatingInvoice: ${widget.isCreatingInvoice}');
-    
-    // State 1: No invoice - Show Create Invoice button
     if (!hasInvoice && !widget.isCreatingInvoice) {
-      print('Showing Create Invoice button for job ${widget.jobId}');
       return _buildCreateInvoiceButton(context, isTight, maxWidth);
     }
-    
-    // State 2: Creating invoice - Show creating button
     if (widget.isCreatingInvoice) {
-      print('Showing Creating Invoice button for job ${widget.jobId}');
       return _buildCreatingInvoiceButton(context, isTight, maxWidth);
     }
-    
-    // State 3: Invoice created - Show status and action buttons
     if (hasInvoice) {
-      print('Showing Invoice Created state for job ${widget.jobId}');
+      if (widget.compact) {
+        return _buildCompactViewInvoiceButton(context);
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status button
           _buildInvoiceCreatedButton(context, isTight, maxWidth),
           const SizedBox(height: 8),
-          // Action buttons
           _buildInvoiceActionButtons(
             context,
             isTight,
@@ -373,9 +391,24 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
         ],
       );
     }
-    
-    print('Returning empty widget for job ${widget.jobId}');
     return const SizedBox.shrink();
+  }
+
+  Widget _buildCompactViewInvoiceButton(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: widget.invoiceState.isLoading ? null : widget.onOpenInvoice,
+      icon: const Icon(Icons.description, size: 14),
+      label: const Text('View Invoice', style: TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: ChoiceLuxTheme.platinumSilver,
+        side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
   }
 
   Widget _buildCreateInvoiceButton(
@@ -383,12 +416,28 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
     bool isTight,
     double maxWidth,
   ) {
-    // Ensure constraints are valid - minWidth cannot exceed maxWidth
     final availableWidth = maxWidth;
-    final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
+    final minWidth = isTight ? 120.0 : 140.0;
     final effectiveMinWidth = minWidth < availableWidth
         ? minWidth
         : availableWidth * 0.8;
+
+    if (widget.compact) {
+      return OutlinedButton.icon(
+        onPressed: widget.invoiceState.isLoading ? null : widget.onCreateInvoice,
+        icon: const Icon(Icons.receipt_long, size: 14),
+        label: const Text('Create Invoice', style: TextStyle(fontSize: 12)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ChoiceLuxTheme.platinumSilver,
+          side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.4)),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          minimumSize: const Size(0, 44),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -396,9 +445,9 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
         maxWidth: availableWidth,
       ),
       child: SizedBox(
-        width: double.infinity, // Always use full available width
+        width: double.infinity,
         child: ElevatedButton.icon(
-                        onPressed: widget.invoiceState.isLoading ? null : widget.onCreateInvoice,
+          onPressed: widget.invoiceState.isLoading ? null : widget.onCreateInvoice,
           icon: const Icon(Icons.receipt_long, size: 16),
           label: const Text('Create Invoice', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
@@ -773,11 +822,12 @@ class _InvoiceActionBarState extends State<InvoiceActionBar> {
           border: Border.all(color: Colors.red.withValues(alpha: 0.3)),
         ),
         child: Row(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisSize: MainAxisSize.max,
           children: [
             Icon(Icons.error, size: 12, color: Colors.red[700]),
             const SizedBox(width: 4),
-            Expanded(
+            Flexible(
+              fit: FlexFit.loose,
               child: Text(
                 widget.invoiceState.errorMessage ?? 'Failed to create invoice',
                 style: TextStyle(fontSize: 10, color: Colors.red[700]),

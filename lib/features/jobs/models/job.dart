@@ -133,19 +133,23 @@ class Job {
     return start.difference(now).inDays;
   }
 
+  static DateTime _parseDateTime(dynamic value, DateTime fallback) {
+    if (value == null) return fallback;
+    final str = value.toString().trim();
+    if (str.isEmpty) return fallback;
+    return DateTime.tryParse(str) ?? fallback;
+  }
+
   factory Job.fromMap(Map<String, dynamic> map) {
+    final now = DateTime.now();
     return Job(
-      id: int.tryParse(map['id']?.toString() ?? '') ?? 0,
+      id: (map['id'] is int) ? map['id'] as int : (int.tryParse(map['id']?.toString() ?? '') ?? 0),
       clientId: map['client_id']?.toString() ?? '',
       agentId: map['agent_id']?.toString(),
       vehicleId: map['vehicle_id']?.toString() ?? '',
       driverId: map['driver_id']?.toString() ?? '',
-      jobStartDate: DateTime.parse(
-        map['job_start_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
-      ),
-      orderDate: DateTime.parse(
-        map['order_date']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
-      ),
+      jobStartDate: _parseDateTime(map['job_start_date'], now),
+      orderDate: _parseDateTime(map['order_date'], now),
       passengerName: map['passenger_name']?.toString(),
       passengerContact: map['passenger_contact']?.toString(),
       pasCount: (map['pax'] is num)
@@ -164,20 +168,15 @@ class Job {
       cancelReason: map['cancel_reason']?.toString(),
       location: map['location']?.toString(),
       createdBy: map['created_by']?.toString() ?? '',
-      createdAt: DateTime.parse(
-        map['created_at']?.toString() ?? SATimeUtils.getCurrentSATimeISO(),
-      ),
+      createdAt: _parseDateTime(map['created_at'], now),
       updatedAt: map['updated_at'] != null
-          ? DateTime.parse(
-              map['updated_at']?.toString() ??
-                  SATimeUtils.getCurrentSATimeISO(),
-            )
+          ? _parseDateTime(map['updated_at'], now)
           : null,
       driverConfirmation: map['driver_confirm_ind'] == true,
       isConfirmed:
           map['is_confirmed'] == true || map['driver_confirm_ind'] == true,
       confirmedAt: map['confirmed_at'] != null
-          ? DateTime.parse(map['confirmed_at'].toString())
+          ? _parseDateTime(map['confirmed_at'], now)
           : null,
       confirmedBy: map['confirmed_by']?.toString(),
       jobNumber: map['job_number']?.toString(),

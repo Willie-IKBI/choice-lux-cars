@@ -12,6 +12,8 @@ class VoucherActionButtons extends ConsumerStatefulWidget {
   final String? voucherPdfUrl;
   final VoucherData? voucherData;
   final bool canCreateVoucher;
+  /// When true, renders a single outline/ghost button (for JobCard premium layout).
+  final bool compact;
 
   const VoucherActionButtons({
     super.key,
@@ -19,6 +21,7 @@ class VoucherActionButtons extends ConsumerStatefulWidget {
     this.voucherPdfUrl,
     this.voucherData,
     required this.canCreateVoucher,
+    this.compact = false,
   });
 
   @override
@@ -59,6 +62,7 @@ class _VoucherActionButtonsState extends ConsumerState<VoucherActionButtons> {
       voucherPdfUrl: currentVoucherPdfUrl,
       voucherData: widget.voucherData,
       canCreateVoucher: widget.canCreateVoucher,
+      compact: widget.compact,
       voucherState: voucherState,
       isCreatingVoucher: _isCreatingVoucher,
       onCreateVoucher: _createVoucher,
@@ -212,6 +216,7 @@ class VoucherActionBar extends StatefulWidget {
   final String? voucherPdfUrl;
   final VoucherData? voucherData;
   final bool canCreateVoucher;
+  final bool compact;
   final VoucherControllerState voucherState;
   final bool isCreatingVoucher;
   final VoidCallback onCreateVoucher;
@@ -225,6 +230,7 @@ class VoucherActionBar extends StatefulWidget {
     this.voucherPdfUrl,
     this.voucherData,
     required this.canCreateVoucher,
+    this.compact = false,
     required this.voucherState,
     required this.isCreatingVoucher,
     required this.onCreateVoucher,
@@ -244,8 +250,8 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isTight =
-            constraints.maxWidth < 320; // Breakpoint for tight layouts
+        final maxWidth = constraints.maxWidth.isFinite ? constraints.maxWidth : 400.0;
+        final isTight = maxWidth < 320; // Breakpoint for tight layouts
         final horizontalGap = isTight ? 6.0 : 8.0;
         final verticalGap = isTight ? 6.0 : 8.0;
 
@@ -253,18 +259,19 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Voucher section header
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Text(
-                'Voucher',
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                  fontSize: 12,
+            // Voucher section header (hidden in compact mode)
+            if (!widget.compact)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Text(
+                  'Voucher',
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    fontWeight: FontWeight.bold,
+                    color: Theme.of(context).colorScheme.primary,
+                    fontSize: 12,
+                  ),
                 ),
               ),
-            ),
 
             // Progressive voucher button flow
             if (!widget.canCreateVoucher) ...[
@@ -276,7 +283,7 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
                 isTight,
                 horizontalGap,
                 verticalGap,
-                constraints.maxWidth,
+                maxWidth,
                 hasVoucher,
               ),
 
@@ -284,10 +291,40 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
             if (widget.voucherState.isLoading) _buildLoadingIndicator(context),
 
             // Error message
-            if (widget.voucherState.hasError) _buildErrorMessage(context),
+            if (widget.voucherState.hasError)
+              (widget.compact
+                  ? _buildCompactErrorIndicator(context)
+                  : _buildErrorMessage(context)),
           ],
         );
       },
+    );
+  }
+
+  Widget _buildCompactErrorIndicator(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 6.0),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+        decoration: BoxDecoration(
+          color: Colors.red.withValues(alpha: 0.10),
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(color: Colors.red.withValues(alpha: 0.25)),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.error_outline, size: 12, color: Colors.red[700]),
+            const SizedBox(width: 6),
+            Text(
+              'Voucher action failed',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(fontSize: 10, color: Colors.red[700]),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -309,15 +346,16 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
       return _buildCreatingVoucherButton(context, isTight, maxWidth);
     }
     
-    // State 3: Voucher created - Show status and action buttons
+    // State 3: Voucher created - compact: single View Voucher outline; full: status + actions
     if (hasVoucher) {
+      if (widget.compact) {
+        return _buildCompactViewVoucherButton(context);
+      }
       return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Status button
           _buildVoucherCreatedButton(context, isTight, maxWidth),
           const SizedBox(height: 8),
-          // Action buttons
           _buildVoucherActionButtons(
             context,
             isTight,
@@ -332,17 +370,50 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
     return const SizedBox.shrink();
   }
 
+  Widget _buildCompactViewVoucherButton(BuildContext context) {
+    return OutlinedButton.icon(
+      onPressed: widget.voucherState.isLoading ? null : widget.onOpenVoucher,
+      icon: const Icon(Icons.description, size: 14),
+      label: const Text('View Voucher', style: TextStyle(fontSize: 12)),
+      style: OutlinedButton.styleFrom(
+        foregroundColor: ChoiceLuxTheme.platinumSilver,
+        side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.4)),
+        padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+        minimumSize: const Size(0, 44),
+        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+        visualDensity: VisualDensity.compact,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+      ),
+    );
+  }
+
   Widget _buildCreateVoucherButton(
     BuildContext context,
     bool isTight,
     double maxWidth,
   ) {
-    // Ensure constraints are valid - minWidth cannot exceed maxWidth
     final availableWidth = maxWidth;
-    final minWidth = isTight ? 120.0 : 140.0; // Reduced minimum width
+    final minWidth = isTight ? 120.0 : 140.0;
     final effectiveMinWidth = minWidth < availableWidth
         ? minWidth
         : availableWidth * 0.8;
+
+    if (widget.compact) {
+      return OutlinedButton.icon(
+        onPressed: widget.voucherState.isLoading ? null : widget.onCreateVoucher,
+        icon: const Icon(Icons.receipt_long, size: 14),
+        label: const Text('Create Voucher', style: TextStyle(fontSize: 12)),
+        style: OutlinedButton.styleFrom(
+          foregroundColor: ChoiceLuxTheme.platinumSilver,
+          side: BorderSide(color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.4)),
+          padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+          minimumSize: const Size(0, 44),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          visualDensity: VisualDensity.compact,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        ),
+      );
+    }
 
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -350,9 +421,9 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
         maxWidth: availableWidth,
       ),
       child: SizedBox(
-        width: double.infinity, // Always use full available width
+        width: double.infinity,
         child: ElevatedButton.icon(
-                        onPressed: widget.voucherState.isLoading ? null : widget.onCreateVoucher,
+          onPressed: widget.voucherState.isLoading ? null : widget.onCreateVoucher,
           icon: const Icon(Icons.receipt_long, size: 16),
           label: const Text('Create Voucher', style: TextStyle(fontSize: 12)),
           style: ElevatedButton.styleFrom(
@@ -738,7 +809,8 @@ class _VoucherActionBarState extends State<VoucherActionBar> {
             color: Theme.of(context).colorScheme.error,
           ),
           const SizedBox(width: 6),
-          Expanded(
+          Flexible(
+            fit: FlexFit.loose,
             child: Text(
               widget.voucherState.errorMessage ?? 'An error occurred',
               style: TextStyle(
