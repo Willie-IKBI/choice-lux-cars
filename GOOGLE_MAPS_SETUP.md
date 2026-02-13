@@ -8,19 +8,22 @@ The Job Summaries feature includes a map that displays GPS coordinates for all s
 2. Create a new project or select an existing one
 3. Enable the **Maps SDK for Android**, **Maps SDK for iOS**, and **Maps JavaScript API** (for web)
 4. Go to **APIs & Services > Credentials**
-5. Create an API key and restrict it as needed for security
+5. Create an API key and **restrict it**:
+   - **Application restriction**: Android apps, add your package name `com.choiceluxcars.app` and SHA-1
+   - **API restriction**: restrict to Maps SDK for Android / iOS / JavaScript API only
+6. If a key was ever committed to git, **rotate it** in the console and use the new key
 
 ## 2. Configure the API Key
 
-### Android
+### Android (no hardcoded secrets)
 
-Edit `android/app/src/main/AndroidManifest.xml` and replace `YOUR_GOOGLE_MAPS_API_KEY` with your actual key:
+Add your key to `android/local.properties` (gitignored, never committed):
 
-```xml
-<meta-data
-    android:name="com.google.android.geo.API_KEY"
-    android:value="YOUR_ACTUAL_API_KEY" />
+```properties
+GOOGLE_MAPS_API_KEY=your_actual_api_key_here
 ```
+
+The key is injected at build time via Gradle `manifestPlaceholders`. Never commit the key to version control.
 
 ### Web
 
