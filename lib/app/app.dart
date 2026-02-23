@@ -40,6 +40,7 @@ import 'package:choice_lux_cars/features/notifications/screens/notification_pref
 import 'package:choice_lux_cars/features/insights/screens/insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/insights_jobs_list_screen.dart';
 import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
+import 'package:choice_lux_cars/features/insights/screens/driver_detail_insights_screen.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/admin/screens/operations_dashboard_route.dart';
 import 'package:choice_lux_cars/features/admin/screens/operations_jobs_list_screen.dart';
@@ -48,7 +49,7 @@ import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/core/services/fcm_service.dart';
 import 'package:choice_lux_cars/core/router/guards.dart';
 import 'package:choice_lux_cars/core/services/deep_link_service.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
+import 'package:flutter/foundation.dart' show kDebugMode, kIsWeb;
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:app_links/app_links.dart';
 
@@ -347,13 +348,45 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           builder: (context, state) {
             final jobId = state.pathParameters['id']!;
             // Create a placeholder job - the screen will load the actual job data
-            final int parsedJobId = (jobId is int) 
-                ? jobId as int 
+            final int parsedJobId = (jobId is int)
+                ? jobId as int
                 : (int.tryParse(jobId.toString()) ?? 0);
-            
-            // Guard against invalid job ID - 0 is typically not a valid database ID
-            assert(parsedJobId > 0, 'Invalid job ID: $jobId (parsed as $parsedJobId)');
-            
+
+            // Invalid job ID: show in-screen message instead of throwing
+            if (parsedJobId <= 0) {
+              return Scaffold(
+                appBar: LuxuryAppBar(
+                  title: 'Invalid Job',
+                  showBackButton: true,
+                  onBackPressed: () => context.go('/jobs'),
+                ),
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          'Invalid job ID: $jobId',
+                          style: const TextStyle(color: ChoiceLuxTheme.platinumSilver),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        ElevatedButton(
+                          onPressed: () => context.go('/jobs'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: ChoiceLuxTheme.richGold,
+                            foregroundColor: Colors.black,
+                          ),
+                          child: const Text('Back to Jobs'),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              );
+            }
+
             final placeholderJob = Job(
               id: parsedJobId,
               jobNumber: 'JOB-$jobId',
@@ -485,6 +518,21 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
           },
         ),
         GoRoute(
+          path: '/insights/driver',
+          name: 'insights-driver',
+          builder: (context, state) {
+            final id = state.uri.queryParameters['id'];
+            if (id == null || id.isEmpty) {
+              return const InsightsScreen();
+            }
+            final name = state.uri.queryParameters['name'] ?? '';
+            return DriverDetailInsightsScreen(
+              driverId: id,
+              driverName: Uri.decodeComponent(name),
+            );
+          },
+        ),
+        GoRoute(
           path: '/insights/jobs',
           name: 'insights-jobs',
           builder: (context, state) {
@@ -562,6 +610,38 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
                   ),
                   textAlign: TextAlign.center,
                 ),
+                if (state.error != null) ...[
+                  const SizedBox(height: 24),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.black26,
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: SelectableText(
+                      state.error.toString(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontFamily: 'monospace',
+                      ),
+                    ),
+                  ),
+                  if (kDebugMode &&
+                      state.error is Error &&
+                      (state.error! as Error).stackTrace != null) ...[
+                    const SizedBox(height: 12),
+                    SelectableText(
+                      (state.error! as Error).stackTrace.toString(),
+                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 11,
+                        fontFamily: 'monospace',
+                      ),
+                      maxLines: 12,
+                    ),
+                  ],
+                ],
                 const SizedBox(height: 32),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,

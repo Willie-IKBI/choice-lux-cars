@@ -169,6 +169,7 @@ class JobsInsightsTab extends ConsumerWidget {
           value: insights.totalJobs.toString(),
           icon: Icons.work_outlined,
           iconColor: ChoiceLuxTheme.infoColor,
+          helpText: 'Total number of jobs in the selected period and location filters.',
           onTap: () {
             final uri = Uri(
               path: '/insights/jobs',
@@ -186,6 +187,7 @@ class JobsInsightsTab extends ConsumerWidget {
           value: insights.completedJobs.toString(),
           icon: Icons.check_circle_outline,
           iconColor: ChoiceLuxTheme.successColor,
+          helpText: 'Number of jobs that have been completed in the selected period. Used to track delivery volume.',
           onTap: () {
             final uri = Uri(
               path: '/insights/jobs',
@@ -203,6 +205,7 @@ class JobsInsightsTab extends ConsumerWidget {
           value: insights.openJobs.toString(),
           icon: Icons.hourglass_empty,
           iconColor: ChoiceLuxTheme.orange,
+          helpText: 'Number of jobs not yet completed (open or in progress). Helps monitor current workload.',
           onTap: () {
             final uri = Uri(
               path: '/insights/jobs',
@@ -220,6 +223,7 @@ class JobsInsightsTab extends ConsumerWidget {
           value: '${(insights.completionRate * 100).toStringAsFixed(0)}%',
           icon: Icons.trending_up,
           iconColor: ChoiceLuxTheme.richGold,
+          helpText: 'Percentage of jobs completed out of total jobs in the period. Used to track delivery performance.',
         ),
       ],
     );
@@ -291,6 +295,7 @@ class JobsInsightsTab extends ConsumerWidget {
                     : 'N/A',
                 icon: Icons.schedule,
                 iconColor: ChoiceLuxTheme.infoColor,
+                helpText: 'Average number of days from job start to completion. Helps assess how quickly jobs are delivered.',
               ),
             ),
             SizedBox(width: spacing),
@@ -302,6 +307,7 @@ class JobsInsightsTab extends ConsumerWidget {
                     : 'N/A',
                 icon: Icons.timer,
                 iconColor: ChoiceLuxTheme.successColor,
+                helpText: 'Percentage of completed jobs that were delivered on or before the due date. Used to monitor service reliability.',
               ),
             ),
           ],
@@ -338,18 +344,21 @@ class JobsInsightsTab extends ConsumerWidget {
               value: '${insights.averageTimeToStart.toStringAsFixed(1)}d',
               icon: Icons.play_arrow,
               iconColor: ChoiceLuxTheme.infoColor,
+              helpText: 'Average number of days from job creation to when work started. Helps spot scheduling delays.',
             ),
             OpsKpiTile(
               label: 'Starting Today',
               value: insights.jobsStartingToday.toString(),
               icon: Icons.today,
               iconColor: Colors.blue,
+              helpText: 'Count of jobs scheduled to start today. Useful for daily capacity planning.',
             ),
             OpsKpiTile(
               label: 'Starting Tomorrow',
               value: insights.jobsStartingTomorrow.toString(),
               icon: Icons.calendar_today,
               iconColor: Colors.purple,
+              helpText: 'Count of jobs scheduled to start tomorrow. Helps plan ahead for resource allocation.',
             ),
             OpsKpiTile(
               label: 'Overdue Jobs',
@@ -357,6 +366,7 @@ class JobsInsightsTab extends ConsumerWidget {
               icon: Icons.warning_amber_outlined,
               iconColor: ChoiceLuxTheme.errorColor,
               isProblem: insights.overdueJobs > 0,
+              helpText: 'Number of jobs past their due date and not yet completed. Requires attention to avoid client impact.',
             ),
           ],
         ),
@@ -381,6 +391,7 @@ class JobsInsightsTab extends ConsumerWidget {
           icon: Icons.person_off,
           iconColor: ChoiceLuxTheme.orange,
           isProblem: insights.unassignedJobs > 0,
+          helpText: 'Number of jobs that do not yet have a driver or resource assigned. High numbers may indicate staffing or scheduling gaps.',
         ),
       ),
     );

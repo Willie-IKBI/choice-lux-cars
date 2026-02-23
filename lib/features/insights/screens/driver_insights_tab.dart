@@ -2,8 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/driver_insights_provider.dart';
+import 'package:choice_lux_cars/features/insights/widgets/star_rating_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
 
@@ -27,14 +29,14 @@ class DriverInsightsTab extends ConsumerWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       child: driverInsightsAsync.when(
-        data: (insights) => _buildDriverContent(insights),
+        data: (insights) => _buildDriverContent(context, insights),
         loading: () => _buildLoadingState(),
         error: (error, stack) => _buildErrorState(error.toString()),
       ),
     );
   }
 
-  Widget _buildDriverContent(DriverInsights insights) {
+  Widget _buildDriverContent(BuildContext context, DriverInsights insights) {
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -148,6 +150,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.people_outline,
                     iconColor: ChoiceLuxTheme.richGold,
                     progressValue: 1.0,
+                    helpText: 'Total number of drivers in the selected period and location.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -158,6 +161,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.totalDrivers > 0 
                         ? (insights.activeDrivers / insights.totalDrivers).clamp(0.0, 1.0)
                         : 0.0,
+                    helpText: 'Drivers who have completed at least one job in the period. Indicates engaged workforce size.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -166,6 +170,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.work_outline,
                     iconColor: Colors.blue,
                     progressValue: insights.averageJobsPerDriver > 0 ? 1.0 : 0.0,
+                    helpText: 'Average number of jobs completed per active driver. Used to compare workload and productivity.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -174,6 +179,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: insights.averageRevenuePerDriver > 0 ? 1.0 : 0.0,
+                    helpText: 'Average revenue generated per active driver in the period. Helps assess driver contribution.',
                   ),
                 ],
               );
@@ -223,6 +229,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.people,
                     iconColor: Colors.blue,
                     progressValue: insights.driverUtilizationRate / 100,
+                    helpText: 'Percentage of drivers who completed at least one job in the period. Measures how much of the fleet is actively used.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -231,6 +238,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.person_off,
                     iconColor: Colors.orange,
                     progressValue: insights.unassignedJobsCount > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs without a driver assigned. High values may indicate staffing or scheduling gaps.',
                   ),
                 ],
               );
@@ -282,6 +290,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.timer,
                     iconColor: Colors.blue,
                     progressValue: insights.averageJobCompletionTime > 0 ? 1.0 : 0.0,
+                    helpText: 'Average hours from job start to completion. Used to monitor delivery speed.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -292,6 +301,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.access_time,
                     iconColor: Colors.green,
                     progressValue: insights.averageTimeToPickup > 0 ? 1.0 : 0.0,
+                    helpText: 'Average minutes from job assignment to driver pickup. Tracks responsiveness.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -302,6 +312,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.check_circle_outline,
                     iconColor: Colors.green,
                     progressValue: insights.onTimePickupRate / 100,
+                    helpText: 'Percentage of jobs where the driver arrived at pickup within the allowed window. Monitors service reliability.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -312,6 +323,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.payment,
                     iconColor: Colors.purple,
                     progressValue: insights.paymentCollectionRate / 100,
+                    helpText: 'Percentage of jobs where payment was collected. Used to track revenue capture.',
                   ),
                 ],
               );
@@ -361,6 +373,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.calendar_today,
                     iconColor: Colors.blue,
                     progressValue: insights.jobsCompletedThisWeek > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs completed in the current calendar week. Weekly activity snapshot.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -369,6 +382,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.calendar_month,
                     iconColor: Colors.purple,
                     progressValue: insights.jobsCompletedThisMonth > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs completed in the current calendar month. Monthly delivery volume.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -377,6 +391,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.work,
                     iconColor: Colors.orange,
                     progressValue: insights.activeJobsNow > 0 ? 1.0 : 0.0,
+                    helpText: 'Jobs currently in progress (started but not yet completed). Current workload indicator.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -385,6 +400,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     icon: Icons.play_arrow,
                     iconColor: Colors.green,
                     progressValue: insights.jobsStartedToday > 0 ? 1.0 : 0.0,
+                    helpText: 'Jobs that were started today. Daily activity measure.',
                   ),
                 ],
               );
@@ -404,19 +420,19 @@ class DriverInsightsTab extends ConsumerWidget {
           ),
           const SizedBox(height: 24),
 
-          // Top Drivers
-          if (insights.topDrivers.isNotEmpty) ...[
-            _buildSectionHeader('Top Performing Drivers'),
+          // All drivers (sorted by rating)
+          if (insights.allDrivers.isNotEmpty) ...[
+            _buildSectionHeader('All drivers'),
+            const SizedBox(height: 4),
+            Text(
+              'Sorted by rating (highest to lowest)',
+              style: TextStyle(
+                fontSize: 14,
+                color: ChoiceLuxTheme.platinumSilver,
+              ),
+            ),
             const SizedBox(height: 16),
-            _buildTopDriversCard(insights.topDrivers),
-          ],
-          const SizedBox(height: 24),
-
-          // Sprint 1: Bottom Performers
-          if (insights.bottomPerformers.isNotEmpty) ...[
-            _buildSectionHeader('Bottom Performers'),
-            const SizedBox(height: 16),
-            _buildTopDriversCard(insights.bottomPerformers),
+            _buildTopDriversCard(context, insights.allDrivers),
           ],
         ],
       ),
@@ -442,6 +458,7 @@ class DriverInsightsTab extends ConsumerWidget {
     required Color iconColor,
     required double progressValue,
     String? trendIndicator,
+    String? helpText,
     VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -532,16 +549,35 @@ class DriverInsightsTab extends ConsumerWidget {
           ),
           SizedBox(height: valueSpacing),
           // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: labelFontSize,
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w400,
+          if (helpText != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: labelFontSize,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                MetricHelpIcon(explanation: helpText!),
+              ],
+            )
+          else
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: labelFontSize,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           SizedBox(height: labelSpacing),
           // Progress bar at bottom
           Container(
@@ -638,7 +674,7 @@ class DriverInsightsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildTopDriversCard(List<TopDriver> topDrivers) {
+  Widget _buildTopDriversCard(BuildContext context, List<TopDriver> topDrivers) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -660,7 +696,7 @@ class DriverInsightsTab extends ConsumerWidget {
               ),
               const SizedBox(width: 12),
               Text(
-                'Top Performers',
+                'Drivers',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
@@ -670,17 +706,25 @@ class DriverInsightsTab extends ConsumerWidget {
             ],
           ),
           const SizedBox(height: 16),
-          ...topDrivers.take(5).map((driver) => _buildDriverItem(driver)),
+          ...topDrivers.map((driver) => _buildDriverItem(context, driver)),
         ],
       ),
     );
   }
 
-  Widget _buildDriverItem(TopDriver driver) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+  Widget _buildDriverItem(BuildContext context, TopDriver driver) {
+    return GestureDetector(
+      onTap: () {
+        context.push(
+          '/insights/driver?id=${Uri.encodeComponent(driver.driverId)}&name=${Uri.encodeComponent(driver.driverName)}',
+        );
+      },
+      child: MouseRegion(
+        cursor: SystemMouseCursors.click,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 8),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
         color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
         borderRadius: BorderRadius.circular(8),
         border: Border.all(
@@ -719,6 +763,23 @@ class DriverInsightsTab extends ConsumerWidget {
                     fontSize: 12,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    StarRatingBar(rating: driver.averageRating, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      driver.ratingTripCount > 0
+                          ? '(${driver.ratingTripCount} trip${driver.ratingTripCount == 1 ? '' : 's'})'
+                          : 'No rating yet',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                        fontSize: 11,
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
           ),
@@ -731,6 +792,8 @@ class DriverInsightsTab extends ConsumerWidget {
           ),
         ],
       ),
+      ),
+    ),
     );
   }
 

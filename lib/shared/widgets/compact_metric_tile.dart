@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 /// Compact metric tile for displaying simple metrics (numbers with labels)
@@ -16,6 +17,7 @@ class CompactMetricTile extends StatelessWidget {
   final Color? iconColor;
   final Color? backgroundColor;
   final VoidCallback? onTap;
+  final String? helpText;
 
   const CompactMetricTile({
     super.key,
@@ -25,6 +27,7 @@ class CompactMetricTile extends StatelessWidget {
     this.iconColor,
     this.backgroundColor,
     this.onTap,
+    this.helpText,
   });
 
   @override
@@ -105,16 +108,35 @@ class CompactMetricTile extends StatelessWidget {
                       ),
                       SizedBox(height: adjustedColumnSpacing),
                       // Label - allow wrapping
-                      Text(
-                        label,
-                        style: TextStyle(
-                          fontSize: adjustedLabelFontSize,
-                          color: ChoiceLuxTheme.platinumSilver,
-                          fontWeight: FontWeight.w500,
+                      if (helpText != null)
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                label,
+                                style: TextStyle(
+                                  fontSize: adjustedLabelFontSize,
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            MetricHelpIcon(explanation: helpText!),
+                          ],
+                        )
+                      else
+                        Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: adjustedLabelFontSize,
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        maxLines: 2, // Changed from 1 to 2
-                        overflow: TextOverflow.ellipsis,
-                      ),
                     ],
                   ),
                 ),
@@ -195,17 +217,38 @@ class CompactMetricTile extends StatelessWidget {
                 ),
                 SizedBox(height: adjustedSmallSpacing),
                 // Label - allow wrapping
-                Text(
-                  label,
-                  style: TextStyle(
-                    fontSize: adjustedLabelFontSize,
-                    color: ChoiceLuxTheme.platinumSilver,
-                    fontWeight: FontWeight.w500,
+                if (helpText != null)
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Flexible(
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: adjustedLabelFontSize,
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      MetricHelpIcon(explanation: helpText!),
+                    ],
+                  )
+                else
+                  Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: adjustedLabelFontSize,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontWeight: FontWeight.w500,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    textAlign: TextAlign.center,
                   ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.center,
-                ),
               ],
             ),
           );

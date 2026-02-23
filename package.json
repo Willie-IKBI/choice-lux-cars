@@ -1,7 +1,8 @@
 {
   "scripts": {
     "inject-firebase": "node scripts/inject-firebase-config.js",
-    "prebuild:web": "npm run inject-firebase"
+    "prebuild:web": "npm run inject-firebase",
+    "preview": "powershell -ExecutionPolicy Bypass -File ./scripts/preview-web.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.89.0",

@@ -3,21 +3,20 @@
 /// These values are loaded from --dart-define flags at build time
 /// to avoid hardcoding sensitive information in the source code.
 class Env {
-  /// Supabase configuration
-  /// Production Supabase instance
+  /// Supabase configuration (required via --dart-define at build time)
   static const supabaseUrl = String.fromEnvironment(
     'SUPABASE_URL',
-    defaultValue: 'https://hgqrbekphumdlsifuamq.supabase.co',
+    defaultValue: '',
   );
   static const supabaseAnonKey = String.fromEnvironment(
     'SUPABASE_ANON_KEY',
-    defaultValue: 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImhncXJiZWtwaHVtZGxzaWZ1YW1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3Mjc1MTc2NjgsImV4cCI6MjA0MzA5MzY2OH0.zXwuDm3KzLHiF31CsDIsHrrlYnjCweqnNjFZ90AiK1I',
+    defaultValue: '',
   );
 
   /// Firebase configuration
   static const firebaseApiKey = String.fromEnvironment(
     'FIREBASE_API_KEY',
-    defaultValue: 'AIzaSyB90cDtsNrH4pomnp8n4Dd7qU_lcLJl0g4',
+    defaultValue: '',
   );
   static const firebaseProjectId = String.fromEnvironment(
     'FIREBASE_PROJECT_ID',

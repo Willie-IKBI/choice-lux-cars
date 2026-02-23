@@ -79,45 +79,35 @@ lib/
    flutter pub get
    ```
 
-3. **Configure Supabase**
-   - Update `lib/core/constants.dart` with your Supabase URL and anon key
+3. **Configure Supabase and Firebase**
+   - Set environment variables (or use `--dart-define`) for API keys
+   - See [GOOGLE_MAPS_SETUP.md](GOOGLE_MAPS_SETUP.md) for Firebase and Maps setup
    - Set up your database tables (see Database Schema below)
 
-4. **Configure Firebase (for FCM)**
-   - Add your Firebase configuration files
-   - Set up Firebase Cloud Messaging
-
-5. **Run the app**
+4. **Run the app**
    ```bash
-   flutter run
+   # Set env vars then run, or use run_production.ps1 (Windows)
+   $env:SUPABASE_URL="https://xxx.supabase.co"
+   $env:SUPABASE_ANON_KEY="your_anon_key"
+   $env:FIREBASE_API_KEY="your_firebase_key"
+   $env:FIREBASE_VAPID_KEY="your_vapid_key"   # required for web push
+   flutter run -d chrome
    ```
 
 ### Environment Configuration
 
-The app uses `--dart-define` flags to securely configure API keys and URLs. Run the app with these flags:
+The app uses `--dart-define` flags (or environment variables via build scripts). Required for all platforms:
 
-```bash
-flutter run --dart-define=SUPABASE_URL=your_supabase_url \
-  --dart-define=SUPABASE_ANON_KEY=your_supabase_anon_key \
-  --dart-define=FIREBASE_API_KEY=your_firebase_api_key \
-  --dart-define=FIREBASE_PROJECT_ID=your_firebase_project_id \
-  --dart-define=FIREBASE_APP_ID=your_firebase_app_id \
-  --dart-define=FIREBASE_SENDER_ID=your_firebase_sender_id \
-  --dart-define=FIREBASE_AUTH_DOMAIN=your_firebase_auth_domain \
-  --dart-define=FIREBASE_STORAGE_BUCKET=your_firebase_storage_bucket
-```
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anonymous/public key
+- `FIREBASE_API_KEY` - Firebase API key
+- `FIREBASE_VAPID_KEY` - **Required for web push** (from Firebase Console → Cloud Messaging → Web push certificates)
 
-**Required Environment Variables:**
-- `SUPABASE_URL`: Your Supabase project URL
-- `SUPABASE_ANON_KEY`: Your Supabase anonymous/public key
-- `FIREBASE_API_KEY`: Your Firebase API key
-- `FIREBASE_PROJECT_ID`: Your Firebase project ID
-- `FIREBASE_APP_ID`: Your Firebase app ID
-- `FIREBASE_SENDER_ID`: Your Firebase messaging sender ID
-- `FIREBASE_AUTH_DOMAIN`: Your Firebase auth domain
-- `FIREBASE_STORAGE_BUCKET`: Your Firebase storage bucket
+Optional: `FIREBASE_PROJECT_ID`, `FIREBASE_APP_ID`, `FIREBASE_SENDER_ID`, `FIREBASE_AUTH_DOMAIN`, `FIREBASE_STORAGE_BUCKET`
 
-> **Note**: Never commit API keys or sensitive configuration to version control. The app is configured to load these values from build-time flags.
+Use `run_production.ps1` (reads from env) or pass flags directly. See [scripts/README.md](scripts/README.md) and [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md) for Vercel deployment.
+
+> **Note**: Never commit API keys or sensitive configuration to version control.
 
 ## 🗄️ Database Schema
 
@@ -212,17 +202,21 @@ flutter build apk --release
 
 ### Web
 ```bash
-flutter build web --release
+# Set env vars first (FIREBASE_API_KEY, FIREBASE_VAPID_KEY, GOOGLE_MAPS_API_KEY, SUPABASE_URL, SUPABASE_ANON_KEY)
+./scripts/build-web.sh
+# or on Windows: .\scripts\build-web.ps1
 ```
+
+### Test Production Build Locally (Before Deploy)
+```powershell
+# Set env vars first, then:
+.\scripts\preview-web.ps1
+# or: npm run preview
+```
+Builds and serves at `http://localhost:3000` for manual testing before deploying.
 
 ### Deploy to Vercel
-The web app is deployed to [Vercel](https://vercel.com). Connect your repository in the Vercel dashboard; builds use the `vercel.json` configuration (Flutter SDK install, Firebase config injection, and SPA rewrites).
-
-```bash
-# Or deploy manually with Vercel CLI (after building locally)
-npm run prebuild:web && flutter build web --release
-vercel deploy --prebuilt build/web --prod
-```
+The web app is deployed to [Vercel](https://vercel.com). Connect your repository; builds use `scripts/vercel-build.sh`. **Set all required env vars** in Vercel Project Settings (see [docs/VERCEL_DEPLOYMENT.md](docs/VERCEL_DEPLOYMENT.md)).
 
 ### Live Demo
 - **Web App**: https://choice-lux-cars-app.vercel.app

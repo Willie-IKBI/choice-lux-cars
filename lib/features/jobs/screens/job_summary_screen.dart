@@ -25,6 +25,8 @@ import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons
 import 'package:choice_lux_cars/features/vouchers/widgets/voucher_action_buttons.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/job_stops_map_widget.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
+import 'package:choice_lux_cars/features/insights/providers/driver_rating_provider.dart';
+import 'package:choice_lux_cars/features/insights/widgets/star_rating_bar.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -88,14 +90,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
   }
 
-  // Mobile accordion state
+  // Mobile accordion state (all collapsed by default)
   final Map<String, bool> _expandedSections = {
-    'jobDetails': true,
-    'clientAgent': true,
-    'vehicleDriver': true,
-    'payment': true,
-    'trips': true,
-    'stepTimeline': true, // New section for step timeline
+    'jobDetails': false,
+    'clientAgent': false,
+    'vehicleDriver': false,
+    'payment': false,
+    'stepTimeline': false,
+    'routeMap': false,
+    'notes': false,
+    'trips': false,
+    'tripDetails': false,
   };
 
   @override
@@ -132,13 +137,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       final jobsState = ref.read(jobsProvider);
       Job? job;
 
-      if (jobsState.hasValue) {
-        try {
-          job = jobsState.value!.firstWhere((job) => job.id == widget.jobId);
-          Log.d('Found job ${widget.jobId} in local state');
-        } catch (e) {
-          Log.d('Job ${widget.jobId} not found in local state');
-        }
+      if (jobsState.hasValue && jobsState.value != null) {
+        final matching = jobsState.value!.where((j) => j.id.toString() == widget.jobId).toList();
+        job = matching.isEmpty ? null : matching.first;
+        if (job != null) Log.d('Found job ${widget.jobId} in local state');
       }
 
       if (job == null) {
@@ -173,7 +175,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         Log.d('Trips state isLoading: ${tripsState.isLoading}');
         Log.d('Trips state hasError: ${tripsState.hasError}');
         
-        if (tripsState.hasValue) {
+        if (tripsState.hasValue && tripsState.value != null) {
           _trips = tripsState.value!;
           Log.d('Loaded ${_trips.length} trips for job ${widget.jobId}');
           Log.d('Trip details: ${_trips.map((t) => 'ID: ${t.id}, JobID: ${t.jobId}').join(', ')}');
@@ -275,16 +277,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     // Watch jobs provider to automatically update when job data changes
     final jobsState = ref.watch(jobsProvider);
     
-    // Update local job data when jobs provider changes
+    // Update local job data when jobs provider changes (safe lookup, no throw)
     if (jobsState.hasValue && jobsState.value != null) {
-      try {
-        final updatedJob = jobsState.value!.firstWhere((job) => job.id.toString() == widget.jobId);
-        if (updatedJob != _job) {
-          _job = updatedJob;
-          Log.d('Job data updated from jobs provider: ${_job?.driverConfirmation}');
-        }
-      } catch (e) {
-        Log.d('Job ${widget.jobId} not found in jobs provider state');
+      final matching = jobsState.value!.where((j) => j.id.toString() == widget.jobId).toList();
+      final updatedJob = matching.isEmpty ? null : matching.first;
+      if (updatedJob != null && updatedJob != _job) {
+        _job = updatedJob;
+        Log.d('Job data updated from jobs provider: ${_job?.driverConfirmation}');
       }
     }
     
@@ -529,7 +528,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       ),
       child: ExpansionTile(
         key: Key(key),
-        initiallyExpanded: _expandedSections[key] ?? true,
+        initiallyExpanded: _expandedSections[key] ?? false,
         onExpansionChanged: (expanded) {
           setState(() {
             _expandedSections[key] = expanded;
@@ -812,7 +811,103 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           _formatLuggageCount(_job!.luggageCount),
           Icons.work,
         ),
+        if (_job?.driverId != null && _job!.driverId.isNotEmpty)
+          _buildDetailRow(
+            'Driver confirmed',
+            _job!.isConfirmed == true || _job!.driverConfirmation == true
+                ? (_job!.confirmedAt != null
+                    ? 'Yes (${_formatTripDate(_job!.confirmedAt!)})'
+                    : 'Yes')
+                : 'Awaiting confirmation',
+            _job!.isConfirmed == true || _job!.driverConfirmation == true
+                ? Icons.check_circle
+                : Icons.pending,
+          ),
+        if (_job?.driverId != null && _job!.driverId.isNotEmpty) ...[
+          _buildDriverRatingThisJobRow(),
+          _buildDriverRatingOverallRow(),
+        ],
       ],
+    );
+  }
+
+  Widget _buildDriverRatingThisJobRow() {
+    final jobId = int.tryParse(widget.jobId) ?? 0;
+    if (jobId == 0) return const SizedBox.shrink();
+    final jobRatingAsync = ref.watch(jobDriverRatingProvider(jobId));
+    return jobRatingAsync.when(
+      data: (result) => _buildDetailRowWithWidget(
+        'Driver rating (this job)',
+        result.avg != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StarRatingBar(rating: result.avg, size: 14),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(${result.count} trip${result.count == 1 ? '' : 's'})',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                ],
+              )
+            : const Text(
+                'No rating yet',
+                style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+              ),
+        Icons.star,
+      ),
+      loading: () => _buildDetailRowWithWidget('Driver rating (this job)', const Text('…', style: TextStyle(fontSize: 14)), Icons.star),
+      error: (_, __) => _buildDetailRowWithWidget('Driver rating (this job)', const Text('—', style: TextStyle(fontSize: 14)), Icons.star),
+    );
+  }
+
+  Widget _buildDriverRatingOverallRow() {
+    final driverRatingAsync = ref.watch(driverRatingProvider(_job!.driverId));
+    return driverRatingAsync.when(
+      data: (result) => _buildDetailRowWithWidget(
+        'Driver overall rating',
+        result.avg != null
+            ? Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  StarRatingBar(rating: result.avg, size: 14),
+                  const SizedBox(width: 8),
+                  Text(
+                    '(last ${result.count} trip${result.count == 1 ? '' : 's'})',
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                  ),
+                ],
+              )
+            : const Text('—', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
+        Icons.star,
+      ),
+      loading: () => _buildDetailRowWithWidget('Driver overall rating', const Text('…', style: TextStyle(fontSize: 14)), Icons.star),
+      error: (_, __) => _buildDetailRowWithWidget('Driver overall rating', const Text('—', style: TextStyle(fontSize: 14)), Icons.star),
+    );
+  }
+
+  Widget _buildDetailRowWithWidget(String label, Widget value, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 6),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey),
+          const SizedBox(width: 8),
+          SizedBox(
+            width: 120,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                fontWeight: FontWeight.w500,
+                color: Colors.grey,
+                fontSize: 14,
+              ),
+            ),
+          ),
+          Expanded(child: value),
+        ],
+      ),
     );
   }
 
@@ -1914,10 +2009,22 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     // Get user role for hiding amounts
     final userProfile = ref.watch(currentUserProfileProvider);
     final isDriver = userProfile?.role?.toLowerCase() == 'driver';
-    
+
+    // Total distance from driver flow (odo readings)
+    final startOdo = _driverFlowData?['odo_start_reading'];
+    final endOdo = _driverFlowData?['job_closed_odo'];
+    final totalDistanceStr = (startOdo != null && endOdo != null)
+        ? '${((endOdo as num) - (startOdo as num)).toStringAsFixed(1)} km'
+        : '—';
+
+    // Total duration from step timestamps
+    final totalDurationStr = _computeTotalDuration() ?? '—';
+
     return Column(
       children: [
         _buildDetailRow('Total Trips', '${_trips.length}', Icons.route),
+        _buildDetailRow('Total Distance', totalDistanceStr, Icons.route),
+        _buildDetailRow('Total Trip Duration', totalDurationStr, Icons.timer_outlined),
         if (!isDriver)
           Container(
             margin: const EdgeInsets.only(top: 8),
@@ -2186,6 +2293,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         currentUser?.role?.toLowerCase() == 'super_admin';
     final jobNotCompleted = _job?.status != null && _job!.status != 'completed';
     final canAdminClose = canCloseJob && jobNotCompleted;
+    final shouldShowDriverFlow = _job != null &&
+        DriverFlowUtils.shouldShowDriverFlowButton(
+          currentUserId: currentUser?.id,
+          jobDriverId: _job?.driverId,
+          jobStatus: _job!.statusEnum,
+          isJobConfirmed: isConfirmed,
+        );
 
     return Column(
       children: [
@@ -2265,11 +2379,22 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               const SizedBox(width: 16),
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: null, // Disabled after confirmation
-                  icon: const Icon(Icons.check_circle),
-                  label: const Text('Job Confirmed'),
+                  onPressed: shouldShowDriverFlow
+                      ? () => context.go(DriverFlowUtils.getDriverFlowRoute(
+                            int.parse(widget.jobId),
+                            _job!.statusEnum,
+                          ))
+                      : null,
+                  icon: Icon(shouldShowDriverFlow
+                      ? Icons.play_arrow
+                      : Icons.check_circle),
+                  label: Text(shouldShowDriverFlow
+                      ? DriverFlowUtils.getDriverFlowText(_job!.statusEnum)
+                      : 'Job Confirmed'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.grey, // Different color for confirmed state
+                    backgroundColor: shouldShowDriverFlow
+                        ? Colors.green
+                        : Colors.grey,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
@@ -2305,7 +2430,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             children: [
               Expanded(
                 child: ElevatedButton.icon(
-                  onPressed: () => context.go('/trip-management/${widget.jobId}'),
+                  onPressed: () => context.go('/jobs/${widget.jobId}/trip-management'),
                   icon: const Icon(Icons.list_alt),
                   label: const Text('View All Trips'),
                   style: ElevatedButton.styleFrom(
@@ -2382,6 +2507,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         currentUser?.role?.toLowerCase() == 'super_admin';
     final jobNotCompleted = _job?.status != null && _job!.status != 'completed';
     final canAdminClose = canCloseJob && jobNotCompleted;
+    final shouldShowDriverFlow = _job != null &&
+        DriverFlowUtils.shouldShowDriverFlowButton(
+          currentUserId: currentUser?.id,
+          jobDriverId: _job?.driverId,
+          jobStatus: _job!.statusEnum,
+          isJobConfirmed: isConfirmed,
+        );
 
     return Column(
       children: [
@@ -2461,11 +2593,22 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: null, // Disabled after confirmation
-              icon: const Icon(Icons.check_circle),
-              label: const Text('Job Confirmed'),
+              onPressed: shouldShowDriverFlow
+                  ? () => context.go(DriverFlowUtils.getDriverFlowRoute(
+                        int.parse(widget.jobId),
+                        _job!.statusEnum,
+                      ))
+                  : null,
+              icon: Icon(shouldShowDriverFlow
+                  ? Icons.play_arrow
+                  : Icons.check_circle),
+              label: Text(shouldShowDriverFlow
+                  ? DriverFlowUtils.getDriverFlowText(_job!.statusEnum)
+                  : 'Job Confirmed'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.grey, // Different color for confirmed state
+                backgroundColor: shouldShowDriverFlow
+                    ? Colors.green
+                    : Colors.grey,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
@@ -2499,7 +2642,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           SizedBox(
             width: double.infinity,
             child: ElevatedButton.icon(
-              onPressed: () => context.go('/trip-management/${widget.jobId}'),
+              onPressed: () => context.go('/jobs/${widget.jobId}/trip-management'),
               icon: const Icon(Icons.list_alt),
               label: const Text('View All Trips'),
               style: ElevatedButton.styleFrom(
@@ -2769,53 +2912,31 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
   }
 
-  /// Computes total trip duration from first completed step to final completion.
-  /// Returns display string or null to hide the duration tile.
-  /// startTime: vehicle_collected_at > vehicle_time > job_started_at > earliest completed step
-  /// endTime: job_closed_time > job.updatedAt (when completed) > last_activity_at > latest completed step
+  /// Computes total trip duration from first to last recorded timestamp.
+  /// Uses all available timestamps from driver_flow and job so duration shows whenever data exists.
   String? _computeTotalDuration() {
     final df = _driverFlowData;
     if (df == null) return null;
 
-    final vehicleCollectedAt = _parseTimestamp(df['vehicle_collected_at']) ??
-        _parseTimestamp(df['vehicle_time']); // Legacy column fallback
-    final jobStartedAt = _parseTimestamp(df['job_started_at']);
-    final pickupArriveTime = _parseTimestamp(df['pickup_arrive_time']);
-    final passengerOnboardAt = _parseTimestamp(df['passenger_onboard_at']);
-    final dropoffArriveAt = _parseTimestamp(df['dropoff_arrive_at']);
-    final tripCompleteAt = _parseTimestamp(df['trip_complete_at']);
-    final jobClosedTime = _parseTimestamp(df['job_closed_time']);
-    final lastActivityAt = _parseTimestamp(df['last_activity_at']);
-    final jobUpdatedAt = _job?.updatedAt;
-
-    final completedStepTimes = [
-      vehicleCollectedAt,
-      pickupArriveTime,
-      passengerOnboardAt,
-      dropoffArriveAt,
-      tripCompleteAt,
+    final allTimes = <DateTime?>[
+      _parseTimestamp(df['vehicle_collected_at']),
+      _parseTimestamp(df['vehicle_time']),
+      _parseTimestamp(df['job_started_at']),
+      _parseTimestamp(df['pickup_arrive_time']),
+      _parseTimestamp(df['passenger_onboard_at']),
+      _parseTimestamp(df['dropoff_arrive_at']),
+      _parseTimestamp(df['trip_complete_at']),
+      _parseTimestamp(df['job_closed_time']),
+      _parseTimestamp(df['last_activity_at']),
+      if (_job?.updatedAt != null) _job!.updatedAt!,
     ].whereType<DateTime>().toList();
 
-    DateTime? startTime = vehicleCollectedAt ??
-        jobStartedAt ??
-        (completedStepTimes.isEmpty ? null : completedStepTimes.reduce((a, b) => a.isBefore(b) ? a : b));
+    if (allTimes.isEmpty) return null;
+    final startTime = allTimes.reduce((a, b) => a.isBefore(b) ? a : b);
+    final endTime = allTimes.reduce((a, b) => a.isAfter(b) ? a : b);
+    if (startTime == endTime) return 'In progress';
 
-    DateTime? endTime = jobClosedTime;
-    if (endTime == null && _job?.status == 'completed' && jobUpdatedAt != null) {
-      endTime = jobUpdatedAt;
-    }
-    if (endTime == null && lastActivityAt != null) {
-      endTime = lastActivityAt;
-    }
-    if (endTime == null && completedStepTimes.isNotEmpty) {
-      endTime = completedStepTimes.reduce((a, b) => a.isAfter(b) ? a : b);
-    }
-
-    if (startTime == null && endTime == null) return null;
-    if (startTime != null && endTime == null) return 'In progress';
-    if (startTime == null && endTime != null) return null;
-
-    final duration = endTime!.difference(startTime!);
+    final duration = endTime.difference(startTime);
     if (duration.isNegative) return '—';
 
     final hours = duration.inHours;

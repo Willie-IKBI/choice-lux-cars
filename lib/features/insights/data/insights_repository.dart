@@ -3,6 +3,7 @@ import 'package:supabase_flutter/supabase_flutter.dart' hide AuthException;
 import 'package:choice_lux_cars/core/supabase/supabase_client_provider.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/models/client_statement_data.dart';
+import 'package:choice_lux_cars/features/insights/data/driver_rating_service.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/types/result.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
@@ -815,10 +816,10 @@ class InsightsRepository {
       final totalDrivers = driversResponse.length;
       final activeDrivers = driversResponse.length; // All drivers are considered active
 
-      // Driver job counts and revenue
+      // Driver job counts and revenue (include created_at for most productive day)
       final driverJobsResponse = await _supabase
           .from('jobs')
-          .select('driver_id, amount')
+          .select('driver_id, amount, created_at')
           .gte('created_at', dateRange.start.toIso8601String())
           .lte('created_at', dateRange.end.toIso8601String())
           .not('driver_id', 'is', null);
@@ -836,6 +837,13 @@ class InsightsRepository {
         }
       }
 
+      // Fetch profiles for every driver_id that appears on jobs (so names resolve for all, not only role=driver)
+      final driverIds = driverStats.keys.toList();
+      final List<Map<String, dynamic>> profilesForNames = driverIds.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await _supabase.from('profiles').select('id, display_name').inFilter('id', driverIds) as List);
+
       // Calculate averages
       final totalJobCount = driverStats.values.fold<int>(0, (sum, stats) => sum + (stats['count'] as int));
       final totalRevenue = driverStats.values.fold<double>(0.0, (sum, stats) => sum + (stats['revenue'] as double));
@@ -843,33 +851,47 @@ class InsightsRepository {
       final averageJobsPerDriver = totalDrivers > 0 ? totalJobCount / totalDrivers : 0.0;
       final averageRevenuePerDriver = totalDrivers > 0 ? totalRevenue / totalDrivers : 0.0;
 
-      // Top drivers
-      final topDrivers = <TopDriver>[];
+      // All drivers with names
+      final allDriversRaw = <TopDriver>[];
       for (final entry in driverStats.entries) {
         final driverId = entry.key;
         final stats = entry.value;
-        final driver = driversResponse.firstWhere(
-          (d) => d['id'] == driverId,
+        final driver = profilesForNames.firstWhere(
+          (d) => d['id'].toString() == driverId,
           orElse: () => {'id': driverId, 'display_name': 'Unknown Driver'},
         );
-        
-        topDrivers.add(TopDriver(
+        allDriversRaw.add(TopDriver(
           driverId: driverId.toString(),
-          driverName: driver['display_name'] ?? 'Unknown Driver',
+          driverName: (driver['display_name']?.toString() ?? 'Unknown Driver'),
           jobCount: stats['count'],
           revenue: stats['revenue'],
         ));
       }
-      
-      // Sort by job count and take top 5
-      topDrivers.sort((a, b) => b.jobCount.compareTo(a.jobCount));
-      final topDriversList = topDrivers.take(5).toList();
 
-      // Sprint 1: Calculate new driver metrics
-      // Bottom performers (lowest job count)
-      final bottomDrivers = List<TopDriver>.from(topDrivers);
-      bottomDrivers.sort((a, b) => a.jobCount.compareTo(b.jobCount));
-      final bottomPerformersList = bottomDrivers.take(5).toList();
+      // Attach ratings for every driver, then sort by rating (highest first), then name
+      final allDriversWithRating = <TopDriver>[];
+      for (final d in allDriversRaw) {
+        final r = await DriverRatingService.getDriverRating(d.driverId);
+        allDriversWithRating.add(TopDriver(
+          driverId: d.driverId,
+          driverName: d.driverName,
+          jobCount: d.jobCount,
+          revenue: d.revenue,
+          averageRating: r.avg,
+          ratingTripCount: r.count,
+        ));
+      }
+      allDriversWithRating.sort((a, b) {
+        final scoreA = a.averageRating ?? 0.0;
+        final scoreB = b.averageRating ?? 0.0;
+        if (scoreB != scoreA) return scoreB.compareTo(scoreA);
+        return a.driverName.compareTo(b.driverName);
+      });
+      final allDrivers = allDriversWithRating;
+      final topDriversWithRating = allDrivers.take(5).toList();
+      final bottomPerformersWithRating = allDrivers.length > 5
+          ? allDrivers.sublist(allDrivers.length - 5).reversed.toList()
+          : <TopDriver>[];
 
       // Driver utilization rate (drivers with jobs / total drivers)
       final driversWithJobs = driverStats.keys.length;
@@ -962,10 +984,10 @@ class InsightsRepository {
 
       // Calculate jobs completed this week
       final weekStart = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
-      weekStart.copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
+      final weekStartNormalized = weekStart.copyWith(hour: 0, minute: 0, second: 0, millisecond: 0);
       final jobsCompletedThisWeek = completedJobs.where((df) {
         final closedTime = DateTime.parse(df['job_closed_time']);
-        return closedTime.isAfter(weekStart);
+        return closedTime.isAfter(weekStartNormalized);
       }).length;
 
       // Calculate jobs completed this month
@@ -1002,13 +1024,19 @@ class InsightsRepository {
       final responseTimes = <double>[];
       for (final job in jobsWithStartTime) {
         final jobId = job['id'];
-        final jobCreated = DateTime.parse(job['created_at']);
+        final jobCreatedRaw = job['created_at'];
+        if (jobCreatedRaw == null) continue;
+        final jobCreated = DateTime.tryParse(jobCreatedRaw.toString());
+        if (jobCreated == null) continue;
         try {
           final flowData = driverFlowResponse.firstWhere(
             (df) => df['job_id'] == jobId && df['job_started_at'] != null,
           );
           if (flowData.isNotEmpty && flowData['job_started_at'] != null) {
-            final started = DateTime.parse(flowData['job_started_at']);
+            final startedRaw = flowData['job_started_at'];
+            if (startedRaw == null) continue;
+            final started = DateTime.tryParse(startedRaw.toString());
+            if (started == null) continue;
             final diff = started.difference(jobCreated).inHours.toDouble();
             if (diff >= 0) {
               responseTimes.add(diff);
@@ -1059,7 +1087,10 @@ class InsightsRepository {
       // Calculate most productive day of week
       final dayJobCounts = <String, int>{};
       for (final job in driverJobsResponse) {
-        final createdAt = DateTime.parse(job['created_at']);
+        final raw = job['created_at'];
+        if (raw == null) continue;
+        final createdAt = DateTime.tryParse(raw.toString());
+        if (createdAt == null) continue;
         final dayName = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'][createdAt.weekday - 1];
         dayJobCounts[dayName] = (dayJobCounts[dayName] ?? 0) + 1;
       }
@@ -1097,10 +1128,11 @@ class InsightsRepository {
         activeDrivers: activeDrivers,
         averageJobsPerDriver: averageJobsPerDriver,
         averageRevenuePerDriver: averageRevenuePerDriver,
-        topDrivers: topDriversList,
+        topDrivers: topDriversWithRating,
         driverUtilizationRate: driverUtilizationRate,
         unassignedJobsCount: unassignedJobsCount,
-        bottomPerformers: bottomPerformersList,
+        bottomPerformers: bottomPerformersWithRating,
+        allDrivers: allDrivers,
         averageJobCompletionTime: averageJobCompletionTime,
         averageTimeToPickup: averageTimeToPickup,
         onTimePickupRate: onTimePickupRate,
@@ -1194,41 +1226,60 @@ class InsightsRepository {
         }
       }
 
+      // Fetch profiles for every driver_id that appears on jobs (so names resolve for all, not only role=driver)
+      final driverIdsLoc = driverStats.keys.toList();
+      final List<Map<String, dynamic>> profilesForNamesLoc = driverIdsLoc.isEmpty
+          ? <Map<String, dynamic>>[]
+          : List<Map<String, dynamic>>.from(
+              await _supabase.from('profiles').select('id, display_name').inFilter('id', driverIdsLoc) as List);
+
       // Calculate averages
       final totalDriverJobs = driverStats.values.fold<int>(0, (sum, stats) => sum + (stats['count'] as int));
       final totalDriverRevenue = driverStats.values.fold<double>(0.0, (sum, stats) => sum + stats['revenue']);
       final averageJobsPerDriver = totalDrivers > 0 ? totalDriverJobs / totalDrivers : 0.0;
       final averageRevenuePerDriver = totalDrivers > 0 ? totalDriverRevenue / totalDrivers : 0.0;
 
-      // Get top drivers
-      final List<TopDriver> topDrivers = [];
+      // All drivers with names
+      final List<TopDriver> allDriversRawLoc = [];
       for (final entry in driverStats.entries) {
         final driverId = entry.key;
         final stats = entry.value;
-        
-        // Get driver name
-        final driver = driversResponse.firstWhere(
+        final driver = profilesForNamesLoc.firstWhere(
           (d) => d['id'].toString() == driverId,
-          orElse: () => {'display_name': 'Unknown Driver'},
+          orElse: () => {'id': driverId, 'display_name': 'Unknown Driver'},
         );
-        
-        topDrivers.add(TopDriver(
+        allDriversRawLoc.add(TopDriver(
           driverId: driverId,
-          driverName: driver['display_name'] ?? 'Unknown Driver',
+          driverName: (driver['display_name']?.toString() ?? 'Unknown Driver'),
           jobCount: stats['count'],
           revenue: stats['revenue'],
         ));
       }
-      
-      // Sort by job count and take top 5
-      topDrivers.sort((a, b) => b.jobCount.compareTo(a.jobCount));
-      final top5Drivers = topDrivers.take(5).toList();
 
-      // Sprint 1: Calculate new driver metrics with location filter
-      // Bottom performers (lowest job count)
-      final bottomDrivers = List<TopDriver>.from(topDrivers);
-      bottomDrivers.sort((a, b) => a.jobCount.compareTo(b.jobCount));
-      final bottomPerformersList = bottomDrivers.take(5).toList();
+      // Attach ratings for every driver, then sort by rating (highest first), then name
+      final allDriversWithRatingLoc = <TopDriver>[];
+      for (final d in allDriversRawLoc) {
+        final r = await DriverRatingService.getDriverRating(d.driverId);
+        allDriversWithRatingLoc.add(TopDriver(
+          driverId: d.driverId,
+          driverName: d.driverName,
+          jobCount: d.jobCount,
+          revenue: d.revenue,
+          averageRating: r.avg,
+          ratingTripCount: r.count,
+        ));
+      }
+      allDriversWithRatingLoc.sort((a, b) {
+        final scoreA = a.averageRating ?? 0.0;
+        final scoreB = b.averageRating ?? 0.0;
+        if (scoreB != scoreA) return scoreB.compareTo(scoreA);
+        return a.driverName.compareTo(b.driverName);
+      });
+      final allDriversLoc = allDriversWithRatingLoc;
+      final top5WithRating = allDriversLoc.take(5).toList();
+      final bottomWithRating = allDriversLoc.length > 5
+          ? allDriversLoc.sublist(allDriversLoc.length - 5).reversed.toList()
+          : <TopDriver>[];
 
       // Driver utilization rate (drivers with jobs / total drivers)
       final driversWithJobs = driverStats.keys.length;
@@ -1257,10 +1308,11 @@ class InsightsRepository {
         activeDrivers: activeDrivers,
         averageJobsPerDriver: averageJobsPerDriver,
         averageRevenuePerDriver: averageRevenuePerDriver,
-        topDrivers: top5Drivers,
+        topDrivers: top5WithRating,
         driverUtilizationRate: driverUtilizationRate,
         unassignedJobsCount: unassignedJobsCount,
-        bottomPerformers: bottomPerformersList,
+        bottomPerformers: bottomWithRating,
+        allDrivers: allDriversLoc,
         // Additional metrics default to 0 for location-filtered (can be enhanced later)
         averageJobCompletionTime: 0.0,
         averageTimeToPickup: 0.0,
@@ -2943,7 +2995,9 @@ class InsightsRepository {
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
       print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
       
-      final result = await _fetchDriverInsightsWithLocation(dateRange, location);
+      final result = location == LocationFilter.all
+          ? await _fetchDriverInsights(dateRange)
+          : await _fetchDriverInsightsWithLocation(dateRange, location);
       
       if (result.isSuccess) {
         print('Driver insights fetched successfully');

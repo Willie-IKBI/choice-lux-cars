@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/vehicle_insights_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
 
@@ -148,6 +149,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.directions_car_outlined,
                     iconColor: ChoiceLuxTheme.richGold,
                     progressValue: 1.0,
+                    helpText: 'Total number of vehicles in the selected period and location.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -155,9 +157,10 @@ class VehicleInsightsTab extends ConsumerWidget {
                     value: insights.activeVehicles.toString(),
                     icon: Icons.directions_car,
                     iconColor: Colors.green,
-                    progressValue: insights.totalVehicles > 0 
+                    progressValue: insights.totalVehicles > 0
                         ? (insights.activeVehicles / insights.totalVehicles).clamp(0.0, 1.0)
                         : 0.0,
+                    helpText: 'Vehicles that completed at least one job in the period. Indicates fleet usage.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -166,6 +169,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.work_outline,
                     iconColor: Colors.blue,
                     progressValue: insights.averageJobsPerVehicle > 0 ? 1.0 : 0.0,
+                    helpText: 'Average number of jobs completed per active vehicle. Measures vehicle productivity.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -174,6 +178,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: insights.averageIncomePerVehicle > 0 ? 1.0 : 0.0,
+                    helpText: 'Average revenue generated per active vehicle in the period.',
                   ),
                 ],
               );
@@ -223,6 +228,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.directions_car,
                     iconColor: Colors.blue,
                     progressValue: insights.vehicleUtilizationRate / 100,
+                    helpText: 'Percentage of vehicles that completed at least one job in the period. Fleet utilization.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -231,6 +237,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.warning,
                     iconColor: Colors.orange,
                     progressValue: insights.unassignedJobsCount > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs without a vehicle/driver assigned. Indicates scheduling or capacity gaps.',
                   ),
                 ],
               );
@@ -282,6 +289,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.straighten,
                     iconColor: Colors.blue,
                     progressValue: insights.totalDistanceTraveled > 0 ? 1.0 : 0.0,
+                    helpText: 'Total distance traveled by all vehicles in the period. Fleet mileage overview.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -292,6 +300,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.speed,
                     iconColor: Colors.green,
                     progressValue: insights.averageDistancePerVehicle > 0 ? 1.0 : 0.0,
+                    helpText: 'Average distance per active vehicle in the period. Per-vehicle usage.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -302,6 +311,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.route,
                     iconColor: Colors.purple,
                     progressValue: insights.averageDistancePerJob > 0 ? 1.0 : 0.0,
+                    helpText: 'Average distance per completed job. Helps assess trip length and routing.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -312,6 +322,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: insights.revenuePerKm > 0 ? 1.0 : 0.0,
+                    helpText: 'Revenue divided by total distance. Efficiency of revenue per kilometer traveled.',
                   ),
                 ],
               );
@@ -361,6 +372,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.calendar_today,
                     iconColor: Colors.blue,
                     progressValue: insights.jobsCompletedThisWeek > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs completed in the current calendar week.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -369,6 +381,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.calendar_month,
                     iconColor: Colors.purple,
                     progressValue: insights.jobsCompletedThisMonth > 0 ? 1.0 : 0.0,
+                    helpText: 'Number of jobs completed in the current calendar month.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -377,6 +390,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.work,
                     iconColor: Colors.orange,
                     progressValue: insights.activeJobsNow > 0 ? 1.0 : 0.0,
+                    helpText: 'Jobs currently in progress. Current workload for the fleet.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -387,6 +401,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.trending_up,
                     iconColor: Colors.green,
                     progressValue: insights.averageJobsPerDay > 0 ? 1.0 : 0.0,
+                    helpText: 'Average number of jobs completed per day in the period. Daily throughput.',
                   ),
                 ],
               );
@@ -436,6 +451,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.star,
                     iconColor: Colors.amber,
                     progressValue: insights.vehicleEfficiencyScore / 100,
+                    helpText: 'Composite score (0–100) based on utilization, revenue, and distance. Higher means better fleet efficiency.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -446,6 +462,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.dashboard,
                     iconColor: Colors.red,
                     progressValue: insights.highestOdometerReading > 0 ? 1.0 : 0.0,
+                    helpText: 'Highest odometer reading recorded among vehicles in the period. Useful for maintenance planning.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -456,6 +473,7 @@ class VehicleInsightsTab extends ConsumerWidget {
                     icon: Icons.today,
                     iconColor: Colors.cyan,
                     progressValue: insights.averageKmPerDay > 0 ? 1.0 : 0.0,
+                    helpText: 'Average kilometers traveled per day in the period. Daily fleet usage.',
                   ),
                 ],
               );
@@ -699,6 +717,7 @@ class VehicleInsightsTab extends ConsumerWidget {
     required Color iconColor,
     required double progressValue,
     String? trendIndicator,
+    String? helpText,
     VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -789,16 +808,35 @@ class VehicleInsightsTab extends ConsumerWidget {
           ),
           SizedBox(height: valueSpacing),
           // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: labelFontSize,
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w400,
+          if (helpText != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: labelFontSize,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                MetricHelpIcon(explanation: helpText!),
+              ],
+            )
+          else
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: labelFontSize,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           SizedBox(height: labelSpacing),
           // Progress bar at bottom
           Container(

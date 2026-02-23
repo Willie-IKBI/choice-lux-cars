@@ -57,6 +57,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       final result = await repository.fetchJobs(
         userId: userId,
         userRole: userRole,
+        userBranchCode: userProfile?.branchId,
         limit: limit,
         offset: 0,
       );
@@ -64,8 +65,8 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
       if (result.isSuccess) {
         var jobs = result.data!;
 
-        // Defensive client-side enforcement: drivers must only ever see jobs allocated to them.
-        if (userRole == 'driver') {
+        // Defensive client-side enforcement: drivers and driver_managers only see jobs allocated to them.
+        if (userRole == 'driver' || userRole == 'driver_manager') {
           jobs = jobs.where((j) => j.driverId == userId).toList();
         }
 
@@ -245,6 +246,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         status,
         userId: userId,
         userRole: userRole,
+        userBranchCode: userProfile?.branchId,
       );
       if (result.isSuccess) {
         return result.data!;
@@ -292,6 +294,7 @@ class JobsNotifier extends AsyncNotifier<List<Job>> {
         clientId,
         userId: userId,
         userRole: userRole,
+        userBranchCode: userProfile?.branchId,
       );
       if (result.isSuccess) {
         return result.data!;

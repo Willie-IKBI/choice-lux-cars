@@ -26,6 +26,7 @@ class JobsRepository {
   Future<Result<List<Job>>> fetchJobs({
     String? userId,
     String? userRole,
+    String? userBranchCode,
     String? statusFilter,
     int? dateRangeDays,
     int limit = 100,
@@ -43,13 +44,20 @@ class JobsRepository {
       var query = _supabase.from('jobs').select();
 
       // Apply role-based filtering
-      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
-        // Administrators and managers see all jobs
+      if (userRole == 'administrator' || userRole == 'super_admin') {
+        // Administrators and super_admin see all jobs
         Log.d('User has full access - fetching jobs with filters');
+      } else if (userRole == 'manager') {
+        // Managers see only jobs for their branch
+        if (userBranchCode != null && userBranchCode.isNotEmpty) {
+          query = query.eq('location', userBranchCode);
+          Log.d('Manager - fetching jobs for branch: $userBranchCode');
+        }
+        // If userBranchCode is null, RLS will return 0 rows for manager
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created/assigned + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        // Driver managers see only jobs where they are the driver
+        Log.d('Driver manager - fetching jobs assigned to them for userId: $userId');
+        query = query.eq('driver_id', userId);
       } else if (userRole == 'driver' && userId != null) {
         // Drivers only see jobs assigned to them
         Log.d('Driver - fetching only assigned jobs for userId: $userId');
@@ -364,6 +372,7 @@ class JobsRepository {
     String status, {
     String? userId,
     String? userRole,
+    String? userBranchCode,
   }) async {
     try {
       Log.d('Fetching jobs with status: $status for user: $userId with role: $userRole');
@@ -379,21 +388,21 @@ class JobsRepository {
           .select()
           .eq('job_status', status);
 
-      // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
-        // Administrators and managers see ALL jobs
+      // Apply role-based filtering
+      if (userRole == 'administrator' || userRole == 'super_admin') {
         Log.d('User has full access - fetching all jobs with status: $status');
-        // No additional filtering needed
+      } else if (userRole == 'manager') {
+        if (userBranchCode != null && userBranchCode.isNotEmpty) {
+          query = query.eq('location', userBranchCode);
+          Log.d('Manager - fetching jobs for branch: $userBranchCode with status: $status');
+        }
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them with status: $status');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        Log.d('Driver manager - fetching jobs assigned to them with status: $status');
+        query = query.eq('driver_id', userId);
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers see jobs assigned to them (current + completed)
         Log.d('Driver - fetching assigned jobs with status: $status for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
-        // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
       }
@@ -448,6 +457,7 @@ class JobsRepository {
     String clientId, {
     String? userId,
     String? userRole,
+    String? userBranchCode,
   }) async {
     try {
       Log.d('Fetching jobs for client: $clientId for user: $userId with role: $userRole');
@@ -463,21 +473,21 @@ class JobsRepository {
           .select('*')
           .eq('client_id', clientId);
 
-      // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
-        // Administrators and managers see ALL jobs
+      // Apply role-based filtering
+      if (userRole == 'administrator' || userRole == 'super_admin') {
         Log.d('User has full access - fetching all jobs for client: $clientId');
-        // No additional filtering needed
+      } else if (userRole == 'manager') {
+        if (userBranchCode != null && userBranchCode.isNotEmpty) {
+          query = query.eq('location', userBranchCode);
+          Log.d('Manager - fetching jobs for client: $clientId branch: $userBranchCode');
+        }
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them for client: $clientId');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        Log.d('Driver manager - fetching jobs assigned to them for client: $clientId');
+        query = query.eq('driver_id', userId);
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers see jobs assigned to them (current + completed)
         Log.d('Driver - fetching assigned jobs for client: $clientId for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
-        // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
       }
@@ -499,6 +509,7 @@ class JobsRepository {
     String clientId, {
     String? userId,
     String? userRole,
+    String? userBranchCode,
   }) async {
     try {
       Log.d('Fetching completed jobs for client: $clientId for user: $userId with role: $userRole');
@@ -515,21 +526,21 @@ class JobsRepository {
           .eq('client_id', clientId)
           .eq('job_status', 'completed');
 
-      // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
-        // Administrators and managers see ALL jobs
+      // Apply role-based filtering
+      if (userRole == 'administrator' || userRole == 'super_admin') {
         Log.d('User has full access - fetching all completed jobs for client: $clientId');
-        // No additional filtering needed
+      } else if (userRole == 'manager') {
+        if (userBranchCode != null && userBranchCode.isNotEmpty) {
+          query = query.eq('location', userBranchCode);
+          Log.d('Manager - fetching completed jobs for client: $clientId branch: $userBranchCode');
+        }
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them for client: $clientId');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        Log.d('Driver manager - fetching jobs assigned to them for client: $clientId');
+        query = query.eq('driver_id', userId);
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers see jobs assigned to them (current + completed)
-        Log.d('Driver - fetching assigned jobs for client: $clientId for userId: $userId');
+        Log.d('Driver - fetching assigned completed jobs for client: $clientId for userId: $userId');
         query = query.eq('driver_id', userId);
       } else {
-        // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning empty list');
         return const Result.success([]);
       }
@@ -551,6 +562,7 @@ class JobsRepository {
     String clientId, {
     String? userId,
     String? userRole,
+    String? userBranchCode,
   }) async {
     try {
       Log.d('Fetching completed jobs revenue for client: $clientId for user: $userId with role: $userRole');
@@ -568,21 +580,21 @@ class JobsRepository {
           .eq('job_status', 'completed')
           .not('amount', 'is', null);
 
-      // Apply role-based filtering based on confirmed requirements
-      if (userRole == 'administrator' || userRole == 'super_admin' || userRole == 'manager') {
-        // Administrators and managers see ALL jobs
+      // Apply role-based filtering
+      if (userRole == 'administrator' || userRole == 'super_admin') {
         Log.d('User has full access - fetching all completed jobs revenue for client: $clientId');
-        // No additional filtering needed
+      } else if (userRole == 'manager') {
+        if (userBranchCode != null && userBranchCode.isNotEmpty) {
+          query = query.eq('location', userBranchCode);
+          Log.d('Manager - fetching completed jobs revenue for client: $clientId branch: $userBranchCode');
+        }
       } else if (userRole == 'driver_manager' && userId != null) {
-        // Driver managers see jobs they created + jobs assigned to them
-        Log.d('Driver manager - fetching created jobs and jobs assigned to them revenue for client: $clientId');
-        query = query.or('created_by.eq.$userId,driver_id.eq.$userId');
+        Log.d('Driver manager - fetching jobs assigned to them revenue for client: $clientId');
+        query = query.eq('driver_id', userId);
       } else if (userRole == 'driver' && userId != null) {
-        // Drivers see jobs assigned to them (current + completed)
         Log.d('Driver - fetching assigned jobs revenue for client: $clientId');
         query = query.eq('driver_id', userId);
       } else {
-        // Unknown role or missing userId - default to no access
         Log.e('Unknown user role: $userRole or missing userId - returning 0.0');
         return const Result.success(0.0);
       }
@@ -769,6 +781,67 @@ class JobsRepository {
       });
     } catch (error) {
       Log.e('Error fetching jobs with insights filters: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Fetch jobs by time filter: starting_today, starting_tomorrow, or overdue
+  /// Uses job_start_date and job_status (for overdue: exclude completed/cancelled)
+  /// Respects location filter (Jhb, Cpt, Dbn or null for all)
+  Future<Result<Map<String, dynamic>>> fetchJobsByTimeFilter({
+    required String timeFilter,
+    String? location,
+    int limit = 12,
+    int offset = 0,
+  }) async {
+    try {
+      Log.d('Fetching jobs by time filter: timeFilter=$timeFilter, location=$location');
+
+      final now = DateTime.now();
+      final todayStart = DateTime(now.year, now.month, now.day);
+      final tomorrowStart = todayStart.add(const Duration(days: 1));
+      final dayAfterTomorrow = tomorrowStart.add(const Duration(days: 1));
+
+      var jobsQuery = _supabase.from('jobs').select('*');
+
+      switch (timeFilter) {
+        case 'starting_today':
+          jobsQuery = jobsQuery
+              .gte('job_start_date', todayStart.toIso8601String())
+              .lt('job_start_date', tomorrowStart.toIso8601String());
+          break;
+        case 'starting_tomorrow':
+          jobsQuery = jobsQuery
+              .gte('job_start_date', tomorrowStart.toIso8601String())
+              .lt('job_start_date', dayAfterTomorrow.toIso8601String());
+          break;
+        case 'overdue':
+          jobsQuery = jobsQuery
+              .lt('job_start_date', now.toIso8601String())
+              .not('job_status', 'in', '(completed,cancelled)');
+          break;
+        default:
+          Log.e('Unknown time filter: $timeFilter');
+          return Result.success({'jobs': <Job>[], 'total': 0});
+      }
+
+      if (location != null && location.isNotEmpty) {
+        jobsQuery = jobsQuery.eq('location', location);
+      }
+
+      final jobsResponse = await jobsQuery.order('job_start_date', ascending: true);
+      final jobs = jobsResponse.map<Job>((json) => Job.fromJson(json)).toList();
+      final total = jobs.length;
+      final paginatedJobs = jobs.skip(offset).take(limit).toList();
+
+      Log.d('Returning ${paginatedJobs.length} jobs (offset=$offset, limit=$limit, total=$total)');
+
+      return Result.success({
+        'jobs': paginatedJobs,
+        'total': total,
+      });
+    } catch (error) {
+      Log.e('Error fetching jobs by time filter: $error');
       return _mapSupabaseError(error);
     }
   }

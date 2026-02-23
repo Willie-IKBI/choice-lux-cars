@@ -4,6 +4,7 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/financial_insights_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
 
@@ -148,6 +149,7 @@ class FinancialInsightsTab extends ConsumerWidget {
                     icon: Icons.attach_money,
                     iconColor: Colors.green,
                     progressValue: 1.0,
+                    helpText: 'Sum of all revenue from completed jobs in the selected period and location.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -158,6 +160,7 @@ class FinancialInsightsTab extends ConsumerWidget {
                     icon: Icons.trending_up,
                     iconColor: Colors.blue,
                     progressValue: insights.averageJobValue > 0 ? 1.0 : 0.0,
+                    helpText: 'Average revenue per completed job. Used to understand typical job value.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -170,6 +173,7 @@ class FinancialInsightsTab extends ConsumerWidget {
                     progressValue: insights.totalRevenue > 0 
                         ? (insights.revenueThisWeek / insights.totalRevenue).clamp(0.0, 1.0)
                         : 0.0,
+                    helpText: 'Revenue from jobs completed in the current calendar week.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -180,6 +184,7 @@ class FinancialInsightsTab extends ConsumerWidget {
                     progressValue: insights.totalRevenue > 0
                         ? (insights.revenueThisMonth / insights.totalRevenue).clamp(0.0, 1.0)
                         : 0.0,
+                    helpText: 'Revenue from jobs completed in the current calendar month.',
                   ),
                 ],
               );
@@ -232,24 +237,28 @@ class FinancialInsightsTab extends ConsumerWidget {
                         : 'N/A',
                     icon: Icons.payment,
                     iconColor: Colors.green,
+                    helpText: 'Percentage of jobs where payment was collected. Tracks revenue capture effectiveness.',
                   ),
                   CompactMetricTile(
                     label: 'Outstanding Payments',
                     value: 'R${insights.outstandingPayments.toStringAsFixed(0)}',
                     icon: Icons.warning,
                     iconColor: Colors.orange,
+                    helpText: 'Total amount not yet collected from clients. Indicates cash flow and follow-up need.',
                   ),
                   CompactMetricTile(
                     label: 'Total Collected',
                     value: 'R${insights.totalCollected.toStringAsFixed(0)}',
                     icon: Icons.check_circle,
                     iconColor: Colors.green,
+                    helpText: 'Sum of payments already collected from clients in the period.',
                   ),
                   CompactMetricTile(
                     label: 'Total Uncollected',
                     value: 'R${insights.totalUncollected.toStringAsFixed(0)}',
                     icon: Icons.cancel,
                     iconColor: Colors.red,
+                    helpText: 'Sum of payments due but not yet collected. Part of outstanding receivables.',
                   ),
                   CompactMetricTile(
                     label: 'Avg Payment Amount',
@@ -258,12 +267,14 @@ class FinancialInsightsTab extends ConsumerWidget {
                         : 'N/A',
                     icon: Icons.attach_money,
                     iconColor: Colors.blue,
+                    helpText: 'Average amount collected per payment. Typical transaction size.',
                   ),
                   CompactMetricTile(
                     label: 'Jobs Requiring Payment',
                     value: insights.jobsRequiringPaymentCollection.toString(),
                     icon: Icons.receipt,
                     iconColor: Colors.purple,
+                    helpText: 'Number of jobs where payment collection is expected or pending.',
                   ),
                 ],
               );
@@ -311,12 +322,14 @@ class FinancialInsightsTab extends ConsumerWidget {
                     value: '${insights.revenueGrowthWeekOverWeek >= 0 ? '+' : ''}${insights.revenueGrowthWeekOverWeek.toStringAsFixed(1)}%',
                     icon: Icons.trending_up,
                     iconColor: insights.revenueGrowthWeekOverWeek >= 0 ? Colors.green : Colors.red,
+                    helpText: 'Percentage change in revenue compared to the previous week. Short-term trend.',
                   ),
                   CompactMetricTile(
                     label: 'Month-over-Month Growth',
                     value: '${insights.revenueGrowthMonthOverMonth >= 0 ? '+' : ''}${insights.revenueGrowthMonthOverMonth.toStringAsFixed(1)}%',
                     icon: Icons.trending_up,
                     iconColor: insights.revenueGrowthMonthOverMonth >= 0 ? Colors.green : Colors.red,
+                    helpText: 'Percentage change in revenue compared to the previous month. Medium-term trend.',
                   ),
                 ],
               );
@@ -446,6 +459,7 @@ class FinancialInsightsTab extends ConsumerWidget {
     required Color iconColor,
     required double progressValue,
     String? trendIndicator,
+    String? helpText,
     VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -536,16 +550,35 @@ class FinancialInsightsTab extends ConsumerWidget {
           ),
           SizedBox(height: valueSpacing),
           // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: labelFontSize,
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w400,
+          if (helpText != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: labelFontSize,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                MetricHelpIcon(explanation: helpText!),
+              ],
+            )
+          else
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: labelFontSize,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           SizedBox(height: labelSpacing),
           // Progress bar at bottom
           Container(

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:choice_lux_cars/features/insights/data/driver_rating_service.dart';
 import 'package:choice_lux_cars/features/notifications/services/notification_service.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
@@ -81,6 +82,35 @@ class DriverFlowApiService {
         'last_activity_at': currentTime,
         'updated_at': currentTime,
       }, onConflict: 'job_id');
+
+      // Ensure trip_progress rows exist for each transport leg so map can receive GPS later
+      try {
+        final transportRows = await _supabase
+            .from('transport')
+            .select('id')
+            .eq('job_id', jobId)
+            .order('id');
+        final existing = await _supabase
+            .from('trip_progress')
+            .select('trip_index')
+            .eq('job_id', jobId);
+        final existingIndices = (existing as List<dynamic>)
+            .map<int>((r) => (r['trip_index'] as num?)?.toInt() ?? 0)
+            .toSet();
+        for (var i = 0; i < (transportRows as List<dynamic>).length; i++) {
+          final tripIndex = i + 1;
+          if (!existingIndices.contains(tripIndex)) {
+            await _supabase.from('trip_progress').insert({
+              'job_id': jobId,
+              'trip_index': tripIndex,
+              'status': 'pending',
+            });
+          }
+        }
+      } catch (e) {
+        Log.e('Could not ensure trip_progress rows: $e');
+        // Don't fail job start; map may still work if rows exist
+      }
 
       // Return the updated driver_flow data
       final progressResponse = await _supabase
@@ -218,53 +248,43 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-             // Update driver_flow table with all changes in one call
-       // Set current_step to 'passenger_pickup' (intermediate step before passenger_onboard)
-       // This creates the proper flow: pickup_arrival -> passenger_pickup -> passenger_onboard
-       final pickupArriveTime = SATimeUtils.getCurrentSATimeISO();
-       await _supabase
-           .from('driver_flow')
-           .update({
-             'current_step': 'passenger_pickup', // Set to passenger_pickup to show intermediate step
-             'progress_percentage': 33,
-             'pickup_arrive_time': pickupArriveTime,
-             'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',
-             'last_activity_at': pickupArriveTime,
-             'updated_at': pickupArriveTime,
-           })
-           .eq('job_id', jobId);
-
-      // Update trip_progress with GPS coordinates for Route Map
-      await _supabase
-          .from('trip_progress')
-          .update({
-            'pickup_gps_lat': gpsLat,
-            'pickup_gps_lng': gpsLng,
-            'pickup_arrived_at': pickupArriveTime,
-            'updated_at': pickupArriveTime,
-          })
-          .eq('job_id', jobId)
-          .eq('trip_index', tripIndex);
+      final pickupArriveTime = SATimeUtils.getCurrentSATimeISO();
+      await Future.wait([
+        _supabase.from('driver_flow').update({
+          'current_step': 'passenger_pickup',
+          'progress_percentage': 33,
+          'pickup_arrive_time': pickupArriveTime,
+          'pickup_arrive_loc': 'GPS: $gpsLat, $gpsLng',
+          'last_activity_at': pickupArriveTime,
+          'updated_at': pickupArriveTime,
+        }).eq('job_id', jobId),
+        _supabase.from('trip_progress').update({
+          'pickup_gps_lat': gpsLat,
+          'pickup_gps_lng': gpsLng,
+          'pickup_arrived_at': pickupArriveTime,
+          'updated_at': pickupArriveTime,
+        }).eq('job_id', jobId).eq('trip_index', tripIndex),
+      ]);
 
       Log.d('=== ARRIVAL AT PICKUP RECORDED ===');
 
-      // Send notification
-      try {
-        final driverResponse = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', driverId)
-            .single();
-
-        await NotificationService.sendStepCompletionNotification(
-          jobId: jobId,
-          stepName: 'pickup_arrival',
-          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
-          jobNumber: 'JOB-$jobId',
-        );
-      } catch (e) {
-        Log.e('Warning: Could not send step completion notification: $e');
-      }
+      Future.microtask(() async {
+        try {
+          final driverResponse = await _supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', driverId)
+              .single();
+          await NotificationService.sendStepCompletionNotification(
+            jobId: jobId,
+            stepName: 'pickup_arrival',
+            driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+            jobNumber: 'JOB-$jobId',
+          );
+        } catch (e) {
+          Log.e('Warning: Could not send step completion notification: $e');
+        }
+      });
     } catch (e) {
       Log.e('=== ERROR RECORDING PICKUP ARRIVAL ===');
       Log.e('Error: $e');
@@ -440,51 +460,42 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-             // Update driver_flow table with all changes in one call
-       final dropoffArriveTime = SATimeUtils.getCurrentSATimeISO();
-       await _supabase
-           .from('driver_flow')
-           .update({
-             'current_step': 'trip_complete', // Advance to next step (trip_complete)
-             'progress_percentage': 67,
-             // Note: transport_completed_ind is set in completeTrip(), not here
-             'dropoff_arrive_at': dropoffArriveTime,
-             'last_activity_at': dropoffArriveTime,
-             'updated_at': dropoffArriveTime,
-           })
-           .eq('job_id', jobId);
-
-      // Update trip_progress with GPS coordinates for Route Map
-      await _supabase
-          .from('trip_progress')
-          .update({
-            'dropoff_gps_lat': gpsLat,
-            'dropoff_gps_lng': gpsLng,
-            'dropoff_arrived_at': dropoffArriveTime,
-            'updated_at': dropoffArriveTime,
-          })
-          .eq('job_id', jobId)
-          .eq('trip_index', tripIndex);
+      final dropoffArriveTime = SATimeUtils.getCurrentSATimeISO();
+      await Future.wait([
+        _supabase.from('driver_flow').update({
+          'current_step': 'trip_complete',
+          'progress_percentage': 67,
+          'dropoff_arrive_at': dropoffArriveTime,
+          'last_activity_at': dropoffArriveTime,
+          'updated_at': dropoffArriveTime,
+        }).eq('job_id', jobId),
+        _supabase.from('trip_progress').update({
+          'dropoff_gps_lat': gpsLat,
+          'dropoff_gps_lng': gpsLng,
+          'dropoff_arrived_at': dropoffArriveTime,
+          'updated_at': dropoffArriveTime,
+        }).eq('job_id', jobId).eq('trip_index', tripIndex),
+      ]);
 
       Log.d('=== ARRIVAL AT DROPOFF RECORDED ===');
 
-      // Send notification
-      try {
-        final driverResponse = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', driverId)
-            .single();
-
-        await NotificationService.sendStepCompletionNotification(
-          jobId: jobId,
-          stepName: 'dropoff_arrival',
-          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
-          jobNumber: 'JOB-$jobId',
-        );
-      } catch (e) {
-        Log.e('Warning: Could not send step completion notification: $e');
-      }
+      Future.microtask(() async {
+        try {
+          final driverResponse = await _supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', driverId)
+              .single();
+          await NotificationService.sendStepCompletionNotification(
+            jobId: jobId,
+            stepName: 'dropoff_arrival',
+            driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+            jobNumber: 'JOB-$jobId',
+          );
+        } catch (e) {
+          Log.e('Warning: Could not send step completion notification: $e');
+        }
+      });
     } catch (e) {
       Log.e('=== ERROR RECORDING DROPOFF ARRIVAL ===');
       Log.e('Error: $e');
@@ -547,13 +558,6 @@ class DriverFlowApiService {
           allTrips.every((trip) => trip['status'] == 'completed');
       Log.d('Total trips: ${allTrips.length}, All trips completed: $allTripsCompleted');
 
-      // Read-before for logging (defensive)
-      final beforeRow = await _supabase
-          .from('driver_flow')
-          .select('trip_complete_at')
-          .eq('job_id', jobId)
-          .maybeSingle();
-      final oldValue = beforeRow?['trip_complete_at']?.toString();
       final newValue = SATimeUtils.getCurrentSATimeISO();
 
       // Determine next step and prepare update payload
@@ -596,35 +600,38 @@ class DriverFlowApiService {
         Log.d('More trips exist, resetting to pickup_arrival for trip $nextTripIndex');
       }
 
-      Log.d('trip_complete_at: old=$oldValue new=$newValue payloadKeys=${updatePayload.keys.join(",")}');
+      Log.d('trip_complete_at: new=$newValue payloadKeys=${updatePayload.keys.join(",")}');
 
-      // Update driver_flow table with all changes in one call
-      await _supabase
+      final progressResult = await _supabase
           .from('driver_flow')
           .update(updatePayload)
-          .eq('job_id', jobId);
+          .eq('job_id', jobId)
+          .select()
+          .maybeSingle();
 
-      final progress = await getJobProgress(jobId);
+      final progress = progressResult != null
+          ? Map<String, dynamic>.from(progressResult as Map)
+          : await getJobProgress(jobId);
       Log.d('trip_complete_at persisted: ${progress?['trip_complete_at']}');
       Log.d('=== TRIP COMPLETED ===');
 
-      // Send notification
-      try {
-        final driverResponse = await _supabase
-            .from('profiles')
-            .select('display_name')
-            .eq('id', driverId)
-            .single();
-
-        await NotificationService.sendStepCompletionNotification(
-          jobId: jobId,
-          stepName: 'trip_complete',
-          driverName: driverResponse['display_name'] ?? 'Unknown Driver',
-          jobNumber: 'JOB-$jobId',
-        );
-      } catch (e) {
-        Log.e('Warning: Could not send step completion notification: $e');
-      }
+      Future.microtask(() async {
+        try {
+          final driverResponse = await _supabase
+              .from('profiles')
+              .select('display_name')
+              .eq('id', driverId)
+              .single();
+          await NotificationService.sendStepCompletionNotification(
+            jobId: jobId,
+            stepName: 'trip_complete',
+            driverName: driverResponse['display_name'] ?? 'Unknown Driver',
+            jobNumber: 'JOB-$jobId',
+          );
+        } catch (e) {
+          Log.e('Warning: Could not send step completion notification: $e');
+        }
+      });
       return progress;
     } catch (e) {
       Log.e('=== ERROR COMPLETING TRIP ===');
@@ -822,6 +829,9 @@ class DriverFlowApiService {
       Log.d('closeJob: total ${t3 - t0}ms');
       Log.d('=== JOB CLOSED ===');
 
+      // Compute and store driver trip ratings (last 10 trips average) in background
+      unawaited(DriverRatingService.computeAndStoreRatingsForJob(jobId));
+
       // Fire notification in background so we don't block UI
       unawaited(Future(() async {
         try {
@@ -936,6 +946,7 @@ class DriverFlowApiService {
       }).eq('job_id', jobId);
 
       Log.d('Admin close job completed: $jobId');
+      unawaited(DriverRatingService.computeAndStoreRatingsForJob(jobId));
       return {
         'job_status': 'completed',
         'current_step': 'completed',

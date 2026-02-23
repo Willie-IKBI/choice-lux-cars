@@ -26,6 +26,7 @@ class JobListCard extends ConsumerWidget {
   final bool isDesktop;
   final bool canCreateVoucher;
   final bool canCreateInvoice;
+  final String? fromRoute;
 
   const JobListCard({
     super.key,
@@ -39,6 +40,7 @@ class JobListCard extends ConsumerWidget {
     required this.isDesktop,
     this.canCreateVoucher = false,
     this.canCreateInvoice = false,
+    this.fromRoute,
   });
 
   @override
@@ -416,7 +418,12 @@ class JobListCard extends ConsumerWidget {
         SizedBox(
           width: double.infinity,
           child: ElevatedButton.icon(
-            onPressed: () => context.go('/jobs/${currentJob.id}/summary'),
+            onPressed: () {
+              final path = fromRoute != null
+                  ? '/jobs/${currentJob.id}/summary?from=$fromRoute'
+                  : '/jobs/${currentJob.id}/summary';
+              context.go(path);
+            },
             icon: const Icon(Icons.visibility, size: 16),
             label: Text(
               'View Details',

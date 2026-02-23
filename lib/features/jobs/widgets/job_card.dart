@@ -397,6 +397,41 @@ class _JobCardState extends ConsumerState<JobCard>
     );
   }
 
+  // Driver confirmation: show when a driver is assigned
+  Widget _buildDriverConfirmationIndicator(BuildContext context, Job job, double spacing, double screenWidth) {
+    final isConfirmed = job.isConfirmed == true || job.driverConfirmation == true;
+    final color = isConfirmed ? Colors.green : Colors.orange;
+    final label = isConfirmed ? 'Driver confirmed' : 'Awaiting confirmation';
+    final icon = isConfirmed ? Icons.check_circle : Icons.pending;
+    final fontSize = ResponsiveTokens.getFontSize(screenWidth, baseSize: 12);
+    return Container(
+      padding: EdgeInsets.symmetric(
+        horizontal: spacing * 0.75,
+        vertical: spacing * 0.5,
+      ),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 14, color: color),
+          SizedBox(width: spacing * 0.5),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: fontSize,
+              fontWeight: FontWeight.w500,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildInfoChip(IconData icon, String label, double iconSize, double fontSize, double spacing, [Color? iconColor]) {
     final color = iconColor ?? ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7);
     return Row(

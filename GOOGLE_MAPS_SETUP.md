@@ -1,4 +1,22 @@
-# Google Maps API Key Setup
+# Google Maps and Firebase Setup
+
+## Firebase (FCM + google-services.json)
+
+For push notifications on Android, you need `android/app/google-services.json` from the Firebase Console. This file is gitignored and must not be committed.
+
+1. Go to [Firebase Console](https://console.firebase.google.com/) → your project → Project settings
+2. Under "Your apps", add an Android app with package name `com.choiceluxcars.app` if not already added
+3. Download `google-services.json` and place it at `android/app/google-services.json`
+4. Or copy from template: `cp android/app/google-services.json.example android/app/google-services.json` and fill in your values
+
+If a previous `google-services.json` was committed with real API keys:
+1. Rotate those keys in Firebase Console
+2. Run `git rm --cached android/app/google-services.json` to stop tracking (file stays locally, gitignored)
+3. Commit the change
+
+---
+
+## Google Maps API Key Setup
 
 The Job Summaries feature includes a map that displays GPS coordinates for all stops (pickup and dropoff locations) from completed driver trips. To enable the map, you need to add your Google Maps API key.
 
@@ -17,20 +35,33 @@ The Job Summaries feature includes a map that displays GPS coordinates for all s
 
 ### Android (no hardcoded secrets)
 
-Add your key to `android/local.properties` (gitignored, never committed):
+Use a key restricted to Android apps (package name + SHA-1) in Google Cloud Console. Store it in `.env` (gitignored):
 
 ```properties
-GOOGLE_MAPS_API_KEY=your_actual_api_key_here
+ANDROID_GOOGLE_MAPS_API_KEY=your_android_maps_key_here
 ```
 
-The key is injected at build time via Gradle `manifestPlaceholders`. Never commit the key to version control.
+Then build with the provided script, which syncs the key to `android/local.properties` (also gitignored) at build time:
+
+```powershell
+.\scripts\build-android.ps1
+```
+
+The key is injected at build time via Gradle `manifestPlaceholders`. Never commit `.env` or `local.properties`.
 
 ### Web
 
-Edit `web/index.html` and replace `YOUR_GOOGLE_MAPS_API_KEY` in the script URL:
+Set `GOOGLE_MAPS_API_KEY` as an environment variable before building. The key is injected at build time via `scripts/inject-firebase-config.js`:
 
-```html
-<script src="https://maps.googleapis.com/maps/api/js?key=YOUR_ACTUAL_API_KEY"></script>
+```powershell
+$env:GOOGLE_MAPS_API_KEY = "your_actual_api_key_here"
+.\scripts\build-web.ps1
+```
+
+Or on Linux/macOS:
+
+```bash
+GOOGLE_MAPS_API_KEY=your_actual_api_key_here ./scripts/build-web.sh
 ```
 
 ### iOS (if building for iOS)

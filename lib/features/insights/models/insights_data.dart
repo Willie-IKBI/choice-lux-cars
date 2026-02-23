@@ -86,7 +86,8 @@ class DriverInsights {
   final double driverUtilizationRate; // % of time drivers are active
   final int unassignedJobsCount; // Jobs without driver
   final List<TopDriver> bottomPerformers; // Lowest performing drivers
-  
+  final List<TopDriver> allDrivers; // All drivers sorted by rating (highest to lowest)
+
   // Phase 2: Additional performance metrics
   final double averageJobCompletionTime; // hours
   final double averageTimeToPickup; // minutes
@@ -116,6 +117,7 @@ class DriverInsights {
     required this.driverUtilizationRate,
     required this.unassignedJobsCount,
     required this.bottomPerformers,
+    required this.allDrivers,
     // Phase 2: Default values for new metrics (will be calculated in repository)
     this.averageJobCompletionTime = 0.0,
     this.averageTimeToPickup = 0.0,
@@ -143,12 +145,16 @@ class TopDriver {
   final String driverName;
   final int jobCount;
   final double revenue;
+  final double? averageRating;
+  final int ratingTripCount;
 
   TopDriver({
     required this.driverId,
     required this.driverName,
     required this.jobCount,
     required this.revenue,
+    this.averageRating,
+    this.ratingTripCount = 0,
   });
 }
 

@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 
-/// Compact KPI tile for Operations Dashboard: icon in circle, value, label.
-/// [isProblem] applies subtle red tint border/gradient for the Problem tile.
-/// [onTap] when set makes the tile clickable (e.g. navigate to job list).
+/// KPI tile for Operations Dashboard and Insights: label, value, icon, optional tap and problem styling.
 class OpsKpiTile extends StatelessWidget {
   final String label;
   final String value;
@@ -12,6 +10,7 @@ class OpsKpiTile extends StatelessWidget {
   final Color iconColor;
   final bool isProblem;
   final VoidCallback? onTap;
+  final String? helpText;
 
   const OpsKpiTile({
     super.key,
@@ -21,89 +20,77 @@ class OpsKpiTile extends StatelessWidget {
     required this.iconColor,
     this.isProblem = false,
     this.onTap,
+    this.helpText,
   });
 
   @override
   Widget build(BuildContext context) {
-    final width = MediaQuery.of(context).size.width;
-    final spacing = ResponsiveTokens.getSpacing(width);
-    final radius = ResponsiveTokens.getCornerRadius(width);
-    final padding = ResponsiveTokens.getPadding(width);
+    final borderColor = isProblem
+        ? ChoiceLuxTheme.errorColor.withOpacity(0.4)
+        : ChoiceLuxTheme.platinumSilver.withOpacity(0.12);
 
-    Widget content = Container(
-      padding: EdgeInsets.all(padding),
-      decoration: BoxDecoration(
-        color: isProblem
-            ? ChoiceLuxTheme.errorColor.withOpacity(0.08)
-            : ChoiceLuxTheme.charcoalGray.withOpacity(0.8),
-        borderRadius: BorderRadius.circular(radius),
-        border: isProblem
-            ? Border.all(
-                color: ChoiceLuxTheme.errorColor.withOpacity(0.4),
-                width: 1,
-              )
-            : Border.all(
-                color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-                width: 1,
-              ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.2),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.charcoalGray.withOpacity(0.5),
+            borderRadius: BorderRadius.circular(8),
+            border: Border.all(color: borderColor, width: 1),
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+          child: Row(
             children: [
-              Container(
-                padding: EdgeInsets.all(spacing),
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(radius * 0.75),
-                ),
-                child: Icon(icon, color: iconColor, size: 22),
-              ),
-              const Spacer(),
-              Text(
-                value,
-                style: TextStyle(
-                  color: ChoiceLuxTheme.softWhite,
-                  fontSize: 24,
-                  fontWeight: FontWeight.w700,
+              Icon(icon, color: iconColor, size: 28),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (helpText != null)
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              label,
+                              style: TextStyle(
+                                color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          MetricHelpIcon(explanation: helpText!),
+                        ],
+                      )
+                    else
+                      Text(
+                        label,
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite.withOpacity(0.8),
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
-          SizedBox(height: spacing),
-          Text(
-            label,
-            style: TextStyle(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.9),
-              fontSize: 13,
-              fontWeight: FontWeight.w500,
-            ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
-        ],
+        ),
       ),
     );
-
-    if (onTap != null) {
-      return Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(radius),
-          child: content,
-        ),
-      );
-    }
-    return content;
   }
 }

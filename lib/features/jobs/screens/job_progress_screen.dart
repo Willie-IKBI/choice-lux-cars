@@ -243,14 +243,16 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
         throw Exception('Invalid job ID: ${widget.jobId}');
       }
 
-      // Load job progress
-      var progress = await DriverFlowApiService.getJobProgress(jobIdInt);
-      
+      // Start all three fetches in parallel so trips/addresses load while progress (and retries) run
+      final progressFuture = DriverFlowApiService.getJobProgress(jobIdInt);
+      final tripFuture = DriverFlowApiService.getTripProgress(jobIdInt);
+      final addressFuture = DriverFlowApiService.getJobAddresses(jobIdInt);
+
+      var progress = await progressFuture;
+
       // If progress is null, check if job has actually started (race condition fix)
       // Only retry for initial load, not for step completion updates
       if (progress == null && !skipLoadingState) {
-        
-        // Check if job has actually started by checking job status
         try {
           final supabase = Supabase.instance.client;
           final jobResponse = await supabase
@@ -258,19 +260,16 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
               .select('job_status, vehicle_collected')
               .eq('id', jobIdInt)
               .maybeSingle();
-          
+
           if (jobResponse != null) {
             final jobStatus = jobResponse['job_status']?.toString();
             final vehicleCollected = jobResponse['vehicle_collected'] == true;
-            
-            // If job appears to have started (status is started/in_progress or vehicle_collected),
-            // wait a bit and retry loading progress (handles race condition)
+
             if ((jobStatus == 'started' || jobStatus == 'in_progress' || vehicleCollected)) {
-              // Retry up to 3 times with increasing delays (only for initial load)
               for (int attempt = 1; attempt <= 3; attempt++) {
-                final delayMs = 300 * attempt; // 300ms, 600ms, 900ms
+                final delayMs = 300 * attempt;
                 await Future.delayed(Duration(milliseconds: delayMs));
-                
+
                 final retryProgress = await DriverFlowApiService.getJobProgress(jobIdInt);
                 if (retryProgress != null) {
                   progress = retryProgress;
@@ -283,18 +282,18 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           Log.e('Error checking job status when progress is null: $e');
         }
       }
-      
+
       if (progress == null) {
-        // Still no progress after retry - set safe defaults
+        // Still no progress after retry - use trips and addresses from parallel fetch
         Log.d('No job progress found after retry, setting defaults');
-        
+
+        final results = await Future.wait([tripFuture, addressFuture]);
+        final trips = results[0] as List<Map<String, dynamic>>;
+        final addresses = results[1] as Map<String, String?>;
+
         // CRITICAL FIX: If we're in the middle of an optimistic update (skipLoadingState = true),
         // preserve the existing _jobProgress data instead of clearing it
-        // This prevents black screen after vehicle return when server data is temporarily unavailable
         if (skipLoadingState && _jobProgress != null) {
-          // Load trip progress and addresses but keep existing job progress
-          final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
-          final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
           final nextTripIndex = _findNextIncompleteTripIndex(trips);
           
           setState(() {
@@ -322,48 +321,30 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           }
           return;
         }
-        
-        // Only clear _jobProgress if this is a fresh load (not an optimistic update)
-        // Load trip progress and addresses even when no job progress exists
-        final trips = await DriverFlowApiService.getTripProgress(jobIdInt);
-        final addresses = await DriverFlowApiService.getJobAddresses(jobIdInt);
-        
-        // Find next incomplete trip index
+
+        // Only clear _jobProgress if this is a fresh load (trips and addresses already from parallel fetch)
         final nextTripIndex = _findNextIncompleteTripIndex(trips);
-        
+
         setState(() {
           _jobProgress = null;
           _tripProgress = trips;
           _jobAddresses = addresses;
           _currentTripIndex = nextTripIndex;
           _progressPercentage = 0;
-          // Only set _isLoading to false if we set it to true
           if (!skipLoadingState) {
             _isLoading = false;
           }
         });
-        
+
         return;
       }
-      
+
       // Use local non-null variable for subsequent access
       final p = progress;
 
-      // OPTIMIZATION: Load trip progress and addresses in parallel (3x faster)
-      // Only reload if trips/addresses might have changed
-      final shouldReloadTrips = _tripProgress == null || 
-          (p['trip_complete_at'] != null && _tripProgress!.any((t) => t['status'] != 'completed'));
-      final shouldReloadAddresses = _jobAddresses.isEmpty;
-      
-      final tripFuture = shouldReloadTrips 
-          ? DriverFlowApiService.getTripProgress(jobIdInt)
-          : Future.value(_tripProgress!);
-      final addressFuture = shouldReloadAddresses
-          ? DriverFlowApiService.getJobAddresses(jobIdInt)
-          : Future.value(_jobAddresses);
-      
+      // Trips and addresses were started in parallel with progress; await them now
       final results = await Future.wait([tripFuture, addressFuture]);
-      
+
       final trips = results[0] as List<Map<String, dynamic>>;
       final addresses = results[1] as Map<String, String?>;
 
@@ -660,9 +641,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     final titleFontSize = _isMobile ? 16.0 : 18.0;
     final descriptionFontSize = _isMobile ? 12.0 : 14.0;
 
-    return Container(
-      margin: EdgeInsets.only(bottom: _isMobile ? 12.0 : 16.0),
-      decoration: BoxDecoration(
+    return RepaintBoundary(
+      child: Container(
+        margin: EdgeInsets.only(bottom: _isMobile ? 12.0 : 16.0),
+        decoration: BoxDecoration(
         gradient: isCurrent 
             ? LinearGradient(
                 colors: [
@@ -885,7 +867,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
             // For passenger_pickup step, use _buildActionButton to show Passenger Onboard/No-Show buttons
             // For other steps, only show if not completed
             // Use _buildActionButton for ALL steps to ensure consistent loading indicators
-            if ((isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || !isCompleted)) ||
+            if ((isCurrent && (step.id == 'vehicle_return' || step.id == 'passenger_pickup' || step.id == 'passenger_onboard' || step.id == 'dropoff_arrival' || !isCompleted)) ||
                 shouldShowVehicleReturnButton) ...[
               SizedBox(height: _isMobile ? 12 : 16),
               _buildActionButton(step),
@@ -893,6 +875,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
           ],
         ),
       ),
+    ),
     );
   }
 
@@ -910,7 +893,7 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'passenger_onboard':
         return _arriveAtDropoff;
       case 'dropoff_arrival':
-        return _completeTrip;
+        return _arriveAtDropoff;
       case 'trip_complete':
         return _returnVehicle;
       default:
@@ -971,7 +954,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       case 'completed':
         return 'completed';
       default:
-        Log.e('Unknown database step: $databaseStep, defaulting to pickup_arrival');
+        // Default keeps _isStateReady() true and avoids unnecessary full reload after step completion.
+        Log.d('Unmapped database step: $databaseStep, defaulting to pickup_arrival');
         return 'pickup_arrival';
     }
   }
@@ -1636,7 +1620,33 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
     required Map<String, dynamic> stepData,
     bool needsServerSync = true,
   }) async {
-    if (!mounted || _jobProgress == null) return;
+    if (!mounted) return;
+
+    if (_jobProgress == null) {
+      // Initialize progress from stepData (e.g. right after start job)
+      final progressMap = Map<String, dynamic>.from(stepData);
+      final rawStep = stepData['current_step']?.toString();
+      final newStep = rawStep != null && rawStep.isNotEmpty
+          ? _mapDatabaseStepToUIStep(rawStep)
+          : _determineCurrentStepFromData(progressMap);
+      setState(() {
+        _jobProgress = progressMap;
+        _currentStep = newStep;
+        _progressPercentage = _safeToInt(stepData['progress_percentage'], defaultValue: 0);
+        _updateStepStatusInternal();
+      });
+      if (needsServerSync) {
+        _syncStepInBackground(stepId, stepData).catchError((e) {
+          Log.e('Background sync failed for step $stepId: $e');
+          if (mounted) {
+            _loadJobProgress(skipLoadingState: true).catchError((reloadError) {
+              Log.e('Failed to reload after sync error: $reloadError');
+            });
+          }
+        });
+      }
+      return;
+    }
 
     // Update state optimistically (immediate UI update)
     setState(() {
@@ -1658,7 +1668,8 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       }
     } else {
       setState(() {
-        _currentStep = stepData['current_step'] as String;
+        _currentStep = _mapDatabaseStepToUIStep(
+            stepData['current_step']?.toString() ?? 'not_started');
       });
     }
 
@@ -2235,7 +2246,10 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
       throw Exception('Location permissions are permanently denied');
     }
 
-    return await Geolocator.getCurrentPosition();
+    return await Geolocator.getCurrentPosition(
+      desiredAccuracy: LocationAccuracy.medium,
+      timeLimit: const Duration(seconds: 10),
+    );
   }
 
   Future<String> _captureOdometerImage() async {
@@ -4136,48 +4150,61 @@ class _JobProgressScreenState extends ConsumerState<JobProgressScreen> {
                         )
                       : _jobProgress == null
                           ? Center(
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  Icon(
-                                    Icons.play_circle_outline,
-                                    size: 64,
-                                    color: ChoiceLuxTheme.richGold.withOpacity(0.7),
-                                  ),
-                                  const SizedBox(height: 16),
-                              Text(
-                                'Ready to Start Job',
-                                style: TextStyle(
-                                  color: ChoiceLuxTheme.softWhite,
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'Job ID: ${widget.jobId}',
-                                style: TextStyle(
-                                  color: ChoiceLuxTheme.softWhite.withOpacity(0.7),
-                                  fontSize: 14,
-                                ),
-                              ),
-                              const SizedBox(height: 24),
-                              ElevatedButton.icon(
-                                onPressed: _startJob,
-                                icon: const Icon(Icons.play_arrow),
-                                label: const Text('Start Job'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: ChoiceLuxTheme.richGold,
-                                  foregroundColor: Colors.black,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 24,
-                                    vertical: 12,
+                              child: Container(
+                                margin: EdgeInsets.all(_isMobile ? 16 : 20),
+                                padding: EdgeInsets.all(_isMobile ? 16 : 20),
+                                decoration: BoxDecoration(
+                                  gradient: ChoiceLuxTheme.cardGradient,
+                                  borderRadius: BorderRadius.circular(_isMobile ? 12 : 16),
+                                  border: Border.all(
+                                    color: ChoiceLuxTheme.richGold.withOpacity(0.2),
+                                    width: 1,
                                   ),
                                 ),
+                                child: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Icon(
+                                      Icons.play_circle_outline,
+                                      size: 64,
+                                      color: ChoiceLuxTheme.richGold.withOpacity(0.7),
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'Ready to Start Job',
+                                      style: TextStyle(
+                                        color: ChoiceLuxTheme.softWhite,
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.w600,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      widget.job.jobNumber ?? 'Job #${widget.jobId}',
+                                      style: TextStyle(
+                                        color: ChoiceLuxTheme.softWhite.withOpacity(0.7),
+                                        fontSize: 14,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 24),
+                                    ElevatedButton.icon(
+                                      onPressed: _startJob,
+                                      icon: const Icon(Icons.play_arrow),
+                                      label: const Text('Start Job'),
+                                      style: ElevatedButton.styleFrom(
+                                        backgroundColor: ChoiceLuxTheme.richGold,
+                                        foregroundColor: Colors.black,
+                                        padding: const EdgeInsets.symmetric(
+                                          horizontal: 24,
+                                          vertical: 12,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ],
-                          ),
-                        )
+                            )
                       : RefreshIndicator(
                           onRefresh: _loadJobProgress,
                           color: ChoiceLuxTheme.richGold,

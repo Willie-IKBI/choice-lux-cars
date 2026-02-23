@@ -6,6 +6,7 @@ import 'models/user.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart' as auth;
+import 'package:choice_lux_cars/features/insights/providers/driver_rating_provider.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
@@ -819,7 +820,32 @@ class _UsersScreenState extends ConsumerState<UsersScreen> {
           ),
         ),
       ),
-      child: UserCard(user: user, onTap: onTap),
+      child: Builder(
+        builder: (context) {
+          final isDriver = user.role?.toLowerCase() == 'driver';
+          final ratingAsync = isDriver ? ref.watch(driverRatingProvider(user.id)) : null;
+          final jobCountAsync = isDriver ? ref.watch(driverJobCountProvider(user.id)) : null;
+          double? driverRating;
+          int? driverRatingTripCount;
+          if (ratingAsync != null && ratingAsync.hasValue && ratingAsync.value != null) {
+            driverRating = ratingAsync.value!.avg;
+            driverRatingTripCount = ratingAsync.value!.count;
+          } else if (isDriver && ratingAsync != null && !ratingAsync.isLoading) {
+            driverRatingTripCount = 0;
+          }
+          int? driverJobCount;
+          if (jobCountAsync != null && jobCountAsync.hasValue) {
+            driverJobCount = jobCountAsync.value;
+          }
+          return UserCard(
+            user: user,
+            onTap: onTap,
+            driverRating: driverRating,
+            driverRatingTripCount: driverRatingTripCount,
+            driverJobCount: driverJobCount,
+          );
+        },
+      ),
     );
   }
 

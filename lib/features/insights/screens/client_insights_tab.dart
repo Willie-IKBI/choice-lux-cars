@@ -5,6 +5,7 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/client_insights_provider.dart';
 import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 
 class ClientInsightsTab extends ConsumerWidget {
@@ -148,6 +149,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     icon: Icons.business_outlined,
                     iconColor: ChoiceLuxTheme.richGold,
                     progressValue: 1.0,
+                    helpText: 'Total number of clients in the selected period and location.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -156,6 +158,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     icon: Icons.business,
                     iconColor: Colors.green,
                     progressValue: insights.totalClients > 0 ? insights.activeClients / insights.totalClients : 0.0,
+                    helpText: 'Clients who had at least one job in the period. Indicates engaged client base.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -164,6 +167,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     icon: Icons.work_outline,
                     iconColor: Colors.blue,
                     progressValue: 1.0,
+                    helpText: 'Average number of jobs per active client. Measures client usage and loyalty.',
                   ),
                   _buildNewMetricCard(
                     context: context,
@@ -172,6 +176,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: 1.0,
+                    helpText: 'Average revenue generated per active client in the period. Client value indicator.',
                   ),
                 ],
               );
@@ -209,6 +214,7 @@ class ClientInsightsTab extends ConsumerWidget {
                       icon: Icons.repeat,
                       iconColor: Colors.green,
                       progressValue: insights.clientRetentionRate / 100,
+                      helpText: 'Percentage of clients who had jobs in both the current and previous period. Measures client loyalty and repeat business.',
                     ),
                   ),
                 ],
@@ -318,22 +324,30 @@ class ClientInsightsTab extends ConsumerWidget {
                         ],
                       ),
                     ),
-                    Row(
-                      children: [
-                        Text(
-                          'R${client.totalValue.toStringAsFixed(0)}',
-                          style: TextStyle(
-                            color: ChoiceLuxTheme.richGold,
-                            fontWeight: FontWeight.bold,
+                    const SizedBox(width: 8),
+                    Flexible(
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              'R${client.totalValue.toStringAsFixed(0)}',
+                              style: TextStyle(
+                                color: ChoiceLuxTheme.richGold,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
                           ),
-                        ),
-                        const SizedBox(width: 8),
-                        Icon(
-                          Icons.arrow_forward_ios,
-                          size: 16,
-                          color: ChoiceLuxTheme.platinumSilver,
-                        ),
-                      ],
+                          const SizedBox(width: 8),
+                          Icon(
+                            Icons.arrow_forward_ios,
+                            size: 16,
+                            color: ChoiceLuxTheme.platinumSilver,
+                          ),
+                        ],
+                      ),
                     ),
                   ],
                 ),
@@ -364,6 +378,7 @@ class ClientInsightsTab extends ConsumerWidget {
     required Color iconColor,
     required double progressValue,
     String? trendIndicator,
+    String? helpText,
     VoidCallback? onTap,
   }) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -454,16 +469,35 @@ class ClientInsightsTab extends ConsumerWidget {
           ),
           SizedBox(height: valueSpacing),
           // Label
-          Text(
-            label,
-            style: TextStyle(
-              fontSize: labelFontSize,
-              color: ChoiceLuxTheme.platinumSilver,
-              fontWeight: FontWeight.w400,
+          if (helpText != null)
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                      fontSize: labelFontSize,
+                      color: ChoiceLuxTheme.platinumSilver,
+                      fontWeight: FontWeight.w400,
+                    ),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                MetricHelpIcon(explanation: helpText!),
+              ],
+            )
+          else
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: labelFontSize,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w400,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
             ),
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-          ),
           SizedBox(height: labelSpacing),
           // Progress bar at bottom
           Container(

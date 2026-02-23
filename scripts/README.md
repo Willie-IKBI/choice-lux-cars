@@ -1,57 +1,61 @@
 # Build Scripts
 
-## Firebase Config Injection
+## Firebase and Maps Config Injection
 
-The `inject-firebase-config.js` script replaces placeholders in `web/firebase-messaging-sw.js` with actual Firebase configuration values at build time. This prevents hardcoding secrets in the repository.
+The `inject-firebase-config.js` script replaces placeholders in `web/firebase-messaging-sw.js` and `web/index.html` with actual configuration values at build time. This prevents hardcoding secrets in the repository.
 
 ### Usage
 
-**Automatic (recommended):**
+**Production build** (injects into `build/web/`, source stays clean):
 ```bash
-# Windows PowerShell
+# Windows PowerShell - set env vars first (see Environment Variables below)
 .\scripts\build-web.ps1
 
 # Linux/Mac
 ./scripts/build-web.sh
-
-# Or via npm (runs automatically before build)
-npm run prebuild:web
-flutter build web
 ```
 
-**Manual:**
+**Preview locally** (build + serve at http://localhost:3000 - test before deploying to Vercel):
 ```bash
-node scripts/inject-firebase-config.js
+.\scripts\preview-web.ps1
+# or: npm run preview
 ```
+
+**Local dev** (`flutter run -d chrome` - injects into `web/`):
+```bash
+node scripts/inject-firebase-config.js   # run once, then flutter run
+flutter run -d chrome
+```
+If you ran inject for dev, run `git checkout web/` before committing to restore placeholders.
 
 ### Environment Variables
 
-The script reads from environment variables (with fallback defaults):
+Required (no hardcoded fallbacks for secrets):
 
-- `FIREBASE_API_KEY` - Firebase API key
-- `FIREBASE_AUTH_DOMAIN` - Firebase auth domain
-- `FIREBASE_PROJECT_ID` - Firebase project ID
-- `FIREBASE_STORAGE_BUCKET` - Firebase storage bucket
-- `FIREBASE_SENDER_ID` or `FIREBASE_MESSAGING_SENDER_ID` - Firebase messaging sender ID
-- `FIREBASE_APP_ID` - Firebase app ID
+- `FIREBASE_API_KEY` - Firebase API key (required for web push)
+- `FIREBASE_VAPID_KEY` - Web FCM VAPID key (from Firebase Console → Cloud Messaging → Web push certificates; **required for web push**)
+- `GOOGLE_MAPS_API_KEY` - Google Maps API key (required for maps on web)
+- `SUPABASE_URL` - Supabase project URL
+- `SUPABASE_ANON_KEY` - Supabase anon/public key
+
+Optional (non-secret, have defaults):
+
+- `FIREBASE_AUTH_DOMAIN`, `FIREBASE_PROJECT_ID`, `FIREBASE_STORAGE_BUCKET`
+- `FIREBASE_SENDER_ID` or `FIREBASE_MESSAGING_SENDER_ID`, `FIREBASE_APP_ID`
+
+### Vercel
+
+Vercel uses `scripts/vercel-build.sh`. Set all required env vars in Vercel Project Settings. See [docs/VERCEL_DEPLOYMENT.md](../docs/VERCEL_DEPLOYMENT.md).
 
 ### CI/CD Setup
 
-For CI/CD pipelines, set these as environment variables/secrets:
+For CI/CD pipelines, set these as secrets and use the build scripts:
 
 ```yaml
-# Example GitHub Actions
 env:
   FIREBASE_API_KEY: ${{ secrets.FIREBASE_API_KEY }}
-  FIREBASE_AUTH_DOMAIN: ${{ secrets.FIREBASE_AUTH_DOMAIN }}
-  FIREBASE_PROJECT_ID: ${{ secrets.FIREBASE_PROJECT_ID }}
-  FIREBASE_STORAGE_BUCKET: ${{ secrets.FIREBASE_STORAGE_BUCKET }}
-  FIREBASE_SENDER_ID: ${{ secrets.FIREBASE_SENDER_ID }}
-  FIREBASE_APP_ID: ${{ secrets.FIREBASE_APP_ID }}
-```
-
-Then run:
-```bash
-npm run prebuild:web
-flutter build web
+  FIREBASE_VAPID_KEY: ${{ secrets.FIREBASE_VAPID_KEY }}
+  GOOGLE_MAPS_API_KEY: ${{ secrets.GOOGLE_MAPS_API_KEY }}
+  SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+  SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
 ```

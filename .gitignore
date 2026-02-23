@@ -6,6 +6,9 @@ firebase_service_account.json
 android/app/keystore.properties
 **/keystore.properties
 
+# Firebase config (contains API keys - use google-services.json.example as template)
+android/app/google-services.json
+
 # Environment files with secrets
 .env
 .env.local

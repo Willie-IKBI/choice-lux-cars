@@ -199,15 +199,14 @@ class UsersRepository {
     }
   }
 
-  /// Activate user
+  /// Activate user.
+  /// Ensures profiles_branch_id_by_role_chk is satisfied (admin roles must have branch_id NULL).
   Future<Result<void>> activateUser(String userId) async {
     try {
       Log.d('Activating user: $userId');
 
-      await _supabase
-          .from('profiles')
-          .update({'status': 'active'})
-          .eq('id', userId);
+      final payload = await _statusUpdatePayload(userId, 'active');
+      await _supabase.from('profiles').update(payload).eq('id', userId);
 
       Log.d('User activated successfully');
       return const Result.success(null);
@@ -217,6 +216,23 @@ class UsersRepository {
     }
   }
 
+  /// Builds update payload for status change so profiles_branch_id_by_role_chk is not violated.
+  Future<Map<String, dynamic>> _statusUpdatePayload(String userId, String status) async {
+    final row = await _supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', userId)
+        .maybeSingle();
+    final role = row?['role'] as String?;
+    final isAdminRole = role == 'administrator' || role == 'super_admin';
+    final payload = <String, dynamic>{'status': status};
+    if (isAdminRole) payload['branch_id'] = null;
+    return payload;
+  }
+
+  /// Default branch id when switching to non-admin and both payload and current row have null branch_id (profiles_branch_id_by_role_chk).
+  static const int _defaultBranchIdForNonAdmin = 1;
+
   /// Update user
   Future<Result<void>> updateUser(User user) async {
     try {
@@ -224,6 +240,14 @@ class UsersRepository {
       Log.d('UsersRepository: User status before update: ${user.status}');
       Log.d('UsersRepository: User role before update: ${user.role}');
       Log.d('UsersRepository: User branch before update: ${user.branchId}');
+
+      // Fetch current row so we can satisfy profiles_branch_id_by_role_chk (admin: branch_id NULL; non-admin: branch_id NOT NULL).
+      final currentRow = await _supabase
+          .from('profiles')
+          .select('role, branch_id')
+          .eq('id', user.id)
+          .maybeSingle();
+      final currentBranchId = currentRow?['branch_id'];
 
       final data = user.toJson();
       Log.d('UsersRepository: Full toJson data: $data');
@@ -271,6 +295,14 @@ class UsersRepository {
       if (needsBranchIdNull && branchIdInCleanData) {
         cleanData.remove('branch_id');
         Log.d('UsersRepository: Removed branch_id from cleanData to handle separately');
+      }
+
+      // Non-admin path: ensure we never leave branch_id null (constraint requires NOT NULL).
+      if (!isAdminRole && !cleanData.containsKey('branch_id') && (user.branchId == null || user.branchId!.isEmpty)) {
+        if (currentBranchId == null) {
+          cleanData['branch_id'] = _defaultBranchIdForNonAdmin;
+          Log.d('UsersRepository: Set default branch_id for non-admin (current was null)');
+        }
       }
       
       // Log the data being sent for debugging

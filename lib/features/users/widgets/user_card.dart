@@ -1,11 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
+import 'package:choice_lux_cars/features/insights/widgets/star_rating_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 
 class UserCard extends StatefulWidget {
   final User user;
   final VoidCallback? onTap;
-  const UserCard({Key? key, required this.user, this.onTap}) : super(key: key);
+  final double? driverRating;
+  final int? driverRatingTripCount;
+  final int? driverJobCount;
+
+  const UserCard({
+    Key? key,
+    required this.user,
+    this.onTap,
+    this.driverRating,
+    this.driverRatingTripCount,
+    this.driverJobCount,
+  }) : super(key: key);
 
   @override
   State<UserCard> createState() => _UserCardState();
@@ -254,6 +266,52 @@ class _UserCardState extends State<UserCard>
               color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
               fontSize: detailSize,
             ),
+          ),
+        ],
+        if (user.role?.toLowerCase() == 'driver' && (widget.driverRatingTripCount != null || widget.driverJobCount != null)) ...[
+          SizedBox(height: isSmallMobile ? 4 : 6),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 4,
+            runSpacing: 2,
+            children: [
+              if (widget.driverJobCount != null)
+                Text(
+                  '${widget.driverJobCount} job${widget.driverJobCount == 1 ? '' : 's'}',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    fontSize: detailSize,
+                  ),
+                ),
+              if (widget.driverJobCount != null && widget.driverRatingTripCount != null)
+                Text(
+                  '·',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    fontSize: detailSize,
+                  ),
+                ),
+              if (widget.driverRatingTripCount != null && widget.driverRatingTripCount! > 0) ...[
+                StarRatingBar(
+                  rating: widget.driverRating,
+                  size: isSmallMobile ? 12 : 14,
+                ),
+                Text(
+                  '(${widget.driverRatingTripCount} trip${widget.driverRatingTripCount == 1 ? '' : 's'})',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    fontSize: detailSize,
+                  ),
+                ),
+              ] else if (widget.driverRatingTripCount != null)
+                Text(
+                  'No rating yet',
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: ChoiceLuxTheme.platinumSilver.withOpacity(0.7),
+                    fontSize: detailSize,
+                  ),
+                ),
+            ],
           ),
         ],
       ],

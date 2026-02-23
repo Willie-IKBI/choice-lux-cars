@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
-import 'package:choice_lux_cars/features/insights/data/insights_repository.dart';
 import 'package:choice_lux_cars/features/jobs/data/jobs_repository.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/job_list_card.dart';
@@ -21,12 +20,14 @@ class InsightsJobsListScreen extends ConsumerStatefulWidget {
   final TimePeriod timePeriod;
   final LocationFilter location;
   final String status; // 'all', 'completed', 'open'
+  final String? timeFilter; // 'starting_today' | 'starting_tomorrow' | 'overdue'
 
   const InsightsJobsListScreen({
     super.key,
     required this.timePeriod,
     required this.location,
     required this.status,
+    this.timeFilter,
   });
 
   @override
@@ -55,10 +56,6 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
 
     try {
       final repository = ref.read(jobsRepositoryProvider);
-      final insightsRepository = ref.read(insightsRepositoryProvider);
-
-      // Get date range from time period
-      final dateRange = _getDateRange(widget.timePeriod);
 
       // Map location filter to location string
       String? location;
@@ -80,14 +77,21 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
 
       final offset = (_currentPage - 1) * _itemsPerPage;
 
-      final result = await repository.fetchJobsWithInsightsFilters(
-        startDate: dateRange.start,
-        endDate: dateRange.end,
-        location: location,
-        status: widget.status,
-        limit: _itemsPerPage,
-        offset: offset,
-      );
+      final result = widget.timeFilter != null
+          ? await repository.fetchJobsByTimeFilter(
+              timeFilter: widget.timeFilter!,
+              location: location,
+              limit: _itemsPerPage,
+              offset: offset,
+            )
+          : await repository.fetchJobsWithInsightsFilters(
+              startDate: _getDateRange(widget.timePeriod).start,
+              endDate: _getDateRange(widget.timePeriod).end,
+              location: location,
+              status: widget.status,
+              limit: _itemsPerPage,
+              offset: offset,
+            );
 
       if (result.isSuccess) {
         final data = result.data as Map<String, dynamic>;
@@ -140,6 +144,18 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
   }
 
   String _getStatusLabel() {
+    if (widget.timeFilter != null) {
+      switch (widget.timeFilter) {
+        case 'starting_today':
+          return 'Jobs Starting Today';
+        case 'starting_tomorrow':
+          return 'Jobs Starting Tomorrow';
+        case 'overdue':
+          return 'Overdue Jobs';
+        default:
+          break;
+      }
+    }
     switch (widget.status) {
       case 'all':
         return 'All Jobs';
@@ -150,6 +166,13 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
       default:
         return 'Jobs';
     }
+  }
+
+  String _getFilterInfoText() {
+    if (widget.timeFilter != null) {
+      return '${_getStatusLabel()} • ${widget.location.displayName}';
+    }
+    return '${widget.timePeriod.displayName} • ${widget.location.displayName}';
   }
 
   @override
@@ -202,7 +225,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                 ),
                 const SizedBox(width: 8),
                 Text(
-                  '${widget.timePeriod.displayName} • ${widget.location.displayName}',
+                  _getFilterInfoText(),
                   style: TextStyle(
                     color: ChoiceLuxTheme.softWhite,
                     fontSize: 14,
@@ -322,6 +345,7 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
                                           isDesktop: isDesktop,
                                           canCreateVoucher: canCreateVoucher,
                                           canCreateInvoice: canCreateInvoice,
+                                          fromRoute: 'insights-jobs',
                                         ),
                                       );
                                     },

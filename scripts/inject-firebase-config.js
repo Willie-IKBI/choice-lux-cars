@@ -1,38 +1,55 @@
 const fs = require('fs');
 const path = require('path');
 
+// Target dir: web/ for dev (flutter run), build/web for production build (keeps source clean)
+const targetDir = process.env.INJECT_TARGET_DIR || process.argv.find(a => a.startsWith('--target-dir='))?.split('=')[1] || path.resolve(__dirname, '../web');
+
 try {
-  const serviceWorkerPath = path.resolve(__dirname, '../web/firebase-messaging-sw.js');
+  const serviceWorkerPath = path.join(targetDir, 'firebase-messaging-sw.js');
+  const indexPath = path.join(targetDir, 'index.html');
 
   if (!fs.existsSync(serviceWorkerPath)) {
     console.error('Error: firebase-messaging-sw.js not found at', serviceWorkerPath);
-    console.error('Run this script from the project root: node scripts/inject-firebase-config.js');
+    console.error('Set INJECT_TARGET_DIR or use --target-dir=build/web for production build');
     process.exit(1);
   }
 
-  // Read env vars from process.env (set via --dart-define or environment variables)
-  // Defaults match the current values from env.dart
+  // Config from env vars - support both FIREBASE_* and NEXT_PUBLIC_FIREBASE_* (Vercel convention)
   const config = {
-    apiKey: process.env.FIREBASE_API_KEY || 'AIzaSyDAJrWkn7DEUp8boXK9LEL7v-tIHhvV0Ac',
-    authDomain: process.env.FIREBASE_AUTH_DOMAIN || 'choice-lux-cars-8d510.firebaseapp.com',
-    projectId: process.env.FIREBASE_PROJECT_ID || 'choice-lux-cars-8d510',
-    storageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'choice-lux-cars-8d510.appspot.com',
-    messagingSenderId: process.env.FIREBASE_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '522491134348',
-    appId: process.env.FIREBASE_APP_ID || '1:522491134348:web:3ac424d68338b3ddb7d6a9',
+    firebaseApiKey: process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
+    firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN || 'choice-lux-cars-8d510.firebaseapp.com',
+    firebaseProjectId: process.env.FIREBASE_PROJECT_ID || 'choice-lux-cars-8d510',
+    firebaseStorageBucket: process.env.FIREBASE_STORAGE_BUCKET || 'choice-lux-cars-8d510.appspot.com',
+    firebaseSenderId: process.env.FIREBASE_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '522491134348',
+    firebaseAppId: process.env.FIREBASE_APP_ID || '1:522491134348:web:3ac424d68338b3ddb7d6a9',
+    googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
   };
 
-  let content = fs.readFileSync(serviceWorkerPath, 'utf8');
+  if (!config.firebaseApiKey) {
+    console.warn('Warning: FIREBASE_API_KEY not set - web push notifications may not work');
+  }
+  if (!config.googleMapsApiKey) {
+    console.warn('Warning: GOOGLE_MAPS_API_KEY not set - maps will not work on web');
+  }
 
-  // Replace placeholders with actual values
-  content = content.replace('__FIREBASE_API_KEY__', config.apiKey);
-  content = content.replace('__FIREBASE_AUTH_DOMAIN__', config.authDomain);
-  content = content.replace('__FIREBASE_PROJECT_ID__', config.projectId);
-  content = content.replace('__FIREBASE_STORAGE_BUCKET__', config.storageBucket);
-  content = content.replace('__FIREBASE_SENDER_ID__', config.messagingSenderId);
-  content = content.replace('__FIREBASE_APP_ID__', config.appId);
+  // Inject into firebase-messaging-sw.js
+  let swContent = fs.readFileSync(serviceWorkerPath, 'utf8');
+  swContent = swContent.replace('__FIREBASE_API_KEY__', config.firebaseApiKey);
+  swContent = swContent.replace('__FIREBASE_AUTH_DOMAIN__', config.firebaseAuthDomain);
+  swContent = swContent.replace('__FIREBASE_PROJECT_ID__', config.firebaseProjectId);
+  swContent = swContent.replace('__FIREBASE_STORAGE_BUCKET__', config.firebaseStorageBucket);
+  swContent = swContent.replace('__FIREBASE_SENDER_ID__', config.firebaseSenderId);
+  swContent = swContent.replace('__FIREBASE_APP_ID__', config.firebaseAppId);
+  fs.writeFileSync(serviceWorkerPath, swContent, 'utf8');
 
-  fs.writeFileSync(serviceWorkerPath, content, 'utf8');
-  console.log('✅ Firebase config injected into service worker');
+  // Inject into index.html (Google Maps)
+  if (fs.existsSync(indexPath)) {
+    let indexContent = fs.readFileSync(indexPath, 'utf8');
+    indexContent = indexContent.replace(/__GOOGLE_MAPS_API_KEY__/g, config.googleMapsApiKey);
+    fs.writeFileSync(indexPath, indexContent, 'utf8');
+  }
+
+  console.log('✅ Config injected into service worker and index.html');
 } catch (err) {
   console.error('Error running inject-firebase-config.js:', err.message);
   process.exit(1);

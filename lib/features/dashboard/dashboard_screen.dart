@@ -113,10 +113,12 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         isDriver,
       );
 
-      // Count unassigned users for admin notification
+      // Count unassigned users for admin notification (active only, matches Users screen)
       final unassignedUsersCount = isAdmin
           ? usersList
-                .where((user) => user.role == null || user.role == 'unassigned')
+                .where((user) =>
+                    (user.role == null || user.role == 'unassigned') &&
+                    user.status != 'deactivated')
                 .length
           : 0;
 

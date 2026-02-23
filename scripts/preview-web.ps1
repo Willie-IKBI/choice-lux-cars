@@ -1,10 +1,10 @@
-# Run Flutter app with production configuration from environment variables
+# Build and serve production web app locally (test before deploying to Vercel)
 # Loads from .env if present (gitignored). Otherwise set env vars in THIS terminal.
-#
-# One-liner (if not using .env):
-#   $env:SUPABASE_URL="https://xxx.supabase.co"; $env:SUPABASE_ANON_KEY="your_key"; .\run_production.ps1
+# Usage: .\scripts\preview-web.ps1  or  npm run preview
 
-$ProjectRoot = $PSScriptRoot
+$ErrorActionPreference = "Stop"
+
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
 $envFile = Join-Path $ProjectRoot ".env"
 if (Test-Path $envFile) {
     Get-Content $envFile | ForEach-Object {
@@ -20,17 +20,6 @@ if (Test-Path $envFile) {
 $supabaseUrl = if ($env:SUPABASE_URL) { $env:SUPABASE_URL } else { $env:NEXT_PUBLIC_SUPABASE_URL }
 $supabaseAnonKey = if ($env:SUPABASE_ANON_KEY) { $env:SUPABASE_ANON_KEY } else { $env:NEXT_PUBLIC_SUPABASE_ANON_KEY }
 
-$dartDefines = @()
-if ($supabaseUrl) { $dartDefines += "--dart-define=SUPABASE_URL=$supabaseUrl" }
-if ($supabaseAnonKey) { $dartDefines += "--dart-define=SUPABASE_ANON_KEY=$supabaseAnonKey" }
-if ($env:FIREBASE_API_KEY) { $dartDefines += "--dart-define=FIREBASE_API_KEY=$env:FIREBASE_API_KEY" }
-if ($env:FIREBASE_VAPID_KEY) { $dartDefines += "--dart-define=FIREBASE_VAPID_KEY=$env:FIREBASE_VAPID_KEY" }
-if ($env:FIREBASE_PROJECT_ID) { $dartDefines += "--dart-define=FIREBASE_PROJECT_ID=$env:FIREBASE_PROJECT_ID" }
-if ($env:FIREBASE_APP_ID) { $dartDefines += "--dart-define=FIREBASE_APP_ID=$env:FIREBASE_APP_ID" }
-if ($env:FIREBASE_SENDER_ID) { $dartDefines += "--dart-define=FIREBASE_SENDER_ID=$env:FIREBASE_SENDER_ID" }
-if ($env:FIREBASE_AUTH_DOMAIN) { $dartDefines += "--dart-define=FIREBASE_AUTH_DOMAIN=$env:FIREBASE_AUTH_DOMAIN" }
-if ($env:FIREBASE_STORAGE_BUCKET) { $dartDefines += "--dart-define=FIREBASE_STORAGE_BUCKET=$env:FIREBASE_STORAGE_BUCKET" }
-
 if (-not $supabaseUrl -or -not $supabaseAnonKey) {
     Write-Host "ERROR: Supabase config missing. Set in THIS terminal before running:" -ForegroundColor Red
     Write-Host '  $env:SUPABASE_URL="https://YOUR_PROJECT.supabase.co"' -ForegroundColor Yellow
@@ -40,4 +29,19 @@ if (-not $supabaseUrl -or -not $supabaseAnonKey) {
     exit 1
 }
 
-flutter run -d chrome $dartDefines
+$ProjectRoot = Split-Path -Parent $PSScriptRoot
+Push-Location $ProjectRoot
+
+try {
+    Write-Host "Building production web app..." -ForegroundColor Cyan
+    & "$PSScriptRoot\build-web.ps1"
+    if ($LASTEXITCODE -ne 0) { exit 1 }
+
+    Write-Host ""
+    Write-Host "Serving at http://localhost:3000 (Ctrl+C to stop)" -ForegroundColor Green
+    Write-Host "Open in browser to test production build before deploying to Vercel." -ForegroundColor Gray
+    Write-Host ""
+    npx serve build/web -l 3000
+} finally {
+    Pop-Location
+}
