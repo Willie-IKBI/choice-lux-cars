@@ -1,30 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/data/insights_repository.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
-
 /// Provider for vehicle insights data
-final vehicleInsightsProvider = FutureProvider.family<VehicleInsights, (TimePeriod, LocationFilter)>((ref, params) async {
+final vehicleInsightsProvider = FutureProvider.family<VehicleInsights, (TimePeriod, LocationFilter, DateTime?, DateTime?)>((ref, params) async {
   final repository = ref.watch(insightsRepositoryProvider);
-  final (period, location) = params;
-  
-  print('VehicleInsightsProvider - Fetching vehicle insights for period: ${period.displayName}, location: ${location.displayName}');
+  final (period, location, customStart, customEnd) = params;
   
   try {
     final result = await repository.fetchVehicleInsights(
       period: period,
       location: location,
+      customStartDate: customStart,
+      customEndDate: customEnd,
     );
     
     if (result.isSuccess) {
-      print('VehicleInsightsProvider - Successfully fetched vehicle insights');
       return result.data!;
     } else {
-      print('VehicleInsightsProvider - Failed to fetch vehicle insights: ${result.error}');
       throw Exception('Failed to fetch vehicle insights: ${result.error}');
     }
   } catch (e) {
-    print('VehicleInsightsProvider - Exception fetching vehicle insights: $e');
     rethrow;
   }
 });

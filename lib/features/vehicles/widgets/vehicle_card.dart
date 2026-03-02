@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/vehicles/models/vehicle.dart';
 import 'package:choice_lux_cars/app/theme.dart';
@@ -54,12 +55,15 @@ class VehicleCard extends StatelessWidget {
                       height: imageHeight,
                       child: vehicle.vehicleImage != null &&
                               vehicle.vehicleImage!.isNotEmpty
-                          ? Image.network(
-                              vehicle.vehicleImage!,
+                          ? CachedNetworkImage(
+                              imageUrl: vehicle.vehicleImage!,
                               width: double.infinity,
                               height: imageHeight,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) =>
+                              placeholder: (context, url) => const Center(
+                                child: CircularProgressIndicator(strokeWidth: 2),
+                              ),
+                              errorWidget: (context, url, error) =>
                                   _buildPlaceholderImage(imageHeight),
                             )
                           : _buildPlaceholderImage(imageHeight),

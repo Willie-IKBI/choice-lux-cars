@@ -77,11 +77,6 @@ class _DashboardCardState extends State<DashboardCard>
     final spacing = ResponsiveTokens.getSpacing(screenWidth);
     final iconSize = ResponsiveTokens.getIconSize(screenWidth);
 
-    // Debug: Print card sizing info
-    debugPrint(
-      'DashboardCard - Screen width: $screenWidth, isMobile: $isMobile, isSmallMobile: $isSmallMobile',
-    );
-
     // Responsive sizing - compact cards (fixed sizes to prevent overflow)
     final iconSizeValue = isSmallMobile
         ? 24.0
@@ -127,7 +122,6 @@ class _DashboardCardState extends State<DashboardCard>
                     color: Colors.transparent,
                     child: InkWell(
                       onTap: () {
-                        debugPrint('DashboardCard - Tapped: ${widget.title}');
                         widget.onTap();
                       },
                       borderRadius: BorderRadius.circular(borderRadius),

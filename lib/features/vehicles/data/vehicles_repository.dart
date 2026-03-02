@@ -35,6 +35,31 @@ class VehiclesRepository {
     }
   }
 
+  /// Fetch vehicles filtered by branch (for branch-scoped operations)
+  /// [branchId] - Numeric branch ID (1=Durban, 2=Cape Town, 3=Johannesburg)
+  /// If branchId is null, returns all vehicles (for admin users)
+  Future<Result<List<Vehicle>>> fetchVehiclesByBranch(int? branchId) async {
+    try {
+      Log.d('Fetching vehicles by branch: $branchId');
+
+      var query = _supabase.from('vehicles').select();
+
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      final response = await query.order('make', ascending: true);
+
+      Log.d('Fetched ${response.length} vehicles for branch: $branchId');
+
+      final vehicles = response.map((json) => Vehicle.fromJson(json)).toList();
+      return Result.success(vehicles);
+    } catch (error) {
+      Log.e('Error fetching vehicles by branch: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Fetch a single vehicle by ID
   Future<Result<Vehicle?>> fetchVehicleById(String vehicleId) async {
     try {

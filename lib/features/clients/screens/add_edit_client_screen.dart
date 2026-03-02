@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -361,12 +362,15 @@ class _AddEditClientScreenState extends ConsumerState<AddEditClientScreen> {
                       child: Container(
                         width: double.infinity,
                         height: double.infinity,
-                        child: Image.network(
-                          _companyLogoUrl!,
+                        child: CachedNetworkImage(
+                          imageUrl: _companyLogoUrl!,
                           fit: BoxFit.contain,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (context, error, stackTrace) =>
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          errorWidget: (context, url, error) =>
                               _buildLogoPlaceholder(),
                         ),
                       ),

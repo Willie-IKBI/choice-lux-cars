@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/clients/models/agent.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 final agentsRepositoryProvider = Provider<AgentsRepository>((ref) => AgentsRepository(Supabase.instance.client));
 
@@ -13,8 +14,7 @@ class AgentsRepository {
       final rows = await _c.from('agents').select().eq('client_key', clientId);
       return rows.map<Agent>((r) => Agent.fromJson(r)).toList();
     } catch (e) {
-      // Log the error for debugging
-      print('Error fetching agents for client $clientId: $e');
+      Log.e('Error fetching agents for client $clientId: $e');
       rethrow;
     }
   }

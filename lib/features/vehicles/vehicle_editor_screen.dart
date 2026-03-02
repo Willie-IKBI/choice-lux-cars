@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'models/vehicle.dart';
@@ -123,10 +124,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
 
   void _retryImageLoad() {
     if (vehicleImage != null && vehicleImage!.isNotEmpty) {
-      print('=== RETRYING IMAGE LOAD ===');
-      print('Image URL: $vehicleImage');
-      print('===========================');
-      
       // Force rebuild to retry image loading
       setState(() {});
       
@@ -1184,16 +1181,13 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
       return _buildInvalidUrlPlaceholder(isMobile);
     }
     
-    return Image.network(
-      vehicleImage!,
+    return CachedNetworkImage(
+      imageUrl: vehicleImage!,
       width: isMobile ? 160 : 200,
       height: isMobile ? 160 : 200,
       fit: BoxFit.cover,
-      errorBuilder: (context, error, stackTrace) => _buildErrorPlaceholder(isMobile, error),
-      loadingBuilder: (context, child, loadingProgress) {
-        if (loadingProgress == null) return child;
-        return _buildLoadingPlaceholder(isMobile, loadingProgress);
-      },
+      placeholder: (context, url) => _buildLoadingPlaceholder(isMobile, null),
+      errorWidget: (context, url, error) => _buildErrorPlaceholder(isMobile, error),
     );
   }
 
@@ -1283,13 +1277,6 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
   }
 
   Widget _buildErrorPlaceholder(bool isMobile, Object error) {
-    // Log the error for debugging
-    print('=== IMAGE LOAD ERROR ===');
-    print('Image URL: $vehicleImage');
-    print('Error: $error');
-    print('Error type: ${error.runtimeType}');
-    print('========================');
-    
     return Container(
       width: isMobile ? 160 : 200,
       height: isMobile ? 160 : 200,
@@ -1391,23 +1378,20 @@ class _VehicleEditorScreenState extends ConsumerState<VehicleEditorScreen> {
     try {
       final uri = Uri.tryParse(url);
       if (uri == null || !uri.hasAbsolutePath) {
-        print('Invalid URL format: $url');
         return false;
       }
-      
+
       // Check if it's a supported image format
       final path = uri.path.toLowerCase();
       final supportedExtensions = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
       final hasValidExtension = supportedExtensions.any((ext) => path.endsWith(ext));
-      
+
       if (!hasValidExtension) {
-        print('Unsupported image format: $path');
         return false;
       }
-      
+
       return true;
     } catch (e) {
-      print('URL validation error: $e');
       return false;
     }
   }

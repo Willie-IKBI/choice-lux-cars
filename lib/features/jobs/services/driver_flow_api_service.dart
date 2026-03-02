@@ -124,10 +124,7 @@ class DriverFlowApiService {
       }
 
       Log.d('=== JOB STARTED SUCCESSFULLY ===');
-      
-      return progressResponse as Map<String, dynamic>;
 
-      // Send notification
       try {
         final jobDetailsResponse = await _supabase
             .from('jobs')
@@ -158,6 +155,8 @@ class DriverFlowApiService {
       } catch (e) {
         Log.e('Warning: Could not send job start notification: $e');
       }
+
+      return progressResponse;
     } catch (e) {
       Log.e('=== ERROR STARTING JOB ===');
       Log.e('Error: $e');
@@ -226,16 +225,23 @@ class DriverFlowApiService {
   }
 
   /// Record arrival at pickup location
+  /// Now requires a pickup arrival photo URL for proof of arrival
   static Future<void> arriveAtPickup(
     int jobId,
     int tripIndex, {
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
+    required String pickupArrivalImageUrl,
   }) async {
     try {
       Log.d('=== ARRIVE AT PICKUP ===');
       Log.d('Job ID: $jobId, Trip Index: $tripIndex');
+      Log.d('Pickup arrival image: $pickupArrivalImageUrl');
+
+      if (pickupArrivalImageUrl.trim().isEmpty) {
+        throw Exception('Pickup arrival photo is required. Please capture a photo of the location.');
+      }
 
       final jobResponse = await _supabase
           .from('jobs')
@@ -262,6 +268,7 @@ class DriverFlowApiService {
           'pickup_gps_lat': gpsLat,
           'pickup_gps_lng': gpsLng,
           'pickup_arrived_at': pickupArriveTime,
+          'pickup_arrival_img': pickupArrivalImageUrl,
           'updated_at': pickupArriveTime,
         }).eq('job_id', jobId).eq('trip_index', tripIndex),
       ]);
@@ -640,10 +647,11 @@ class DriverFlowApiService {
     }
   }
 
-  /// Return vehicle
+  /// Return vehicle. Requires closing odometer image URL.
   static Future<void> returnVehicle(
     int jobId, {
     required double odoEndReading,
+    required String jobClosedOdoImageUrl,
     required double gpsLat,
     required double gpsLng,
     double? gpsAccuracy,
@@ -651,6 +659,11 @@ class DriverFlowApiService {
     try {
       Log.d('=== RETURN VEHICLE ===');
       Log.d('Job ID: $jobId');
+
+      final trimmed = jobClosedOdoImageUrl.trim();
+      if (trimmed.isEmpty) {
+        throw Exception('Closing odometer image is required. Please capture the odometer photo when returning the vehicle.');
+      }
 
       final jobResponse = await _supabase
           .from('jobs')
@@ -663,17 +676,20 @@ class DriverFlowApiService {
         throw Exception('No driver assigned to job $jobId');
       }
 
-             await _supabase
-           .from('driver_flow')
-           .update({
-             'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
-             'job_closed_odo': odoEndReading,
-             'current_step': 'vehicle_return',
-             'progress_percentage': 100,
-             'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
-             'updated_at': SATimeUtils.getCurrentSATimeISO(),
-           })
-           .eq('job_id', jobId);
+      final updatePayload = <String, dynamic>{
+        'job_closed_time': SATimeUtils.getCurrentSATimeISO(),
+        'job_closed_odo': odoEndReading,
+        'job_closed_odo_img': trimmed,
+        'current_step': 'vehicle_return',
+        'progress_percentage': 100,
+        'last_activity_at': SATimeUtils.getCurrentSATimeISO(),
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      await _supabase
+          .from('driver_flow')
+          .update(updatePayload)
+          .eq('job_id', jobId);
 
       Log.d('=== VEHICLE RETURNED ===');
 
@@ -742,7 +758,7 @@ class DriverFlowApiService {
           .single();
       final driverFlowFuture = _supabase
           .from('driver_flow')
-          .select('job_closed_odo, job_closed_time, transport_completed_ind, passenger_no_show_ind, current_step')
+          .select('job_closed_odo, job_closed_time, job_closed_odo_img, transport_completed_ind, passenger_no_show_ind, current_step')
           .eq('job_id', jobId)
           .maybeSingle();
 
@@ -774,6 +790,13 @@ class DriverFlowApiService {
       final jobClosedOdo = driverFlowResponse['job_closed_odo'];
       if (jobClosedOdo == null) {
         final errorMsg = 'Job $jobId cannot be closed: Vehicle has not been returned. Please return the vehicle first.';
+        Log.e('Validation failed: $errorMsg');
+        throw Exception(errorMsg);
+      }
+
+      final jobClosedOdoImg = driverFlowResponse['job_closed_odo_img']?.toString().trim();
+      if (jobClosedOdoImg == null || jobClosedOdoImg.isEmpty) {
+        final errorMsg = 'Job $jobId cannot be closed: Closing odometer photo is missing. Please return the vehicle with an odometer photo first.';
         Log.e('Validation failed: $errorMsg');
         throw Exception(errorMsg);
       }
@@ -881,6 +904,9 @@ class DriverFlowApiService {
       }
       if (msg.contains('Driver flow record not found')) {
         throw Exception('Please return the vehicle first.');
+      }
+      if (msg.contains('Closing odometer photo') || msg.contains('odometer photo')) {
+        throw Exception('Please return the vehicle with an odometer photo first.');
       }
       // DB trigger raises "Cannot close job: not all trips are completed" (lowercase)
       if (msg.toLowerCase().contains('not all trips')) {
@@ -1090,7 +1116,7 @@ class DriverFlowApiService {
       final response = await _supabase
           .from('jobs')
           .select('*')
-          .inFilter('status', ['assigned', 'started', 'in_progress'])
+          .inFilter('job_status', ['assigned', 'started', 'in_progress'])
           .order('created_at', ascending: false);
       
       return List<Map<String, dynamic>>.from(response);
@@ -1115,7 +1141,7 @@ class DriverFlowApiService {
       final activeJobsResponse = await _supabase
           .from('jobs')
           .select('driver_id')
-          .inFilter('status', ['assigned', 'started', 'in_progress']);
+          .inFilter('job_status', ['assigned', 'started', 'in_progress']);
       
       final activeDriverIds = activeJobsResponse
           .map((job) => job['driver_id'])
@@ -1134,6 +1160,70 @@ class DriverFlowApiService {
         'active_drivers': 0,
         'inactive_drivers': 0,
       };
+    }
+  }
+
+  /// Update odometer readings (admin only).
+  /// Used when drivers enter incorrect km values and an admin needs to correct them.
+  /// Requires a reason for audit purposes. RLS policy enforces admin-only access.
+  static Future<void> updateOdometerReadings(
+    int jobId, {
+    required double? odoStartReading,
+    required double? odoEndReading,
+    required String updatedByUserId,
+    required String reason,
+  }) async {
+    try {
+      Log.d('=== ADMIN UPDATE ODOMETER READINGS ===');
+      Log.d('Job ID: $jobId, updatedBy: $updatedByUserId');
+      Log.d('New start: $odoStartReading, New end: $odoEndReading');
+      Log.d('Reason: $reason');
+
+      if (reason.trim().isEmpty) {
+        throw Exception('A reason is required when updating odometer readings.');
+      }
+
+      if (odoStartReading != null && odoEndReading != null && odoEndReading < odoStartReading) {
+        throw Exception('End odometer reading must be greater than or equal to start reading.');
+      }
+
+      final existingFlow = await _supabase
+          .from('driver_flow')
+          .select('id, odo_start_reading, job_closed_odo')
+          .eq('job_id', jobId)
+          .maybeSingle();
+
+      if (existingFlow == null) {
+        throw Exception('No driver flow record found for job $jobId. The job may not have been started yet.');
+      }
+
+      final updatePayload = <String, dynamic>{
+        'updated_at': SATimeUtils.getCurrentSATimeISO(),
+      };
+
+      if (odoStartReading != null) {
+        updatePayload['odo_start_reading'] = odoStartReading;
+      }
+      if (odoEndReading != null) {
+        updatePayload['job_closed_odo'] = odoEndReading;
+      }
+
+      await _supabase
+          .from('driver_flow')
+          .update(updatePayload)
+          .eq('job_id', jobId);
+
+      Log.d('=== ODOMETER READINGS UPDATED SUCCESSFULLY ===');
+      Log.d('Updated by: $updatedByUserId');
+      Log.d('Reason: $reason');
+    } catch (e) {
+      Log.e('=== ERROR UPDATING ODOMETER READINGS ===');
+      Log.e('Error: $e');
+      final msg = e.toString();
+      if (msg.contains('RLS') || msg.contains('policy') || msg.contains('permission') || msg.contains('denied')) {
+        throw Exception("You don't have permission to update odometer readings. Admin access required.");
+      }
+      rethrow;
     }
   }
 }

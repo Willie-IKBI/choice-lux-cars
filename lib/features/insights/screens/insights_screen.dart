@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:choice_lux_cars/features/insights/screens/jobs_insights_tab.dart';
 import 'package:choice_lux_cars/features/insights/screens/financial_insights_tab.dart';
 import 'package:choice_lux_cars/features/insights/screens/driver_insights_tab.dart';
@@ -27,7 +28,9 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
   TimePeriod _selectedPeriod = TimePeriod.thisMonth;
   LocationFilter _selectedLocation = LocationFilter.all;
   int _selectedTabIndex = 0;
-  bool _showFilters = false; // Filters hidden by default
+  bool _showFilters = false;
+  DateTime? _customStartDate;
+  DateTime? _customEndDate;
 
   // Premium tab items
   static const List<PremiumTabItem> _tabItems = [
@@ -71,8 +74,6 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     // Check if user is administrator or super_admin
     final userRole = userProfile?.role?.toLowerCase();
     final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
-    
-    print('InsightsScreen - User role: $userRole, isAdmin: $isAdmin');
     
     if (!isAdmin) {
       return SystemSafeScaffold(
@@ -188,22 +189,32 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                     JobsInsightsTab(
                       selectedPeriod: _selectedPeriod,
                       selectedLocation: _selectedLocation,
+                      customStartDate: _customStartDate,
+                      customEndDate: _customEndDate,
                     ),
                     FinancialInsightsTab(
                       selectedPeriod: _selectedPeriod,
                       selectedLocation: _selectedLocation,
+                      customStartDate: _customStartDate,
+                      customEndDate: _customEndDate,
                     ),
                     DriverInsightsTab(
                       selectedPeriod: _selectedPeriod,
                       selectedLocation: _selectedLocation,
+                      customStartDate: _customStartDate,
+                      customEndDate: _customEndDate,
                     ),
                     VehicleInsightsTab(
                       selectedPeriod: _selectedPeriod,
                       selectedLocation: _selectedLocation,
+                      customStartDate: _customStartDate,
+                      customEndDate: _customEndDate,
                     ),
                     ClientInsightsTab(
                       selectedPeriod: _selectedPeriod,
                       selectedLocation: _selectedLocation,
+                      customStartDate: _customStartDate,
+                      customEndDate: _customEndDate,
                     ),
                   ],
                 ),
@@ -330,7 +341,7 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
                   SizedBox(width: isMobile ? 6 : 8),
                   Expanded(
                     child: Text(
-                      _selectedPeriod.displayName,
+                      _customDateLabel,
                       style: TextStyle(
                         color: Colors.white,
                         fontSize: isMobile ? 12 : 13,
@@ -404,6 +415,16 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
     );
   }
 
+  String get _customDateLabel {
+    if (_selectedPeriod == TimePeriod.custom &&
+        _customStartDate != null &&
+        _customEndDate != null) {
+      final fmt = DateFormat('d MMM');
+      return '${fmt.format(_customStartDate!)} – ${fmt.format(_customEndDate!)}';
+    }
+    return _selectedPeriod.displayName;
+  }
+
   void _showTimePeriodPicker(BuildContext context) {
     showModalBottomSheet(
       context: context,
@@ -411,12 +432,12 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (context) => Container(
+      builder: (ctx) => Container(
         padding: const EdgeInsets.all(20),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(
+            const Text(
               'Select Time Period',
               style: TextStyle(
                 fontSize: 18,
@@ -429,15 +450,65 @@ class _InsightsScreenState extends ConsumerState<InsightsScreen> {
               title: Text(
                 period.displayName,
                 style: TextStyle(
-                  color: _selectedPeriod == period ? ChoiceLuxTheme.richGold : Colors.white,
-                  fontWeight: _selectedPeriod == period ? FontWeight.bold : FontWeight.normal,
+                  color: _selectedPeriod == period
+                      ? ChoiceLuxTheme.richGold
+                      : Colors.white,
+                  fontWeight: _selectedPeriod == period
+                      ? FontWeight.bold
+                      : FontWeight.normal,
                 ),
               ),
-              onTap: () {
-                setState(() {
-                  _selectedPeriod = period;
-                });
-                Navigator.pop(context);
+              trailing: _selectedPeriod == period
+                  ? Icon(Icons.check, color: ChoiceLuxTheme.richGold, size: 20)
+                  : null,
+              onTap: () async {
+                if (period == TimePeriod.custom) {
+                  Navigator.pop(ctx);
+                  final picked = await showDateRangePicker(
+                    context: context,
+                    firstDate: DateTime(2024),
+                    lastDate: DateTime.now(),
+                    initialDateRange:
+                        _customStartDate != null && _customEndDate != null
+                            ? DateTimeRange(
+                                start: _customStartDate!,
+                                end: _customEndDate!,
+                              )
+                            : DateTimeRange(
+                                start: DateTime.now()
+                                    .subtract(const Duration(days: 30)),
+                                end: DateTime.now(),
+                              ),
+                    builder: (context, child) {
+                      return Theme(
+                        data: ThemeData.dark().copyWith(
+                          colorScheme: ColorScheme.dark(
+                            primary: ChoiceLuxTheme.richGold,
+                            onPrimary: Colors.black,
+                            surface: const Color(0xFF1a1a1a),
+                            onSurface: Colors.white,
+                          ),
+                          dialogBackgroundColor: const Color(0xFF1a1a1a),
+                        ),
+                        child: child!,
+                      );
+                    },
+                  );
+                  if (picked != null) {
+                    setState(() {
+                      _selectedPeriod = TimePeriod.custom;
+                      _customStartDate = picked.start;
+                      _customEndDate = picked.end;
+                    });
+                  }
+                } else {
+                  setState(() {
+                    _selectedPeriod = period;
+                    _customStartDate = null;
+                    _customEndDate = null;
+                  });
+                  Navigator.pop(ctx);
+                }
               },
             )),
           ],

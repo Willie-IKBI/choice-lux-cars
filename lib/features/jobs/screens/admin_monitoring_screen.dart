@@ -32,6 +32,9 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
 
   late TabController _tabController;
 
+  double get padding => ResponsiveTokens.getPadding(MediaQuery.of(context).size.width);
+  double get spacing => ResponsiveTokens.getSpacing(MediaQuery.of(context).size.width);
+
   @override
   void initState() {
     super.initState();
@@ -144,8 +147,6 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
-    final padding = ResponsiveTokens.getPadding(screenWidth);
-    final spacing = ResponsiveTokens.getSpacing(screenWidth);
     return SystemSafeScaffold(
       appBar: LuxuryAppBar(
         title: 'Job Monitoring',
@@ -162,13 +163,13 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
             decoration: BoxDecoration(
               gradient: LinearGradient(
                 colors: [
-                  ChoiceLuxTheme.jetBlack.withOpacity(0.95),
-                  ChoiceLuxTheme.jetBlack.withOpacity(0.90),
+                  ChoiceLuxTheme.jetBlack.withValues(alpha: 0.95),
+                  ChoiceLuxTheme.jetBlack.withValues(alpha: 0.90),
                 ],
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.1),
+                  color: Colors.black.withValues(alpha: 0.1),
                   blurRadius: 4,
                   offset: const Offset(0, 2),
                 ),
@@ -366,40 +367,6 @@ class _AdminMonitoringScreenState extends ConsumerState<AdminMonitoringScreen>
           ),
         );
       },
-    );
-  }
-
-  Widget _buildStatCard(
-    String title,
-    String value,
-    IconData icon,
-    Color color,
-  ) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(padding),
-        child: Column(
-          children: [
-            Icon(icon, color: color, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                fontWeight: FontWeight.bold,
-                color: color,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              title,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(color: Colors.grey[600]),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
-      ),
     );
   }
 

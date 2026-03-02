@@ -139,9 +139,9 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
               // User Profile Section
               if (showProfile && currentUser != null) ...[
                 if (isMobile)
-                  _buildMobileUserMenu(context, displayName, userProfile)
+                  _buildMobileUserMenu(context, ref, displayName, userProfile)
                 else
-                  _buildDesktopUserMenu(context, displayName, userProfile),
+                  _buildDesktopUserMenu(context, ref, displayName, userProfile),
                 const SizedBox(width: 8),
               ],
             ],
@@ -177,12 +177,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
                     Log.d('Context pop successful');
                   } else {
                     Log.d('Cannot pop - navigating to dashboard');
-                    context.go('/dashboard');
+                    context.go('/');
                   }
                 } catch (e) {
                   Log.d('Error popping context: $e');
-                  // Fallback to go to dashboard
-                  context.go('/dashboard');
+                  context.go('/');
                 }
               },
         style: IconButton.styleFrom(
@@ -269,6 +268,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   Widget _buildMobileUserMenu(
     BuildContext context,
+    WidgetRef ref,
     String displayName,
     userProfile,
   ) {
@@ -289,7 +289,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           Log.d('Navigate to Settings');
           context.push('/settings');
         } else if (value == 'logout') {
-          await _showSignOutDialog(context);
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (context.mounted) {
+              await _showSignOutDialog(context, ref);
+            }
+          });
         }
       },
       child: Container(
@@ -413,6 +417,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
 
   Widget _buildDesktopUserMenu(
     BuildContext context,
+    WidgetRef ref,
     String displayName,
     userProfile,
   ) {
@@ -433,7 +438,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
           Log.d('Navigate to Settings');
           context.push('/settings');
         } else if (value == 'logout') {
-          await _showSignOutDialog(context);
+          WidgetsBinding.instance.addPostFrameCallback((_) async {
+            if (context.mounted) {
+              await _showSignOutDialog(context, ref);
+            }
+          });
         }
       },
       child: Row(
@@ -577,7 +586,7 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
   }
 
-  Future<void> _showSignOutDialog(BuildContext context) async {
+  Future<void> _showSignOutDialog(BuildContext context, WidgetRef ref) async {
     final shouldLogout = await showDialog<bool>(
       context: context,
       builder: (BuildContext context) {
@@ -655,7 +664,11 @@ class LuxuryAppBar extends ConsumerWidget implements PreferredSizeWidget {
     );
 
     if (shouldLogout == true) {
-      onSignOut?.call();
+      if (onSignOut != null) {
+        onSignOut!.call();
+      } else {
+        await ref.read(authProvider.notifier).signOut();
+      }
     }
   }
 

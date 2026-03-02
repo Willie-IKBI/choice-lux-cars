@@ -12,7 +12,7 @@ import 'package:choice_lux_cars/features/invoices/widgets/invoice_action_buttons
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/shared/utils/status_color_utils.dart';
-import 'package:choice_lux_cars/shared/utils/date_utils.dart' as app_date_utils;
+import 'package:choice_lux_cars/core/utils.dart' as app_date_utils;
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 
 class JobListCard extends ConsumerWidget {
@@ -249,7 +249,7 @@ class JobListCard extends ConsumerWidget {
             ),
             SizedBox(width: spacing * 0.25),
             Text(
-              app_date_utils.DateUtils.formatDate(currentJob.jobStartDate),
+              app_date_utils.DateUtils.formatDateLong(currentJob.jobStartDate),
               style: TextStyle(
                 fontSize: isSmallMobile ? 11 : 12,
                 color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),

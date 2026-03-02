@@ -9,6 +9,7 @@ import 'package:choice_lux_cars/features/clients/providers/agents_provider.dart'
 import 'package:choice_lux_cars/features/vehicles/providers/vehicles_provider.dart';
 import 'package:choice_lux_cars/features/users/providers/users_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
@@ -80,6 +81,27 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
     // If editing, load the job data
     if (widget.jobId != null) {
       _loadJobForEditing();
+    }
+    
+    // Auto-set location for non-admin users after frame is built
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _autoSetLocationForNonAdmins();
+    });
+  }
+  
+  void _autoSetLocationForNonAdmins() {
+    final userProfile = ref.read(currentUserProfileProvider);
+    if (userProfile == null) return;
+    
+    final userRole = userProfile.role?.toLowerCase();
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    
+    // Auto-set location to user's branch for non-admins (if not editing)
+    if (!isAdmin && widget.jobId == null && userProfile.branchId != null) {
+      setState(() {
+        _selectedLocation = userProfile.branchId;
+        Log.d('Auto-set location to user branch: $_selectedLocation');
+      });
     }
   }
 
@@ -1202,13 +1224,18 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildVehicleDropdown(List<dynamic> vehicles) {
+    // Get current user to check if admin
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    
     // Sort vehicles by make alphabetically
     final sortedVehicles = List.from(vehicles)
       ..sort((a, b) => (a.make ?? '').compareTo(b.make ?? ''));
 
     return _buildDropdownField(
       label: 'Vehicle *',
-      hint: 'Select a vehicle',
+      hint: isAdmin ? 'Select a vehicle' : 'Select a vehicle (${BranchUtils.getFullName(userProfile?.branchId) ?? 'your branch'})',
       icon: Icons.directions_car,
       value: _selectedVehicleId,
       items: sortedVehicles.map((vehicle) {
@@ -1260,12 +1287,39 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildDriverDropdown(List<dynamic> allUsers) {
+    // Get current user to check if admin
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    
+    // Filter drivers by branch for non-admin users
+    List<dynamic> filteredDrivers;
+    if (isAdmin) {
+      // Admins see all drivers
+      filteredDrivers = allUsers.where((u) => 
+          u.role?.toLowerCase() == 'driver' || 
+          u.role?.toLowerCase() == 'driver_manager'
+      ).toList();
+    } else {
+      // Non-admins see only drivers in their branch
+      final userBranchId = BranchUtils.getBranchIdFromCode(userProfile?.branchId);
+      filteredDrivers = allUsers.where((u) {
+        final isDriverRole = u.role?.toLowerCase() == 'driver' || 
+                             u.role?.toLowerCase() == 'driver_manager';
+        if (!isDriverRole) return false;
+        
+        // Filter by branch
+        final driverBranchId = BranchUtils.getBranchIdFromCode(u.branchId);
+        return userBranchId == null || driverBranchId == userBranchId;
+      }).toList();
+    }
+    
     return _buildDropdownField(
       label: 'Driver *',
-      hint: 'Select a driver',
+      hint: isAdmin ? 'Select a driver' : 'Select a driver (${BranchUtils.getFullName(userProfile?.branchId) ?? 'your branch'})',
       icon: Icons.person,
       value: _selectedDriverId,
-      items: allUsers.map((user) {
+      items: filteredDrivers.map((user) {
         final hasValidLicense =
             user.driverLicExp != null &&
             user.driverLicExp!.isAfter(DateTime.now());
@@ -1316,6 +1370,89 @@ class _CreateJobScreenState extends ConsumerState<CreateJobScreen> {
   }
 
   Widget _buildLocationDropdown() {
+    // Get current user to check if admin
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    
+    // Non-admins can only create jobs in their own branch
+    if (!isAdmin && userProfile?.branchId != null) {
+      final branchName = BranchUtils.getFullName(userProfile?.branchId) ?? userProfile?.branchId;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Text(
+                'Branch (Location) *',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: ChoiceLuxTheme.softWhite,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Text(
+                '*',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.errorColor,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.charcoalGray.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.location_on,
+                  color: ChoiceLuxTheme.richGold,
+                  size: 20,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    branchName ?? 'Unknown Branch',
+                    style: const TextStyle(
+                      color: ChoiceLuxTheme.richGold,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Text(
+                    'Your Branch',
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.richGold,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
+    
+    // Admins can select any branch
     return _buildDropdownField(
       label: 'Branch (Location) *',
       hint: 'Select branch location',

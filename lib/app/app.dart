@@ -560,10 +560,13 @@ class _ChoiceLuxCarsAppState extends ConsumerState<ChoiceLuxCarsApp> {
               location = LocationFilter.all;
             }
 
+            final timeFilter = state.uri.queryParameters['timeFilter'];
+
             return InsightsJobsListScreen(
               timePeriod: timePeriod,
               location: location,
               status: status,
+              timeFilter: timeFilter,
             );
           },
         ),

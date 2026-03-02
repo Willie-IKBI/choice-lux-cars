@@ -5,32 +5,41 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/client_insights_provider.dart';
 import 'package:choice_lux_cars/features/insights/screens/client_statement_screen.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
+import 'package:choice_lux_cars/shared/widgets/insights_metric_card.dart';
+import 'package:choice_lux_cars/shared/widgets/section_header.dart';
+import 'package:choice_lux_cars/shared/widgets/common_states.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
+import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/core/utils.dart';
 
 class ClientInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
   final LocationFilter selectedLocation;
+  final DateTime? customStartDate;
+  final DateTime? customEndDate;
 
   const ClientInsightsTab({
     super.key,
     required this.selectedPeriod,
     required this.selectedLocation,
+    this.customStartDate,
+    this.customEndDate,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final clientInsightsAsync = ref.watch(clientInsightsProvider((
-      selectedPeriod,
-      selectedLocation,
-    )));
+    final providerKey = (selectedPeriod, selectedLocation, customStartDate, customEndDate);
+    final clientInsightsAsync = ref.watch(clientInsightsProvider(providerKey));
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: clientInsightsAsync.when(
         data: (insights) => _buildClientContent(context, insights),
-        loading: () => _buildLoadingState(),
-        error: (error, stack) => _buildErrorState(error.toString()),
+        loading: () => const LoadingStateWidget(message: 'Loading client insights...'),
+        error: (error, stack) => ErrorStateWidget(
+          message: error.toString(),
+          onRetry: () => ref.invalidate(clientInsightsProvider(providerKey)),
+        ),
       ),
     );
   }
@@ -92,7 +101,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        // TODO: Implement export report functionality
+                        SnackBarUtils.showInfo(context, 'Export Report coming soon');
                       },
                       child: Text(
                         'Export Report',
@@ -119,7 +128,7 @@ class ClientInsightsTab extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Key Metrics
-          _buildSectionHeader('Client Overview'),
+          SectionHeader(title: 'Client Overview'),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -142,17 +151,16 @@ class ClientInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Total Clients',
                     value: insights.totalClients.toString(),
                     icon: Icons.business_outlined,
                     iconColor: ChoiceLuxTheme.richGold,
                     progressValue: 1.0,
                     helpText: 'Total number of clients in the selected period and location.',
+                    onTap: () => context.go('/clients'),
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Active Clients',
                     value: insights.activeClients.toString(),
                     icon: Icons.business,
@@ -160,8 +168,7 @@ class ClientInsightsTab extends ConsumerWidget {
                     progressValue: insights.totalClients > 0 ? insights.activeClients / insights.totalClients : 0.0,
                     helpText: 'Clients who had at least one job in the period. Indicates engaged client base.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Jobs/Client',
                     value: insights.averageJobsPerClient.toStringAsFixed(1),
                     icon: Icons.work_outline,
@@ -169,10 +176,9 @@ class ClientInsightsTab extends ConsumerWidget {
                     progressValue: 1.0,
                     helpText: 'Average number of jobs per active client. Measures client usage and loyalty.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Revenue/Client',
-                    value: 'R${insights.averageRevenuePerClient.toStringAsFixed(0)}',
+                    value: CurrencyUtils.formatCompact(insights.averageRevenuePerClient),
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: 1.0,
@@ -201,14 +207,10 @@ class ClientInsightsTab extends ConsumerWidget {
           // Client Retention Rate
           LayoutBuilder(
             builder: (context, constraints) {
-              final screenWidth = MediaQuery.of(context).size.width;
-              final spacing = ResponsiveTokens.getSpacing(screenWidth);
-              
               return Row(
                 children: [
                   Expanded(
-                    child: _buildNewMetricCard(
-                      context: context,
+                    child: InsightsMetricCard(
                       label: 'Client Retention Rate',
                       value: '${insights.clientRetentionRate.toStringAsFixed(1)}%',
                       icon: Icons.repeat,
@@ -225,7 +227,7 @@ class ClientInsightsTab extends ConsumerWidget {
 
           // Sprint 1: Top Clients by Revenue
           if (insights.topClientsByRevenue.isNotEmpty) ...[
-            _buildSectionHeader('Top Clients by Revenue'),
+            SectionHeader(title: 'Top Clients by Revenue'),
             const SizedBox(height: 16),
             _buildTopClientsCard(context, insights.topClientsByRevenue),
           ],
@@ -333,7 +335,7 @@ class ClientInsightsTab extends ConsumerWidget {
                             fit: BoxFit.scaleDown,
                             alignment: Alignment.centerRight,
                             child: Text(
-                              'R${client.totalValue.toStringAsFixed(0)}',
+                              CurrencyUtils.formatCompact(client.totalValue),
                               style: TextStyle(
                                 color: ChoiceLuxTheme.richGold,
                                 fontWeight: FontWeight.bold,
@@ -359,238 +361,4 @@ class ClientInsightsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: ChoiceLuxTheme.softWhite,
-      ),
-    );
-  }
-
-  Widget _buildNewMetricCard({
-    required BuildContext context,
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color iconColor,
-    required double progressValue,
-    String? trendIndicator,
-    String? helpText,
-    VoidCallback? onTap,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-    final cardPadding = isSmallMobile ? 10.0 : (isMobile ? 12.0 : 16.0);
-    final iconSize = isSmallMobile ? 32.0 : (isMobile ? 36.0 : 40.0);
-    final iconIconSize = isSmallMobile ? 18.0 : (isMobile ? 20.0 : 22.0);
-    final valueFontSize = isSmallMobile ? 20.0 : (isMobile ? 22.0 : 28.0);
-    final labelFontSize = isSmallMobile ? 11.0 : (isMobile ? 12.0 : 14.0);
-    final iconSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
-    final valueSpacing = isSmallMobile ? 3.0 : (isMobile ? 4.0 : 6.0);
-    final labelSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
-
-    Widget card = Container(
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon in rounded square container
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: iconIconSize,
-                ),
-              ),
-            // Trend indicator (optional, top-right)
-            if (trendIndicator != null)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 4 : 6,
-                  vertical: isSmallMobile ? 1 : 2,
-                ),
-                decoration: BoxDecoration(
-                  color: trendIndicator.startsWith('-')
-                      ? Colors.red.withOpacity(0.2)
-                      : Colors.green.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  trendIndicator,
-                  style: TextStyle(
-                    fontSize: isSmallMobile ? 9 : 10,
-                    fontWeight: FontWeight.w600,
-                    color: trendIndicator.startsWith('-')
-                        ? Colors.red.shade300
-                        : Colors.green.shade300,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: iconSpacing),
-          // Value
-          Flexible(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: valueFontSize,
-                fontWeight: FontWeight.w700,
-                color: ChoiceLuxTheme.softWhite,
-                letterSpacing: 0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(height: valueSpacing),
-          // Label
-          if (helpText != null)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: labelFontSize,
-                      color: ChoiceLuxTheme.platinumSilver,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                MetricHelpIcon(explanation: helpText!),
-              ],
-            )
-          else
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: labelFontSize,
-                color: ChoiceLuxTheme.platinumSilver,
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          SizedBox(height: labelSpacing),
-          // Progress bar at bottom
-          Container(
-            height: 2,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(1),
-            ),
-            child: FractionallySizedBox(
-              widthFactor: progressValue.clamp(0.0, 1.0),
-              alignment: Alignment.centerLeft,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: iconColor,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: card,
-        ),
-      );
-    }
-
-    return card;
-  }
-
-  Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Loading client insights...',
-            style: TextStyle(color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load client insights',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Refresh logic would go here
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.richGold,
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
 }

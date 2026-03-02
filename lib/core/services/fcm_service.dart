@@ -5,9 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/notifications/providers/notification_provider.dart';
-import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 
 class FCMService {
@@ -129,35 +127,6 @@ class FCMService {
     });
   }
 
-  /// Save FCM token to user profile (unused - centralized writer handles saving)
-  static Future<void> _saveFCMToken(String token) async {
-    try {
-      // Get current user ID
-      final currentUser = SupabaseService.instance.currentUser;
-      if (currentUser == null) {
-        Log.d('FCMService: No current user found for FCM token save');
-        return;
-      }
-
-      // Save token to user profile in Supabase (platform-specific)
-      final updateData = <String, dynamic>{};
-      
-      if (kIsWeb) {
-        updateData['fcm_token_web'] = token;
-      } else {
-        updateData['fcm_token'] = token;
-      }
-      
-      await SupabaseService.instance.updateProfile(
-        userId: currentUser.id,
-        data: updateData,
-      );
-      Log.d('FCMService: FCM token saved successfully (platform: ${kIsWeb ? "web" : "mobile"})');
-    } catch (e) {
-      Log.e('FCMService: Error saving FCM token: $e');
-    }
-  }
-
   /// Handle foreground messages
   static Future<void> _handleForegroundMessage(RemoteMessage message, WidgetRef ref) async {
     Log.d('FCMService: Foreground message received: ${message.data}');
@@ -248,7 +217,11 @@ class FCMService {
     }
   }
 
-  /// Show web notification using browser Notification API
+  /// Web push notifications are intentionally limited.
+  /// The Firebase messaging service worker is disabled in web/index.html to avoid
+  /// conflicts with Flutter's own service worker (routing/asset caching).
+  /// Foreground web notifications are not yet implemented via the browser Notification API.
+  /// Background web push therefore does not work. This is a known limitation.
   static Future<void> _showWebNotification({
     required String title,
     required String body,

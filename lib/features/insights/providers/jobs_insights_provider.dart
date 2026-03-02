@@ -1,30 +1,25 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/insights/data/insights_repository.dart';
 import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
-
 /// Provider for jobs insights data
-final jobsInsightsProvider = FutureProvider.family<JobInsights, (TimePeriod, LocationFilter)>((ref, params) async {
+final jobsInsightsProvider = FutureProvider.family<JobInsights, (TimePeriod, LocationFilter, DateTime?, DateTime?)>((ref, params) async {
   final repository = ref.watch(insightsRepositoryProvider);
-  final (period, location) = params;
-  
-  print('JobsInsightsProvider - Fetching jobs insights for period: ${period.displayName}, location: ${location.displayName}');
+  final (period, location, customStart, customEnd) = params;
   
   try {
     final result = await repository.fetchJobsInsights(
       period: period,
       location: location,
+      customStartDate: customStart,
+      customEndDate: customEnd,
     );
     
     if (result.isSuccess) {
-      print('JobsInsightsProvider - Successfully fetched jobs insights');
       return result.data!;
     } else {
-      print('JobsInsightsProvider - Failed to fetch jobs insights: ${result.error}');
       throw Exception('Failed to fetch jobs insights: ${result.error}');
     }
   } catch (e) {
-    print('JobsInsightsProvider - Exception fetching jobs insights: $e');
     rethrow;
   }
 });

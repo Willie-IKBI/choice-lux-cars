@@ -76,12 +76,17 @@ class OpsKpiTile extends StatelessWidget {
                         ),
                       ),
                     const SizedBox(height: 2),
-                    Text(
-                      value,
-                      style: TextStyle(
-                        color: ChoiceLuxTheme.softWhite,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w700,
+                    FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        value,
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.softWhite,
+                          fontSize: 18,
+                          fontWeight: FontWeight.w700,
+                        ),
+                        maxLines: 1,
                       ),
                     ),
                   ],

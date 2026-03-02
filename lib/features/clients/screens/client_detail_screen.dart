@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -143,12 +144,15 @@ class _ClientDetailScreenState extends ConsumerState<ClientDetailScreen>
                 ),
                 child: client.companyLogo != null
                     ? ClipOval(
-                        child: Image.network(
-                          client.companyLogo!,
+                        child: CachedNetworkImage(
+                          imageUrl: client.companyLogo!,
                           fit: BoxFit.cover,
                           width: double.infinity,
                           height: double.infinity,
-                          errorBuilder: (context, error, stackTrace) =>
+                          placeholder: (context, url) => const Center(
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                          errorWidget: (context, url, error) =>
                               _buildLogoPlaceholder(),
                         ),
                       )

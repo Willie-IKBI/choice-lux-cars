@@ -23,6 +23,7 @@ import 'package:choice_lux_cars/shared/widgets/pagination_widget.dart';
 
 import 'package:choice_lux_cars/features/jobs/widgets/job_card.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 
 class JobsScreen extends ConsumerStatefulWidget {
   /// When set (e.g. 'operations'), back button navigates to that route instead of home.
@@ -54,6 +55,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
   late String _dateRangeFilter; // 'yesterday', 'today', '7', '30', '90', 'all' - for closed jobs
   String? _openJobsDateFilter = 'today'; // 'yesterday', 'today', 'tomorrow', or null (all). Default: today.
   String? _lastRoute; // Track last route to avoid unnecessary refreshes
+  String? _branchFilter; // Branch filter for admin users (null = all branches, 'Jhb', 'Cpt', 'Dbn')
 
   @override
   void initState() {
@@ -196,6 +198,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         final searchLower = _searchQuery.toLowerCase();
         filteredJobs = filteredJobs.where((job) {
           final passengerName = job.passengerName?.toLowerCase() ?? '';
+          final jobNumber = job.jobNumber?.toLowerCase() ?? '';
           final client = clientsMap[job.clientId];
           final clientSearchText = [
             client?.companyName,
@@ -203,6 +206,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
           ].whereType<String>().join(' ').toLowerCase();
           return passengerName.contains(searchLower) ||
               clientSearchText.contains(searchLower) ||
+              jobNumber.contains(searchLower) ||
               job.id.toString().toLowerCase().contains(searchLower);
         }).toList();
       }
@@ -507,7 +511,138 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
               ),
             ),
           ],
+          // Branch filter (only show for admin/super_admin)
+          _buildBranchFilterSection(isSmallMobile, isMobile, spacing),
         ],
+      ),
+    );
+  }
+  
+  // Branch Filter Section - only visible to Admin/Super Admin
+  Widget _buildBranchFilterSection(bool isSmallMobile, bool isMobile, double spacing) {
+    final userProfile = ref.watch(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    
+    // Only show branch filter for admin users
+    if (!isAdmin) return const SizedBox.shrink();
+    
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(height: spacing),
+        Row(
+          children: [
+            Icon(
+              Icons.location_on,
+              size: isSmallMobile ? 14 : 16,
+              color: ChoiceLuxTheme.platinumSilver,
+            ),
+            SizedBox(width: isSmallMobile ? 4 : 6),
+            Text(
+              'Filter by Branch:',
+              style: TextStyle(
+                fontSize: isSmallMobile ? 11 : 12,
+                color: ChoiceLuxTheme.platinumSilver,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: spacing * 0.5),
+        SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: Row(
+            children: [
+              _buildBranchFilterChip(
+                'All Branches',
+                null,
+                isSmallMobile,
+                isMobile,
+              ),
+              SizedBox(width: isSmallMobile ? 6 : 8),
+              _buildBranchFilterChip(
+                'Johannesburg',
+                'Jhb',
+                isSmallMobile,
+                isMobile,
+              ),
+              SizedBox(width: isSmallMobile ? 6 : 8),
+              _buildBranchFilterChip(
+                'Cape Town',
+                'Cpt',
+                isSmallMobile,
+                isMobile,
+              ),
+              SizedBox(width: isSmallMobile ? 6 : 8),
+              _buildBranchFilterChip(
+                'Durban',
+                'Dbn',
+                isSmallMobile,
+                isMobile,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  // Branch Filter Chip
+  Widget _buildBranchFilterChip(
+    String label,
+    String? value,
+    bool isSmallMobile,
+    bool isMobile,
+  ) {
+    final isSelected = _branchFilter == value;
+    final fontSize = isSmallMobile ? 11.0 : 12.0;
+
+    return GestureDetector(
+      onTap: () => setState(() {
+        _branchFilter = value;
+        _currentPage = 1; // Reset to first page when branch filter changes
+      }),
+      child: Container(
+        padding: EdgeInsets.symmetric(
+          horizontal: isSmallMobile ? 8 : 12,
+          vertical: isSmallMobile ? 5 : 7,
+        ),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? ChoiceLuxTheme.infoColor.withValues(alpha: 0.2)
+              : Colors.transparent,
+          borderRadius: BorderRadius.circular(6),
+          border: Border.all(
+            color: isSelected
+                ? ChoiceLuxTheme.infoColor
+                : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              value == null ? Icons.public : Icons.location_city,
+              size: isSmallMobile ? 12 : 14,
+              color: isSelected
+                  ? ChoiceLuxTheme.infoColor
+                  : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+            ),
+            SizedBox(width: isSmallMobile ? 4 : 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? ChoiceLuxTheme.infoColor
+                    : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.8),
+                fontSize: fontSize,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -1239,11 +1374,26 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
 
   List<Job> _filterJobs(List<Job> jobs) {
     final now = DateTime.now();
+
+    // Defense in depth: drivers and driver_managers only see jobs allocated to them (all tabs)
+    final userProfile = ref.read(currentUserProfileProvider);
+    final userRole = userProfile?.role?.toLowerCase();
+    final userId = userProfile?.id;
+    final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+    List<Job> jobsToFilter = jobs;
+    if ((userRole == 'driver' || userRole == 'driver_manager') && userId != null) {
+      jobsToFilter = jobs.where((job) => job.driverId == userId).toList();
+    }
     
+    // Apply branch filter for admin users (if selected)
+    if (isAdmin && _branchFilter != null) {
+      jobsToFilter = jobsToFilter.where((job) => job.location == _branchFilter).toList();
+    }
+
     switch (_currentFilter) {
       case 'open':
         // Treat 'open' and 'assigned' as open jobs
-        var openJobs = jobs
+        var openJobs = jobsToFilter
             .where((job) => job.status == 'open' || job.status == 'assigned')
             .toList();
         
@@ -1298,7 +1448,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         }
         return openJobs;
       case 'in_progress':
-        return jobs
+        return jobsToFilter
             .where(
               (job) =>
                   job.status == 'in_progress' ||
@@ -1308,22 +1458,13 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
             .toList();
       case 'closed':
         // Closed jobs (completed, closed, cancelled) with date filter
-        var closed = jobs
+        var closed = jobsToFilter
             .where((job) =>
                 job.status == 'completed' ||
                 job.status == 'closed' ||
                 job.status == 'cancelled')
             .toList();
-        
-        // CRITICAL: For drivers, ensure only jobs assigned to them are shown
-        // This is a defensive check in addition to repository-level filtering
-        final userProfile = ref.read(currentUserProfileProvider);
-        final userRole = userProfile?.role?.toLowerCase();
-        final userId = userProfile?.id;
-        if (userRole == 'driver' && userId != null) {
-          closed = closed.where((job) => job.driverId == userId).toList();
-        }
-        
+
         // Apply date range filter
         if (_dateRangeFilter == 'all') {
           // No filtering needed - show all closed jobs
@@ -1367,15 +1508,8 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         return closed;
       case 'all':
         // All jobs: apply date filter to BOTH completed (by updatedAt) and non-completed (by job_start_date)
-        // CRITICAL: For drivers, ensure only jobs assigned to them are shown
-        var allJobs = jobs;
-        final userProfileForAll = ref.read(currentUserProfileProvider);
-        final userRoleForAll = userProfileForAll?.role?.toLowerCase();
-        final userIdForAll = userProfileForAll?.id;
-        if (userRoleForAll == 'driver' && userIdForAll != null) {
-          allJobs = allJobs.where((job) => job.driverId == userIdForAll).toList();
-        }
-        
+        var allJobs = jobsToFilter;
+
         if (_dateRangeFilter == 'all') {
           return allJobs; // Show all jobs
         } else {
@@ -1410,7 +1544,7 @@ class _JobsScreenState extends ConsumerState<JobsScreen>
         }
         return allJobs;
       default:
-        return jobs;
+        return jobsToFilter;
     }
   }
 

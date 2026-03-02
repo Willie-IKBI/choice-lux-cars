@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -911,10 +912,13 @@ class _UserFormState extends State<UserForm> {
             child: imageUrl != null && imageUrl.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(8),
-                    child: Image.network(
-                      imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) {
                         return const Icon(
                           Icons.description,
                           color: Colors.grey,
@@ -985,10 +989,13 @@ class _UserFormState extends State<UserForm> {
             child: imageUrl != null && imageUrl.isNotEmpty
                 ? ClipRRect(
                     borderRadius: BorderRadius.circular(6),
-                    child: Image.network(
-                      imageUrl,
+                    child: CachedNetworkImage(
+                      imageUrl: imageUrl,
                       fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
+                      placeholder: (context, url) => const Center(
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      errorWidget: (context, url, error) {
                         return const Icon(
                           Icons.description,
                           color: Colors.grey,

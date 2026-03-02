@@ -119,23 +119,23 @@ class PdfViewerService {
     }
   }
 
-  /// Download PDF to device storage
+  /// Download PDF to device storage (or trigger browser download on web)
   static Future<String> downloadPdf({
     required String pdfUrl,
     required String fileName,
   }) async {
     try {
-      // Download PDF from URL
+      if (kIsWeb) {
+        await launchUrl(Uri.parse(pdfUrl), mode: LaunchMode.externalApplication);
+        return pdfUrl;
+      }
+
       final response = await http.get(Uri.parse(pdfUrl));
       
       if (response.statusCode == 200) {
-        // Get downloads directory
         final directory = await getDownloadsDirectory() ?? await getApplicationDocumentsDirectory();
         final file = File('${directory.path}/$fileName');
-        
-        // Write PDF bytes to file
         await file.writeAsBytes(response.bodyBytes);
-        
         return file.path;
       } else {
         throw Exception('Failed to download PDF: HTTP ${response.statusCode}');
@@ -153,11 +153,14 @@ class PdfViewerService {
     String? text,
   }) async {
     try {
-      // Download PDF to temporary storage first
+      if (kIsWeb) {
+        await Clipboard.setData(ClipboardData(text: pdfUrl));
+        return;
+      }
+
       final fileName = '${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final filePath = await downloadPdf(pdfUrl: pdfUrl, fileName: fileName);
       
-      // Share the actual PDF file
       final shareText = text ?? 'Please find the attached document: $title';
       await Share.shareXFiles(
         [XFile(filePath)],
@@ -178,11 +181,18 @@ class PdfViewerService {
     String? recipientEmail,
   }) async {
     try {
-      // Download PDF to temporary storage first
+      if (kIsWeb) {
+        final emailUri = Uri.parse(
+          'mailto:${recipientEmail ?? ''}?subject=${Uri.encodeComponent(subject)}'
+          '&body=${Uri.encodeComponent('$body\n\nDocument: $pdfUrl')}',
+        );
+        await launchUrl(emailUri);
+        return;
+      }
+
       final fileName = '${title.replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final filePath = await downloadPdf(pdfUrl: pdfUrl, fileName: fileName);
       
-      // Share the actual PDF file
       await Share.shareXFiles(
         [XFile(filePath)],
         subject: subject,
@@ -209,11 +219,19 @@ class PdfViewerService {
     String? phoneNumber,
   }) async {
     try {
-      // Download PDF to temporary storage first
+      if (kIsWeb) {
+        final fullMessage = '$message\n\nDocument: $pdfUrl';
+        final encoded = Uri.encodeComponent(fullMessage);
+        final waUrl = phoneNumber != null
+            ? 'https://web.whatsapp.com/send?phone=$phoneNumber&text=$encoded'
+            : 'https://web.whatsapp.com/send?text=$encoded';
+        await launchUrl(Uri.parse(waUrl), mode: LaunchMode.externalApplication);
+        return;
+      }
+
       final fileName = 'document_${DateTime.now().millisecondsSinceEpoch}.pdf';
       final filePath = await downloadPdf(pdfUrl: pdfUrl, fileName: fileName);
       
-      // Share the actual PDF file
       await Share.shareXFiles(
         [XFile(filePath)],
         text: message,

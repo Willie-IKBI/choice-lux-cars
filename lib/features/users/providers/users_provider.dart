@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:choice_lux_cars/features/users/models/user.dart';
 import 'package:choice_lux_cars/features/users/data/users_repository.dart';
+import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:image_picker/image_picker.dart';
 
@@ -97,6 +99,26 @@ class UsersNotifier extends AsyncNotifier<List<User>> {
     }
   }
 
+  /// Get drivers filtered by branch (for branch-scoped job creation)
+  /// Uses the current user's branch unless they're an admin
+  Future<List<User>> getDriversByBranch(int? branchId) async {
+    try {
+      Log.d('Getting drivers by branch: $branchId');
+      final result = await _repo.getDriversByBranch(branchId);
+      if (result.isSuccess) {
+        final drivers = result.data!;
+        Log.d('Fetched ${drivers.length} drivers for branch: $branchId');
+        return drivers;
+      } else {
+        Log.e('Error getting drivers by branch: ${result.error!.message}');
+        throw Exception(result.error!.message);
+      }
+    } catch (error) {
+      Log.e('Error getting drivers by branch: $error');
+      rethrow;
+    }
+  }
+
   /// Get users by role from the repository
   Future<List<User>> getUsersByRole(String role) async {
     try {
@@ -167,3 +189,22 @@ final driversProvider = AsyncNotifierProvider<UsersNotifier, List<User>>(UsersNo
 final usersByRoleProvider = AsyncNotifierProvider.family<UsersByRoleNotifier, List<User>, String>(
   UsersByRoleNotifier.new,
 );
+
+/// Provider for branch-filtered drivers (for job creation dropdowns)
+/// Returns drivers filtered by the current user's branch (or all drivers for admins)
+final branchFilteredDriversProvider = FutureProvider<List<User>>((ref) async {
+  final userProfile = ref.watch(currentUserProfileProvider);
+  final usersNotifier = ref.watch(usersProvider.notifier);
+  
+  final userRole = userProfile?.role?.toLowerCase();
+  final isAdmin = userRole == 'administrator' || userRole == 'super_admin';
+  
+  if (isAdmin) {
+    // Admins see all drivers
+    return usersNotifier.getDrivers();
+  } else {
+    // Non-admins see only drivers in their branch
+    final branchId = BranchUtils.getBranchIdFromCode(userProfile?.branchId);
+    return usersNotifier.getDriversByBranch(branchId);
+  }
+});

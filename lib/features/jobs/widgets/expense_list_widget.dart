@@ -4,7 +4,6 @@ import 'package:file_picker/file_picker.dart';
 import 'package:choice_lux_cars/features/jobs/models/expense.dart';
 import 'package:choice_lux_cars/features/jobs/providers/expenses_provider.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/app/theme_tokens.dart';
 import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/core/errors/app_exception.dart';
 import 'package:intl/intl.dart';
@@ -340,7 +339,6 @@ class _ExpenseRowState extends ConsumerState<_ExpenseRow> {
   }
 
   Widget _buildExpenseTypeChip(String type) {
-    final tokens = Theme.of(context).extension<AppTokens>()!;
     Color chipColor;
     String label;
 
@@ -358,11 +356,11 @@ class _ExpenseRowState extends ConsumerState<_ExpenseRow> {
         label = 'Toll';
         break;
       case 'other':
-        chipColor = tokens.textBody;
+        chipColor = ChoiceLuxTheme.platinumSilver;
         label = 'Other';
         break;
       default:
-        chipColor = tokens.textBody;
+        chipColor = ChoiceLuxTheme.platinumSilver;
         label = type;
     }
 

@@ -129,6 +129,10 @@ class _InsightsJobsListScreenState extends ConsumerState<InsightsJobsListScreen>
         final monthStart = DateTime(now.year, now.month, 1);
         final monthEnd = DateTime(now.year, now.month + 1, 1);
         return DateRange(monthStart, monthEnd);
+      case TimePeriod.lastMonth:
+        final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+        final lastMonthEnd = DateTime(now.year, now.month, 1);
+        return DateRange(lastMonthStart, lastMonthEnd);
       case TimePeriod.thisQuarter:
         final quarter = (now.month - 1) ~/ 3;
         final quarterStart = DateTime(now.year, quarter * 3 + 1, 1);

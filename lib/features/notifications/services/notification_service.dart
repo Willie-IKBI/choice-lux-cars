@@ -330,8 +330,8 @@ class NotificationService {
     bool isReassignment = false,
   }) async {
     try {
-      // Create in-app notification
-      final notification = await createNotification(
+      // createNotification already invokes the push-notifications Edge Function
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: isReassignment
@@ -349,26 +349,6 @@ class NotificationService {
         },
       );
 
-      // Send push notification
-      await sendPushNotification(
-        userId: userId,
-        title: isReassignment ? 'Job Reassigned' : 'New Job Assignment',
-        body: isReassignment
-            ? 'Job #$jobNumber has been reassigned to you'
-            : 'New job #$jobNumber has been assigned to you',
-        data: {
-          'action': isReassignment ? 'job_reassigned' : 'new_job_assigned',
-          'notification_type': isReassignment
-              ? 'job_reassignment'
-              : 'job_assignment',
-          'job_id': jobId,
-          'job_number': jobNumber,
-          'route': '/jobs/$jobId/summary',
-        },
-        priority: 'high',
-        sound: true,
-      );
-
       Log.d('Job assignment notification sent successfully');
     } catch (e) {
       Log.e('Error sending job assignment notification: $e');
@@ -383,8 +363,7 @@ class NotificationService {
     required String jobNumber,
   }) async {
     try {
-      // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: 'Job #$jobNumber has been cancelled.',
@@ -396,22 +375,6 @@ class NotificationService {
           'action': 'view_job',
           'route': '/jobs/$jobId/summary',
         },
-      );
-
-      // Send push notification
-      await sendPushNotification(
-        userId: userId,
-        title: 'Job Cancelled',
-        body: 'Job #$jobNumber has been cancelled',
-        data: {
-          'action': 'job_cancelled',
-          'notification_type': 'job_cancelled',
-          'job_id': jobId,
-          'job_number': jobNumber,
-          'route': '/jobs/$jobId/summary',
-        },
-        priority: 'high',
-        sound: true,
       );
 
       Log.d('Job cancellation notification sent successfully');
@@ -431,24 +394,19 @@ class NotificationService {
   }) async {
     try {
       String message;
-      String title;
 
       switch (newStatus) {
         case 'in_progress':
           message = 'Job #$jobNumber has started.';
-          title = 'Job Started';
           break;
         case 'completed':
           message = 'Job #$jobNumber has been completed.';
-          title = 'Job Completed';
           break;
         default:
           message = 'Job #$jobNumber status updated to $newStatus.';
-          title = 'Job Status Updated';
       }
 
-      // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: message,
@@ -462,24 +420,6 @@ class NotificationService {
           'action': 'view_job',
           'route': '/jobs/$jobId/summary',
         },
-      );
-
-      // Send push notification
-      await sendPushNotification(
-        userId: userId,
-        title: title,
-        body: message,
-        data: {
-          'action': 'job_status_changed',
-          'notification_type': 'job_status_change',
-          'job_id': jobId,
-          'job_number': jobNumber,
-          'old_status': oldStatus,
-          'new_status': newStatus,
-          'route': '/jobs/$jobId/summary',
-        },
-        priority: 'normal',
-        sound: true,
       );
 
       Log.d('Job status change notification sent successfully');
@@ -499,8 +439,7 @@ class NotificationService {
     try {
       final message = 'Payment reminder: Job #$jobNumber - \$$amount due';
 
-      // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
         jobId: jobId,
         message: message,
@@ -513,23 +452,6 @@ class NotificationService {
           'action': 'view_payment',
           'route': '/jobs/$jobId/payment',
         },
-      );
-
-      // Send push notification
-      await sendPushNotification(
-        userId: userId,
-        title: 'Payment Reminder',
-        body: message,
-        data: {
-          'action': 'payment_reminder',
-          'notification_type': 'payment_reminder',
-          'job_id': jobId,
-          'job_number': jobNumber,
-          'amount': amount,
-          'route': '/jobs/$jobId/payment',
-        },
-        priority: 'high',
-        sound: true,
       );
 
       Log.d('Payment reminder notification sent successfully');
@@ -548,28 +470,13 @@ class NotificationService {
     Map<String, dynamic>? actionData,
   }) async {
     try {
-      // Create in-app notification
-      final notification = await createNotification(
+      await createNotification(
         userId: userId,
-        jobId: '', // System alerts don't have job IDs
+        jobId: '',
         message: message,
         notificationType: 'system_alert',
         priority: priority,
         actionData: actionData,
-      );
-
-      // Send push notification
-      await sendPushNotification(
-        userId: userId,
-        title: title,
-        body: message,
-        data: {
-          'action': 'system_alert',
-          'notification_type': 'system_alert',
-          ...?actionData,
-        },
-        priority: priority,
-        sound: priority == 'high' || priority == 'urgent',
       );
 
       Log.d('System alert notification sent successfully');
@@ -946,7 +853,9 @@ class NotificationService {
               .eq('id', driverId)
               .single();
           driverName = driver['display_name']?.toString() ?? driverName;
-        } catch (_) {}
+        } catch (e) {
+          Log.e('Failed to look up driver name: $e');
+        }
       }
 
       // Get all administrators, managers, and driver managers

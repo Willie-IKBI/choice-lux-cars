@@ -55,6 +55,14 @@ class JobInsights {
   final int jobsStartingTomorrow; // Count of jobs with jobStartDate tomorrow
   final int overdueJobs; // Jobs past jobStartDate not completed
   final int unassignedJobs; // Jobs without driver or vehicle
+  // Expense aggregates
+  final int totalExpenses;
+  final double totalExpenseAmount;
+  final double averageExpensePerJob;
+  final double fuelExpenseAmount;
+  final double parkingExpenseAmount;
+  final double tollExpenseAmount;
+  final double otherExpenseAmount;
 
   JobInsights({
     required this.totalJobs,
@@ -73,6 +81,13 @@ class JobInsights {
     required this.jobsStartingTomorrow,
     required this.overdueJobs,
     required this.unassignedJobs,
+    this.totalExpenses = 0,
+    this.totalExpenseAmount = 0.0,
+    this.averageExpensePerJob = 0.0,
+    this.fuelExpenseAmount = 0.0,
+    this.parkingExpenseAmount = 0.0,
+    this.tollExpenseAmount = 0.0,
+    this.otherExpenseAmount = 0.0,
   });
 }
 
@@ -174,6 +189,7 @@ class VehicleInsights {
   final double averageDistancePerVehicle; // km
   final double averageDistancePerJob; // km
   final double highestOdometerReading; // km
+  final String? vehicleWithHighestOdometer; // Vehicle name for highest odo
   final String? vehicleWithMostDistance; // Vehicle name
   final int jobsCompletedThisWeek;
   final int jobsCompletedThisMonth;
@@ -201,6 +217,7 @@ class VehicleInsights {
     this.averageDistancePerVehicle = 0.0,
     this.averageDistancePerJob = 0.0,
     this.highestOdometerReading = 0.0,
+    this.vehicleWithHighestOdometer,
     this.vehicleWithMostDistance,
     this.jobsCompletedThisWeek = 0,
     this.jobsCompletedThisMonth = 0,
@@ -337,6 +354,7 @@ enum TimePeriod {
   today,
   thisWeek,
   thisMonth,
+  lastMonth,
   thisQuarter,
   thisYear,
   custom,
@@ -351,6 +369,8 @@ extension TimePeriodExtension on TimePeriod {
         return 'This Week';
       case TimePeriod.thisMonth:
         return 'This Month';
+      case TimePeriod.lastMonth:
+        return 'Last Month';
       case TimePeriod.thisQuarter:
         return 'This Quarter';
       case TimePeriod.thisYear:

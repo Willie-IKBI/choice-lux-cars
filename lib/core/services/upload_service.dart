@@ -119,6 +119,20 @@ class UploadService {
     return uploadImageBytes(bytes, 'clc_images', 'profile_images', fileName);
   }
 
+  /// Upload arrival image (convenience method)
+  /// Used for location photos taken when driver arrives at pickup/dropoff
+  ///
+  /// [bytes] - The image bytes to upload
+  /// [fileName] - The filename to use in storage
+  ///
+  /// Returns the public URL of the uploaded image
+  static Future<String> uploadArrivalImage(
+    Uint8List bytes,
+    String fileName,
+  ) async {
+    return uploadImageBytes(bytes, 'clc_images', 'arrival', fileName);
+  }
+
   /// Delete an image from Supabase Storage
   ///
   /// [bucket] - The storage bucket name
@@ -198,19 +212,18 @@ class UploadService {
   }) async {
     try {
       if (kIsWeb) {
-        // For web, use file_picker and return null - we'll handle bytes directly
         final result = await FilePicker.platform.pickFiles(
           type: FileType.image,
           allowMultiple: false,
         );
         
         if (result != null && result.files.isNotEmpty) {
-          final file = result.files.first;
-          if (file.bytes != null) {
-            // Store bytes globally for web upload
-            _webImageBytes = file.bytes!;
-            // Return a dummy file for web - we'll use bytes directly in upload
-            return File('web_temp.jpg');
+          final pickedFile = result.files.first;
+          if (pickedFile.bytes != null) {
+            _webImageBytes = pickedFile.bytes!;
+            // Sentinel: on web, callers must use webImageBytes for uploads
+            // instead of performing I/O on this File object.
+            return File('web_picked_image');
           }
         }
         return null;

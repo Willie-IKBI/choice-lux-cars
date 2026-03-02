@@ -160,6 +160,59 @@ class UsersRepository {
     }
   }
 
+  /// Get drivers filtered by branch (for branch-scoped job creation)
+  /// [branchId] - Numeric branch ID (1=Durban, 2=Cape Town, 3=Johannesburg)
+  /// If branchId is null, returns all drivers (for admin users)
+  Future<Result<List<User>>> getDriversByBranch(int? branchId) async {
+    try {
+      Log.d('Fetching drivers by branch: $branchId');
+
+      var query = _supabase
+          .from('profiles')
+          .select()
+          .inFilter('role', ['driver', 'driver_manager'])
+          .eq('status', 'active');
+
+      if (branchId != null) {
+        query = query.eq('branch_id', branchId);
+      }
+
+      final response = await query.order('display_name', ascending: true);
+
+      Log.d('Fetched ${response.length} drivers for branch: $branchId');
+
+      final drivers = response.map((json) => User.fromJson(json)).toList();
+      return Result.success(drivers);
+    } catch (error) {
+      Log.e('Error fetching drivers by branch: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
+  /// Get all users in a specific branch (managers, driver_managers, drivers)
+  /// Used for manager visibility of their branch staff
+  Future<Result<List<User>>> getUsersByBranch(int branchId) async {
+    try {
+      Log.d('Fetching users by branch: $branchId');
+
+      final response = await _supabase
+          .from('profiles')
+          .select()
+          .eq('branch_id', branchId)
+          .inFilter('role', ['manager', 'driver_manager', 'driver'])
+          .eq('status', 'active')
+          .order('display_name', ascending: true);
+
+      Log.d('Fetched ${response.length} users for branch: $branchId');
+
+      final users = response.map((json) => User.fromJson(json)).toList();
+      return Result.success(users);
+    } catch (error) {
+      Log.e('Error fetching users by branch: $error');
+      return _mapSupabaseError(error);
+    }
+  }
+
   /// Search users by name
   Future<Result<List<User>>> searchUsers(String query) async {
     try {

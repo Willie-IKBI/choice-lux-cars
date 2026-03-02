@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:flutter/services.dart';
@@ -27,7 +28,7 @@ class InvoiceSharingService {
       final encodedMessage = Uri.encodeComponent(message);
 
       String whatsappUrl;
-      if (Platform.isAndroid || Platform.isIOS) {
+      if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
         whatsappUrl = 'https://wa.me/?text=$encodedMessage';
       } else {
         whatsappUrl = 'https://web.whatsapp.com/send?text=$encodedMessage';

@@ -7,12 +7,28 @@ class DateUtils {
     return DateFormat(AppConstants.dateFormat).format(date);
   }
 
+  static String formatDateLong(DateTime date) {
+    return DateFormat('MMM dd, yyyy').format(date);
+  }
+
+  static String formatDateShort(DateTime date) {
+    return DateFormat('dd MMM yyyy').format(date);
+  }
+
   static String formatDateTime(DateTime dateTime) {
     return DateFormat(AppConstants.dateTimeFormat).format(dateTime);
   }
 
   static String formatTime(DateTime time) {
     return DateFormat(AppConstants.timeFormat).format(time);
+  }
+
+  static String formatDateISO(DateTime date) {
+    return DateFormat('yyyy-MM-dd').format(date);
+  }
+
+  static String formatDateTimeISO(DateTime date) {
+    return DateFormat('yyyy-MM-dd HH:mm:ss').format(date);
   }
 
   static String formatRelativeDate(DateTime date) {
@@ -30,6 +46,26 @@ class DateUtils {
     }
   }
 
+  static String formatRelativeTime(DateTime date) {
+    final now = DateTime.now();
+    final difference = now.difference(date);
+
+    if (difference.inDays > 0) {
+      return '${difference.inDays} day${difference.inDays == 1 ? '' : 's'} ago';
+    } else if (difference.inHours > 0) {
+      return '${difference.inHours} hour${difference.inHours == 1 ? '' : 's'} ago';
+    } else if (difference.inMinutes > 0) {
+      return '${difference.inMinutes} minute${difference.inMinutes == 1 ? '' : 's'} ago';
+    } else {
+      return 'Just now';
+    }
+  }
+
+  static bool isToday(DateTime date) {
+    final now = DateTime.now();
+    return date.year == now.year && date.month == now.month && date.day == now.day;
+  }
+
   static DateTime? parseDate(String dateString) {
     try {
       return DateFormat(AppConstants.dateFormat).parse(dateString);
@@ -41,6 +77,15 @@ class DateUtils {
   static DateTime? parseDateTime(String dateTimeString) {
     try {
       return DateFormat(AppConstants.dateTimeFormat).parse(dateTimeString);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  static DateTime? parseISODateTime(String? dateTimeString) {
+    if (dateTimeString == null || dateTimeString.isEmpty) return null;
+    try {
+      return DateTime.parse(dateTimeString);
     } catch (e) {
       return null;
     }
@@ -63,7 +108,6 @@ class CurrencyUtils {
 
   static double? parseCurrency(String currencyString) {
     try {
-      // Remove currency symbol and commas, then parse
       final cleanString = currencyString
           .replaceAll(AppConstants.currencySymbol, '')
           .replaceAll(',', '')
@@ -72,6 +116,23 @@ class CurrencyUtils {
     } catch (e) {
       return null;
     }
+  }
+
+  /// Format a number with spaces as thousand separator: 45000 -> "45 000"
+  static String formatWithSpaces(num value) {
+    final isNegative = value < 0;
+    final absStr = value.abs().toStringAsFixed(0);
+    final buffer = StringBuffer();
+    for (var i = 0; i < absStr.length; i++) {
+      if (i > 0 && (absStr.length - i) % 3 == 0) buffer.write(' ');
+      buffer.write(absStr[i]);
+    }
+    return isNegative ? '-${buffer.toString()}' : buffer.toString();
+  }
+
+  /// Format currency with R prefix and space-separated thousands: 45000 -> "R45 000"
+  static String formatCompact(double amount) {
+    return 'R${formatWithSpaces(amount)}';
   }
 }
 

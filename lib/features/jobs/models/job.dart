@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/utils/branch_utils.dart';
 
 // Job status enum for type-safe status handling
 enum JobStatus {
@@ -81,7 +82,8 @@ class Job {
   final String? voucherPdf;
   final String? invoicePdf;
   final String? cancelReason;
-  final String? location; // Branch location (Jhb, Cpt, Dbn)
+  final String? location; // Branch location code (Jhb, Cpt, Dbn) - legacy, use branchId
+  final int? branchId; // Branch ID (1=Durban, 2=Cape Town, 3=Johannesburg) - used for RLS
   final String createdBy;
   final DateTime createdAt;
   final DateTime? updatedAt;
@@ -113,6 +115,7 @@ class Job {
     this.invoicePdf,
     this.cancelReason,
     this.location,
+    this.branchId,
     required this.createdBy,
     required this.createdAt,
     this.updatedAt,
@@ -167,6 +170,9 @@ class Job {
       invoicePdf: map['invoice_pdf']?.toString(),
       cancelReason: map['cancel_reason']?.toString(),
       location: map['location']?.toString(),
+      branchId: map['branch_id'] is int 
+          ? map['branch_id'] as int 
+          : (map['branch_id'] != null ? int.tryParse(map['branch_id'].toString()) : null),
       createdBy: map['created_by']?.toString() ?? '',
       createdAt: _parseDateTime(map['created_at'], now),
       updatedAt: map['updated_at'] != null
@@ -223,6 +229,8 @@ class Job {
       'invoice_pdf': invoicePdf,
       'cancel_reason': cancelReason,
       'location': location,
+      // Include branch_id - derive from location if not set
+      'branch_id': branchId ?? BranchUtils.codeToId(location),
       'created_by': createdBy,
       'created_at': createdAt.toIso8601String(),
       'updated_at':
@@ -268,6 +276,7 @@ class Job {
     String? invoicePdf,
     String? cancelReason,
     String? location,
+    int? branchId,
     String? createdBy,
     DateTime? createdAt,
     DateTime? updatedAt,
@@ -298,6 +307,7 @@ class Job {
       invoicePdf: invoicePdf ?? this.invoicePdf,
       cancelReason: cancelReason ?? this.cancelReason,
       location: location ?? this.location,
+      branchId: branchId ?? this.branchId,
       createdBy: createdBy ?? this.createdBy,
       createdAt: createdAt ?? this.createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

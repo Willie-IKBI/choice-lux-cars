@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -6,14 +7,12 @@ import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
 import 'package:choice_lux_cars/features/jobs/providers/jobs_provider.dart';
 import 'package:choice_lux_cars/features/jobs/providers/trips_provider.dart';
 import 'package:choice_lux_cars/features/auth/providers/auth_provider.dart';
-import 'package:choice_lux_cars/core/services/supabase_service.dart';
 import 'package:choice_lux_cars/features/jobs/models/job.dart';
 import 'package:choice_lux_cars/features/jobs/models/trip.dart';
 import 'package:choice_lux_cars/shared/widgets/luxury_app_bar.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:choice_lux_cars/shared/utils/driver_flow_utils.dart';
 import 'package:choice_lux_cars/features/jobs/services/driver_flow_api_service.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/add_trip_modal.dart';
 import 'package:choice_lux_cars/features/jobs/widgets/trip_edit_modal.dart';
@@ -27,6 +26,10 @@ import 'package:choice_lux_cars/features/jobs/widgets/job_stops_map_widget.dart'
 import 'package:choice_lux_cars/shared/widgets/system_safe_scaffold.dart';
 import 'package:choice_lux_cars/features/insights/providers/driver_rating_provider.dart';
 import 'package:choice_lux_cars/features/insights/widgets/star_rating_bar.dart';
+import 'package:choice_lux_cars/features/jobs/widgets/odometer_edit_modal.dart';
+import 'package:choice_lux_cars/features/jobs/models/expense.dart';
+import 'package:choice_lux_cars/features/jobs/providers/expenses_provider.dart';
+import 'package:intl/intl.dart';
 
 extension StringExtension on String {
   String toTitleCase() {
@@ -64,9 +67,13 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   // Step completion times
   Map<String, dynamic>? _driverFlowData;
   List<Map<String, dynamic>> _tripProgressData = [];
+  List<Expense> _expenses = [];
   
   // Trip timeline state
   int _selectedTripIndex = 0;
+
+  // Cached future for step timeline to avoid recreating on every build
+  Future<List<Map<String, dynamic>>>? _stepTimelineFuture;
 
   String get _backRoute {
     switch (widget.fromRoute) {
@@ -98,6 +105,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     'payment': false,
     'stepTimeline': false,
     'routeMap': false,
+    'expenses': false,
     'notes': false,
     'trips': false,
     'tripDetails': false,
@@ -170,15 +178,10 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         // This will trigger the provider to load trips for this job
         final tripsState = ref.read(tripsByJobProvider(widget.jobId));
         Log.d('Trips provider initialized');
-        Log.d('Trips state: ${tripsState.toString()}');
-        Log.d('Trips state hasValue: ${tripsState.hasValue}');
-        Log.d('Trips state isLoading: ${tripsState.isLoading}');
-        Log.d('Trips state hasError: ${tripsState.hasError}');
         
         if (tripsState.hasValue && tripsState.value != null) {
           _trips = tripsState.value!;
           Log.d('Loaded ${_trips.length} trips for job ${widget.jobId}');
-          Log.d('Trip details: ${_trips.map((t) => 'ID: ${t.id}, JobID: ${t.jobId}').join(', ')}');
         } else {
           _trips = [];
           Log.d('No trips found for job ${widget.jobId}');
@@ -193,6 +196,18 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
       // Load related entities from database directly
       await _loadRelatedEntities();
+
+      // Load expenses for this job
+      try {
+        final jobIdInt = int.tryParse(widget.jobId);
+        if (jobIdInt != null) {
+          _expenses = await ref.read(expensesForJobProvider(jobIdInt).future);
+          Log.d('Loaded ${_expenses.length} expenses for job ${widget.jobId}');
+        }
+      } catch (e) {
+        Log.e('Error loading expenses: $e');
+        _expenses = [];
+      }
     } catch (e) {
       Log.e('Error loading job data: $e');
       // Store error to show in build method
@@ -253,22 +268,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
       _tripProgressData = List<Map<String, dynamic>>.from(tripProgressResponse);
 
-      Log.d('Loaded step completion data:');
-      Log.d('Driver flow: $_driverFlowData');
-      Log.d('Trip progress: $_tripProgressData');
-      
-      // Debug odometer data specifically
-      if (_driverFlowData != null) {
-        Log.d('=== ODOMETER DEBUG ===');
-        Log.d('odo_start_reading: ${_driverFlowData!['odo_start_reading']}');
-        Log.d('job_closed_odo: ${_driverFlowData!['job_closed_odo']}');
-        Log.d('Start reading type: ${_driverFlowData!['odo_start_reading'].runtimeType}');
-        Log.d('End reading type: ${_driverFlowData!['job_closed_odo'].runtimeType}');
-        Log.d('=====================');
-      }
+      _stepTimelineFuture = _getStepTimeline();
     } catch (e) {
       Log.e('Error loading step completion data: $e');
-      // Don't fail the entire load if this fails
     }
   }
 
@@ -283,7 +285,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
       final updatedJob = matching.isEmpty ? null : matching.first;
       if (updatedJob != null && updatedJob != _job) {
         _job = updatedJob;
-        Log.d('Job data updated from jobs provider: ${_job?.driverConfirmation}');
+        Log.d('Job data updated from jobs provider');
       }
     }
     
@@ -412,13 +414,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
           ),
         ),
 
-        // Right Column - Trips Summary and Details
+        // Right Column - Expenses, Trips Summary and Details
         Expanded(
           flex: 1,
           child: SingleChildScrollView(
             padding: EdgeInsets.all(padding * 1.5),
             child: Column(
               children: [
+                if (_expenses.isNotEmpty) ...[
+                  _buildExpensesCard(),
+                  SizedBox(height: spacing * 2),
+                ],
                 _buildTripsSummaryCard(totalAmount),
                 SizedBox(height: spacing * 2),
                 if (_trips.isNotEmpty) _buildTripsListCard(),
@@ -435,8 +441,12 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildMobileLayout(double totalAmount) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isTablet = ResponsiveBreakpoints.isTablet(screenWidth);
+    final horizontalPad = isTablet ? 32.0 : 16.0;
+
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
+      padding: EdgeInsets.symmetric(horizontal: horizontalPad, vertical: 16),
       child: Column(
         children: [
           _buildStatusCard(),
@@ -482,6 +492,15 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             JobStopsMapWidget(jobId: widget.jobId),
             Icons.map,
           ),
+          if (_expenses.isNotEmpty) ...[
+            const SizedBox(height: 16),
+            _buildAccordionSection(
+              'Expenses (${_expenses.length})',
+              'expenses',
+              _buildExpensesContent(),
+              Icons.receipt_long,
+            ),
+          ],
           if (_job!.notes != null && _job!.notes!.isNotEmpty) ...[
             const SizedBox(height: 16),
             _buildAccordionSection(
@@ -549,12 +568,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             color: Colors.white,
           ),
         ),
-        children: [
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: content,
-          ),
-        ],
+        children: [content],
       ),
     );
   }
@@ -911,6 +925,245 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     );
   }
 
+  Widget _buildExpensesCard() {
+    return Container(
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildSectionHeader('Expenses (${_expenses.length})', Icons.receipt_long),
+            const SizedBox(height: 16),
+            _buildExpensesContent(),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildExpensesContent() {
+    if (_expenses.isEmpty) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Text(
+            'No expenses recorded',
+            style: TextStyle(
+              color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.6),
+              fontSize: 14,
+            ),
+          ),
+        ),
+      );
+    }
+
+    final currencyFormat = NumberFormat.currency(symbol: 'R ', decimalDigits: 2);
+    final dateFormat = DateFormat('dd MMM yyyy, HH:mm');
+    final showAmounts = _canViewAmounts();
+
+    double totalExpenses = 0;
+    for (final e in _expenses) {
+      totalExpenses += e.amount;
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ..._expenses.map((expense) => _buildExpenseRow(expense, currencyFormat, dateFormat, showAmounts)),
+        if (showAmounts) ...[
+          const SizedBox(height: 12),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+              ),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Total Expenses',
+                  style: TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                  ),
+                ),
+                Text(
+                  currencyFormat.format(totalExpenses),
+                  style: const TextStyle(
+                    color: ChoiceLuxTheme.richGold,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildExpenseRow(Expense expense, NumberFormat currencyFormat, DateFormat dateFormat, bool showAmounts) {
+    final hasSlip = expense.slipImage != null && expense.slipImage!.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.15),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              _buildExpenseTypeChip(expense.expenseType),
+              const Spacer(),
+              if (showAmounts)
+                Text(
+                  currencyFormat.format(expense.amount),
+                  style: const TextStyle(
+                    color: ChoiceLuxTheme.softWhite,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+            ],
+          ),
+          if (expense.displayDescription.isNotEmpty &&
+              expense.displayDescription != expense.expenseType.toUpperCase()) ...[
+            const SizedBox(height: 6),
+            Text(
+              expense.displayDescription,
+              style: const TextStyle(
+                color: ChoiceLuxTheme.platinumSilver,
+                fontSize: 13,
+              ),
+            ),
+          ],
+          const SizedBox(height: 6),
+          Row(
+            children: [
+              const Icon(Icons.access_time, size: 13, color: ChoiceLuxTheme.platinumSilver),
+              const SizedBox(width: 4),
+              Text(
+                dateFormat.format(expense.expDate),
+                style: TextStyle(
+                  color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                  fontSize: 12,
+                ),
+              ),
+              if (expense.expenseLocation != null && expense.expenseLocation!.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                const Icon(Icons.location_on, size: 13, color: ChoiceLuxTheme.platinumSilver),
+                const SizedBox(width: 2),
+                Expanded(
+                  child: Text(
+                    expense.expenseLocation!,
+                    style: TextStyle(
+                      color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.7),
+                      fontSize: 12,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ],
+          ),
+          if (hasSlip) ...[
+            const SizedBox(height: 10),
+            GestureDetector(
+              onTap: () => _showFullScreenImage(
+                context,
+                expense.slipImage!,
+                '${expense.expenseType.toTitleCase()} Slip',
+              ),
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: CachedNetworkImage(
+                  imageUrl: expense.slipImage!,
+                  height: 120,
+                  width: double.infinity,
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    height: 120,
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    child: const Center(
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                  errorWidget: (context, url, error) => Container(
+                    height: 120,
+                    color: Colors.grey.withValues(alpha: 0.2),
+                    child: const Center(
+                      child: Icon(Icons.broken_image, color: ChoiceLuxTheme.platinumSilver),
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildExpenseTypeChip(String type) {
+    Color chipColor;
+    String label;
+
+    switch (type) {
+      case 'fuel':
+        chipColor = Colors.orange;
+        label = 'Fuel';
+        break;
+      case 'parking':
+        chipColor = Colors.blue;
+        label = 'Parking';
+        break;
+      case 'toll':
+        chipColor = Colors.purple;
+        label = 'Toll';
+        break;
+      default:
+        chipColor = ChoiceLuxTheme.platinumSilver;
+        label = type.toTitleCase();
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: chipColor.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: chipColor.withValues(alpha: 0.5),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        label,
+        style: TextStyle(
+          color: chipColor,
+          fontSize: 12,
+          fontWeight: FontWeight.w600,
+        ),
+      ),
+    );
+  }
+
   Widget _buildPaymentCard() {
     return Container(
       decoration: BoxDecoration(
@@ -932,13 +1185,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildPaymentContent() {
-    // Get current user role
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final userRole = userProfile?.role?.toLowerCase();
-    final isDriver = userRole == 'driver';
-    
-    // Hide payment information from drivers
-    if (isDriver) {
+    if (!_canViewAmounts()) {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(16.0),
@@ -997,9 +1244,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Widget _buildTripSelector() {
     if (_trips.isEmpty) return const SizedBox.shrink();
     
-    // Get user role for hiding amounts
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    final showAmounts = _canViewAmounts();
     
     return Container(
       padding: const EdgeInsets.all(12),
@@ -1073,8 +1318,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                               fontSize: 12,
                             ),
                           ),
-                          // Hide amount for drivers
-                          if (!isDriver) ...[
+                          if (showAmounts) ...[
                             const SizedBox(width: 4),
                             Text(
                               'R${trip.amount.toStringAsFixed(0)}',
@@ -1157,7 +1401,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
               const SizedBox(height: 16),
             ],
             FutureBuilder<List<Map<String, dynamic>>>(
-              future: _getStepTimeline(),
+              future: _stepTimelineFuture,
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(
@@ -1387,9 +1631,266 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ],
                     // Individual Steps
                     ...steps.map((step) => _buildStepTimelineItem(step)),
+                    // Odometer pictures (trip start and job end)
+                    if (_driverFlowData != null && _hasOdometerImages()) ...[
+                      const SizedBox(height: 16),
+                      _buildOdometerSection(context),
+                    ],
+                    // Pickup arrival photo
+                    if (_hasArrivalImage()) ...[
+                      const SizedBox(height: 16),
+                      _buildArrivalImageSection(context),
+                    ],
                   ],
                 );
               },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  bool _hasOdometerImages() {
+    if (_driverFlowData == null) return false;
+    final start = _driverFlowData!['pdp_start_image']?.toString().trim();
+    final end = _driverFlowData!['job_closed_odo_img']?.toString().trim();
+    return (start != null && start.isNotEmpty) || (end != null && end.isNotEmpty);
+  }
+
+  bool _canEditOdometer() {
+    final currentUser = ref.read(currentUserProfileProvider);
+    final role = currentUser?.role?.toLowerCase();
+    return role == 'administrator' || role == 'super_admin';
+  }
+
+  bool _canViewAmounts() {
+    final currentUser = ref.read(currentUserProfileProvider);
+    final role = currentUser?.role?.toLowerCase();
+    return role == 'administrator' || role == 'super_admin';
+  }
+
+  void _showOdometerEditModal() {
+    if (_job == null || _driverFlowData == null) return;
+
+    final startOdo = _driverFlowData!['odo_start_reading'];
+    final endOdo = _driverFlowData!['job_closed_odo'];
+
+    showDialog(
+      context: context,
+      builder: (ctx) => OdometerEditModal(
+        jobId: _job!.id,
+        currentStartOdo: startOdo is num ? startOdo.toDouble() : null,
+        currentEndOdo: endOdo is num ? endOdo.toDouble() : null,
+        onSaved: () async {
+          await _loadStepCompletionData();
+          if (mounted) setState(() {});
+        },
+      ),
+    );
+  }
+
+  Widget _buildOdometerSection(BuildContext context) {
+    final startUrl = _driverFlowData!['pdp_start_image']?.toString().trim() ?? '';
+    final endUrl = _driverFlowData!['job_closed_odo_img']?.toString().trim() ?? '';
+    final hasStart = startUrl.isNotEmpty;
+    final hasEnd = endUrl.isNotEmpty;
+    if (!hasStart && !hasEnd) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.speed,
+                color: ChoiceLuxTheme.richGold,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Odometer',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ChoiceLuxTheme.softWhite,
+                  ),
+                ),
+              ),
+              if (_canEditOdometer()) ...[
+                IconButton(
+                  icon: Icon(
+                    Icons.edit,
+                    color: ChoiceLuxTheme.richGold,
+                    size: 20,
+                  ),
+                  tooltip: 'Edit odometer readings',
+                  onPressed: _showOdometerEditModal,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
+                ),
+              ],
+            ],
+          ),
+          const SizedBox(height: 12),
+          LayoutBuilder(
+            builder: (context, constraints) {
+              final isNarrow = constraints.maxWidth < 400;
+              return isNarrow
+                  ? Column(
+                      children: [
+                        if (hasStart) _buildOdometerImageCard(context, 'Odometer at trip start', startUrl),
+                        if (hasStart && hasEnd) const SizedBox(height: 12),
+                        if (hasEnd) _buildOdometerImageCard(context, 'Odometer at job end', endUrl),
+                      ],
+                    )
+                  : Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        if (hasStart) Expanded(child: _buildOdometerImageCard(context, 'Odometer at trip start', startUrl)),
+                        if (hasStart && hasEnd) const SizedBox(width: 12),
+                        if (hasEnd) Expanded(child: _buildOdometerImageCard(context, 'Odometer at job end', endUrl)),
+                      ],
+                    );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  bool _hasArrivalImage() {
+    if (_tripProgressData.isEmpty) return false;
+    final url = _tripProgressData.first['pickup_arrival_img']?.toString().trim();
+    return url != null && url.isNotEmpty;
+  }
+
+  Widget _buildArrivalImageSection(BuildContext context) {
+    final url = _tripProgressData.first['pickup_arrival_img']?.toString().trim();
+    if (url == null || url.isEmpty) return const SizedBox.shrink();
+
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: ChoiceLuxTheme.charcoalGray,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.1),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.camera_alt,
+                color: ChoiceLuxTheme.richGold,
+                size: 24,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Arrive at Destination',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: ChoiceLuxTheme.softWhite,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          _buildOdometerImageCard(context, 'Photo at pickup arrival', url),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildOdometerImageCard(BuildContext context, String label, String imageUrl) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: ChoiceLuxTheme.platinumSilver,
+          ),
+        ),
+        const SizedBox(height: 6),
+        GestureDetector(
+          onTap: () => _showFullScreenImage(context, imageUrl, label),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(8),
+            child: CachedNetworkImage(
+              imageUrl: imageUrl,
+              height: 140,
+              width: double.infinity,
+              fit: BoxFit.cover,
+              placeholder: (context, url) => Container(
+                height: 140,
+                alignment: Alignment.center,
+                color: Colors.grey.withValues(alpha: 0.2),
+                child: const CircularProgressIndicator(),
+              ),
+              errorWidget: (context, url, error) {
+                return Container(
+                  height: 140,
+                  alignment: Alignment.center,
+                  color: Colors.grey.withValues(alpha: 0.2),
+                  child: Icon(Icons.broken_image_outlined, color: Colors.grey[400], size: 40),
+                );
+              },
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullScreenImage(BuildContext context, String imageUrl, String label) {
+    showDialog<void>(
+      context: context,
+      builder: (ctx) => Dialog(
+        backgroundColor: Colors.transparent,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+            ),
+            const SizedBox(height: 8),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(8),
+              child: CachedNetworkImage(
+                imageUrl: imageUrl,
+                fit: BoxFit.contain,
+                placeholder: (context, url) => const Center(
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                ),
+                errorWidget: (context, url, error) {
+                  return const Icon(Icons.broken_image_outlined, color: Colors.grey, size: 48);
+                },
+              ),
+            ),
+            const SizedBox(height: 8),
+            TextButton(
+              onPressed: () => Navigator.of(ctx).pop(),
+              child: const Text('Close'),
             ),
           ],
         ),
@@ -1604,7 +2105,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                       ],
                     ),
                   ),
-                if (step['tripAmount'] != null)
+                if (step['tripAmount'] != null && _canViewAmounts())
                   Container(
                     margin: const EdgeInsets.only(top: 4),
                     padding: const EdgeInsets.symmetric(
@@ -1894,7 +2395,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
 
   Widget _buildStepTimelineContent() {
     return FutureBuilder<List<Map<String, dynamic>>>(
-      future: _getStepTimeline(),
+      future: _stepTimelineFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(
@@ -2006,9 +2507,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripsContent(double totalAmount) {
-    // Get user role for hiding amounts
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    final showAmounts = _canViewAmounts();
 
     // Total distance from driver flow (odo readings)
     final startOdo = _driverFlowData?['odo_start_reading'];
@@ -2025,7 +2524,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         _buildDetailRow('Total Trips', '${_trips.length}', Icons.route),
         _buildDetailRow('Total Distance', totalDistanceStr, Icons.route),
         _buildDetailRow('Total Trip Duration', totalDurationStr, Icons.timer_outlined),
-        if (!isDriver)
+        if (showAmounts)
           Container(
             margin: const EdgeInsets.only(top: 8),
             padding: const EdgeInsets.all(16),
@@ -2058,10 +2557,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripsListContent() {
-    // Get user role for hiding amounts
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
-    
     return Column(
       children: _trips.asMap().entries.map((entry) {
         final index = entry.key;
@@ -2096,9 +2591,7 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   }
 
   Widget _buildTripCard(Trip trip, int index) {
-    // Get user role for hiding amounts
-    final userProfile = ref.watch(currentUserProfileProvider);
-    final isDriver = userProfile?.role?.toLowerCase() == 'driver';
+    final showAmounts = _canViewAmounts();
     
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -2146,10 +2639,9 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
                     ),
                   ),
                   child: Text(
-                    // Hide amount for drivers
-                    isDriver 
-                        ? 'Trip ${index + 1}' 
-                        : 'R${(trip.amount ?? 0.0).toStringAsFixed(2)}',
+                    showAmounts 
+                        ? 'R${trip.amount.toStringAsFixed(2)}'
+                        : 'Trip ${index + 1}',
                     style: TextStyle(
                       color: ChoiceLuxTheme.richGold,
                       fontWeight: FontWeight.bold,
@@ -2173,17 +2665,17 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
             const SizedBox(height: 12),
             _buildDetailRow(
               'Date & Time',
-              trip.formattedDateTime ?? 'Not set',
+              trip.formattedDateTime,
               Icons.access_time,
             ),
             _buildDetailRow(
               'Pick-up',
-              trip.pickupLocation ?? 'Not set',
+              trip.pickupLocation.isEmpty ? 'Not set' : trip.pickupLocation,
               Icons.location_on,
             ),
             _buildDetailRow(
               'Drop-off',
-              trip.dropoffLocation ?? 'Not set',
+              trip.dropoffLocation.isEmpty ? 'Not set' : trip.dropoffLocation,
               Icons.location_off,
             ),
             if (trip.notes != null && trip.notes!.isNotEmpty)
@@ -2252,13 +2744,14 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
   Future<void> _adminCloseJobWithComment(String comment) async {
     if (_job == null || _isClosingJob || !mounted) return;
     final currentUser = ref.read(currentUserProfileProvider);
-    if (currentUser?.id == null) return;
+    final userId = currentUser?.id;
+    if (userId == null) return;
     setState(() => _isClosingJob = true);
     try {
-      Log.d('Admin closing job: userId=${currentUser?.id} jobId=${widget.jobId}');
+      Log.d('Admin closing job: userId=$userId jobId=${widget.jobId}');
       await DriverFlowApiService.closeJobByAdmin(
         int.parse(widget.jobId),
-        closedByUserId: currentUser!.id!,
+        closedByUserId: userId,
         comment: comment,
       );
       if (!mounted) return;
@@ -2288,7 +2781,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
         currentUser?.role?.toLowerCase() == 'administrator' ||
         currentUser?.role?.toLowerCase() == 'super_admin' ||
         currentUser?.role?.toLowerCase() == 'manager';
-    final isAdminRole = canEdit; // administrator, super_admin, manager
     final canCloseJob = currentUser?.role?.toLowerCase() == 'administrator' ||
         currentUser?.role?.toLowerCase() == 'super_admin';
     final jobNotCompleted = _job?.status != null && _job!.status != 'completed';
@@ -3198,32 +3690,6 @@ class _JobSummaryScreenState extends ConsumerState<JobSummaryScreen> {
     }
 
     return steps;
-  }
-
-  void _printJobSummary() {
-    // Basic print functionality - could be enhanced with PDF generation
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Printing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
-  }
-
-  void _shareJobSummary() {
-    // Basic share functionality - could be enhanced with actual sharing
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sharing job summary for ${_job?.jobNumber ?? 'Unknown Job'}'),
-        action: SnackBarAction(
-          label: 'OK',
-          onPressed: () {},
-        ),
-      ),
-    );
   }
 
   void _showTripEditModal(Trip trip) {

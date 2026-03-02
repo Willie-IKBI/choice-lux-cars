@@ -2,6 +2,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:choice_lux_cars/features/admin/models/ops_driver_option.dart';
 import 'package:choice_lux_cars/features/jobs/services/job_assignment_service.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/core/logging/log.dart';
 
 /// Admin-only job actions (assign/reassign driver). Respects RLS.
 class AdminJobsService {
@@ -25,7 +26,8 @@ class AdminJobsService {
           number: map['number']?.toString(),
         );
       }).toList();
-    } catch (_) {
+    } catch (e) {
+      Log.e('Failed to load eligible drivers: $e');
       return [];
     }
   }
@@ -81,8 +83,8 @@ class AdminJobsService {
           newDriverId: driverId,
           previousDriverId: currentDriverId,
         );
-      } catch (_) {
-        // Notification failure does not fail the assign
+      } catch (e) {
+        Log.e('Driver reassignment notification failed: $e');
       }
     } catch (e) {
       final msg = e.toString().toLowerCase();

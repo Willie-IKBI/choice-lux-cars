@@ -1,6 +1,7 @@
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/features/jobs/models/expense.dart';
 
@@ -33,6 +34,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
   final _descriptionController = TextEditingController();
   final _otherDescriptionController = TextEditingController();
   final _locationController = TextEditingController();
+  final ImagePicker _picker = ImagePicker();
 
   String _expenseType = 'fuel';
   DateTime _expenseDate = DateTime.now();
@@ -55,46 +57,36 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
     super.dispose();
   }
 
-  /// Pick slip from file picker (supports images and PDFs on all platforms)
+  /// Capture slip photo via camera (falls back to gallery on web)
   Future<void> _pickSlip() async {
     try {
-      final result = await FilePicker.platform.pickFiles(
-        type: FileType.custom,
-        allowedExtensions: ['jpg', 'jpeg', 'png', 'pdf'],
-        withData: true,
+      final source = kIsWeb ? ImageSource.gallery : ImageSource.camera;
+      final XFile? image = await _picker.pickImage(
+        source: source,
+        imageQuality: 80,
+        maxWidth: 1920,
       );
 
-      if (result != null && result.files.isNotEmpty) {
-        final file = result.files.first;
-        if (file.bytes != null) {
-          // Validate file size (5MB max)
-          if (file.bytes!.length > 5 * 1024 * 1024) {
-            setState(() {
-              _slipError = 'File size must be less than 5MB';
-            });
-            return;
-          }
+      if (image == null) return;
 
-          // Validate extension
-          final extension = file.extension?.toLowerCase() ?? '';
-          if (!['jpg', 'jpeg', 'png', 'pdf'].contains(extension)) {
-            setState(() {
-              _slipError = 'Only JPG, JPEG, PNG, and PDF files are allowed';
-            });
-            return;
-          }
+      final bytes = await image.readAsBytes();
 
-          setState(() {
-            _slipBytes = file.bytes;
-            _slipFileName = file.name;
-            _isImage = ['jpg', 'jpeg', 'png'].contains(extension);
-            _slipError = null;
-          });
-        }
+      if (bytes.length > 5 * 1024 * 1024) {
+        setState(() {
+          _slipError = 'Image size must be less than 5MB';
+        });
+        return;
       }
+
+      setState(() {
+        _slipBytes = bytes;
+        _slipFileName = image.name;
+        _isImage = true;
+        _slipError = null;
+      });
     } catch (e) {
       setState(() {
-        _slipError = 'Failed to pick file: $e';
+        _slipError = 'Failed to capture photo: $e';
       });
     }
   }
@@ -183,7 +175,7 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
     // Validate slip (required)
     if (_slipBytes == null || _slipFileName == null) {
       setState(() {
-        _slipError = 'Slip upload is required';
+        _slipError = 'Slip photo is required';
       });
       return;
     }
@@ -629,7 +621,6 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
                     const SizedBox(height: 8),
                     
                     if (_slipBytes == null) ...[
-                      // Upload button
                       InkWell(
                         onTap: _pickSlip,
                         child: Container(
@@ -644,16 +635,18 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
                           ),
                           child: Row(
                             children: [
-                              const Icon(
-                                Icons.upload_file,
+                              Icon(
+                                kIsWeb ? Icons.photo_library : Icons.camera_alt,
                                 color: ChoiceLuxTheme.richGold,
                                 size: 24,
                               ),
                               const SizedBox(width: 12),
-                              const Expanded(
+                              Expanded(
                                 child: Text(
-                                  'Upload Slip (JPG, PNG, PDF - Max 5MB)',
-                                  style: TextStyle(
+                                  kIsWeb
+                                      ? 'Select Slip Photo (Max 5MB)'
+                                      : 'Take Photo of Slip (Max 5MB)',
+                                  style: const TextStyle(
                                     color: ChoiceLuxTheme.softWhite,
                                     fontSize: 14,
                                   ),
@@ -686,33 +679,15 @@ class _AddExpenseModalState extends State<AddExpenseModal> {
                         ),
                         child: Row(
                           children: [
-                            if (_isImage) ...[
-                              // Image thumbnail
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(4),
-                                child: Image.memory(
-                                  _slipBytes!,
-                                  width: 60,
-                                  height: 60,
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ] else ...[
-                              // PDF icon
-                              Container(
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(4),
+                              child: Image.memory(
+                                _slipBytes!,
                                 width: 60,
                                 height: 60,
-                                decoration: BoxDecoration(
-                                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.2),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: const Icon(
-                                  Icons.picture_as_pdf,
-                                  color: ChoiceLuxTheme.richGold,
-                                  size: 32,
-                                ),
+                                fit: BoxFit.cover,
                               ),
-                            ],
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Column(

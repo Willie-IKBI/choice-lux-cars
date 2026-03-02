@@ -18,6 +18,16 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
   bool _isLegalExpanded = false;
   bool _isAppExpanded = false;
 
+  void _showComingSoon(String feature) {
+    Navigator.pop(context);
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('$feature — coming soon'),
+        duration: const Duration(seconds: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final userProfile = ref.watch(currentUserProfileProvider);
@@ -114,20 +124,12 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       _buildMobileMenuItem(
                         icon: Icons.business_outlined,
                         title: 'About Choice Lux Cars',
-                        onTap: () {
-                          Log.d('Navigate to About');
-                          Navigator.pop(context);
-                          context.push('/about');
-                        },
+                        onTap: () => _showComingSoon('About Choice Lux Cars'),
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.contact_support_outlined,
                         title: 'Contact Information',
-                        onTap: () {
-                          Log.d('Navigate to Contact');
-                          Navigator.pop(context);
-                          context.push('/contact');
-                        },
+                        onTap: () => _showComingSoon('Contact Information'),
                       ),
                     ],
                   ),
@@ -142,29 +144,17 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                       _buildMobileMenuItem(
                         icon: Icons.privacy_tip_outlined,
                         title: 'Privacy Policy',
-                        onTap: () {
-                          Log.d('Navigate to Privacy Policy');
-                          Navigator.pop(context);
-                          context.push('/privacy-policy');
-                        },
+                        onTap: () => _showComingSoon('Privacy Policy'),
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.description_outlined,
                         title: 'Terms of Service',
-                        onTap: () {
-                          Log.d('Navigate to Terms of Service');
-                          Navigator.pop(context);
-                          context.push('/terms-of-service');
-                        },
+                        onTap: () => _showComingSoon('Terms of Service'),
                       ),
                       _buildMobileMenuItem(
                         icon: Icons.help_outline,
                         title: 'Help & Support',
-                        onTap: () {
-                          Log.d('Navigate to Help & Support');
-                          Navigator.pop(context);
-                          context.push('/help-support');
-                        },
+                        onTap: () => _showComingSoon('Help & Support'),
                       ),
                     ],
                   ),
@@ -184,11 +174,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                         _buildMobileMenuItem(
                           icon: Icons.admin_panel_settings_outlined,
                           title: 'System Settings',
-                          onTap: () {
-                            Log.d('Navigate to System Settings');
-                            Navigator.pop(context);
-                            context.push('/system-settings');
-                          },
+                          onTap: () => _showComingSoon('System Settings'),
                         ),
                         _buildMobileMenuItem(
                           icon: Icons.analytics_outlined,
@@ -304,21 +290,13 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.business_outlined,
                           title: 'About Choice Lux Cars',
                           subtitle: 'Learn about our company',
-                          onTap: () {
-                            Log.d('Navigate to About');
-                            Navigator.pop(context);
-                            context.push('/about');
-                          },
+                          onTap: () => _showComingSoon('About Choice Lux Cars'),
                         ),
                         _buildMenuItem(
                           icon: Icons.contact_support_outlined,
                           title: 'Contact Information',
                           subtitle: 'Get in touch with us',
-                          onTap: () {
-                            Log.d('Navigate to Contact');
-                            Navigator.pop(context);
-                            context.push('/contact');
-                          },
+                          onTap: () => _showComingSoon('Contact Information'),
                         ),
                       ],
                     ),
@@ -331,31 +309,19 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                           icon: Icons.privacy_tip_outlined,
                           title: 'Privacy Policy',
                           subtitle: 'How we protect your data',
-                          onTap: () {
-                            Log.d('Navigate to Privacy Policy');
-                            Navigator.pop(context);
-                            context.push('/privacy-policy');
-                          },
+                          onTap: () => _showComingSoon('Privacy Policy'),
                         ),
                         _buildMenuItem(
                           icon: Icons.description_outlined,
                           title: 'Terms of Service',
                           subtitle: 'Our terms and conditions',
-                          onTap: () {
-                            Log.d('Navigate to Terms of Service');
-                            Navigator.pop(context);
-                            context.push('/terms-of-service');
-                          },
+                          onTap: () => _showComingSoon('Terms of Service'),
                         ),
                         _buildMenuItem(
                           icon: Icons.help_outline,
                           title: 'Help & Support',
                           subtitle: 'Get help and support',
-                          onTap: () {
-                            Log.d('Navigate to Help & Support');
-                            Navigator.pop(context);
-                            context.push('/help-support');
-                          },
+                          onTap: () => _showComingSoon('Help & Support'),
                         ),
                       ],
                     ),
@@ -377,11 +343,7 @@ class _LuxuryDrawerState extends ConsumerState<LuxuryDrawer> {
                             icon: Icons.admin_panel_settings_outlined,
                             title: 'System Settings',
                             subtitle: 'Configure system options',
-                            onTap: () {
-                              Log.d('Navigate to System Settings');
-                              Navigator.pop(context);
-                              context.push('/system-settings');
-                            },
+                            onTap: () => _showComingSoon('System Settings'),
                           ),
                           _buildMenuItem(
                             icon: Icons.analytics_outlined,

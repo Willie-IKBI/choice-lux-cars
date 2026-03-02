@@ -4,34 +4,43 @@ import 'package:choice_lux_cars/features/insights/models/insights_data.dart';
 import 'package:choice_lux_cars/features/insights/providers/driver_insights_provider.dart';
 import 'package:choice_lux_cars/features/insights/widgets/star_rating_bar.dart';
 import 'package:choice_lux_cars/app/theme.dart';
-import 'package:choice_lux_cars/shared/widgets/compact_metric_tile.dart';
-import 'package:choice_lux_cars/shared/widgets/metric_help_icon.dart';
+import 'package:choice_lux_cars/shared/widgets/insights_metric_card.dart';
+import 'package:choice_lux_cars/shared/widgets/section_header.dart';
+import 'package:choice_lux_cars/shared/widgets/common_states.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
 import 'package:go_router/go_router.dart';
+import 'package:choice_lux_cars/shared/utils/snackbar_utils.dart';
+import 'package:choice_lux_cars/core/utils.dart';
 
 class DriverInsightsTab extends ConsumerWidget {
   final TimePeriod selectedPeriod;
   final LocationFilter selectedLocation;
+  final DateTime? customStartDate;
+  final DateTime? customEndDate;
+  final GlobalKey _driversListKey = GlobalKey();
 
-  const DriverInsightsTab({
+  DriverInsightsTab({
     super.key,
     required this.selectedPeriod,
     required this.selectedLocation,
+    this.customStartDate,
+    this.customEndDate,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final driverInsightsAsync = ref.watch(driverInsightsProvider((
-      selectedPeriod,
-      selectedLocation,
-    )));
+    final providerKey = (selectedPeriod, selectedLocation, customStartDate, customEndDate);
+    final driverInsightsAsync = ref.watch(driverInsightsProvider(providerKey));
 
     return Container(
       padding: const EdgeInsets.all(16),
       child: driverInsightsAsync.when(
         data: (insights) => _buildDriverContent(context, insights),
-        loading: () => _buildLoadingState(),
-        error: (error, stack) => _buildErrorState(error.toString()),
+        loading: () => const LoadingStateWidget(message: 'Loading driver insights...'),
+        error: (error, stack) => ErrorStateWidget(
+          message: 'Failed to load driver insights: ${error.toString()}',
+          onRetry: () => ref.invalidate(driverInsightsProvider(providerKey)),
+        ),
       ),
     );
   }
@@ -93,7 +102,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     ),
                     TextButton(
                       onPressed: () {
-                        // TODO: Implement export report functionality
+                        SnackBarUtils.showInfo(context, 'Export Report coming soon');
                       },
                       child: Text(
                         'Export Report',
@@ -120,7 +129,7 @@ class DriverInsightsTab extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Key Metrics
-          _buildSectionHeader('Driver Performance'),
+          SectionHeader(title: 'Driver Performance'),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -143,17 +152,21 @@ class DriverInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Total Drivers',
                     value: insights.totalDrivers.toString(),
                     icon: Icons.people_outline,
                     iconColor: ChoiceLuxTheme.richGold,
                     progressValue: 1.0,
                     helpText: 'Total number of drivers in the selected period and location.',
+                    onTap: () {
+                      final keyContext = _driversListKey.currentContext;
+                      if (keyContext != null) {
+                        Scrollable.ensureVisible(keyContext, duration: const Duration(milliseconds: 400), curve: Curves.easeInOut);
+                      }
+                    },
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Active Drivers',
                     value: insights.activeDrivers.toString(),
                     icon: Icons.person_outline,
@@ -163,8 +176,7 @@ class DriverInsightsTab extends ConsumerWidget {
                         : 0.0,
                     helpText: 'Drivers who have completed at least one job in the period. Indicates engaged workforce size.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Jobs/Driver',
                     value: insights.averageJobsPerDriver.toStringAsFixed(1),
                     icon: Icons.work_outline,
@@ -172,10 +184,9 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.averageJobsPerDriver > 0 ? 1.0 : 0.0,
                     helpText: 'Average number of jobs completed per active driver. Used to compare workload and productivity.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Revenue/Driver',
-                    value: 'R${insights.averageRevenuePerDriver.toStringAsFixed(0)}',
+                    value: CurrencyUtils.formatCompact(insights.averageRevenuePerDriver),
                     icon: Icons.attach_money,
                     iconColor: Colors.orange,
                     progressValue: insights.averageRevenuePerDriver > 0 ? 1.0 : 0.0,
@@ -222,8 +233,7 @@ class DriverInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Driver Utilization',
                     value: '${insights.driverUtilizationRate.toStringAsFixed(1)}%',
                     icon: Icons.people,
@@ -231,8 +241,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.driverUtilizationRate / 100,
                     helpText: 'Percentage of drivers who completed at least one job in the period. Measures how much of the fleet is actively used.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Unassigned Jobs',
                     value: insights.unassignedJobsCount.toString(),
                     icon: Icons.person_off,
@@ -259,7 +268,7 @@ class DriverInsightsTab extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Phase 2: Performance Metrics
-          _buildSectionHeader('Performance Metrics'),
+          SectionHeader(title: 'Performance Metrics'),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -281,8 +290,7 @@ class DriverInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Completion Time',
                     value: insights.averageJobCompletionTime > 0
                         ? '${insights.averageJobCompletionTime.toStringAsFixed(1)}h'
@@ -292,19 +300,17 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.averageJobCompletionTime > 0 ? 1.0 : 0.0,
                     helpText: 'Average hours from job start to completion. Used to monitor delivery speed.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Avg Time to Pickup',
                     value: insights.averageTimeToPickup > 0
-                        ? '${insights.averageTimeToPickup.toStringAsFixed(0)}m'
+                        ? '${CurrencyUtils.formatWithSpaces(insights.averageTimeToPickup)}m'
                         : 'N/A',
                     icon: Icons.access_time,
                     iconColor: Colors.green,
                     progressValue: insights.averageTimeToPickup > 0 ? 1.0 : 0.0,
                     helpText: 'Average minutes from job assignment to driver pickup. Tracks responsiveness.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'On-Time Pickup Rate',
                     value: insights.onTimePickupRate > 0
                         ? '${insights.onTimePickupRate.toStringAsFixed(1)}%'
@@ -314,8 +320,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.onTimePickupRate / 100,
                     helpText: 'Percentage of jobs where the driver arrived at pickup within the allowed window. Monitors service reliability.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Payment Collection',
                     value: insights.paymentCollectionRate > 0
                         ? '${insights.paymentCollectionRate.toStringAsFixed(1)}%'
@@ -344,7 +349,7 @@ class DriverInsightsTab extends ConsumerWidget {
           const SizedBox(height: 24),
 
           // Phase 2: Activity Metrics
-          _buildSectionHeader('Activity Metrics'),
+          SectionHeader(title: 'Activity Metrics'),
           const SizedBox(height: 16),
           LayoutBuilder(
             builder: (context, constraints) {
@@ -366,8 +371,7 @@ class DriverInsightsTab extends ConsumerWidget {
                 crossAxisSpacing: spacing,
                 mainAxisSpacing: spacing,
                 children: [
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Jobs This Week',
                     value: insights.jobsCompletedThisWeek.toString(),
                     icon: Icons.calendar_today,
@@ -375,8 +379,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.jobsCompletedThisWeek > 0 ? 1.0 : 0.0,
                     helpText: 'Number of jobs completed in the current calendar week. Weekly activity snapshot.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Jobs This Month',
                     value: insights.jobsCompletedThisMonth.toString(),
                     icon: Icons.calendar_month,
@@ -384,8 +387,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.jobsCompletedThisMonth > 0 ? 1.0 : 0.0,
                     helpText: 'Number of jobs completed in the current calendar month. Monthly delivery volume.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Active Jobs Now',
                     value: insights.activeJobsNow.toString(),
                     icon: Icons.work,
@@ -393,8 +395,7 @@ class DriverInsightsTab extends ConsumerWidget {
                     progressValue: insights.activeJobsNow > 0 ? 1.0 : 0.0,
                     helpText: 'Jobs currently in progress (started but not yet completed). Current workload indicator.',
                   ),
-                  _buildNewMetricCard(
-                    context: context,
+                  InsightsMetricCard(
                     label: 'Started Today',
                     value: insights.jobsStartedToday.toString(),
                     icon: Icons.play_arrow,
@@ -422,7 +423,7 @@ class DriverInsightsTab extends ConsumerWidget {
 
           // All drivers (sorted by rating)
           if (insights.allDrivers.isNotEmpty) ...[
-            _buildSectionHeader('All drivers'),
+            Container(key: _driversListKey, child: SectionHeader(title: 'All drivers')),
             const SizedBox(height: 4),
             Text(
               'Sorted by rating (highest to lowest)',
@@ -434,241 +435,6 @@ class DriverInsightsTab extends ConsumerWidget {
             const SizedBox(height: 16),
             _buildTopDriversCard(context, insights.allDrivers),
           ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: TextStyle(
-        fontSize: 20,
-        fontWeight: FontWeight.bold,
-        color: ChoiceLuxTheme.softWhite,
-      ),
-    );
-  }
-
-  Widget _buildNewMetricCard({
-    required BuildContext context,
-    required String label,
-    required String value,
-    required IconData icon,
-    required Color iconColor,
-    required double progressValue,
-    String? trendIndicator,
-    String? helpText,
-    VoidCallback? onTap,
-  }) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isMobile = ResponsiveBreakpoints.isMobile(screenWidth);
-    final isSmallMobile = ResponsiveBreakpoints.isSmallMobile(screenWidth);
-    final cardPadding = isSmallMobile ? 10.0 : (isMobile ? 12.0 : 16.0);
-    final iconSize = isSmallMobile ? 32.0 : (isMobile ? 36.0 : 40.0);
-    final iconIconSize = isSmallMobile ? 18.0 : (isMobile ? 20.0 : 22.0);
-    final valueFontSize = isSmallMobile ? 20.0 : (isMobile ? 22.0 : 28.0);
-    final labelFontSize = isSmallMobile ? 11.0 : (isMobile ? 12.0 : 14.0);
-    final iconSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
-    final valueSpacing = isSmallMobile ? 3.0 : (isMobile ? 4.0 : 6.0);
-    final labelSpacing = isSmallMobile ? 6.0 : (isMobile ? 8.0 : 12.0);
-
-    Widget card = Container(
-      padding: EdgeInsets.all(cardPadding),
-      decoration: BoxDecoration(
-        color: ChoiceLuxTheme.charcoalGray,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ChoiceLuxTheme.platinumSilver.withOpacity(0.1),
-          width: 1,
-        ),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Icon in rounded square container
-              Container(
-                width: iconSize,
-                height: iconSize,
-                decoration: BoxDecoration(
-                  color: iconColor.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Icon(
-                  icon,
-                  color: iconColor,
-                  size: iconIconSize,
-                ),
-              ),
-            // Trend indicator (optional, top-right)
-            if (trendIndicator != null)
-              Container(
-                padding: EdgeInsets.symmetric(
-                  horizontal: isSmallMobile ? 4 : 6,
-                  vertical: isSmallMobile ? 1 : 2,
-                ),
-                decoration: BoxDecoration(
-                  color: trendIndicator.startsWith('-')
-                      ? Colors.red.withOpacity(0.2)
-                      : Colors.green.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(4),
-                ),
-                child: Text(
-                  trendIndicator,
-                  style: TextStyle(
-                    fontSize: isSmallMobile ? 9 : 10,
-                    fontWeight: FontWeight.w600,
-                    color: trendIndicator.startsWith('-')
-                        ? Colors.red.shade300
-                        : Colors.green.shade300,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          SizedBox(height: iconSpacing),
-          // Value
-          Flexible(
-            child: Text(
-              value,
-              style: TextStyle(
-                fontSize: valueFontSize,
-                fontWeight: FontWeight.w700,
-                color: ChoiceLuxTheme.softWhite,
-                letterSpacing: 0.5,
-              ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          SizedBox(height: valueSpacing),
-          // Label
-          if (helpText != null)
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    label,
-                    style: TextStyle(
-                      fontSize: labelFontSize,
-                      color: ChoiceLuxTheme.platinumSilver,
-                      fontWeight: FontWeight.w400,
-                    ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                MetricHelpIcon(explanation: helpText!),
-              ],
-            )
-          else
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: labelFontSize,
-                color: ChoiceLuxTheme.platinumSilver,
-                fontWeight: FontWeight.w400,
-              ),
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-            ),
-          SizedBox(height: labelSpacing),
-          // Progress bar at bottom
-          Container(
-            height: 2,
-            decoration: BoxDecoration(
-              color: iconColor.withOpacity(0.3),
-              borderRadius: BorderRadius.circular(1),
-            ),
-            child: FractionallySizedBox(
-              widthFactor: progressValue.clamp(0.0, 1.0),
-              alignment: Alignment.centerLeft,
-              child: Container(
-                decoration: BoxDecoration(
-                  color: iconColor,
-                  borderRadius: BorderRadius.circular(1),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-
-    if (onTap != null) {
-      return GestureDetector(
-        onTap: onTap,
-        child: MouseRegion(
-          cursor: SystemMouseCursors.click,
-          child: card,
-        ),
-      );
-    }
-
-    return card;
-  }
-
-  Widget _buildMetricCard(String title, String value, IconData icon, Color color, {required BuildContext context}) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final isDesktop = ResponsiveBreakpoints.isDesktop(screenWidth);
-    
-    // Smaller, more compact cards for desktop
-    final iconSize = isDesktop ? 20.0 : 32.0;
-    final iconContainerPadding = isDesktop ? 6.0 : 12.0;
-    final cardPadding = isDesktop ? const EdgeInsets.all(6.0) : const EdgeInsets.all(16.0);
-    final valueFontSize = isDesktop ? 16.0 : 24.0;
-    final titleFontSize = isDesktop ? 12.0 : 14.0;
-    final titleSpacing = isDesktop ? 4.0 : 8.0;
-    final valueSpacing = isDesktop ? 3.0 : 8.0;
-    final borderRadius = isDesktop ? 16.0 : 12.0;
-    
-    return Container(
-      padding: cardPadding,
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: Colors.white.withOpacity(0.1)),
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: EdgeInsets.all(iconContainerPadding),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(borderRadius * 0.8),
-              border: Border.all(
-                color: color.withOpacity(0.2),
-                width: 1,
-              ),
-            ),
-            child: Icon(icon, color: color, size: iconSize),
-          ),
-          SizedBox(height: valueSpacing),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: valueFontSize,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-            textAlign: TextAlign.center,
-          ),
-          SizedBox(height: titleSpacing),
-          Text(
-            title,
-            style: TextStyle(
-              fontSize: titleFontSize,
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
         ],
       ),
     );
@@ -784,7 +550,7 @@ class DriverInsightsTab extends ConsumerWidget {
             ),
           ),
           Text(
-            'R${driver.revenue.toStringAsFixed(0)}',
+            CurrencyUtils.formatCompact(driver.revenue),
             style: TextStyle(
               color: ChoiceLuxTheme.richGold,
               fontWeight: FontWeight.bold,
@@ -797,63 +563,4 @@ class DriverInsightsTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildLoadingState() {
-    return const Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          CircularProgressIndicator(
-            valueColor: AlwaysStoppedAnimation<Color>(ChoiceLuxTheme.richGold),
-          ),
-          SizedBox(height: 16),
-          Text(
-            'Loading driver insights...',
-            style: TextStyle(color: Colors.white),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            Icons.error_outline,
-            color: Colors.red,
-            size: 64,
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Failed to load driver insights',
-            style: const TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            error,
-            style: TextStyle(
-              color: Colors.white.withOpacity(0.8),
-            ),
-            textAlign: TextAlign.center,
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: () {
-              // Refresh logic would go here
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: ChoiceLuxTheme.richGold,
-            ),
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
 }

@@ -1,82 +1,83 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:geolocator/geolocator.dart';
+import 'dart:io';
 import 'package:choice_lux_cars/app/theme.dart';
+import 'package:choice_lux_cars/core/services/upload_service.dart';
+import 'package:choice_lux_cars/shared/mixins/gps_capture_mixin.dart';
 
 class PickupArrivalModal extends StatefulWidget {
-  final Function({
+  final Future<void> Function({
     required double gpsLat,
     required double gpsLng,
     required double gpsAccuracy,
-  })
-  onConfirm;
+    required String arrivalImageUrl,
+  }) onConfirm;
+
   final VoidCallback onCancel;
 
   const PickupArrivalModal({
-    Key? key,
+    super.key,
     required this.onConfirm,
     required this.onCancel,
-  }) : super(key: key);
+  });
 
   @override
   State<PickupArrivalModal> createState() => _PickupArrivalModalState();
 }
 
-class _PickupArrivalModalState extends State<PickupArrivalModal> {
+class _PickupArrivalModalState extends State<PickupArrivalModal> with GpsCaptureMixin {
+  final ImagePicker _picker = ImagePicker();
+
+  File? _selectedImage;
+  Uint8List? _selectedImageBytes;
   bool _isLoading = false;
-  bool _isCapturingLocation = false;
-  Position? _currentPosition;
-  String? _locationError;
 
   @override
   void initState() {
     super.initState();
-    _captureLocation();
+    captureLocation();
   }
 
-  Future<void> _captureLocation() async {
-    setState(() {
-      _isCapturingLocation = true;
-      _locationError = null;
-    });
-
+  Future<void> _pickImage() async {
     try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception('Location services are disabled.');
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Location permissions are denied');
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied');
-      }
-
-      // Get current position with retry logic
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
+      final XFile? image = await _picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 80,
+        maxWidth: 1920,
+        maxHeight: 1080,
       );
 
-      setState(() {
-        _currentPosition = position;
-        _isCapturingLocation = false;
-      });
+      if (image != null) {
+        final bytes = await image.readAsBytes();
+        setState(() {
+          _selectedImageBytes = bytes;
+          if (!kIsWeb) {
+            _selectedImage = File(image.path);
+          }
+        });
+      }
     } catch (e) {
-      setState(() {
-        _locationError = e.toString();
-        _isCapturingLocation = false;
-      });
+      _showErrorSnackBar('Failed to capture image: $e');
     }
   }
 
+  Future<void> _retakePhoto() async {
+    setState(() {
+      _selectedImage = null;
+      _selectedImageBytes = null;
+    });
+    await _pickImage();
+  }
+
   Future<void> _confirmArrival() async {
-    if (_currentPosition == null) {
+    if (_selectedImageBytes == null) {
+      _showErrorSnackBar('Please capture a photo of the pickup location');
+      return;
+    }
+
+    if (currentPosition == null) {
       _showErrorSnackBar('GPS location is required. Please try again.');
       return;
     }
@@ -86,20 +87,25 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
     });
 
     try {
-      // Call the confirmation callback
-      widget.onConfirm(
-        gpsLat: _currentPosition!.latitude,
-        gpsLng: _currentPosition!.longitude,
-        gpsAccuracy: _currentPosition!.accuracy,
+      final imageUrl = await UploadService.uploadArrivalImage(
+        _selectedImageBytes!,
+        'pickup_arrival_${DateTime.now().millisecondsSinceEpoch}.jpg',
       );
 
-      Navigator.of(context).pop();
+      await widget.onConfirm(
+        gpsLat: currentPosition!.latitude,
+        gpsLng: currentPosition!.longitude,
+        gpsAccuracy: currentPosition!.accuracy,
+        arrivalImageUrl: imageUrl,
+      );
     } catch (e) {
-      _showErrorSnackBar('Failed to confirm arrival: $e');
+      _showErrorSnackBar('Failed to upload image: $e');
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
@@ -114,175 +120,564 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
     );
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(maxWidth: 500),
-        child: Container(
-          width: MediaQuery.of(context).size.width * 0.9,
-          decoration: BoxDecoration(
-            gradient: ChoiceLuxTheme.cardGradient,
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-              width: 1,
+  Widget _buildCompactDialog(BuildContext context, double screenHeight, double screenWidth) {
+    return Stack(
+      children: [
+        Dialog(
+          backgroundColor: Colors.transparent,
+          child: Container(
+            width: screenWidth * 0.95,
+            height: screenHeight * 0.95,
+            decoration: BoxDecoration(
+              gradient: ChoiceLuxTheme.cardGradient,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                width: 1,
+              ),
             ),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withOpacity(0.3),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Header
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      ChoiceLuxTheme.richGold.withOpacity(0.1),
-                      ChoiceLuxTheme.richGold.withOpacity(0.05),
-                    ],
+            child: Column(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                        ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
+                      ],
+                    ),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(16),
+                      topRight: Radius.circular(16),
+                    ),
                   ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(12),
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            ChoiceLuxTheme.richGold,
-                            ChoiceLuxTheme.richGold.withOpacity(0.8),
-                          ],
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              ChoiceLuxTheme.richGold,
+                              ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(8),
                         ),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: const Icon(
-                        Icons.location_on_rounded,
-                        color: Colors.black,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Arrive at Pickup',
-                            style: TextStyle(
-                              color: ChoiceLuxTheme.softWhite,
-                              fontSize: 20,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: 0.3,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            'Confirm arrival at pickup location',
-                            style: TextStyle(
-                              color: ChoiceLuxTheme.platinumSilver,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Content
-              Padding(
-                padding: const EdgeInsets.all(24),
-                child: Column(
-                  children: [
-                    // GPS Status Section
-                    _buildGpsStatusSection(),
-                    const SizedBox(height: 24),
-
-                    // Confirmation Message
-                    Container(
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: ChoiceLuxTheme.richGold.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: ChoiceLuxTheme.richGold.withOpacity(0.3),
-                          width: 1,
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.black,
+                          size: 20,
                         ),
                       ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            Icons.info_outline_rounded,
-                            color: ChoiceLuxTheme.richGold,
-                            size: 20,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'Confirm that you have arrived at the pickup location. Your GPS coordinates and arrival time will be recorded.',
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Arrive at Pickup',
                               style: TextStyle(
-                                color: ChoiceLuxTheme.platinumSilver,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                                color: ChoiceLuxTheme.softWhite,
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
-                          ),
+                            Text(
+                              'Capture location photo to confirm arrival',
+                              style: TextStyle(
+                                color: ChoiceLuxTheme.platinumSilver,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: SingleChildScrollView(
+                    physics: const BouncingScrollPhysics(),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Column(
+                        children: [
+                          _buildImageSection(true),
+                          const SizedBox(height: 12),
+                          _buildGpsStatusSection(),
                         ],
                       ),
                     ),
-                  ],
-                ),
-              ),
-
-              // Action Buttons
-              Container(
-                padding: const EdgeInsets.all(24),
-                decoration: BoxDecoration(
-                  color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(20),
-                    bottomRight: Radius.circular(20),
                   ),
                 ),
-                child: Row(
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
+                    borderRadius: const BorderRadius.only(
+                      bottomLeft: Radius.circular(16),
+                      bottomRight: Radius.circular(16),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: _buildLuxuryButton(
+                          onPressed: widget.onCancel,
+                          label: 'Cancel',
+                          isPrimary: false,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildLuxuryButton(
+                          onPressed: _isLoading ? null : _confirmArrival,
+                          label: _isLoading ? 'Uploading...' : 'Confirm Arrival',
+                          isPrimary: true,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.85),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Expanded(
-                      child: _buildLuxuryButton(
-                        onPressed: widget.onCancel,
-                        label: 'Cancel',
-                        isPrimary: false,
+                    const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ChoiceLuxTheme.richGold,
+                        ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: _buildLuxuryButton(
-                        onPressed: _isLoading ? null : _confirmArrival,
-                        label: _isLoading ? 'Confirming...' : 'Confirm Arrival',
-                        isPrimary: true,
+                    const SizedBox(height: 16),
+                    Text(
+                      'Uploading photo...',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
                 ),
               ),
-            ],
+            ),
+          ),
+      ],
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isSmallScreen = screenHeight < 700;
+    final isVerySmallScreen = screenHeight < 600;
+
+    if (isVerySmallScreen) {
+      return _buildCompactDialog(context, screenHeight, screenWidth);
+    }
+
+    return Stack(
+      children: [
+        Dialog(
+          backgroundColor: Colors.transparent,
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxWidth: 500,
+              maxHeight: screenHeight * 0.9,
+            ),
+            child: Container(
+              width: MediaQuery.of(context).size.width * 0.9,
+              decoration: BoxDecoration(
+                gradient: ChoiceLuxTheme.cardGradient,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.3),
+                    blurRadius: 20,
+                    offset: const Offset(0, 10),
+                  ),
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [
+                          ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                          ChoiceLuxTheme.richGold.withValues(alpha: 0.05),
+                        ],
+                      ),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(20),
+                        topRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                ChoiceLuxTheme.richGold,
+                                ChoiceLuxTheme.richGold.withValues(alpha: 0.8),
+                              ],
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: Colors.black,
+                            size: 24,
+                          ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Arrive at Pickup',
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.softWhite,
+                                  fontSize: 20,
+                                  fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.3,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Capture location photo to confirm arrival',
+                                style: TextStyle(
+                                  color: ChoiceLuxTheme.platinumSilver,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: SingleChildScrollView(
+                      physics: const BouncingScrollPhysics(),
+                      child: Padding(
+                        padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+                        child: Column(
+                          children: [
+                            _buildImageSection(isSmallScreen),
+                            SizedBox(height: isSmallScreen ? 16 : 20),
+                            _buildGpsStatusSection(),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.all(isSmallScreen ? 16 : 20),
+                    decoration: BoxDecoration(
+                      color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
+                      borderRadius: const BorderRadius.only(
+                        bottomLeft: Radius.circular(20),
+                        bottomRight: Radius.circular(20),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: _buildLuxuryButton(
+                            onPressed: widget.onCancel,
+                            label: 'Cancel',
+                            isPrimary: false,
+                            isCompact: isSmallScreen,
+                          ),
+                        ),
+                        SizedBox(width: isSmallScreen ? 12 : 16),
+                        Expanded(
+                          child: _buildLuxuryButton(
+                            onPressed: _isLoading ? null : _confirmArrival,
+                            label: _isLoading ? 'Uploading...' : 'Confirm Arrival',
+                            isPrimary: true,
+                            isCompact: isSmallScreen,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ),
+        if (_isLoading)
+          Positioned.fill(
+            child: Container(
+              color: Colors.black.withValues(alpha: 0.85),
+              child: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const SizedBox(
+                      width: 48,
+                      height: 48,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 3,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          ChoiceLuxTheme.richGold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Uploading photo...',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.softWhite,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Please wait',
+                      style: TextStyle(
+                        color: ChoiceLuxTheme.platinumSilver,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildImageSection(bool isSmallScreen) {
+    final screenHeight = MediaQuery.of(context).size.height;
+    final imageHeight = isSmallScreen
+        ? (screenHeight * 0.3).clamp(150.0, 220.0)
+        : 240.0;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            const Icon(
+              Icons.camera_alt_rounded,
+              color: ChoiceLuxTheme.richGold,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            const Text(
+              'Location Photo',
+              style: TextStyle(
+                color: ChoiceLuxTheme.softWhite,
+                fontSize: 16,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(width: 8),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: ChoiceLuxTheme.errorColor.withValues(alpha: 0.2),
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                'Required',
+                style: TextStyle(
+                  color: ChoiceLuxTheme.errorColor,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Text(
+          'Take a photo of the pickup location to verify your arrival',
+          style: TextStyle(
+            color: ChoiceLuxTheme.platinumSilver,
+            fontSize: 13,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+        const SizedBox(height: 12),
+        Container(
+          height: imageHeight,
+          decoration: BoxDecoration(
+            color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _selectedImageBytes != null
+                  ? ChoiceLuxTheme.successColor.withValues(alpha: 0.5)
+                  : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
+              width: _selectedImageBytes != null ? 2 : 1,
+            ),
+          ),
+          child: _selectedImageBytes != null
+              ? Stack(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(12),
+                      child: Image.memory(
+                        _selectedImageBytes!,
+                        width: double.infinity,
+                        height: double.infinity,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.richGold,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: IconButton(
+                          icon: const Icon(
+                            Icons.refresh_rounded,
+                            color: Colors.black,
+                            size: 20,
+                          ),
+                          onPressed: _retakePhoto,
+                          style: IconButton.styleFrom(
+                            padding: const EdgeInsets.all(8),
+                            minimumSize: const Size(32, 32),
+                          ),
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 8,
+                      left: 8,
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: ChoiceLuxTheme.successColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.white,
+                              size: 14,
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              'Photo captured',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : InkWell(
+                  onTap: _pickImage,
+                  borderRadius: BorderRadius.circular(12),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.1),
+                            shape: BoxShape.circle,
+                            border: Border.all(
+                              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
+                              width: 2,
+                            ),
+                          ),
+                          child: Icon(
+                            Icons.camera_alt_outlined,
+                            size: 40,
+                            color: ChoiceLuxTheme.richGold,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          'Tap to capture photo',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.softWhite,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'Photo of the pickup location is required',
+                          style: TextStyle(
+                            color: ChoiceLuxTheme.platinumSilver,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+        ),
+        if (_selectedImageBytes == null) ...[
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: _buildLuxuryButton(
+              onPressed: _pickImage,
+              label: 'Open Camera',
+              isPrimary: false,
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -312,16 +707,18 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
         Container(
           padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
-            color: ChoiceLuxTheme.jetBlack.withOpacity(0.3),
+            color: ChoiceLuxTheme.jetBlack.withValues(alpha: 0.3),
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: ChoiceLuxTheme.platinumSilver.withOpacity(0.2),
+              color: currentPosition != null
+                  ? ChoiceLuxTheme.successColor.withValues(alpha: 0.3)
+                  : ChoiceLuxTheme.platinumSilver.withValues(alpha: 0.2),
               width: 1,
             ),
           ),
           child: Row(
             children: [
-              if (_isCapturingLocation)
+              if (isCapturingLocation)
                 const SizedBox(
                   width: 20,
                   height: 20,
@@ -332,7 +729,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                     ),
                   ),
                 )
-              else if (_currentPosition != null)
+              else if (currentPosition != null)
                 const Icon(
                   Icons.check_circle_rounded,
                   color: ChoiceLuxTheme.successColor,
@@ -350,25 +747,36 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _isCapturingLocation
+                      isCapturingLocation
                           ? 'Capturing location...'
-                          : _currentPosition != null
-                          ? 'Location captured successfully'
-                          : 'Location capture failed',
+                          : currentPosition != null
+                              ? 'Location captured successfully'
+                              : 'Location capture failed',
                       style: TextStyle(
-                        color: _isCapturingLocation
+                        color: isCapturingLocation
                             ? ChoiceLuxTheme.platinumSilver
-                            : _currentPosition != null
-                            ? ChoiceLuxTheme.successColor
-                            : ChoiceLuxTheme.errorColor,
+                            : currentPosition != null
+                                ? ChoiceLuxTheme.successColor
+                                : ChoiceLuxTheme.errorColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (_locationError != null) ...[
+                    if (currentPosition != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        _locationError!,
+                        'Accuracy: ${currentPosition!.accuracy.toStringAsFixed(0)}m',
+                        style: TextStyle(
+                          color: ChoiceLuxTheme.platinumSilver,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w400,
+                        ),
+                      ),
+                    ],
+                    if (locationError != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        locationError!,
                         style: TextStyle(
                           color: ChoiceLuxTheme.errorColor,
                           fontSize: 12,
@@ -379,9 +787,9 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
                   ],
                 ),
               ),
-              if (!_isCapturingLocation && _currentPosition == null)
+              if (!isCapturingLocation && currentPosition == null)
                 TextButton(
-                  onPressed: _captureLocation,
+                  onPressed: captureLocation,
                   child: Text(
                     'Retry',
                     style: TextStyle(
@@ -399,9 +807,10 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
   }
 
   Widget _buildLuxuryButton({
-    required VoidCallback? onPressed,
+    VoidCallback? onPressed,
     required String label,
     required bool isPrimary,
+    bool isCompact = false,
   }) {
     if (isPrimary) {
       return Container(
@@ -409,13 +818,13 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           gradient: LinearGradient(
             colors: [
               ChoiceLuxTheme.richGold,
-              ChoiceLuxTheme.richGold.withOpacity(0.9),
+              ChoiceLuxTheme.richGold.withValues(alpha: 0.9),
             ],
           ),
           borderRadius: BorderRadius.circular(12),
           boxShadow: [
             BoxShadow(
-              color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+              color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -426,16 +835,19 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(
+              vertical: isCompact ? 12 : 14,
+              horizontal: isCompact ? 8 : 16,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
           ),
           child: Text(
             label,
-            style: const TextStyle(
+            style: TextStyle(
               color: Colors.black,
-              fontSize: 16,
+              fontSize: isCompact ? 14 : 16,
               fontWeight: FontWeight.w600,
             ),
           ),
@@ -447,7 +859,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           color: ChoiceLuxTheme.charcoalGray,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: ChoiceLuxTheme.richGold.withOpacity(0.3),
+            color: ChoiceLuxTheme.richGold.withValues(alpha: 0.3),
             width: 1,
           ),
         ),
@@ -456,7 +868,10 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.transparent,
             shadowColor: Colors.transparent,
-            padding: const EdgeInsets.symmetric(vertical: 14),
+            padding: EdgeInsets.symmetric(
+              vertical: isCompact ? 12 : 14,
+              horizontal: isCompact ? 8 : 16,
+            ),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -465,7 +880,7 @@ class _PickupArrivalModalState extends State<PickupArrivalModal> {
             label,
             style: TextStyle(
               color: ChoiceLuxTheme.richGold,
-              fontSize: 16,
+              fontSize: isCompact ? 14 : 16,
               fontWeight: FontWeight.w600,
             ),
           ),

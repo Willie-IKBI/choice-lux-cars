@@ -65,5 +65,43 @@ class BranchUtils {
     if (branchId == null) return false;
     return _idToCodeMap.containsKey(branchId);
   }
+
+  /// Get branch ID from a user's branchId string (code like 'Jhb')
+  /// Useful for passing to repository methods that need numeric branch_id
+  static int? getBranchIdFromCode(String? branchCode) {
+    return codeToId(branchCode);
+  }
+
+  /// Get all branch options as a list of maps for dropdowns
+  /// Returns list of {id: int, code: String, name: String}
+  static List<Map<String, dynamic>> getAllBranches() {
+    return [
+      {'id': 3, 'code': 'Jhb', 'name': 'Johannesburg'},
+      {'id': 2, 'code': 'Cpt', 'name': 'Cape Town'},
+      {'id': 1, 'code': 'Dbn', 'name': 'Durban'},
+    ];
+  }
+
+  /// Get branch full name from code
+  static String? getFullName(String? code) {
+    if (code == null) return null;
+    switch (code) {
+      case 'Jhb':
+        return 'Johannesburg';
+      case 'Cpt':
+        return 'Cape Town';
+      case 'Dbn':
+        return 'Durban';
+      default:
+        return code;
+    }
+  }
+
+  /// Get branch full name from ID
+  static String? getFullNameFromId(int? id) {
+    if (id == null) return null;
+    final code = idToCode(id);
+    return getFullName(code);
+  }
 }
 

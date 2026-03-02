@@ -358,8 +358,28 @@ serve(async (req) => {
                 fcmResult = JSON.parse(responseText)
                 
                 if (fcmResult.error) {
-                  console.error('FCM API error for token:', token.substring(0, 20), fcmResult.error)
-                  fcmResult.error = fcmResult.error.message || fcmResult.error
+                  const errorCode = fcmResult.error?.details?.[0]?.errorCode || fcmResult.error?.code || ''
+                  const errorMessage = fcmResult.error.message || fcmResult.error
+                  console.error('FCM API error for token:', token.substring(0, 20), errorMessage, 'code:', errorCode)
+                  
+                  // Clean up stale tokens
+                  if (errorMessage === 'NotRegistered' || errorMessage === 'The registration token is not a valid FCM registration token' || errorCode === 'UNREGISTERED') {
+                    console.log(`Cleaning stale token for user ${notification.user_id}: ${token.substring(0, 20)}...`)
+                    try {
+                      if (token === profile.fcm_token) {
+                        await supabase.from('profiles').update({ fcm_token: null }).eq('id', notification.user_id)
+                        console.log('Cleared stale fcm_token for user:', notification.user_id)
+                      }
+                      if (token === profile.fcm_token_web) {
+                        await supabase.from('profiles').update({ fcm_token_web: null }).eq('id', notification.user_id)
+                        console.log('Cleared stale fcm_token_web for user:', notification.user_id)
+                      }
+                    } catch (cleanupError) {
+                      console.error('Failed to clean stale token (non-critical):', cleanupError)
+                    }
+                  }
+                  
+                  fcmResult.error = errorMessage
                   failureCount++
                 } else {
                   if (fcmResult.name) {
@@ -468,7 +488,7 @@ function getNotificationTitle(notificationType: string): string {
       return 'Job Completed'
     case 'job_start_deadline_warning_90min':
       return 'Job Start Warning'
-    case 'job_start_deadline_warning_30min':
+    case 'job_start_deadline_warning_60min':
       return 'Job Start Urgent Warning'
     default:
       return 'New Notification'
@@ -496,7 +516,7 @@ function getActionFromNotificationType(notificationType: string): string {
     case 'job_completion':
     case 'job_confirmation':
     case 'job_start_deadline_warning_90min':
-    case 'job_start_deadline_warning_30min':
+    case 'job_start_deadline_warning_60min':
       return 'job_status_changed' // Generic job update action
     default:
       return notificationType // Fallback to notification type

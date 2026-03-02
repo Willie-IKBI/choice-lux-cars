@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:choice_lux_cars/features/clients/models/client.dart';
 import 'package:choice_lux_cars/shared/widgets/responsive_grid.dart';
@@ -358,10 +359,13 @@ class _ClientCardState extends State<ClientCard>
     if (hasLogo) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.network(
-          logo!,
+        child: CachedNetworkImage(
+          imageUrl: logo!,
           fit: BoxFit.cover,
-          errorBuilder: (_, __, ___) => _buildLogoPlaceholder(),
+          placeholder: (context, url) => const Center(
+            child: CircularProgressIndicator(strokeWidth: 2),
+          ),
+          errorWidget: (context, url, error) => _buildLogoPlaceholder(),
         ),
       );
     } else {

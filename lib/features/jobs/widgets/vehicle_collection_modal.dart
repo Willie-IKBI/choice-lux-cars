@@ -6,6 +6,7 @@ import 'dart:io';
 import 'package:choice_lux_cars/app/theme.dart';
 import 'package:choice_lux_cars/core/services/upload_service.dart';
 import 'package:choice_lux_cars/shared/utils/sa_time_utils.dart';
+import 'package:choice_lux_cars/shared/mixins/gps_capture_mixin.dart';
 
 class VehicleCollectionModal extends StatefulWidget {
   final Future<void> Function({
@@ -30,69 +31,24 @@ class VehicleCollectionModal extends StatefulWidget {
   State<VehicleCollectionModal> createState() => _VehicleCollectionModalState();
 }
 
-class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
+class _VehicleCollectionModalState extends State<VehicleCollectionModal> with GpsCaptureMixin {
   final TextEditingController _odometerController = TextEditingController();
   final ImagePicker _picker = ImagePicker();
 
   File? _selectedImage;
   Uint8List? _selectedImageBytes;
   bool _isLoading = false;
-  bool _isCapturingLocation = false;
-  Position? _currentPosition;
-  String? _locationError;
 
   @override
   void initState() {
     super.initState();
-    _captureLocation();
+    captureLocation();
   }
 
   @override
   void dispose() {
     _odometerController.dispose();
     super.dispose();
-  }
-
-  Future<void> _captureLocation() async {
-    setState(() {
-      _isCapturingLocation = true;
-      _locationError = null;
-    });
-
-    try {
-      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-      if (!serviceEnabled) {
-        throw Exception('Location services are disabled.');
-      }
-
-      LocationPermission permission = await Geolocator.checkPermission();
-      if (permission == LocationPermission.denied) {
-        permission = await Geolocator.requestPermission();
-        if (permission == LocationPermission.denied) {
-          throw Exception('Location permissions are denied');
-        }
-      }
-
-      if (permission == LocationPermission.deniedForever) {
-        throw Exception('Location permissions are permanently denied');
-      }
-
-      // Get current position with retry logic
-      Position position = await Geolocator.getCurrentPosition(
-        desiredAccuracy: LocationAccuracy.high,
-        timeLimit: const Duration(seconds: 10),
-      );
-
-      setState(() {
-        _currentPosition = position;
-        _isCapturingLocation = false;
-      });
-    } catch (e) {
-      setState(() {
-        _locationError = e.toString();
-        _isCapturingLocation = false;
-      });
-    }
   }
 
   Future<void> _pickImage() async {
@@ -151,7 +107,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
       return;
     }
 
-    if (_currentPosition == null) {
+    if (currentPosition == null) {
       _showErrorSnackBar('GPS location is required. Please try again.');
       return;
     }
@@ -190,9 +146,9 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
       await widget.onConfirm(
         odometerReading: odometerReading,
         odometerImageUrl: imageUrl,
-        gpsLat: _currentPosition!.latitude,
-        gpsLng: _currentPosition!.longitude,
-        gpsAccuracy: _currentPosition!.accuracy,
+        gpsLat: currentPosition!.latitude,
+        gpsLng: currentPosition!.longitude,
+        gpsAccuracy: currentPosition!.accuracy,
         vehicleCollectedAtTimestamp: actionTimestamp, // Pass captured timestamp
       );
 
@@ -804,7 +760,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
           ),
           child: Row(
             children: [
-              if (_isCapturingLocation)
+              if (isCapturingLocation)
                 const SizedBox(
                   width: 20,
                   height: 20,
@@ -815,7 +771,7 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                     ),
                   ),
                 )
-              else if (_currentPosition != null)
+              else if (currentPosition != null)
                 const Icon(
                   Icons.check_circle_rounded,
                   color: ChoiceLuxTheme.successColor,
@@ -833,25 +789,25 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      _isCapturingLocation
+                      isCapturingLocation
                           ? 'Capturing location...'
-                          : _currentPosition != null
+                          : currentPosition != null
                           ? 'Location captured successfully'
                           : 'Location capture failed',
                       style: TextStyle(
-                        color: _isCapturingLocation
+                        color: isCapturingLocation
                             ? ChoiceLuxTheme.platinumSilver
-                            : _currentPosition != null
+                            : currentPosition != null
                             ? ChoiceLuxTheme.successColor
                             : ChoiceLuxTheme.errorColor,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
                       ),
                     ),
-                    if (_locationError != null) ...[
+                    if (locationError != null) ...[
                       const SizedBox(height: 4),
                       Text(
-                        _locationError!,
+                        locationError!,
                         style: TextStyle(
                           color: ChoiceLuxTheme.errorColor,
                           fontSize: 12,
@@ -862,9 +818,9 @@ class _VehicleCollectionModalState extends State<VehicleCollectionModal> {
                   ],
                 ),
               ),
-              if (!_isCapturingLocation && _currentPosition == null)
+              if (!isCapturingLocation && currentPosition == null)
                 TextButton(
-                  onPressed: _captureLocation,
+                  onPressed: captureLocation,
                   child: Text(
                     'Retry',
                     style: TextStyle(

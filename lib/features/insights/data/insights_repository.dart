@@ -21,13 +21,9 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching insights data for period: ${period.displayName}');
-
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       // Fetch all insights in parallel (skip quotes due to persistent issues)
-      print('Starting parallel fetch of all insights...');
       final results = await Future.wait([
         _fetchJobInsights(dateRange),
         _fetchDriverInsights(dateRange),
@@ -40,33 +36,29 @@ class InsightsRepository {
       // Check if any failed
       for (int i = 0; i < results.length; i++) {
         if (results[i].isFailure) {
-          final insightType = ['Quote', 'Job', 'Driver', 'Vehicle', 'Client', 'Financial', 'ClientRevenue'][i];
-          print('Failed to fetch $insightType insights: ${results[i].error}');
           return Result.failure(results[i].error!);
         }
       }
 
       final insightsData = InsightsData(
-        quoteInsights: results[0].data! as QuoteInsights,
-        jobInsights: results[1].data! as JobInsights,
-        driverInsights: results[2].data! as DriverInsights,
-        vehicleInsights: results[3].data! as VehicleInsights,
-        clientInsights: results[4].data! as ClientInsights,
-        financialInsights: results[5].data! as FinancialInsights,
-        clientRevenueInsights: results[6].data! as ClientRevenueInsights,
+        quoteInsights: QuoteInsights(
+          totalQuotes: 0,
+          quotesThisWeek: 0,
+          quotesThisMonth: 0,
+          averageQuoteValue: 0.0,
+          conversionRate: 0.0,
+          quotesPerClient: 0,
+        ),
+        jobInsights: results[0].data! as JobInsights,
+        driverInsights: results[1].data! as DriverInsights,
+        vehicleInsights: results[2].data! as VehicleInsights,
+        clientInsights: results[3].data! as ClientInsights,
+        financialInsights: results[4].data! as FinancialInsights,
+        clientRevenueInsights: results[5].data! as ClientRevenueInsights,
       );
 
       Log.d('All insights data fetched successfully');
-      Log.d('Summary: ${insightsData.jobInsights.totalJobs} jobs, ${insightsData.quoteInsights.totalQuotes} quotes, R${insightsData.financialInsights.totalRevenue.toStringAsFixed(0)} revenue');
-      
-      // Detailed logging for each insight type
-      Log.d('Quote Insights: ${insightsData.quoteInsights.totalQuotes} total, R${insightsData.quoteInsights.averageQuoteValue.toStringAsFixed(0)} avg value');
-      Log.d('Job Insights: ${insightsData.jobInsights.totalJobs} total, ${insightsData.jobInsights.completedJobs} completed, ${insightsData.jobInsights.completionRate.toStringAsFixed(1)}% completion rate');
-      Log.d('Driver Insights: ${insightsData.driverInsights.totalDrivers} total, ${insightsData.driverInsights.topDrivers.length} top drivers');
-      Log.d('Vehicle Insights: ${insightsData.vehicleInsights.totalVehicles} total, ${insightsData.vehicleInsights.topVehicles.length} top vehicles');
-      Log.d('Client Insights: ${insightsData.clientInsights.totalClients} total, ${insightsData.clientInsights.topClients.length} top clients');
-      Log.d('Financial Insights: R${insightsData.financialInsights.totalRevenue.toStringAsFixed(0)} total revenue');
-      
+
       return Result.success(insightsData);
     } catch (error) {
       Log.e('Error fetching insights: $error');
@@ -82,13 +74,9 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching insights data for period: ${period.displayName}, location: ${location.displayName}');
-
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       // Fetch all insights in parallel with location filtering
-      print('Starting parallel fetch of all insights with location filter...');
       final results = await Future.wait([
         _fetchQuoteInsightsWithLocation(dateRange, location),
         _fetchJobInsightsWithLocation(dateRange, location),
@@ -102,8 +90,6 @@ class InsightsRepository {
       // Check if any failed
       for (int i = 0; i < results.length; i++) {
         if (results[i].isFailure) {
-          final insightType = ['Quote', 'Job', 'Driver', 'Vehicle', 'Client', 'Financial', 'ClientRevenue'][i];
-          print('Failed to fetch $insightType insights: ${results[i].error}');
           return Result.failure(results[i].error!);
         }
       }
@@ -119,78 +105,10 @@ class InsightsRepository {
       );
 
       Log.d('All insights data fetched successfully with location filter');
-      Log.d('Summary: ${insightsData.jobInsights.totalJobs} jobs, ${insightsData.quoteInsights.totalQuotes} quotes, R${insightsData.financialInsights.totalRevenue.toStringAsFixed(0)} revenue');
-      
+
       return Result.success(insightsData);
     } catch (error) {
       Log.e('Error fetching insights with filters: $error');
-      return _mapSupabaseError(error);
-    }
-  }
-
-  /// Fetch quote insights
-  Future<Result<QuoteInsights>> _fetchQuoteInsights(DateRange dateRange) async {
-    try {
-      Log.d('Fetching quote insights...');
-      // Total quotes
-      final totalQuotesResponse = await _supabase
-          .from('quotes')
-          .select('id, quote_amount, created_at, client_id')
-          .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
-      
-      Log.d('Quotes query returned ${totalQuotesResponse.length} records');
-
-      final totalQuotes = totalQuotesResponse.length;
-      final totalQuoteValue = totalQuotesResponse
-          .where((q) => q['quote_amount'] != null)
-          .fold<double>(0.0, (sum, q) => sum + (q['quote_amount'] as num).toDouble());
-
-      // Quotes this week
-      final weekStart = DateTime.now().subtract(Duration(days: DateTime.now().weekday - 1));
-      final quotesThisWeekResponse = await _supabase
-          .from('quotes')
-          .select('id')
-          .gte('created_at', weekStart.toIso8601String());
-
-      // Quotes this month
-      final monthStart = DateTime(DateTime.now().year, DateTime.now().month, 1);
-      final quotesThisMonthResponse = await _supabase
-          .from('quotes')
-          .select('id')
-          .gte('created_at', monthStart.toIso8601String());
-
-      // Conversion rate (quotes to jobs)
-      final jobsFromQuotesResponse = await _supabase
-          .from('jobs')
-          .select('id')
-          .not('quote_no', 'is', null)
-          .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String());
-
-      final conversionRate = totalQuotes > 0 
-          ? (jobsFromQuotesResponse.length / totalQuotes) * 100 
-          : 0.0;
-
-      // Quotes per client
-      final uniqueClients = totalQuotesResponse
-          .map((q) => q['client_id'])
-          .toSet()
-          .length;
-      final quotesPerClient = uniqueClients > 0 ? totalQuotes / uniqueClients : 0;
-
-      final insights = QuoteInsights(
-        totalQuotes: totalQuotes,
-        quotesThisWeek: quotesThisWeekResponse.length,
-        quotesThisMonth: quotesThisMonthResponse.length,
-        averageQuoteValue: totalQuotes > 0 ? totalQuoteValue / totalQuotes : 0.0,
-        conversionRate: conversionRate,
-        quotesPerClient: quotesPerClient.round(),
-      );
-
-      return Result.success(insights);
-    } catch (error) {
-      Log.e('Error fetching quote insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -200,27 +118,6 @@ class InsightsRepository {
     try {
       Log.d('Fetching quote insights with location filter: ${location.displayName}...');
       
-      // Build location filter
-      String? locationFilter;
-      if (location != LocationFilter.all) {
-        switch (location) {
-          case LocationFilter.jhb:
-            locationFilter = 'Jhb';
-            break;
-          case LocationFilter.cpt:
-            locationFilter = 'Cpt';
-            break;
-          case LocationFilter.dbn:
-            locationFilter = 'Dbn';
-            break;
-          case LocationFilter.unspecified:
-            locationFilter = null; // Will filter for null values
-            break;
-          case LocationFilter.all:
-            break;
-        }
-      }
-
       // Total quotes with location filter (skip location filtering for quotes)
       var query = _supabase
           .from('quotes')
@@ -409,7 +306,6 @@ class InsightsRepository {
       final now = DateTime.now();
       final todayStart = DateTime(now.year, now.month, now.day);
       final tomorrowStart = todayStart.add(Duration(days: 1));
-      final tomorrowEnd = tomorrowStart.add(Duration(days: 1));
 
       int jobsStartingToday = 0;
       int jobsStartingTomorrow = 0;
@@ -563,18 +459,6 @@ class InsightsRepository {
       var jobsQuery = _supabase
           .from('jobs')
           .select('id, job_status, location');
-
-      // Filter by IDs using in filter
-      // Prefer inFilter if available in current SDK
-      // Fallback to filter('id','in','(1,2,3)') if needed
-      try {
-        // ignore: deprecated_member_use
-        // @ts-ignore - runtime check
-        // dart analyzer will allow if available
-        // dynamic call to support both versions
-        // Will be caught in catch if unsupported
-        // jobsQuery = jobsQuery.inFilter('id', jobIds);
-      } catch (_) {}
 
       final idsString = jobIds.join(',');
       jobsQuery = jobsQuery.filter('id', 'in', '($idsString)');
@@ -774,6 +658,54 @@ class InsightsRepository {
           ? timeToStartDurations.reduce((a, b) => a + b) / timeToStartDurations.length
           : 0.0;
 
+      // Fetch expense aggregates for period jobs
+      int totalExpenses = 0;
+      double totalExpenseAmount = 0.0;
+      double averageExpensePerJob = 0.0;
+      double fuelExpenseAmount = 0.0;
+      double parkingExpenseAmount = 0.0;
+      double tollExpenseAmount = 0.0;
+      double otherExpenseAmount = 0.0;
+
+      if (jobIds.isNotEmpty) {
+        try {
+          final expenseRows = await _supabase
+              .from('expenses')
+              .select('job_id, expense_type, exp_amount')
+              .filter('job_id', 'in', '(${jobIds.join(",")})');
+
+          totalExpenses = expenseRows.length;
+          final jobIdsWithExpenses = <int>{};
+
+          for (final row in expenseRows) {
+            final amt = double.tryParse(row['exp_amount']?.toString() ?? '0') ?? 0.0;
+            final type = row['expense_type']?.toString() ?? 'other';
+            final jid = row['job_id'] as int?;
+            if (jid != null) jobIdsWithExpenses.add(jid);
+            totalExpenseAmount += amt;
+            switch (type) {
+              case 'fuel':
+                fuelExpenseAmount += amt;
+                break;
+              case 'parking':
+                parkingExpenseAmount += amt;
+                break;
+              case 'toll':
+                tollExpenseAmount += amt;
+                break;
+              default:
+                otherExpenseAmount += amt;
+            }
+          }
+
+          averageExpensePerJob = jobIdsWithExpenses.isNotEmpty
+              ? totalExpenseAmount / jobIdsWithExpenses.length
+              : 0.0;
+        } catch (e) {
+          Log.e('Error fetching expense aggregates: $e');
+        }
+      }
+
       final jobInsights = JobInsights(
         totalJobs: totalJobs,
         jobsThisWeek: jobsThisWeekResponse.length,
@@ -782,7 +714,7 @@ class InsightsRepository {
         inProgressJobs: inProgressJobs,
         completedJobs: completedJobs,
         cancelledJobs: cancelledJobs,
-        averageJobsPerWeek: totalJobs > 0 ? (totalJobs / 4.0) : 0.0, // Approximate weeks in month
+        averageJobsPerWeek: totalJobs > 0 ? (totalJobs / 4.0) : 0.0,
         completionRate: totalJobs > 0 ? completedJobs / totalJobs : 0.0,
         averageCompletionDays: averageCompletionDays,
         onTimeRate: onTimeRate,
@@ -791,6 +723,13 @@ class InsightsRepository {
         jobsStartingTomorrow: jobsStartingTomorrow,
         overdueJobs: overdueJobs,
         unassignedJobs: unassignedJobs,
+        totalExpenses: totalExpenses,
+        totalExpenseAmount: totalExpenseAmount,
+        averageExpensePerJob: averageExpensePerJob,
+        fuelExpenseAmount: fuelExpenseAmount,
+        parkingExpenseAmount: parkingExpenseAmount,
+        tollExpenseAmount: tollExpenseAmount,
+        otherExpenseAmount: otherExpenseAmount,
       );
 
       Log.d('Job insights with location filter: ${jobInsights.totalJobs} total, ${jobInsights.completedJobs} completed');
@@ -805,11 +744,11 @@ class InsightsRepository {
   Future<Result<DriverInsights>> _fetchDriverInsights(DateRange dateRange) async {
     try {
       Log.d('Fetching driver insights...');
-      // Total drivers
+      // Total drivers (includes drivers, driver managers, and managers who get assigned to jobs)
       final driversResponse = await _supabase
           .from('profiles')
           .select('id, display_name')
-          .eq('role', 'driver');
+          .inFilter('role', ['driver', 'driver_manager', 'manager']);
       
       Log.d('Drivers query returned ${driversResponse.length} records');
 
@@ -1186,11 +1125,11 @@ class InsightsRepository {
         }
       }
 
-      // Total drivers
+      // Total drivers (includes drivers, driver managers, and managers who get assigned to jobs)
       final driversResponse = await _supabase
           .from('profiles')
           .select('id, display_name')
-          .eq('role', 'driver');
+          .inFilter('role', ['driver', 'driver_manager', 'manager']);
       
       Log.d('Drivers query returned ${driversResponse.length} records');
 
@@ -1436,15 +1375,15 @@ class InsightsRepository {
           .lte('job_started_at', dateRange.end.toIso8601String())
           .not('job_started_at', 'is', null);
 
-      // Get jobs with vehicle_id to join with driver_flow
+      // Lookup table: all jobs with a vehicle (no date filter) so we can
+      // resolve driver_flow.job_id -> vehicle_id regardless of when the
+      // job was created vs. when it was started.
       final jobsWithVehicle = await _supabase
           .from('jobs')
           .select('id, vehicle_id, amount, location, job_status, updated_at')
-          .gte('created_at', dateRange.start.toIso8601String())
-          .lte('created_at', dateRange.end.toIso8601String())
           .not('vehicle_id', 'is', null);
 
-      // Fix: Query ALL odometer readings for highest odometer (not just date range)
+      // Query ALL odometer readings for highest odometer (not just date range)
       final allOdometerReadings = await _supabase
           .from('driver_flow')
           .select('job_id, job_closed_odo')
@@ -1455,16 +1394,41 @@ class InsightsRepository {
       final vehicleOdometerReadings = <String, double>{};
       double totalDistanceTraveled = 0.0;
       double highestOdometerReading = 0.0;
+      String? vehicleWithHighestOdometer;
       String? vehicleWithMostDistance;
-      double maxVehicleDistance = 0.0;
 
-      // Fix: Find highest odometer across ALL time (not just date range)
+      // Find highest odometer across ALL time and track the job_id
+      int? highestOdoJobId;
       for (final df in allOdometerReadings) {
         if (df['job_closed_odo'] != null) {
           final endOdo = (df['job_closed_odo'] as num).toDouble();
           if (endOdo > highestOdometerReading) {
             highestOdometerReading = endOdo;
+            highestOdoJobId = df['job_id'] is int
+                ? df['job_id'] as int
+                : int.tryParse(df['job_id'].toString());
           }
+        }
+      }
+
+      // Resolve vehicle name for the highest odometer reading
+      if (highestOdoJobId != null) {
+        try {
+          final jobRow = await _supabase
+              .from('jobs')
+              .select('vehicle_id')
+              .eq('id', highestOdoJobId)
+              .maybeSingle();
+          if (jobRow != null && jobRow['vehicle_id'] != null) {
+            final vid = jobRow['vehicle_id'].toString();
+            final v = vehiclesResponse.firstWhere(
+              (v) => v['id'].toString() == vid,
+              orElse: () => {'make': 'Unknown', 'model': 'Vehicle'},
+            );
+            vehicleWithHighestOdometer = '${v['make']} ${v['model']}';
+          }
+        } catch (e) {
+          Log.e('Failed to resolve vehicle name for highest odometer: $e');
         }
       }
 
@@ -1472,12 +1436,9 @@ class InsightsRepository {
       for (final df in driverFlowResponse) {
         final jobId = df['job_id'];
         
-        // Fix: Handle cases where we have end reading but no start reading
-        // Use end reading as distance if start is missing (for completed jobs)
         if (df['job_closed_odo'] != null) {
           final endOdo = (df['job_closed_odo'] as num).toDouble();
           
-          // Find vehicle for this job - fix type conversion
           final job = jobsWithVehicle.firstWhere(
             (j) => j['id'].toString() == jobId.toString(),
             orElse: () => {},
@@ -1506,7 +1467,6 @@ class InsightsRepository {
       // Find vehicle with most distance
       if (vehicleDistances.isNotEmpty) {
         final maxEntry = vehicleDistances.entries.reduce((a, b) => a.value > b.value ? a : b);
-        maxVehicleDistance = maxEntry.value;
         final vehicle = vehiclesResponse.firstWhere(
           (v) => v['id'].toString() == maxEntry.key,
           orElse: () => {'make': 'Unknown', 'model': 'Vehicle'},
@@ -1635,10 +1595,8 @@ class InsightsRepository {
         revenueByLocation[location] = (revenueByLocation[location] ?? 0.0) + amount;
       }
 
-      // Calculate average km per day
-      // Fix: Handle division by zero and ensure we have valid data
-      final averageKmPerDay = daysInPeriod > 0 && activeVehicles > 0 && totalDistanceTraveled > 0
-          ? (totalDistanceTraveled / daysInPeriod / activeVehicles)
+      final averageKmPerDay = daysInPeriod > 0 && totalDistanceTraveled > 0
+          ? (totalDistanceTraveled / daysInPeriod)
           : 0.0;
 
       final insights = VehicleInsights(
@@ -1654,6 +1612,7 @@ class InsightsRepository {
         averageDistancePerVehicle: averageDistancePerVehicle,
         averageDistancePerJob: averageDistancePerJob,
         highestOdometerReading: highestOdometerReading,
+        vehicleWithHighestOdometer: vehicleWithHighestOdometer,
         vehicleWithMostDistance: vehicleWithMostDistance,
         jobsCompletedThisWeek: jobsCompletedThisWeek,
         jobsCompletedThisMonth: jobsCompletedThisMonth,
@@ -1799,6 +1758,123 @@ class InsightsRepository {
           .where((j) => j['vehicle_id'] == null || j['vehicle_id'].toString().isEmpty)
           .length;
 
+      // --- Distance metrics (same logic as _fetchVehicleInsights) ---
+      final driverFlowResponse = await _supabase
+          .from('driver_flow')
+          .select('job_id, odo_start_reading, job_closed_odo, job_started_at, job_closed_time')
+          .gte('job_started_at', dateRange.start.toIso8601String())
+          .lte('job_started_at', dateRange.end.toIso8601String())
+          .not('job_started_at', 'is', null);
+
+      final allJobsLookup = await _supabase
+          .from('jobs')
+          .select('id, vehicle_id, amount')
+          .not('vehicle_id', 'is', null);
+
+      final allOdometerReadings = await _supabase
+          .from('driver_flow')
+          .select('job_id, job_closed_odo')
+          .not('job_closed_odo', 'is', null);
+
+      final vehicleDistances = <String, double>{};
+      double totalDistanceTraveled = 0.0;
+      double highestOdometerReading = 0.0;
+      String? vehicleWithHighestOdometer;
+      String? vehicleWithMostDistance;
+
+      int? highestOdoJobId;
+      for (final df in allOdometerReadings) {
+        if (df['job_closed_odo'] != null) {
+          final endOdo = (df['job_closed_odo'] as num).toDouble();
+          if (endOdo > highestOdometerReading) {
+            highestOdometerReading = endOdo;
+            highestOdoJobId = df['job_id'] is int
+                ? df['job_id'] as int
+                : int.tryParse(df['job_id'].toString());
+          }
+        }
+      }
+
+      if (highestOdoJobId != null) {
+        try {
+          final jobRow = await _supabase
+              .from('jobs')
+              .select('vehicle_id')
+              .eq('id', highestOdoJobId)
+              .maybeSingle();
+          if (jobRow != null && jobRow['vehicle_id'] != null) {
+            final vid = jobRow['vehicle_id'].toString();
+            final v = vehiclesResponse.firstWhere(
+              (v) => v['id'].toString() == vid,
+              orElse: () => {'make': 'Unknown', 'model': 'Vehicle'},
+            );
+            vehicleWithHighestOdometer = '${v['make']} ${v['model']}';
+          }
+        } catch (e) {
+          Log.e('Failed to resolve vehicle name for highest odometer: $e');
+        }
+      }
+
+      for (final df in driverFlowResponse) {
+        final jobId = df['job_id'];
+        if (df['job_closed_odo'] != null) {
+          final endOdo = (df['job_closed_odo'] as num).toDouble();
+          final job = allJobsLookup.firstWhere(
+            (j) => j['id'].toString() == jobId.toString(),
+            orElse: () => {},
+          );
+          if (job.isNotEmpty && job['vehicle_id'] != null) {
+            final vehicleId = job['vehicle_id'].toString();
+            if (df['odo_start_reading'] != null) {
+              final startOdo = (df['odo_start_reading'] as num).toDouble();
+              final distance = (endOdo - startOdo).abs();
+              vehicleDistances[vehicleId] = (vehicleDistances[vehicleId] ?? 0.0) + distance;
+              totalDistanceTraveled += distance;
+            }
+          }
+        }
+      }
+
+      if (vehicleDistances.isNotEmpty) {
+        final maxEntry = vehicleDistances.entries.reduce((a, b) => a.value > b.value ? a : b);
+        final vehicle = vehiclesResponse.firstWhere(
+          (v) => v['id'].toString() == maxEntry.key,
+          orElse: () => {'make': 'Unknown', 'model': 'Vehicle'},
+        );
+        vehicleWithMostDistance = '${vehicle['make']} ${vehicle['model']}';
+      }
+
+      final vehiclesWithDistance = vehicleDistances.keys.length;
+      final averageDistancePerVehicle = vehiclesWithDistance > 0
+          ? totalDistanceTraveled / vehiclesWithDistance
+          : 0.0;
+
+      final jobsWithDistance = driverFlowResponse
+          .where((df) => df['odo_start_reading'] != null && df['job_closed_odo'] != null)
+          .length;
+      final averageDistancePerJob = jobsWithDistance > 0
+          ? totalDistanceTraveled / jobsWithDistance
+          : 0.0;
+
+      final revenuePerKm = totalDistanceTraveled > 0
+          ? totalVehicleRevenue / totalDistanceTraveled
+          : 0.0;
+
+      final daysInPeriod = dateRange.end.difference(dateRange.start).inDays;
+      final averageKmPerDay = daysInPeriod > 0 && totalDistanceTraveled > 0
+          ? (totalDistanceTraveled / daysInPeriod)
+          : 0.0;
+
+      double vehicleEfficiencyScore = 0.0;
+      if (totalVehicles > 0) {
+        final utilizationScore = vehicleUtilizationRate * 0.4;
+        final revenueScore = totalVehicleRevenue > 0 ? ((totalVehicleRevenue / 10000) * 30).clamp(0.0, 30.0) : 0.0;
+        final distanceScore = totalDistanceTraveled > 0
+            ? ((totalDistanceTraveled / 1000) * 30).clamp(0.0, 30.0)
+            : (vehicleUtilizationRate > 0 ? 10.0 : 0.0);
+        vehicleEfficiencyScore = (utilizationScore + revenueScore + distanceScore).clamp(0.0, 100.0);
+      }
+
       final vehicleInsights = VehicleInsights(
         totalVehicles: totalVehicles,
         activeVehicles: activeVehicles,
@@ -1808,26 +1884,20 @@ class InsightsRepository {
         vehicleUtilizationRate: vehicleUtilizationRate,
         unassignedJobsCount: unassignedJobsCount,
         leastUsedVehicles: leastUsedVehiclesList,
-        // Additional metrics default to 0 for location-filtered (can be enhanced later)
-        totalDistanceTraveled: 0.0,
-        averageDistancePerVehicle: 0.0,
-        averageDistancePerJob: 0.0,
-        highestOdometerReading: 0.0,
-        vehicleWithMostDistance: null,
-        jobsCompletedThisWeek: 0,
-        jobsCompletedThisMonth: 0,
-        activeJobsNow: 0,
-        averageJobsPerDay: 0.0,
-        revenuePerKm: 0.0,
-        averageTimePerJob: 0.0,
-        vehicleEfficiencyScore: 0.0,
-        mostEfficientVehicle: null,
+        totalDistanceTraveled: totalDistanceTraveled,
+        averageDistancePerVehicle: averageDistancePerVehicle,
+        averageDistancePerJob: averageDistancePerJob,
+        highestOdometerReading: highestOdometerReading,
+        vehicleWithHighestOdometer: vehicleWithHighestOdometer,
+        vehicleWithMostDistance: vehicleWithMostDistance,
+        revenuePerKm: revenuePerKm,
+        vehicleEfficiencyScore: vehicleEfficiencyScore,
         topLocationByUsage: locationFilter,
         revenueByLocation: {},
-        averageKmPerDay: 0.0,
+        averageKmPerDay: averageKmPerDay,
       );
 
-      Log.d('Vehicle insights with location filter: ${vehicleInsights.totalVehicles} vehicles, ${vehicleInsights.averageJobsPerVehicle.toStringAsFixed(1)} avg jobs');
+      Log.d('Vehicle insights with location filter: ${vehicleInsights.totalVehicles} vehicles, ${vehicleInsights.totalDistanceTraveled.toStringAsFixed(0)} km total distance');
       return Result.success(vehicleInsights);
     } catch (error) {
       Log.e('Error fetching vehicle insights with location filter: $error');
@@ -2239,10 +2309,8 @@ class InsightsRepository {
 
       // Calculate averages
       final totalClientJobs = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['jobCount'] as int));
-      final totalClientQuotes = clientStats.values.fold<int>(0, (sum, stats) => sum + (stats['quoteCount'] as int));
       final totalClientRevenue = clientStats.values.fold<double>(0.0, (sum, stats) => sum + stats['jobRevenue'] + stats['quoteValue']);
       final averageJobsPerClient = totalClients > 0 ? totalClientJobs / totalClients : 0.0;
-      final averageQuotesPerClient = totalClients > 0 ? totalClientQuotes / totalClients : 0.0;
       final averageRevenuePerClient = totalClients > 0 ? totalClientRevenue / totalClients : 0.0;
 
       // Get top clients
@@ -2934,22 +3002,12 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching jobs insights for period: ${period.displayName}, location: ${location.displayName}');
-      
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       final result = await _fetchJobInsightsWithLocation(dateRange, location);
-      
-      if (result.isSuccess) {
-        print('Jobs insights fetched successfully');
-        return result;
-      } else {
-        print('Failed to fetch jobs insights: ${result.error}');
-        return result;
-      }
+
+      return result;
     } catch (error) {
-      print('Error fetching jobs insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2962,22 +3020,12 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching financial insights for period: ${period.displayName}, location: ${location.displayName}');
-      
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       final result = await _fetchFinancialInsightsWithLocation(dateRange, location);
-      
-      if (result.isSuccess) {
-        print('Financial insights fetched successfully');
-        return result;
-      } else {
-        print('Failed to fetch financial insights: ${result.error}');
-        return result;
-      }
+
+      return result;
     } catch (error) {
-      print('Error fetching financial insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -2990,24 +3038,14 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching driver insights for period: ${period.displayName}, location: ${location.displayName}');
-      
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       final result = location == LocationFilter.all
           ? await _fetchDriverInsights(dateRange)
           : await _fetchDriverInsightsWithLocation(dateRange, location);
-      
-      if (result.isSuccess) {
-        print('Driver insights fetched successfully');
-        return result;
-      } else {
-        print('Failed to fetch driver insights: ${result.error}');
-        return result;
-      }
+
+      return result;
     } catch (error) {
-      print('Error fetching driver insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -3020,22 +3058,12 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching vehicle insights for period: ${period.displayName}, location: ${location.displayName}');
-      
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       final result = await _fetchVehicleInsightsWithLocation(dateRange, location);
-      
-      if (result.isSuccess) {
-        print('Vehicle insights fetched successfully');
-        return result;
-      } else {
-        print('Failed to fetch vehicle insights: ${result.error}');
-        return result;
-      }
+
+      return result;
     } catch (error) {
-      print('Error fetching vehicle insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -3048,22 +3076,12 @@ class InsightsRepository {
     DateTime? customEndDate,
   }) async {
     try {
-      print('Fetching client insights for period: ${period.displayName}, location: ${location.displayName}');
-      
       final dateRange = _getDateRange(period, customStartDate, customEndDate);
-      print('Date range: ${dateRange.start.toIso8601String()} to ${dateRange.end.toIso8601String()}');
-      
+
       final result = await _fetchClientInsightsWithLocation(dateRange, location);
-      
-      if (result.isSuccess) {
-        print('Client insights fetched successfully');
-        return result;
-      } else {
-        print('Failed to fetch client insights: ${result.error}');
-        return result;
-      }
+
+      return result;
     } catch (error) {
-      print('Error fetching client insights: $error');
       return _mapSupabaseError(error);
     }
   }
@@ -3160,6 +3178,10 @@ class InsightsRepository {
         final monthStart = DateTime(now.year, now.month, 1);
         final monthEnd = DateTime(now.year, now.month + 1, 1);
         return DateRange(monthStart, monthEnd);
+      case TimePeriod.lastMonth:
+        final lastMonthStart = DateTime(now.year, now.month - 1, 1);
+        final lastMonthEnd = DateTime(now.year, now.month, 1);
+        return DateRange(lastMonthStart, lastMonthEnd);
       case TimePeriod.thisQuarter:
         final quarter = (now.month - 1) ~/ 3;
         final quarterStart = DateTime(now.year, quarter * 3 + 1, 1);

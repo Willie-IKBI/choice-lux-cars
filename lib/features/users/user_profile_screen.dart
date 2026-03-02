@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -265,10 +266,13 @@ class _UserProfileScreenState extends ConsumerState<UserProfileScreen> {
                               child: ClipOval(
                                 child: _profileImage != null &&
                                         _profileImage!.isNotEmpty
-                                    ? Image.network(
-                                        _profileImage!,
+                                    ? CachedNetworkImage(
+                                        imageUrl: _profileImage!,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
+                                        placeholder: (context, url) => const Center(
+                                          child: CircularProgressIndicator(strokeWidth: 2),
+                                        ),
+                                        errorWidget: (context, url, error) {
                                           return Center(
                                             child: Text(
                                               _displayNameController.text.isNotEmpty
