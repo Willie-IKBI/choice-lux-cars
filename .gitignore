@@ -15,6 +15,9 @@ android/app/google-services.json
 .env.production
 .env.staging
 
+# Build-time dart defines (contains Supabase/Firebase secrets)
+dart_defines.json
+
 # API Keys and Secrets
 **/secrets/**
 **/keys/**

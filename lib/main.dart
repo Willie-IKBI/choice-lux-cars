@@ -46,7 +46,7 @@ void main() async {
         url: supabaseUrl,
         anonKey: supabaseAnonKey,
       );
-      Log.d('Supabase initialized successfully');
+      Log.d('Supabase initialized: ${supabaseUrl.substring(0, supabaseUrl.length.clamp(0, 35))}...');
 
       try {
         await FirebaseService.initialize();
