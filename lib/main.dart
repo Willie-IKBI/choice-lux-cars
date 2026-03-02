@@ -31,9 +31,20 @@ void main() async {
         Log.e('Failed to configure GoogleFonts: $e');
       }
 
+      // Validate Supabase config before init (prevents 405 AuthUnknownException when URL is empty)
+      final supabaseUrl = AppConstants.supabaseUrl;
+      final supabaseAnonKey = AppConstants.supabaseAnonKey;
+      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+        throw Exception(
+          'Supabase config missing at build time. '
+          'Set SUPABASE_URL and SUPABASE_ANON_KEY (or NEXT_PUBLIC_* variants) in Vercel Environment Variables, '
+          'then redeploy with "Clear build cache".',
+        );
+      }
+
       await Supabase.initialize(
-        url: AppConstants.supabaseUrl,
-        anonKey: AppConstants.supabaseAnonKey,
+        url: supabaseUrl,
+        anonKey: supabaseAnonKey,
       );
       Log.d('Supabase initialized successfully');
 

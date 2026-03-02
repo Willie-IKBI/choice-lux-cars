@@ -20,6 +20,14 @@ FIREBASE_API_KEY="${FIREBASE_API_KEY:-$NEXT_PUBLIC_FIREBASE_API_KEY}"
 SUPABASE_URL="${SUPABASE_URL:-$NEXT_PUBLIC_SUPABASE_URL}"
 SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-$NEXT_PUBLIC_SUPABASE_ANON_KEY}"
 
+# Verify Supabase config (required for auth - 405 error if missing)
+if [ -z "$SUPABASE_URL" ] || [ -z "$SUPABASE_ANON_KEY" ]; then
+  echo "ERROR: SUPABASE_URL or SUPABASE_ANON_KEY is empty. Auth will fail with 405."
+  echo "  Set NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in Vercel env vars."
+  exit 1
+fi
+echo "Supabase URL configured: ${SUPABASE_URL:0:30}..."
+
 DART_DEFINES=()
 
 # Required for web push
