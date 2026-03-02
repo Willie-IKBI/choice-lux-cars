@@ -1,0 +1,7 @@
+# Force LF line endings for shell scripts (required for Linux CI/Vercel)
+*.sh text eol=lf
+
+# Force LF for other CI/config files
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
