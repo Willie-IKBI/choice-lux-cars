@@ -1,6 +1,11 @@
 const fs = require('fs');
 const path = require('path');
 
+// Diagnostic: log env var presence (never log values)
+console.log('[generate-dart-defines] SUPABASE_URL set:', !!process.env.NEXT_PUBLIC_SUPABASE_URL || !!process.env.SUPABASE_URL);
+console.log('[generate-dart-defines] SUPABASE_ANON_KEY set:', !!process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || !!process.env.SUPABASE_ANON_KEY);
+console.log('[generate-dart-defines] CWD:', process.cwd());
+
 // Support both standard and NEXT_PUBLIC_ prefixed names (Vercel convention)
 const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
@@ -33,5 +38,6 @@ const dartDefines = {
 };
 
 const outPath = path.resolve(__dirname, '../dart_defines.json');
+console.log('[generate-dart-defines] Out path:', outPath);
 fs.writeFileSync(outPath, JSON.stringify(dartDefines, null, 0), 'utf8');
 console.log('Wrote dart_defines.json');

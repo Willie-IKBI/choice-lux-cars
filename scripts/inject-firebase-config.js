@@ -14,7 +14,7 @@ try {
     process.exit(1);
   }
 
-  // Config from env vars - support both FIREBASE_* and NEXT_PUBLIC_FIREBASE_* (Vercel convention)
+  // Config from env vars - support both FIREBASE_* and NEXT_PUBLIC_* (Vercel convention)
   const config = {
     firebaseApiKey: process.env.FIREBASE_API_KEY || process.env.NEXT_PUBLIC_FIREBASE_API_KEY || '',
     firebaseAuthDomain: process.env.FIREBASE_AUTH_DOMAIN || 'choice-lux-cars-8d510.firebaseapp.com',
@@ -23,6 +23,8 @@ try {
     firebaseSenderId: process.env.FIREBASE_SENDER_ID || process.env.FIREBASE_MESSAGING_SENDER_ID || '522491134348',
     firebaseAppId: process.env.FIREBASE_APP_ID || '1:522491134348:web:3ac424d68338b3ddb7d6a9',
     googleMapsApiKey: process.env.GOOGLE_MAPS_API_KEY || '',
+    supabaseUrl: process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || '',
+    supabaseAnonKey: process.env.SUPABASE_ANON_KEY || process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '',
   };
 
   if (!config.firebaseApiKey) {
@@ -42,10 +44,12 @@ try {
   swContent = swContent.replace('__FIREBASE_APP_ID__', config.firebaseAppId);
   fs.writeFileSync(serviceWorkerPath, swContent, 'utf8');
 
-  // Inject into index.html (Google Maps)
+  // Inject into index.html (Google Maps + Supabase runtime config)
   if (fs.existsSync(indexPath)) {
     let indexContent = fs.readFileSync(indexPath, 'utf8');
     indexContent = indexContent.replace(/__GOOGLE_MAPS_API_KEY__/g, config.googleMapsApiKey);
+    indexContent = indexContent.replace(/__SUPABASE_URL__/g, config.supabaseUrl);
+    indexContent = indexContent.replace(/__SUPABASE_ANON_KEY__/g, config.supabaseAnonKey);
     fs.writeFileSync(indexPath, indexContent, 'utf8');
   }
 

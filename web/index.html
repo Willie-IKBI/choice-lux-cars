@@ -31,6 +31,8 @@
 
   <title>choice_lux_cars</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Supabase config - Injected at build time (runtime fallback when dart-define fails) -->
+  <script>window.__SUPABASE_CONFIG__={url:"__SUPABASE_URL__",anonKey:"__SUPABASE_ANON_KEY__"};</script>
   <!-- Google Maps API - Injected at build time via scripts/inject-firebase-config.js -->
   <script src="https://maps.googleapis.com/maps/api/js?key=__GOOGLE_MAPS_API_KEY__"></script>
   <script>

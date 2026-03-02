@@ -12,6 +12,9 @@ import 'package:choice_lux_cars/core/logging/log.dart';
 import 'package:choice_lux_cars/core/constants.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+import 'core/config/supabase_runtime_config_stub.dart'
+    if (dart.library.html) 'core/config/supabase_runtime_config_web.dart' as supabase_config;
+
 void main() async {
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
@@ -31,9 +34,17 @@ void main() async {
         Log.e('Failed to configure GoogleFonts: $e');
       }
 
-      // Validate Supabase config before init (prevents 405 AuthUnknownException when URL is empty)
-      final supabaseUrl = AppConstants.supabaseUrl;
-      final supabaseAnonKey = AppConstants.supabaseAnonKey;
+      // Supabase config: prefer dart-define (build time), fallback to runtime injection (web)
+      var supabaseUrl = AppConstants.supabaseUrl;
+      var supabaseAnonKey = AppConstants.supabaseAnonKey;
+      if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
+        final (url, key) = supabase_config.getSupabaseRuntimeConfig();
+        if (url != null && key != null) {
+          supabaseUrl = url;
+          supabaseAnonKey = key;
+          Log.d('Using Supabase config from runtime injection');
+        }
+      }
       if (supabaseUrl.isEmpty || supabaseAnonKey.isEmpty) {
         throw Exception(
           'Supabase config missing at build time. '
